@@ -217,7 +217,7 @@ kaizenComments = data.kaizenComments || {};
                     
                   let role = 'viewer';
                     // استثناء عشان إنت دايماً تكون مدير (حتى لو لسه متسجلتش في الداتا بيز)
-                    if (savedUsername === 'fayez') role = 'admin'; 
+                    if (savedUsername === 'mfayez') role = 'admin'; 
                     else if(usersData[savedUsername]) role = usersData[savedUsername];
 
                     currentUser = { name: savedName, username: savedUsername, role: role };

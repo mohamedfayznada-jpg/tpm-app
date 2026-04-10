@@ -13,7 +13,7 @@ const firebaseConfig = {
 };
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
-const storage = firebase.storage();
+
 
 const GEMINI_API_KEY = "AIzaSyAfaz0f7kK8Rdu4R4DqtNoGqDDhI0B5StA";
 
@@ -55,23 +55,64 @@ db.ref('.info/connected').on('value', function(snap) {
 // ==========================================
 // FIREBASE STORAGE UPLOAD FUNCTION
 // ==========================================
+// ==========================================
+// IMGBB IMAGE UPLOAD FUNCTION (الخطة ج - رفع الصور الخارجي)
+// =========================ك=================
+// ⚠️ حط المفتاح اللي جبته من موقع ImgBB بين علامتين التنصيص هنا ⚠️
+const IMGBB_API_KEY = "0309de2e0d1d5016e48264649e77050e"; 
+
+// احتفظنا بنفس اسم الدالة القديمة عشان منعدلش الكود كله!
 async function uploadImageToStorage(dataUrl, folderName) {
     try {
-        // إنشاء اسم فريد للصورة عشان مفيش صورة تتبدل مكان التانية
-        const fileName = `${folderName}/${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
-        const storageRef = storage.ref().child(fileName);
+        // ImgBB بيحتاج الصورة Base64 صافي من غير الديباجة اللي في الأول
+        const base64Data = dataUrl.split(',')[1]; 
         
-        // رفع الصورة
-        const snapshot = await storageRef.putString(dataUrl, 'data_url');
+        const formData = new FormData();
+        formData.append('image', base64Data);
+
+        // إرسال الصورة لسيرفرات ImgBB
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
         
-        // الحصول على الرابط النهائي
-        const downloadURL = await snapshot.ref.getDownloadURL();
-        return downloadURL;
+        if (result.success) {
+            // لو الرفع نجح، السيرفر هيرجعلنا الرابط المباشر السريع للصورة
+            return result.data.url; 
+        } else {
+            console.error("ImgBB Error:", result);
+            alert("❌ السيرفر رفض استقبال الصورة، حاول تاني.");
+            return null;
+        }
     } catch (error) {
-        console.error("خطأ في رفع الصورة إلى Storage:", error);
-        alert("حدث خطأ أثناء رفع الصورة، برجاء المحاولة مرة أخرى.");
+        console.error("Network Error:", error);
+        alert("⚠️ حدث خطأ في شبكة الإنترنت أثناء رفع الصورة.");
         return null;
     }
+}
+
+
+// ==========================================
+// DRAFT MANAGEMENT (المسودة)
+// ==========================================
+function saveAuditDraft() {
+    if(currentAudit) {
+        localStorage.setItem('tpm_audit_draft', JSON.stringify(currentAudit));
+    }
+}
+
+function loadAuditDraft() {
+    const draft = localStorage.getItem('tpm_audit_draft');
+    if(draft) {
+        currentAudit = JSON.parse(draft);
+        renderCurrentAuditStep();
+    }
+}
+
+function clearAuditDraft() {
+    localStorage.removeItem('tpm_audit_draft');
 }
 
 // ==========================================

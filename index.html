@@ -424,6 +424,13 @@
             <button class="btn btn-success" style="margin-bottom:0;" onclick="exportToCSV()">📥 تحميل تقرير Excel</button>
         </div>
         <div class="card btn-role-admin">
+            <div class="card-title">🛡️ نسخ احتياطي واسترجاع</div>
+            <p style="font-size:11px; color:var(--gray); margin-bottom:10px;">تصدير نسخة JSON كاملة من النظام أو استرجاع نسخة سابقة.</p>
+            <button class="btn btn-primary" style="margin-bottom:8px;" onclick="exportSystemBackupJSON()">⬇️ تصدير نسخة JSON كاملة</button>
+            <button class="btn btn-warning" style="margin-bottom:0;" onclick="triggerBackupImport()">⬆️ استرجاع نسخة JSON</button>
+            <input type="file" id="backupImportInput" accept=".json,application/json" style="display:none;" onchange="importSystemBackupJSON(event)">
+        </div>
+        <div class="card btn-role-admin">
             <div class="card-title">🏭 إدارة الأقسام وأرقام الواتساب</div>
             <p style="font-size:11px; color:var(--gray); margin-bottom:10px;">💡 اضغط على اسم القسم بالأسفل لتعديله أو إضافة رقم له.</p>
             <div style="display: flex; gap: 5px; margin-bottom: 15px;">
@@ -454,6 +461,15 @@
             <div class="card-title">👥 سجل النظام وإدارة الصلاحيات</div>
             <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 5px; margin-bottom: 15px; background: var(--white);" id="logsContainer"></div>
             <h4 style="font-size: 13px; margin-bottom: 10px;">تعديل الصلاحيات:</h4>
+<div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                <input type="text" id="newUsernameRole" class="form-control" style="flex:2;" placeholder="اسم المستخدم (مثال: ahmed)">
+                <select id="newRoleSelect" class="form-control" style="flex:1;">
+                    <option value="viewer">مشاهد</option>
+                    <option value="auditor">مراجع</option>
+                    <option value="admin">مدير</option>
+                </select>
+                <button class="btn btn-primary btn-sm" style="flex:1; margin:0;" onclick="addNewUserRole()">إضافة</button>
+            </div>
             <div id="usersListContainer"></div>
         </div>
         <button class="btn btn-danger" onclick="logout()">تسجيل الخروج</button>
@@ -467,6 +483,12 @@
         <div class="nav-item" onclick="showScreen('tagsScreen'); renderTags();"><span class="nav-icon">🏷️</span>التاجات</div>
         <div class="nav-item" onclick="showScreen('settingsScreen')"><span class="nav-icon">⚙️</span>الإعدادات</div>
     </div>
+<script>
+    // Optional runtime config injection (preferred over hardcoded keys in app.js)
+    // window.__TPM_CONFIG__ = { geminiApiKey: "YOUR_GEMINI_KEY", imgbbApiKey: "YOUR_IMGBB_KEY" };
+</script>
+<script src="config.js"></script>
+<script src="config.local.js"></script>
 <script src="app.js"></script>
 
 </body>

@@ -15,7 +15,11 @@ if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
 
-const GEMINI_API_KEY = "AIzaSyAfaz0f7kK8Rdu4R4DqtNoGqDDhI0B5StA";
+const GEMINI_API_KEY = (
+    (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey) ||
+    localStorage.getItem('tpm_gemini_api_key') ||
+    ''
+).trim();
 
 let departments = []; let historyData = []; let tasksData = [];
 let usersData = {}; let logsData = []; let likesData = {};
@@ -35,6 +39,42 @@ let currentAudit = null; let currentStepSelections = {}; let currentStepImages =
 let deptPhones = {}; 
 let maintenanceEngineers = [];
 let isOnline = false; // متغير لمعرفة حالة النت
+let tpmSystemRef = null;
+let tpmSystemListener = null;
+
+function hasRole(...allowed) {
+    return allowed.includes(currentUser.role);
+}
+
+function sanitizeInput(value) {
+    return String(value || '').replace(/[<>]/g, '').trim();
+}
+
+function escapeHtml(text) {
+    return String(text || '').replace(/[&<>"']/g, (ch) => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+    ));
+}
+
+function nl2brSafe(text) {
+    return escapeHtml(text).replace(/\n/g, '<br>');
+}
+
+function safeUrl(url) {
+    const value = String(url || '').trim();
+    if (!value) return '';
+    if (value.startsWith('https://') || value.startsWith('http://') || value.startsWith('data:image/')) return value;
+    return '';
+}
+
+function toCsvCell(value) {
+    const str = String(value ?? '');
+    return `"${str.replace(/"/g, '""')}"`;
+}
+
+function uniqueNumericId() {
+    return (Date.now() * 1000) + Math.floor(Math.random() * 1000);
+}
 
 // مراقبة حالة الاتصال بسيرفرات فايربيز لحظة بلحظة
 db.ref('.info/connected').on('value', function(snap) {
@@ -59,10 +99,18 @@ db.ref('.info/connected').on('value', function(snap) {
 // IMGBB IMAGE UPLOAD FUNCTION (الخطة ج - رفع الصور الخارجي)
 // =========================ك=================
 // ⚠️ حط المفتاح اللي جبته من موقع ImgBB بين علامتين التنصيص هنا ⚠️
-const IMGBB_API_KEY = "0309de2e0d1d5016e48264649e77050e"; 
+const IMGBB_API_KEY = (
+    (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.imgbbApiKey) ||
+    localStorage.getItem('tpm_imgbb_api_key') ||
+    ''
+).trim();
 
 // احتفظنا بنفس اسم الدالة القديمة عشان منعدلش الكود كله!
 async function uploadImageToStorage(dataUrl, folderName) {
+    if (!IMGBB_API_KEY) {
+        alert('⚠️ مفتاح ImgBB غير مضبوط. أضفه في window.__TPM_CONFIG__ أو localStorage (tpm_imgbb_api_key).');
+        return null;
+    }
     try {
         // ImgBB بيحتاج الصورة Base64 صافي من غير الديباجة اللي في الأول
         const base64Data = dataUrl.split(',')[1]; 
@@ -137,8 +185,15 @@ if(localStorage.getItem('tpm_dark_mode') === 'true') document.body.classList.add
 // AUTO-LOGIN & SAFE DATA FETCHING
 // ==========================================
 firebase.auth().onAuthStateChanged((user) => {
+    if (tpmSystemRef && tpmSystemListener) {
+        tpmSystemRef.off('value', tpmSystemListener);
+        tpmSystemRef = null;
+        tpmSystemListener = null;
+    }
+
     if (user) {
-        db.ref('tpm_system').on('value', (snapshot) => {
+        tpmSystemRef = db.ref('tpm_system');
+        tpmSystemListener = (snapshot) => {
             try {
                 const data = snapshot.val() || {};
                 departments = data.departments || ['قسم الإنتاج', 'قسم الصيانة'];
@@ -160,9 +215,10 @@ kaizenComments = data.kaizenComments || {};
                     const savedName = localStorage.getItem('tpm_user') || user.email.split('@')[0];
                     const savedUsername = localStorage.getItem('tpm_username') || user.email.split('@')[0];
                     
-                    let role = 'viewer';
-                    if(savedName.includes('محمد فايز')) role = 'admin';
-                    else if(usersData[savedName]) role = usersData[savedName];
+                  let role = 'viewer';
+                    // استثناء عشان إنت دايماً تكون مدير (حتى لو لسه متسجلتش في الداتا بيز)
+                    if (savedUsername === 'fayez') role = 'admin'; 
+                    else if(usersData[savedUsername]) role = usersData[savedUsername];
 
                     currentUser = { name: savedName, username: savedUsername, role: role };
                     let greetingEl = document.getElementById('userGreeting');
@@ -198,7 +254,8 @@ kaizenComments = data.kaizenComments || {};
                 let cloudStatus = document.getElementById('cloudStatus');
                 if(cloudStatus) { cloudStatus.innerHTML = "❌ متصل (يوجد خطأ بالبيانات)"; cloudStatus.style.backgroundColor = "#C62828"; }
             }
-        });
+        };
+        tpmSystemRef.on('value', tpmSystemListener);
     } else {
         isInitialLoad = false; showScreen('loginScreen');
     }
@@ -206,6 +263,7 @@ kaizenComments = data.kaizenComments || {};
 
 function syncToServer() {
     if (!isDataLoaded) return; 
+    if (!firebase.auth().currentUser) return;
     
     let cloudStatus = document.getElementById('cloudStatus');
     if(cloudStatus) {
@@ -232,7 +290,7 @@ function syncToServer() {
         }));
 
         // Firebase سيقوم بحفظها في الـ Queue تلقائياً إذا كان أوفلاين
-        db.ref('tpm_system').set(finalData)
+        db.ref('tpm_system').update(finalData)
         .then(() => { 
             if(cloudStatus && isOnline) { 
                 cloudStatus.innerHTML = "☁️ متصل ومزامن"; 
@@ -255,9 +313,9 @@ function syncToServer() {
 // AUTHENTICATION & LOGS
 // ==========================================
 async function login() {
-    const username = document.getElementById('loginUsername').value.trim();
+    const username = sanitizeInput(document.getElementById('loginUsername').value).toLowerCase();
     const password = document.getElementById('loginPassword').value.trim();
-    const name = document.getElementById('displayName').value.trim();
+    const name = sanitizeInput(document.getElementById('displayName').value);
 
     if(!username || !password || !name) return alert('برجاء إدخال اسم المستخدم وكلمة المرور والاسم');
     
@@ -297,13 +355,13 @@ async function biometricLogin() {
         fpBtn.classList.remove('scanning');
         document.getElementById('loginUsername').value = savedUsername;
         document.getElementById('displayName').value = savedUser;
-        document.getElementById('loginPassword').value = "biometric_bypass"; 
+        document.getElementById('loginPassword').value = ""; 
         isInitialLoad = true;
         if(firebase.auth().currentUser) {
             if(isDataLoaded) { logAction('تسجيل دخول سريع بالبصمة'); syncToServer(); }
             showScreen('homeScreen');
         } else {
-            alert('انتهت الجلسة. برجاء إدخال كلمة المرور مرة واحدة لتجديد التوثيق.');
+            alert('انتهت الجلسة. برجاء إدخال كلمة المرور لتجديد التوثيق (الدخول بالبصمة يعمل بعد تسجيل يدوي ناجح).');
         }
     }, 1500);
 }
@@ -326,7 +384,7 @@ function logAction(actionDesc) {
     if(!currentUser.name) return;
     const now = new Date();
     const timeStr = now.toLocaleDateString('ar-EG') + ' ' + now.toLocaleTimeString('ar-EG');
-    logsData.push({ id: Date.now(), user: currentUser.name, action: actionDesc, time: timeStr });
+    logsData.push({ id: uniqueNumericId(), user: currentUser.name, action: actionDesc, time: timeStr });
     if(logsData.length > 50) logsData.shift(); 
 }
 
@@ -346,7 +404,23 @@ function renderLogsPanel() {
 }
 
 function changeUserRole(userName, newRole) {
+    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
     usersData[userName] = newRole; logAction(`تعديل صلاحية (${userName}) إلى ${newRole}`); syncToServer(); alert(`تم التعديل بنجاح!`);
+}
+
+function addNewUserRole() {
+    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
+    const uname = document.getElementById('newUsernameRole').value.trim().toLowerCase();
+    const role = document.getElementById('newRoleSelect').value;
+    
+    if(!uname) return alert('برجاء كتابة اسم المستخدم (username) أولاً!');
+    
+    usersData[uname] = role;
+    syncToServer();
+    logAction(`تعيين صلاحية (${role}) للمستخدم الجديد: ${uname}`);
+    document.getElementById('newUsernameRole').value = '';
+    alert(`تمت إضافة المستخدم ${uname} بصلاحية ${role} بنجاح!`);
+    renderUsersPanel();
 }
 
 // ==========================================
@@ -434,6 +508,88 @@ function exportToCSV() {
     logAction('استخراج التقارير إلى Excel'); syncToServer();
 }
 
+function exportSystemBackupJSON() {
+    if(!hasRole('admin')) return alert('عفواً، للمدير فقط');
+    const safeHistory = {}; if(historyData) historyData.forEach(h => { if(h && h.id) safeHistory[h.id] = h; });
+    const safeTasks = {}; if(tasksData) tasksData.forEach(t => { if(t && t.id) safeTasks[t.id] = t; });
+    const safeLogs = {}; if(logsData) logsData.forEach(l => { if(l && l.id) safeLogs[l.id] = l; });
+    const safeTags = {}; if(tagsData) tagsData.forEach(t => { if(t && t.id) safeTags[t.id] = t; });
+
+    const backupData = {
+        exportedAt: new Date().toISOString(),
+        source: 'TPM App',
+        tpm_system: {
+            departments: departments || [],
+            history: safeHistory,
+            tasks: safeTasks,
+            users: usersData || {},
+            logs: safeLogs,
+            likes: likesData || {},
+            tags: safeTags,
+            points: userPoints || {},
+            deptPhones: deptPhones || {},
+            maintenanceEngineers: maintenanceEngineers || [],
+            kaizenComments: kaizenComments || {}
+        }
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `TPM_Backup_${new Date().toLocaleDateString('ar-EG').replace(/\//g,'-')}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+function triggerBackupImport() {
+    if(!hasRole('admin')) return alert('عفواً، للمدير فقط');
+    const input = document.getElementById('backupImportInput');
+    if(input) input.click();
+}
+
+function importSystemBackupJSON(event) {
+    if(!hasRole('admin')) return alert('عفواً، للمدير فقط');
+    const file = event.target.files && event.target.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const raw = JSON.parse(e.target.result);
+            const payload = raw.tpm_system || raw;
+            if(!payload || typeof payload !== 'object') throw new Error('ملف النسخة غير صالح.');
+            if(!confirm('⚠️ سيتم استبدال بيانات التطبيق الحالية بهذه النسخة. هل أنت متأكد؟')) return;
+
+            departments = Array.isArray(payload.departments) ? payload.departments : departments;
+            historyData = payload.history ? Object.values(payload.history).filter(x => x && x.id).sort((a,b) => Number(a.id) - Number(b.id)) : [];
+            tasksData = payload.tasks ? Object.values(payload.tasks).filter(x => x && x.id).sort((a,b) => Number(a.id) - Number(b.id)) : [];
+            logsData = payload.logs ? Object.values(payload.logs).filter(x => x) : [];
+            usersData = payload.users || {};
+            likesData = payload.likes || {};
+            tagsData = payload.tags ? Object.values(payload.tags).filter(x => x && x.id).sort((a,b) => Number(b.id) - Number(a.id)) : [];
+            userPoints = payload.points || {};
+            deptPhones = payload.deptPhones || {};
+            maintenanceEngineers = payload.maintenanceEngineers || [];
+            kaizenComments = payload.kaizenComments || {};
+
+            updateDeptDropdown();
+            updateDeptListUI();
+            renderHistory();
+            renderTasks();
+            renderTags();
+            if(document.getElementById('kaizenScreen') && document.getElementById('kaizenScreen').classList.contains('active')) renderKaizenFeed();
+            syncToServer();
+            alert('✅ تم استرجاع النسخة وحفظها على Firebase.');
+        } catch(err) {
+            alert('❌ فشل قراءة النسخة: ' + err.message);
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.readAsText(file);
+}
+
 function getStepPct(audit, step) {
     if(!audit.results || !audit.results[step] || audit.results[step].skipped || audit.results[step].max === 0) return 'N/A';
     return Math.round((audit.results[step].score / audit.results[step].max) * 100) + "%";
@@ -464,7 +620,7 @@ async function runAIVision(itemId, itemTitle) {
     let previewBox = document.getElementById(`img_preview_elem_${itemId}`);
     if(previewBox) previewBox.innerHTML += `<div class="ai-scan-line" style="display:block;"></div>`;
     
-    document.getElementById('aiModalText').innerHTML = "<span style='color:var(--primary);'>⏳ جاري فحص الصورة ومطابقتها بمعايير البند...</span>";
+    document.getElementById('aiModalText').textContent = "⏳ جاري فحص الصورة ومطابقتها بمعايير البند...";
     document.getElementById('aiModal').style.display = 'flex';
 
     try {
@@ -481,11 +637,12 @@ async function runAIVision(itemId, itemTitle) {
         if(result.error) throw new Error(result.error.message);
         
         let aiText = result.candidates[0].content.parts[0].text;
-        document.getElementById('aiModalText').innerHTML = aiText.replace(/```html/g, '').replace(/```/g, '');
+        aiText = aiText.replace(/```html/g, '').replace(/```/g, '');
+        document.getElementById('aiModalText').innerHTML = nl2brSafe(aiText);
         logAction('فحص صورة حقيقي بـ AI');
     } catch(e) { 
         console.error("AI Error:", e);
-        document.getElementById('aiModalText').innerHTML = `❌ <b>حدث خطأ من جوجل:</b> ${e.message}`; 
+        document.getElementById('aiModalText').textContent = `❌ حدث خطأ من جوجل: ${e.message}`; 
     } 
     finally { if(previewBox){ let s = previewBox.querySelector('.ai-scan-line'); if(s) s.remove(); } }
 }
@@ -516,7 +673,7 @@ async function autoGenerateCAPA() {
         
         const dept = currentAudit.dept;
         tasksArr.forEach(item => { 
-            let safeUniqueId = Date.now() + Math.floor(Math.random() * 10000);
+            let safeUniqueId = uniqueNumericId();
             tasksData.push({ id: safeUniqueId, dept: dept, task: item.task, type: item.type, time: item.time, status: 'pending', date: new Date().toLocaleDateString('ar-EG'), phone: '' }); 
         });
         
@@ -537,7 +694,7 @@ async function predictMachineFailures() {
     
     const resultBox = document.getElementById('aiPredictionResult');
     resultBox.style.display = 'block';
-    resultBox.innerHTML = "<span style='color:#FFEB3B;'>⏳ جاري تحليل ملايين البيانات والتاجات...</span>";
+    resultBox.textContent = "⏳ جاري تحليل ملايين البيانات والتاجات...";
 
     let openTagsData = tagsData.filter(t => t.status === 'open').map(t => `${t.machine || 'عام'} في قسم ${t.dept}: ${t.desc} (تاج ${t.color === 'red' ? 'أحمر' : 'أزرق'})`).join(" | ");
     let latestAudits = historyData.slice(-5).map(a => `${a.machine || 'عام'} (${a.dept}): نتيجته ${a.totalPct}%`).join(" | ");
@@ -563,11 +720,11 @@ async function predictMachineFailures() {
         if(result.error) throw new Error(result.error.message);
         
         let aiText = result.candidates[0].content.parts[0].text;
-        resultBox.innerHTML = aiText.replace(/\n/g, '<br>');
+        resultBox.innerHTML = nl2brSafe(aiText);
         logAction('استخدام مستشار الصيانة التنبؤية AI');
         awardPoints(25, 'تحليل تنبؤي للمصنع');
     } catch(e) { 
-        resultBox.innerHTML = `❌ <b>حدث خطأ:</b> ${e.message}`; 
+        resultBox.textContent = `❌ حدث خطأ: ${e.message}`; 
     }
 }
 
@@ -579,7 +736,7 @@ function explainItem(title) {
     else if (title.includes('خرائط') || title.includes('معايير')) expl = "💡 **يُقترح:** إدارة مرئية (تلوين العدادات، علامات تزييت CLIT).";
     else if (title.includes('تاجات') || title.includes('مصفوفة')) expl = "💡 **يُقترح:** نظام تاجات (أحمر/أزرق) وسجل כايزن للإغلاق.";
     else if (title.includes('تلوث')) expl = "💡 **يُقترح:** تحليل 5Whys وعمل تغطية (Covers) لتقليل وقت التنظيف.";
-    document.getElementById('aiModalText').innerHTML = expl.replace(/\n/g, '<br>');
+    document.getElementById('aiModalText').innerHTML = nl2brSafe(expl);
     document.getElementById('aiModal').style.display = 'flex';
 }
 
@@ -764,7 +921,7 @@ function updateDeptDropdown() {
     if(document.getElementById('qrDeptSelect')) document.getElementById('qrDeptSelect').innerHTML = strictOpts;
 }
 
-function updateDeptListUI() {
+function updateDeptListUI_legacy() {
     if(!document.getElementById('deptListContainer')) return;
     document.getElementById('deptListContainer').innerHTML = departments.map((d, i) => `
         <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border);">
@@ -780,7 +937,7 @@ function addDept() {
     }
 }
 
-function delDept(i) {
+function delDept_legacy(i) {
     if(departments.length > 1 && confirm('حذف القسم؟')) { 
         logAction(`حذف قسم: ${departments[i]}`); departments.splice(i, 1); 
         updateDeptDropdown(); updateDeptListUI(); syncToServer(); 
@@ -983,7 +1140,7 @@ function startNewAuditFlow() {
 function initAuditSequential() {
     let machineName = document.getElementById('setupMachine').value.trim() || 'عام';
     currentAudit = {
-        id: Date.now().toString(), dept: document.getElementById('selectDept').value, machine: machineName,
+        id: uniqueNumericId().toString(), dept: document.getElementById('selectDept').value, machine: machineName,
         auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'),
         stepsOrder: ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'],
         currentStepIndex: 0, results: {}
@@ -1099,9 +1256,11 @@ function renderStepSummary(stepKey, score, max) {
 }
 
 function sendToTask(taskName, targetDept) {
-    let dept = targetDept || (currentAudit ? currentAudit.dept : document.getElementById('dashDeptSelect').value);
+    let dept = sanitizeInput(targetDept || (currentAudit ? currentAudit.dept : document.getElementById('dashDeptSelect').value));
     let phone = prompt('📞 أدخل رقم واتساب قائد الماكينة لإرسال تذكيرات له (أو اتركه فارغاً):', '');
-    tasksData.push({ id: Date.now(), dept: dept, task: taskName, status: 'pending', date: new Date().toLocaleDateString('ar-EG'), phone: phone || '' });
+    const safeTaskName = sanitizeInput(taskName);
+    const safePhone = sanitizeInput(phone || '');
+    tasksData.push({ id: uniqueNumericId(), dept: dept, task: safeTaskName, status: 'pending', date: new Date().toLocaleDateString('ar-EG'), phone: safePhone });
     renderTasks(); logAction(`إضافة مهمة قسم ${dept}`); syncToServer();
     alert('تم الإضافة لخطة العمل (CAPA)!');
 }
@@ -1134,6 +1293,7 @@ function generateFinalReport() {
     setTimeout(initSignaturePad, 200); 
 }
 function saveFinalAudit() {
+    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية حفظ تقرير مراجعة.');
     if(sigCanvas) { currentAudit.signature = sigCanvas.toDataURL('image/png'); } 
     const existingIndex = historyData.findIndex(h => h.id === currentAudit.id);
     if(existingIndex >= 0) { historyData[existingIndex] = currentAudit; logAction(`تعديل تقرير ${currentAudit.dept}`); } 
@@ -1148,7 +1308,7 @@ function saveFinalAudit() {
     });
     if(allImprovements.length > 0) {
         tasksData.push({
-            id: Date.now() + Math.floor(Math.random()*1000),
+            id: uniqueNumericId(),
             isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام',
             task: `مجلد تحسينات مراجعة (${currentAudit.date})`,
             subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })),
@@ -1201,8 +1361,9 @@ function editDeptUI(idx, deptName) {
 }
 
 function addOrUpdateDept() {
-    const val = document.getElementById('newDeptInput').value.trim();
-    const phone = document.getElementById('newDeptPhone') ? document.getElementById('newDeptPhone').value.trim() : '';
+    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
+    const val = sanitizeInput(document.getElementById('newDeptInput').value);
+    const phone = document.getElementById('newDeptPhone') ? sanitizeInput(document.getElementById('newDeptPhone').value) : '';
     if(!val) return alert('برجاء كتابة اسم القسم!');
     
     if(typeof deptPhones === 'undefined') window.deptPhones = {};
@@ -1235,6 +1396,7 @@ function addOrUpdateDept() {
 }
 
 function delDept(i, deptName) {
+    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
     deptName = deptName || departments[i];
     if(departments.length > 1 && confirm(`متأكد من حذف قسم (${deptName})؟`)) { 
         logAction(`حذف قسم: ${deptName}`); departments.splice(i, 1); 
@@ -1244,15 +1406,16 @@ function delDept(i, deptName) {
 }
 
 function addEngineer() {
-    const name = document.getElementById('newEngName').value.trim();
-    const phone = document.getElementById('newEngPhone').value.trim();
+    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
+    const name = sanitizeInput(document.getElementById('newEngName').value);
+    const phone = sanitizeInput(document.getElementById('newEngPhone').value);
     if(name && phone) {
         if(typeof maintenanceEngineers === 'undefined') window.maintenanceEngineers = [];
         maintenanceEngineers.push({name, phone}); updateDeptListUI(); syncToServer(); logAction(`إضافة مهندس: ${name}`);
         document.getElementById('newEngName').value = ''; document.getElementById('newEngPhone').value = '';
     }
 }
-function delEngineer(i) { if(confirm('حذف المهندس؟')) { maintenanceEngineers.splice(i, 1); updateDeptListUI(); syncToServer(); } }
+function delEngineer(i) { if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.'); if(confirm('حذف المهندس؟')) { maintenanceEngineers.splice(i, 1); updateDeptListUI(); syncToServer(); } }
 // ==========================================
 // TASKS, CAPA FOLDERS & REPORTS
 // ==========================================
@@ -1337,12 +1500,59 @@ function closeTasksDept() {
 
 function toggleFolderSubTask(folderId, subTaskIndex) { let folder = tasksData.find(x => x.id === folderId); if(folder) { let st = folder.subTasks[subTaskIndex]; st.status = st.status === 'done' ? 'pending' : 'done'; renderTasks(); syncToServer(); } }
 function changeTaskStatus(taskId, newStatus) { let t = tasksData.find(x => x.id === taskId); if(t) { t.status = newStatus; renderTasks(); syncToServer(); } }
-function exportTasksToCSV() { /* export logic */ }
+function exportTasksToCSV() {
+    if(currentUser.role !== 'admin') return alert('عفواً، للمدير فقط');
+    if(!tasksData || tasksData.length === 0) return alert('لا توجد مهام للتصدير.');
+
+    let csvContent = "data:text/csv;charset=utf-8,%EF%BB%BF";
+    csvContent += "ID,القسم,المهمة,النوع,الوقت,الحالة,التاريخ,الماكينة,الهاتف\n";
+
+    tasksData.forEach((task) => {
+        if (task.isFolder) {
+            const subTasks = Array.isArray(task.subTasks) ? task.subTasks : [];
+            subTasks.forEach((subTask, index) => {
+                const row = [
+                    `${task.id}-${index + 1}`,
+                    task.dept || '',
+                    subTask.text || '',
+                    'Folder SubTask',
+                    '',
+                    subTask.status || 'pending',
+                    task.date || '',
+                    task.machine || '',
+                    task.phone || ''
+                ].map(toCsvCell);
+                csvContent += row.join(",") + "\n";
+            });
+        } else {
+            const row = [
+                task.id || '',
+                task.dept || '',
+                task.task || '',
+                task.type || '',
+                task.time || '',
+                task.status || 'pending',
+                task.date || '',
+                task.machine || '',
+                task.phone || ''
+            ].map(toCsvCell);
+            csvContent += row.join(",") + "\n";
+        }
+    });
+
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = `TPM_CAPA_${new Date().toLocaleDateString('ar-EG').replace(/\//g,'-')}.csv`;
+    link.click();
+    logAction('استخراج المهام إلى Excel');
+    syncToServer();
+}
 
 function addManualTaskDept() {
-    const taskVal = document.getElementById('newTaskInput').value.trim();
+    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية إضافة مهام.');
+    const taskVal = sanitizeInput(document.getElementById('newTaskInput').value);
     if(!taskVal) return alert('اكتب المهمة!');
-    tasksData.push({ id: Date.now(), dept: currentTaskDept, task: taskVal, status: 'pending', date: new Date().toLocaleDateString('ar-EG') });
+    tasksData.push({ id: uniqueNumericId(), dept: currentTaskDept, task: taskVal, status: 'pending', date: new Date().toLocaleDateString('ar-EG') });
     renderTasks(); syncToServer(); document.getElementById('newTaskInput').value = '';
 }
 
@@ -1351,7 +1561,7 @@ function renderHistory() {
     [...historyData].reverse().map(a => {
         let col = a.totalPct >= 80 ? 'success' : (a.totalPct >= 50 ? 'warning' : 'danger');
         let adminBtns = currentUser.role === 'admin' ? `<div style="margin-top: 15px; display: flex; gap: 5px; justify-content: flex-end;" onclick="event.stopPropagation();"><button class="btn btn-warning btn-sm" onclick="editReport('${a.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteReport('${a.id}')">🗑️</button></div>` : '';
-        return `<div class="card" style="border-right: 4px solid var(--${col}); cursor:pointer;" onclick="viewDetailedReport('${a.id}')"><div style="display:flex; justify-content:space-between;"><div><b>${a.dept}</b><br><span style="font-size:11px; color:gray;">${a.date}</span></div><b style="color:var(--${col}); font-size:18px;">${a.totalPct}%</b></div>${adminBtns}</div>`;
+        return `<div class="card" style="border-right: 4px solid var(--${col}); cursor:pointer;" onclick="viewDetailedReport('${a.id}')"><div style="display:flex; justify-content:space-between;"><div><b>${escapeHtml(a.dept)}</b><br><span style="font-size:11px; color:gray;">${escapeHtml(a.date)}</span></div><b style="color:var(--${col}); font-size:18px;">${a.totalPct}%</b></div>${adminBtns}</div>`;
     }).join('');
 }
 function editReport(id) { const rep = historyData.find(h => h.id === id); if(rep && confirm('تعديل؟')) { currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; renderCurrentAuditStep(); } }
@@ -1374,11 +1584,11 @@ function viewDetailedReport(id) {
         
         let imps = (r.improvements || []).length > 0 ? r.improvements.map(i => {
             let taskBtn = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? `<button class="btn btn-primary btn-sm no-print" style="padding: 2px 8px; font-size: 11px; margin-right:10px; display:inline-block;" onclick="sendToTask('${i.replace(/'/g,"")}', '${a.dept}')">➕ تحويل لمهمة</button>` : '';
-            return `<li style="margin-bottom: 8px; display:flex; justify-content:space-between; align-items:flex-start;"><span style="flex:1; color:#444;">- ${i}</span>${taskBtn}</li>`;
+            return `<li style="margin-bottom: 8px; display:flex; justify-content:space-between; align-items:flex-start;"><span style="flex:1; color:#444;">- ${escapeHtml(i)}</span>${taskBtn}</li>`;
         }).join('') : '<span style="color:#2E7D32; font-weight:bold;">لا يوجد تعليقات - أداء ممتاز</span>';
         
         let imgsHtml = '';
-        if(r.images) { Object.values(r.images).forEach(img => { imgsHtml += `<img src="${img.data}" style="height:80px; width:auto; border-radius:4px; margin:5px; border:1px solid #ccc; display:inline-block;">`; }); }
+        if(r.images) { Object.values(r.images).forEach(img => { const url = safeUrl(img.data); if (url) imgsHtml += `<img src="${url}" style="height:80px; width:auto; border-radius:4px; margin:5px; border:1px solid #ccc; display:inline-block;">`; }); }
         let galleryBlock = imgsHtml ? `<div style="margin-top:10px; background:#fafafa; padding:5px; border-radius:4px;"><b>📸 الأدلة المصورة:</b><br>${imgsHtml}</div>` : '';
 
         return `<div class="print-section" style="margin-bottom:15px; border:1px solid #ddd; padding:15px; border-radius:8px; page-break-inside: avoid; background:#fff;">
@@ -1394,12 +1604,12 @@ function viewDetailedReport(id) {
     let relatedTags = tagsData.filter(t => t.dept === a.dept && t.status === 'open' && (a.machine === 'عام' || t.machine === a.machine));
     let tagsHtml = '';
     if(relatedTags.length > 0) {
-        tagsHtml = `<h3 style="color: #C62828; margin-bottom:10px; border-bottom:2px solid #eee; padding-bottom:5px;">🏷️ تاجات مفتوحة تتطلب تدخل (للمعدة: ${a.machine}):</h3>`;
+        tagsHtml = `<h3 style="color: #C62828; margin-bottom:10px; border-bottom:2px solid #eee; padding-bottom:5px;">🏷️ تاجات مفتوحة تتطلب تدخل (للمعدة: ${escapeHtml(a.machine)}):</h3>`;
         tagsHtml += relatedTags.map(t => {
             let colorCode = t.color === 'red' ? '#D32F2F' : '#1976D2';
             let typeName = t.color === 'red' ? 'صيانة (أحمر)' : 'إنتاج (أزرق)';
             return `<div style="border-right: 5px solid ${colorCode}; background: #fff; border: 1px solid #ddd; border-right-width: 5px; padding: 10px; margin-bottom: 8px; border-radius: 6px; font-size:13px; page-break-inside: avoid;">
-                <b style="color:${colorCode};">تاج ${typeName}</b> | ${t.desc} <span style="color:#777; font-size:11px; float:left;">تاريخ الإصدار: ${t.date}</span>
+                <b style="color:${colorCode};">تاج ${typeName}</b> | ${escapeHtml(t.desc)} <span style="color:#777; font-size:11px; float:left;">تاريخ الإصدار: ${escapeHtml(t.date)}</span>
             </div>`;
         }).join('');
     }
@@ -1408,7 +1618,8 @@ function viewDetailedReport(id) {
     let printSigDiv = document.getElementById('printSignature');
     if(printSigDiv) {
         if(a.signature) {
-            printSigDiv.innerHTML = `<div style="display:flex; justify-content:space-between; text-align:center; font-weight:bold; margin-bottom: 40px; align-items:flex-end;"><div style="flex:1;">توقيع المراجع<br><img src="${a.signature}" style="height: 60px; mix-blend-mode: multiply; margin-top:5px;"></div><div style="flex:1;">مدير الصيانة<br><br>.......................</div><div style="flex:1;">مدير المصنع<br><br>.......................</div></div><div style="text-align:left; font-size:11px; color:#777; border-top: 1px dashed #ccc; padding-top: 5px;">تم الإصدار والتقييم عبر نظام (TPM Enterprise) - إعداد: م. محمد فايز</div>`;
+            const signatureUrl = safeUrl(a.signature);
+            printSigDiv.innerHTML = `<div style="display:flex; justify-content:space-between; text-align:center; font-weight:bold; margin-bottom: 40px; align-items:flex-end;"><div style="flex:1;">توقيع المراجع<br>${signatureUrl ? `<img src="${signatureUrl}" style="height: 60px; mix-blend-mode: multiply; margin-top:5px;">` : ''}</div><div style="flex:1;">مدير الصيانة<br><br>.......................</div><div style="flex:1;">مدير المصنع<br><br>.......................</div></div><div style="text-align:left; font-size:11px; color:#777; border-top: 1px dashed #ccc; padding-top: 5px;">تم الإصدار والتقييم عبر نظام (TPM Enterprise) - إعداد: م. محمد فايز</div>`;
         } else {
              printSigDiv.innerHTML = `<div style="display:flex; justify-content:space-between; text-align:center; font-weight:bold; margin-bottom: 40px;"><div style="flex:1;">توقيع المراجع<br><br>.......................</div><div style="flex:1;">مدير الصيانة<br><br>.......................</div><div style="flex:1;">مدير المصنع<br><br>.......................</div></div><div style="text-align:left; font-size:11px; color:#777; border-top: 1px dashed #ccc; padding-top: 5px;">تم الإصدار والتقييم عبر نظام (TPM Enterprise) - إعداد: م. محمد فايز</div>`;
         }
@@ -1467,15 +1678,16 @@ function renderKaizenFeed() {
         let comments = kaizenComments[likeId] || [];
         let commentsHtml = comments.map(c => `
             <div style="background:#fff; padding:8px; border-radius:8px; margin-bottom:5px; border:1px solid #eee;">
-                <b style="font-size:12px; color:var(--primary);">${c.user}</b> <span style="font-size:10px; color:gray;">${c.date}</span>
-                <div style="font-size:13px; margin-top:3px;">${c.text}</div>
+                <b style="font-size:12px; color:var(--primary);">${escapeHtml(c.user)}</b> <span style="font-size:10px; color:gray;">${escapeHtml(c.date)}</span>
+                <div style="font-size:13px; margin-top:3px;">${escapeHtml(c.text)}</div>
             </div>
         `).join('');
 
+        const postImgUrl = safeUrl(p.data);
         return `<div class="kaizen-post">
-            <div class="kaizen-header"><b>${p.auditor}</b> <span style="font-size:11px;color:gray;">${p.dept}</span></div>
-            <img src="${p.data}" class="kaizen-img">
-            <div class="kaizen-body"><b>${p.title}</b></div>
+            <div class="kaizen-header"><b>${escapeHtml(p.auditor)}</b> <span style="font-size:11px;color:gray;">${escapeHtml(p.dept)}</span></div>
+            ${postImgUrl ? `<img src="${postImgUrl}" class="kaizen-img">` : ''}
+            <div class="kaizen-body"><b>${escapeHtml(p.title)}</b></div>
             <div class="kaizen-footer" style="border-bottom: 1px solid var(--border);">
                 <button class="action-btn ${isLiked?'liked':''}" onclick="toggleKaizenLike('${likeId}')">👍 (${likeCount})</button>
                 <button class="action-btn" onclick="document.getElementById('comment_sec_${likeId}').style.display='block'">💬 تعليق (${comments.length})</button>
@@ -1493,7 +1705,7 @@ function renderKaizenFeed() {
 
 function addKaizenComment(likeId) {
     let input = document.getElementById(`comment_input_${likeId}`);
-    let text = input.value.trim();
+    let text = sanitizeInput(input.value);
     if(!text) return;
     if(!kaizenComments[likeId]) kaizenComments[likeId] = [];
     
@@ -1528,18 +1740,19 @@ function deleteKaizenPost(auditId, imgKey) {
 // TAGS MANAGEMENT
 // ==========================================
 function addNewTag() {
-    let desc = document.getElementById('newTagDesc').value.trim();
+    if(!hasRole('admin', 'auditor')) return alert('عفواً، هذه الصلاحية للمراجع أو المدير فقط.');
+    let desc = sanitizeInput(document.getElementById('newTagDesc').value);
     let color = document.getElementById('newTagColor').value;
-    let dept = document.getElementById('newTagDept').value;
-    let machine = document.getElementById('newTagMachine').value.trim();
-    let spareParts = document.getElementById('newTagSpareParts') ? document.getElementById('newTagSpareParts').value.trim() : '';
+    let dept = sanitizeInput(document.getElementById('newTagDept').value);
+    let machine = sanitizeInput(document.getElementById('newTagMachine').value);
+    let spareParts = document.getElementById('newTagSpareParts') ? sanitizeInput(document.getElementById('newTagSpareParts').value) : '';
     let engSelect = document.getElementById('newTagEngineer'); // إضافة المهندس
 
     if(!desc) return alert('برجاء كتابة وصف المشكلة!');
     
     let fullDesc = spareParts ? `${desc} [مطلوب: ${spareParts}]` : desc;
 
-    tagsData.unshift({ id: Date.now(), desc: fullDesc, color: color, dept: dept, machine: machine, image: currentTagImg, status: 'open', auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG') });
+    tagsData.unshift({ id: uniqueNumericId(), desc: fullDesc, color: color, dept: dept, machine: machine, image: currentTagImg, status: 'open', auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG') });
     
     // 🟢 الإضافة الجديدة: رسالة الواتساب لمهندس الصيانة للتاجات الحمراء 🟢
     if(color === 'red' && engSelect && engSelect.value) {
@@ -1566,6 +1779,7 @@ function closeTag(id) {
 }
 
 function updateTagState(id, newState) {
+    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية تعديل حالة التاج.');
     let t = tagsData.find(x => x.id === id);
     if(t) { 
         t.status = newState; 
@@ -1588,7 +1802,8 @@ function renderTags() {
 
     c.innerHTML = filteredTags.length === 0 ? '<div style="color:gray;">لا توجد تاجات مطابقة</div>' : filteredTags.map(t => {
         let tagClass = t.color === 'red' ? 'tag-red' : 'tag-blue';
-        let imgHtml = t.image ? `<img src="${t.image}" style="width:100%; max-height:200px; object-fit:cover; border-radius:8px; margin-top:10px; margin-bottom:10px; border:1px solid var(--border);">` : '';
+        const tagImgUrl = safeUrl(t.image);
+        let imgHtml = tagImgUrl ? `<img src="${tagImgUrl}" style="width:100%; max-height:200px; object-fit:cover; border-radius:8px; margin-top:10px; margin-bottom:10px; border:1px solid var(--border);">` : '';
         let canDelete = currentUser.role === 'admin' || currentUser.name === t.auditor;
         let deleteBtnHtml = canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteTag(${t.id})" style="margin-right:5px;">🗑️ مسح</button>` : '';
 
@@ -1604,18 +1819,19 @@ function renderTags() {
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                 <div>
                     <b style="color:${t.color==='red'?'#D32F2F':'#1976D2'}; font-size:15px;">تاج ${t.color==='red'?'أحمر (صيانة)':'أزرق (إنتاج)'}</b>
-                    <div style="font-size:11px; color:var(--gray); margin-top:3px; font-weight:bold;">🏭 ${t.dept} | ⚙️ ${t.machine || 'عام'}</div>
-                    <div style="font-size:10px; color:var(--gray); margin-bottom:5px;">📅 ${t.date} - 👤 ${t.auditor}</div>
+                    <div style="font-size:11px; color:var(--gray); margin-top:3px; font-weight:bold;">🏭 ${escapeHtml(t.dept)} | ⚙️ ${escapeHtml(t.machine || 'عام')}</div>
+                    <div style="font-size:10px; color:var(--gray); margin-bottom:5px;">📅 ${escapeHtml(t.date)} - 👤 ${escapeHtml(t.auditor)}</div>
                 </div>
                 <div style="display:flex; gap:5px; align-items:center;">${deleteBtnHtml} ${statusSelect}</div>
             </div>
             ${imgHtml}
-            <div style="font-size:14px; font-weight:bold; margin-top:5px; background:var(--light-gray); padding:8px; border-radius:6px;">${t.desc}</div>
+            <div style="font-size:14px; font-weight:bold; margin-top:5px; background:var(--light-gray); padding:8px; border-radius:6px;">${escapeHtml(t.desc)}</div>
         </div>`;
     }).join('');
 }
 
 function deleteTag(id) {
+    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية مسح التاج.');
     if(confirm('هل أنت متأكد من مسح هذا التاج نهائياً؟')) {
         tagsData = tagsData.filter(x => x.id !== id);
         renderTags(); syncToServer(); logAction('مسح تاج');
@@ -1662,8 +1878,8 @@ function executeGlobalSearch() {
         resultsHtml += `<div style="padding:8px 10px; background:var(--primary-light); color:var(--primary-dark); font-weight:bold; font-size:12px;">📊 التقارير والمراجعات</div>`;
         foundAudits.forEach(a => {
             resultsHtml += `<div style="padding:10px; border-bottom:1px solid #eee; cursor:pointer;" onclick="viewDetailedReport('${a.id}'); document.getElementById('searchResults').style.display='none';">
-                <b>${a.dept} (ماكينة: ${a.machine || 'عام'})</b> <span style="float:left; color:var(--success); font-weight:bold;">${a.totalPct}%</span>
-                <div style="font-size:11px; color:gray;">📅 ${a.date} | 👤 ${a.auditor}</div>
+                <b>${escapeHtml(a.dept)} (ماكينة: ${escapeHtml(a.machine || 'عام')})</b> <span style="float:left; color:var(--success); font-weight:bold;">${a.totalPct}%</span>
+                <div style="font-size:11px; color:gray;">📅 ${escapeHtml(a.date)} | 👤 ${escapeHtml(a.auditor)}</div>
             </div>`;
         });
     }
@@ -1678,9 +1894,10 @@ function executeGlobalSearch() {
         resultsHtml += `<div style="padding:8px 10px; background:#ffebee; color:#d32f2f; font-weight:bold; font-size:12px;">🏷️ التاجات والمشكلات</div>`;
         foundTags.forEach(t => {
             let status = t.status === 'open' ? '🔴 مفتوح' : (t.status === 'closed' ? '🟢 مغلق' : '🟡 قيد العمل');
-            resultsHtml += `<div style="padding:10px; border-bottom:1px solid #eee; cursor:pointer;" onclick="showScreen('tagsScreen'); document.getElementById('filterTagMachine').value='${t.machine||''}'; renderTags(); document.getElementById('searchResults').style.display='none';">
-                <b>${t.desc.substring(0,30)}...</b> <span style="float:left; font-size:11px; font-weight:bold;">${status}</span>
-                <div style="font-size:11px; color:gray;">🏭 ${t.dept} (⚙️ ${t.machine || 'عام'})</div>
+            const machineFilterValue = sanitizeInput(t.machine || '').replace(/'/g, "\\'");
+            resultsHtml += `<div style="padding:10px; border-bottom:1px solid #eee; cursor:pointer;" onclick="showScreen('tagsScreen'); document.getElementById('filterTagMachine').value='${machineFilterValue}'; renderTags(); document.getElementById('searchResults').style.display='none';">
+                <b>${escapeHtml(t.desc.substring(0,30))}...</b> <span style="float:left; font-size:11px; font-weight:bold;">${status}</span>
+                <div style="font-size:11px; color:gray;">🏭 ${escapeHtml(t.dept)} (⚙️ ${escapeHtml(t.machine || 'عام')})</div>
             </div>`;
         });
     }
@@ -1808,8 +2025,9 @@ function handleKaizenImage(event, type) {
 }
 
 function submitManualKaizen() {
-    const title = document.getElementById('newKaizenTitle').value.trim();
-    const dept = document.getElementById('newKaizenDept').value;
+    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية نشر كايزن.');
+    const title = sanitizeInput(document.getElementById('newKaizenTitle').value);
+    const dept = sanitizeInput(document.getElementById('newKaizenDept').value);
     
     if(!title || !kaizenImgs.before || !kaizenImgs.after) return alert('برجاء كتابة الوصف ورفع صورتين (قبل وبعد).');
     
@@ -1842,7 +2060,7 @@ function submitManualKaizen() {
             const downloadURL = await uploadImageToStorage(combinedImgBase64, `kaizen_images/${dept}`);
             
             if (downloadURL) {
-                let fakeAuditId = Date.now().toString();
+                let fakeAuditId = uniqueNumericId().toString();
                 let fakeAudit = {
                     id: fakeAuditId, dept: dept, auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'),
                     totalPct: 100, stepsOrder: ['ManualKaizen'], results: { 'ManualKaizen': { images: { 'img_1': { title: title, data: downloadURL } } } }

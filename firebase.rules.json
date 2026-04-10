@@ -1,0 +1,37 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    "tpm_system": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('tpm_system/users/' + auth.uid).val() === 'admin'",
+      "history": {
+        ".read": "auth != null",
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid).val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'auditor')"
+      },
+      "tasks": {
+        ".read": "auth != null",
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid).val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'auditor')"
+      },
+      "tags": {
+        ".read": "auth != null",
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid).val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'auditor')"
+      },
+      "kaizenComments": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
+      "users": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid).val() === 'admin'"
+      },
+      "points": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
+      "logs": {
+        ".read": "auth != null && root.child('tpm_system/users/' + auth.uid).val() === 'admin'",
+        ".write": "auth != null"
+      }
+    }
+  }
+}

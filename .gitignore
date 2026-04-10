@@ -1,0 +1,7 @@
+node_modules/
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
+# Runtime secrets (keep local only)
+config.local.js

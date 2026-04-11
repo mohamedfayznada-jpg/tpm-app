@@ -1,4 +1,3 @@
-
 // ==========================================
 // FIREBASE CONFIG & GLOBAL VARIABLES
 // ==========================================
@@ -14,11 +13,10 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
-
 let globalApiKeys = { imgbb: "", gemini: "" }; // متغير لاستقبال المفاتيح من السيرفر
 
-
 let departments = []; let historyData = []; let tasksData = [];
+// ... (كمل باقي الكود عادي) ...ta = [];
 let usersData = {}; let logsData = []; let likesData = {};
 let currentUser = { name: '', username: '', role: '' };
 let radarChartInstance = null; let trendChartInstance = null;

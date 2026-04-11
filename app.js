@@ -15,11 +15,8 @@ if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
 
-const GEMINI_API_KEY = (
-    (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey) ||
-    localStorage.getItem('tpm_gemini_api_key') ||
-    ''
-).trim();
+let globalApiKeys = { imgbb: "", gemini: "" }; // متغير لاستقبال المفاتيح من السيرفر
+
 
 let departments = []; let historyData = []; let tasksData = [];
 let usersData = {}; let logsData = []; let likesData = {};
@@ -107,10 +104,12 @@ const IMGBB_API_KEY = (
 
 // احتفظنا بنفس اسم الدالة القديمة عشان منعدلش الكود كله!
 async function uploadImageToStorage(dataUrl, folderName) {
-    if (!IMGBB_API_KEY) {
-        alert('⚠️ مفتاح ImgBB غير مضبوط. أضفه في window.__TPM_CONFIG__ أو localStorage (tpm_imgbb_api_key).');
+    if (!globalApiKeys.imgbb) {
+        alert('⚠️ مفتاح ImgBB غير موجود بالسيرفر. برجاء تواصل مع المدير لإضافته.');
         return null;
     }
+    const IMGBB_API_KEY = globalApiKeys.imgbb;
+    // ... وكمل باقي الدالة زي ما هي (try / catch) ...
     try {
         // ImgBB بيحتاج الصورة Base64 صافي من غير الديباجة اللي في الأول
         const base64Data = dataUrl.split(',')[1]; 
@@ -202,6 +201,10 @@ firebase.auth().onAuthStateChanged((user) => {
                 let fallbackLogId = Date.now();
                 logsData = data.logs ? Object.values(data.logs).filter(x => x).map(l => { if(!l.id) l.id = fallbackLogId++; return l; }).sort((a,b) => Number(a.id) - Number(b.id)) : [];
                 usersData = data.users || {};
+// سحب المفاتيح لجميع العمال
+                globalApiKeys = data.api_keys || { imgbb: "", gemini: "" };
+                if(document.getElementById('imgbbKeyInput')) document.getElementById('imgbbKeyInput').value = globalApiKeys.imgbb;
+                if(document.getElementById('geminiKeyInput')) document.getElementById('geminiKeyInput').value = globalApiKeys.gemini;
                 likesData = data.likes || {}; 
                 tagsData = data.tags ? Object.values(data.tags).filter(x => x && x.id).sort((a,b) => Number(b.id) - Number(a.id)) : [];
                 userPoints = data.points || {};
@@ -622,7 +625,8 @@ function generateOPLPDF() {
 // TRUE AI VISION INSPECTOR & AI CAPA
 // ==========================================
 async function runAIVision(itemId, itemTitle) {
-    const apiKey = GEMINI_API_KEY.trim(); 
+    const apiKey = globalApiKeys.gemini;
+    if(!apiKey) return alert('⚠️ مفتاح Gemini غير موجود بالسيرفر. تواصل مع المدير.');
     if(!apiKey || apiKey.includes("حط_المفتاح")) return alert('برجاء زرع مفتاح Gemini في الكود أولاً.');
 
     let previewBox = document.getElementById(`img_preview_elem_${itemId}`);
@@ -657,7 +661,8 @@ async function runAIVision(itemId, itemTitle) {
 
 async function autoGenerateCAPA() {
     if(currentStepImprovements.length === 0) return alert('لا توجد فرص تحسين لتوليد مهام لها.');
-    const apiKey = GEMINI_API_KEY.trim(); 
+   const apiKey = globalApiKeys.gemini;
+    if(!apiKey) return alert('⚠️ مفتاح Gemini غير موجود بالسيرفر. تواصل مع المدير.');
     if(!apiKey || apiKey.includes("حط_المفتاح")) return alert('برجاء زرع مفتاح Gemini في الكود لتفعيل التوليد الآلي.');
     
     document.getElementById('aiCapaBtn').innerText = "⏳ جاري التوليد...";
@@ -697,7 +702,8 @@ async function autoGenerateCAPA() {
 }
 
 async function predictMachineFailures() {
-    const apiKey = GEMINI_API_KEY.trim(); 
+    const apiKey = globalApiKeys.gemini;
+    if(!apiKey) return alert('⚠️ مفتاح Gemini غير موجود بالسيرفر. تواصل مع المدير.');
     if(!apiKey || apiKey.includes("حط_المفتاح")) return alert('برجاء زرع مفتاح Gemini في الكود.');
     
     const resultBox = document.getElementById('aiPredictionResult');
@@ -2136,4 +2142,22 @@ function awardPoints(points, reason) {
     toast.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--success); color:white; padding:10px 20px; border-radius:20px; font-weight:bold; z-index:9999; box-shadow: 0 4px 10px rgba(0,0,0,0.3); animation: fadeIn 0.3s, fadeOut 0.5s 2.5s forwards;";
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
+}
+
+// ==========================================
+// CENTRAL API KEYS MANAGEMENT (للمدير فقط)
+// ==========================================
+function saveApiKeys() {
+    if(!hasRole('admin')) return alert('صلاحية المدير فقط.');
+    const imgbb = document.getElementById('imgbbKeyInput').value.trim();
+    const gemini = document.getElementById('geminiKeyInput').value.trim();
+    
+    document.getElementById('cloudStatus').innerHTML = "⏳ جاري حفظ المفاتيح...";
+    
+    db.ref('tpm_system/api_keys').set({ imgbb: imgbb, gemini: gemini })
+    .then(() => {
+        alert('✅ تم حفظ المفاتيح المركزية! ستعمل الآن عند جميع العمال تلقائياً.');
+        document.getElementById('cloudStatus').innerHTML = "☁️ متصل ومزامن";
+    })
+    .catch(e => alert('❌ خطأ: ' + e.message));
 }

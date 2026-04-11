@@ -418,6 +418,22 @@
     </div>
 
     <div class="container screen" id="settingsScreen">
+<div class="card btn-role-admin">
+            <div class="card-title">🔑 مفاتيح الربط المركزية للمصنع (API Keys)</div>
+            <p style="font-size:11px; color:var(--gray); margin-bottom:10px;">أضف المفاتيح هنا مرة واحدة، وسيتم توزيعها وتفعيلها لجميع العمال تلقائياً عبر السيرفر.</p>
+            
+            <div class="form-group">
+                <label>مفتاح رفع الصور (ImgBB):</label>
+                <input type="password" id="imgbbKeyInput" class="form-control" placeholder="أدخل مفتاح ImgBB هنا...">
+            </div>
+
+            <div class="form-group">
+                <label>مفتاح الذكاء الاصطناعي (Gemini):</label>
+                <input type="password" id="geminiKeyInput" class="form-control" placeholder="أدخل مفتاح Gemini هنا...">
+            </div>
+            
+            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 5px;" onclick="saveApiKeys()">💾 حفظ المفاتيح في السيرفر</button>
+        </div>
         <div class="card btn-role-admin">
             <div class="card-title">💾 استخراج البيانات (Excel)</div>
             <p style="font-size:11px; color:var(--gray); margin-bottom:10px;">تحميل جميع تقارير المراجعات المحفوظة بصيغة Excel (CSV).</p>

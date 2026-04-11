@@ -271,65 +271,70 @@ kaizenComments = data.kaizenComments || {};
 });
 
 // ==========================================
-// SYNC TO SERVER (دالة الحفظ الذكية - الإصدار النهائي)
+// SYNC TO SERVER (دالة الحفظ المدرعة - ضد التهنيج)
 // ==========================================
 function syncToServer() {
-    if (!isDataLoaded || !firebase.auth().currentUser) return; 
-    
+    if (!isDataLoaded || !firebase.auth().currentUser) return;
+
     let cloudStatus = document.getElementById('cloudStatus');
     if(cloudStatus) {
-        if(isOnline) {
-            cloudStatus.innerHTML = "⏳ جاري الحفظ...";
-            cloudStatus.style.backgroundColor = "rgba(46, 125, 50, 0.9)";
-        } else {
-            cloudStatus.innerHTML = "📴 بالانتظار (سيتم الرفع عند عودة النت)";
-            cloudStatus.style.backgroundColor = "#F57F17";
-        }
+        cloudStatus.innerHTML = isOnline ? "⏳ جاري الحفظ..." : "📴 بالانتظار (سيتم الرفع عند عودة النت)";
+        cloudStatus.style.backgroundColor = isOnline ? "rgba(46, 125, 50, 0.9)" : "#F57F17";
     }
-    
-    try {
-        let safeHistory = {}; if(historyData) historyData.forEach(h => { if(h && h.id) safeHistory[h.id] = h; }); 
-        let safeTasks = {}; if(tasksData) tasksData.forEach(t => { if(t && t.id) safeTasks[t.id] = t; }); 
-        let safeTags = {}; if(tagsData) tagsData.forEach(t => { if(t && t.id) safeTags[t.id] = t; }); 
-        let safeLogs = {}; if(logsData) logsData.forEach(l => { if(l && l.id) safeLogs[l.id] = l; }); 
 
-        // 🟢 البيانات المسموح لأي حد في المصنع يحفظها (كايزن وتاجات)
-        let updates = {
-            'tpm_system/history': safeHistory,
-            'tpm_system/tasks': safeTasks,
-            'tpm_system/tags': safeTags,
-            'tpm_system/kaizenComments': kaizenComments || {},
-            'tpm_system/points': userPoints || {},
-            'tpm_system/likes': likesData || {},
-            'tpm_system/logs': safeLogs
+    try {
+        let safeHistory = {}; if(historyData) historyData.forEach(h => { if(h && h.id) safeHistory[h.id] = h; });
+        let safeTasks = {}; if(tasksData) tasksData.forEach(t => { if(t && t.id) safeTasks[t.id] = t; });
+        let safeTags = {}; if(tagsData) tagsData.forEach(t => { if(t && t.id) safeTags[t.id] = t; });
+        let safeLogs = {}; if(logsData) logsData.forEach(l => { if(l && l.id) safeLogs[l.id] = l; });
+
+        // البيانات اللي أي حد (مدير أو عامل) يقدر يرفعها
+        let finalData = {
+            history: safeHistory,
+            tasks: safeTasks,
+            tags: safeTags,
+            logs: safeLogs,
+            kaizenComments: kaizenComments || {},
+            points: userPoints || {},
+            likes: likesData || {}
         };
 
-        // 🔴 البيانات المسموح للمدير فقط يحفظها (عشان الفايربيز ميرفضش طلب العمال)
+        // البيانات اللي المدير فقط يقدر يرفعها
         if (hasRole('admin')) {
-            updates['tpm_system/departments'] = departments || [];
-            updates['tpm_system/users'] = usersData || {};
-            updates['tpm_system/deptPhones'] = deptPhones || {};
-            updates['tpm_system/maintenanceEngineers'] = maintenanceEngineers || [];
+            finalData.departments = departments || [];
+            finalData.users = usersData || {};
+            finalData.deptPhones = deptPhones || {};
+            finalData.maintenanceEngineers = maintenanceEngineers || [];
+            if (globalApiKeys && globalApiKeys.imgbb) {
+                finalData.api_keys = globalApiKeys;
+            }
         }
 
-        // الحفظ الدقيق للمسارات عشان الفايربيز يقبل الداتا
-        db.ref().update(updates)
-        .then(() => { 
-            if(cloudStatus && isOnline) { 
-                cloudStatus.innerHTML = "☁️ متصل ومزامن"; 
-                cloudStatus.style.backgroundColor = "rgba(46, 125, 50, 0.9)"; 
-            } 
+        // 🛡️ الفلتر السحري: تنظيف إجباري لأي قيم (Undefined) بتعمل كراش للفايربيز
+        const cleanData = JSON.parse(JSON.stringify(finalData));
+
+        db.ref('tpm_system').update(cleanData)
+        .then(() => {
+            if(cloudStatus && isOnline) {
+                cloudStatus.innerHTML = "☁️ متصل ومزامن";
+                cloudStatus.style.backgroundColor = "rgba(46, 125, 50, 0.9)";
+            }
         })
         .catch(e => {
-            console.error("Firebase Save Error:", e);
-            if(cloudStatus && isOnline) { 
-                cloudStatus.innerHTML = "❌ فشل الحفظ (مرفوض)"; 
-                cloudStatus.style.backgroundColor = "#C62828"; 
-                alert("⚠️ النظام رفض الحفظ! راجع صلاحيات Firebase.");
+            console.error("Firebase Update Error:", e);
+            if(cloudStatus) {
+                cloudStatus.innerHTML = "❌ فشل الحفظ (مرفوض)";
+                cloudStatus.style.backgroundColor = "#C62828";
             }
+            alert("⚠️ الفايربيز يرفض الحفظ: " + e.message);
         });
     } catch(e) {
-        console.error("Sync Data Error:", e);
+        console.error("Sync JS Error:", e);
+        if(cloudStatus) {
+            cloudStatus.innerHTML = "❌ خطأ برمجي";
+            cloudStatus.style.backgroundColor = "#C62828";
+        }
+        alert("⚠️ خطأ في بيانات التطبيق يمنع الحفظ: " + e.message);
     }
 }
 // ==========================================

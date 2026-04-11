@@ -503,15 +503,19 @@ async function runVoiceAuditLoop() {
 
 function exportToCSV() {
     if(currentUser.role !== 'admin') return alert('عفواً، للمدير فقط');
-    // 🛡️ فلترة الكايزن من الإكسيل
+    
+    // 🛡️ فلترة الكايزن من ملف الإكسيل
     let realAudits = historyData.filter(a => !(a.stepsOrder && a.stepsOrder.includes('ManualKaizen')));
+    
     if(realAudits.length === 0) return alert('لا توجد تقارير.');
     let csvContent = "data:text/csv;charset=utf-8,%EF%BB%BF"; 
     csvContent += "ID,القسم,المراجع,التاريخ,النتيجة,JH-0,JH-1,JH-2,JH-3,JH-4,JH-5,JH-6\n";
+    
     realAudits.forEach(a => {
         let row = [ a.id, a.dept, a.auditor, a.date, a.totalPct + "%", getStepPct(a, 'JH-0'), getStepPct(a, 'JH-1'), getStepPct(a, 'JH-2'), getStepPct(a, 'JH-3'), getStepPct(a, 'JH-4'), getStepPct(a, 'JH-5'), getStepPct(a, 'JH-6') ];
         csvContent += row.join(",") + "\n";
     });
+    
     const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = `TPM_Reports_${new Date().toLocaleDateString('ar-EG').replace(/\//g,'-')}.csv`; link.click();
     logAction('استخراج التقارير إلى Excel'); syncToServer();
 }
@@ -980,7 +984,7 @@ function updateHomeDashboard() {
     let bestDept = { name: 'لا يوجد', score: -1, openTags: 999 };
 
     departments.forEach(d => {
-        // 🛡️ تجاهل الكايزن اليدوي في حسابات المصنع
+        // 🛡️ الفلتر هنا: تجاهل الكايزن اليدوي
         let dAudits = historyData.filter(h => h.dept === d && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
         let latestPct = 0;
         if(dAudits.length > 0) {
@@ -1026,7 +1030,7 @@ function updateHomeDashboard() {
     }
 
     let gridHtml = departments.map(d => {
-        // 🛡️ تجاهل الكايزن اليدوي في كروت الأقسام
+        // 🛡️ الفلتر هنا برضه: تجاهل الكايزن اليدوي
         let dAudits = historyData.filter(h => h.dept === d && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
         let sc = dAudits.length > 0 ? dAudits[dAudits.length - 1].totalPct : 0;
         let col = sc >= 80 ? 'var(--success)' : (sc >= 50 ? 'var(--warning)' : 'var(--danger)');
@@ -1068,7 +1072,7 @@ function updateDeptDashboard() {
     document.getElementById('deptKpiTasks').innerText = pendingTasks;
     document.getElementById('deptKpiComp').innerText = `${compRate}%`;
 
-    // 🛡️ تجاهل الكايزن اليدوي في رسومات القسم
+    // 🛡️ الفلتر السحري لإخفاء التقارير الوهمية من الإحصائيات والرسم البياني
     let audits = historyData.filter(h => h.dept === currentViewedDept && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')) && (machine === '' || (h.machine && h.machine.toLowerCase().includes(machine))));
     let scores = [0,0,0,0,0,0,0];
     
@@ -1567,7 +1571,7 @@ function addManualTaskDept() {
 }
 
 function renderHistory() {
-    // 🛡️ فلترة التقارير الحقيقية فقط وإخفاء تقارير الكايزن الوهمية
+    // 🛡️ فلترة التقارير الحقيقية فقط وإخفاء تقارير الكايزن الوهمية تماماً
     let realAudits = historyData.filter(a => !(a.stepsOrder && a.stepsOrder.includes('ManualKaizen')));
 
     document.getElementById('historyListContainer').innerHTML = realAudits.length === 0 ? '<div style="color:gray;">لا توجد تقارير</div>' : 

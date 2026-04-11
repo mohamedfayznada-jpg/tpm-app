@@ -77,6 +77,9 @@
         <div class="card" style="text-align: center; padding: 40px 20px; margin-top: 50px;">
             <div style="font-size: 50px; margin-bottom: 10px;">🔐</div>
             <h2 style="color: var(--primary); margin-bottom: 20px;">تسجيل الدخول</h2>
+<div style="margin-top: 15px;">
+                <a href="#" style="font-size:13px; color:var(--primary); font-weight:bold; text-decoration:none;" onclick="showScreen('registerScreen')">🆕 ليس لديك حساب؟ إنشاء حساب جديد</a>
+            </div>
             <p style="font-size: 12px; color: var(--gray); margin-bottom: 15px;">برجاء كتابة بياناتك أو استخدم البصمة</p>
             <input type="text" id="loginUsername" class="form-control" placeholder="اسم المستخدم (مثلاً: fayez)..." style="margin-bottom: 10px;">
             <input type="password" id="loginPassword" class="form-control" placeholder="كلمة المرور..." style="margin-bottom: 15px;">
@@ -89,7 +92,23 @@
             </div>
         </div>
     </div>
-
+<div class="container screen" id="registerScreen">
+        <div class="card" style="text-align: center; padding: 40px 20px; margin-top: 50px;">
+            <div style="font-size: 50px; margin-bottom: 10px;">👤</div>
+            <h2 style="color: var(--primary); margin-bottom: 20px;">إنشاء حساب جديد</h2>
+            <p style="font-size: 12px; color: var(--gray); margin-bottom: 15px;">املأ بياناتك للانضمام إلى نظام المصنع</p>
+            
+            <input type="text" id="regName" class="form-control" placeholder="اسمك بالكامل (مثال: م. أحمد)..." style="margin-bottom: 10px;">
+            <input type="text" id="regUsername" class="form-control" placeholder="اسم المستخدم بالانجليزي (مثال: ahmed)..." style="margin-bottom: 10px;">
+            <input type="password" id="regPassword" class="form-control" placeholder="كلمة المرور (6 أحرف على الأقل)..." style="margin-bottom: 20px;">
+            
+            <button class="btn btn-success" onclick="registerNewUser()">تسجيل الحساب</button>
+            
+            <div style="margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                <a href="#" style="font-size:13px; color:var(--gray); text-decoration:none;" onclick="showScreen('loginScreen')">🔙 العودة لتسجيل الدخول</a>
+            </div>
+        </div>
+    </div>
     <div class="container screen" id="homeScreen">
         <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:15px;">
             <div style="flex:1; background:var(--white); border:1px solid var(--border); padding:15px 10px; border-radius:12px; text-align:center; box-shadow:var(--shadow);">

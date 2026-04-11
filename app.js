@@ -196,7 +196,22 @@ firebase.auth().onAuthStateChanged((user) => {
                 historyData = data.history ? Object.values(data.history).filter(x => x && x.id).sort((a,b) => Number(a.id) - Number(b.id)) : [];
                 tasksData = data.tasks ? Object.values(data.tasks).filter(x => x && x.id).sort((a,b) => Number(a.id) - Number(b.id)) : [];
                 let fallbackLogId = Date.now();
-                logsData = data.logs ? Object.values(data.logs).filter(x => x).map(l => { if(!l.id) l.id = fallbackLogId++; return l; }).sort((a,b) => Number(a.id) - Number(b.id)) : [];
+                logsData = data.logs ? Object.values(data.logs).filter(x => x).map(l => { if(!l.id) l.id = fallbackLogId++; return l; }).sort((a,b) => Number(a.id) - Number(b.id)) : [];// 📡 رادار الإشعارات للمدير: كشف أي مستخدم جديد يسجل
+               // 📡 رادار الإشعارات للمدير: كشف أي مستخدم جديد يسجل
+                let oldUsersCount = Object.keys(usersData).length;
+                let newUsersCount = Object.keys(data.users || {}).length;
+                
+                if (oldUsersCount > 0 && newUsersCount > oldUsersCount && currentUser.role === 'admin') {
+                    let newUsrs = Object.keys(data.users || {}).filter(u => !usersData[u]);
+                    newUsrs.forEach(nu => {
+                        let toast = document.createElement('div');
+                        toast.innerHTML = `🚨 <b>إشعار للإدارة:</b><br>مستخدم جديد سجل الآن (${nu})<br>ادخل الإعدادات لتعديل صلاحياته.`;
+                        toast.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); width:90%; max-width:400px; background:#1565C0; color:white; padding:15px; border-radius:12px; font-weight:bold; z-index:9999; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align:center; animation: fadeIn 0.3s, fadeOut 0.5s 6s forwards;";
+                        document.body.appendChild(toast);
+                        setTimeout(() => toast.remove(), 6500);
+                    });
+                }
+                // ⚠️ تحديث المستخدمين لازم يكون هنا (بعد المقارنة مش قبلها)
                 usersData = data.users || {};
 // سحب المفاتيح لجميع العمال
                 globalApiKeys = data.api_keys || { imgbb: "", gemini: "" };
@@ -348,6 +363,50 @@ async function login() {
     } catch (error) {
         if(cloudStatus) cloudStatus.innerHTML = "❌ متصل (بدون مزامنة)";
         if(error.code) alert('اسم المستخدم أو كلمة المرور غير صحيحة!');
+    }
+}
+
+async function registerNewUser() {
+    const name = sanitizeInput(document.getElementById('regName').value);
+    const username = sanitizeInput(document.getElementById('regUsername').value).toLowerCase();
+    const password = document.getElementById('regPassword').value.trim();
+
+    if(!name || !username || !password) return alert('برجاء إكمال جميع البيانات!');
+    if(password.length < 6) return alert('كلمة المرور يجب أن تكون 6 أحرف على الأقل.');
+    if(usersData[username]) return alert('اسم المستخدم هذا مسجل بالفعل في المصنع!');
+
+    let cloudStatus = document.getElementById('cloudStatus');
+    if(cloudStatus) cloudStatus.innerHTML = "⏳ جاري إنشاء الحساب...";
+
+    const fakeEmail = username + "@tpm.app";
+
+    try {
+        // إنشاء الحساب في الفايربيز
+        await firebase.auth().createUserWithEmailAndPassword(fakeEmail, password);
+        
+        // تسجيله كمشاهد (Viewer) فوراً
+        await db.ref('tpm_system/users/' + username).set('viewer');
+        
+        // كتابة رسالة في السجل عشان تظهر للمدير
+        const timeStr = new Date().toLocaleDateString('ar-EG') + ' ' + new Date().toLocaleTimeString('ar-EG');
+        let newLogId = Date.now();
+        await db.ref('tpm_system/logs/' + newLogId).set({
+            id: newLogId, user: 'النظام', action: `🚨 تسجيل جديد: ${name} (${username})`, time: timeStr
+        });
+
+        alert('✅ تم إنشاء الحساب بنجاح! سيتم تحويلك للنظام كمشاهد.');
+        
+        localStorage.setItem('tpm_user', name);
+        localStorage.setItem('tpm_username', username);
+        
+        // إعادة تحميل التطبيق عشان يدخل بالصلاحيات الجديدة
+        setTimeout(() => window.location.reload(), 1500);
+
+    } catch(error) {
+        console.error(error);
+        if(cloudStatus) cloudStatus.innerHTML = "❌ خطأ في التسجيل";
+        if(error.code === 'auth/email-already-in-use') alert('اسم المستخدم مسجل مسبقاً، اختر اسماً آخر!');
+        else alert('حدث خطأ: ' + error.message);
     }
 }
 

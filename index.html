@@ -15,7 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>	    
 
- 
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
@@ -523,8 +523,13 @@
                 <input type="text" id="kbTitle" class="form-control" placeholder="مثال: معايير تنظيف وتزييت ماكينة الحقن...">
             </div>
             <div class="form-group">
-                <label>محتوى المرجع (انسخ النص هنا):</label>
-                <textarea id="kbContent" class="form-control" rows="8" placeholder="انسخ محتوى الـ PDF أو التعليمات الفنية هنا..."></textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <label style="margin:0;">محتوى المرجع (انسخ أو استخرج من PDF):</label>
+                    <button class="btn btn-outline btn-sm" style="margin:0; padding:2px 8px; font-size:11px;" onclick="document.getElementById('pdfInput').click()">📄 استخراج من PDF</button>
+                    <input type="file" id="pdfInput" accept="application/pdf" style="display:none;" onchange="handlePDFUpload(event)">
+                </div>
+                <textarea id="kbContent" class="form-control" rows="8" placeholder="انسخ المحتوى أو ارفع ملف PDF ليتم سحب النص منه تلقائياً..."></textarea>
+                <div id="pdfExtractStatus" style="font-size:11px; color:var(--primary); margin-top:5px; font-weight:bold;"></div>
             </div>
             <button class="btn btn-primary" style="width: 100%; margin-top: 5px;" onclick="addKnowledgeBaseArticle()">💾 حفظ في قاعدة المعرفة</button>
         </div>

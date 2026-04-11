@@ -2406,3 +2406,58 @@ function deleteKnowledgeBaseArticle(index) {
         syncToServer();
     }
 }
+
+// ==========================================
+// PDF TEXT EXTRACTOR (شفاط الـ PDF الذكي)
+// ==========================================
+// تهيئة محرك قراءة الـ PDF
+if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+async function handlePDFUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') return alert('برجاء اختيار ملف PDF فقط!');
+
+    const statusEl = document.getElementById('pdfExtractStatus');
+    const contentEl = document.getElementById('kbContent');
+    const titleEl = document.getElementById('kbTitle');
+    
+    statusEl.innerHTML = "⏳ جاري فتح الملف وشفط النصوص... برجاء الانتظار";
+    contentEl.value = ""; // تفريغ المربع
+    
+    // اقتراح عنوان من اسم الملف لو كان العنوان فاضي
+    if(!titleEl.value) {
+        titleEl.value = file.name.replace('.pdf', '');
+    }
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = "";
+
+        // الدوران على صفحات الـ PDF صفحة صفحة لسحب النص
+        for (let i = 1; i <= pdf.numPages; i++) {
+            statusEl.innerHTML = `⏳ جاري شفط صفحة ${i} من ${pdf.numPages}...`;
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageStrings = textContent.items.map(item => item.str);
+            fullText += pageStrings.join(' ') + "\n\n";
+        }
+
+        // لو الملف عبارة عن صور (Scanned) ومش نصوص حقيقية
+        if (fullText.trim().length === 0) {
+            statusEl.innerHTML = "⚠️ الملف يبدو كصورة (Scanned). الشفاط يسحب النصوص المكتوبة فقط.";
+        } else {
+            contentEl.value = fullText;
+            statusEl.innerHTML = "✅ تم استخراج النص بنجاح! راجعه ثم اضغط حفظ.";
+        }
+
+    } catch (error) {
+        console.error("PDF Extraction Error:", error);
+        statusEl.innerHTML = "❌ فشل استخراج النص. تأكد من سلامة الملف.";
+    }
+    
+    event.target.value = ''; // تصفير الـ input عشان تقدر ترفع نفس الملف تاني لو حبيت
+}

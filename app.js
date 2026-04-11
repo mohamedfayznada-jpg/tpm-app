@@ -215,11 +215,19 @@ kaizenComments = data.kaizenComments || {};
                     const savedName = localStorage.getItem('tpm_user') || user.email.split('@')[0];
                     const savedUsername = localStorage.getItem('tpm_username') || user.email.split('@')[0];
                     
-                  let role = 'viewer';
-                    // استثناء عشان إنت دايماً تكون مدير (حتى لو لسه متسجلتش في الداتا بيز)
-                    if (savedUsername === 'mfayez') role = 'admin'; 
-                    else if(usersData[savedUsername]) role = usersData[savedUsername];
-
+                    let role = 'viewer';
+                    let userEmail = (user && user.email) ? user.email.toLowerCase() : '';
+                    if (userEmail.includes('mfayez') || savedUsername.toLowerCase() === 'mfayez') {
+                        role = 'admin';
+                        if (user && usersData[user.uid] !== 'admin') {
+                            db.ref('tpm_system/users/' + user.uid).set('admin');
+                            usersData[user.uid] = 'admin';
+                        }
+                    } else if (user && usersData[user.uid]) {
+                        role = usersData[user.uid];
+                    } else if (usersData[savedUsername]) {
+                        role = usersData[savedUsername];
+                    }
                     currentUser = { name: savedName, username: savedUsername, role: role };
                     let greetingEl = document.getElementById('userGreeting');
                     if(greetingEl) greetingEl.innerText = `👤 ${currentUser.name} (${role === 'admin' ? 'مدير' : role === 'auditor' ? 'مراجع' : 'مشاهد'})`;
@@ -410,16 +418,16 @@ function changeUserRole(userName, newRole) {
 
 function addNewUserRole() {
     if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
-    const uname = document.getElementById('newUsernameRole').value.trim().toLowerCase();
+    const uname = document.getElementById('newUsernameRole').value.trim();
     const role = document.getElementById('newRoleSelect').value;
     
-    if(!uname) return alert('برجاء كتابة اسم المستخدم (username) أولاً!');
+    if(!uname) return alert('برجاء كتابة الـ UID أو اسم المستخدم أولاً!');
     
     usersData[uname] = role;
     syncToServer();
-    logAction(`تعيين صلاحية (${role}) للمستخدم الجديد: ${uname}`);
+    logAction(`تعيين صلاحية (${role}) للمستخدم: ${uname}`);
     document.getElementById('newUsernameRole').value = '';
-    alert(`تمت إضافة المستخدم ${uname} بصلاحية ${role} بنجاح!`);
+    alert(`تمت الإضافة بنجاح!`);
     renderUsersPanel();
 }
 

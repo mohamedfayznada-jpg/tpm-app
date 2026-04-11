@@ -223,7 +223,7 @@ firebase.auth().onAuthStateChanged((user) => {
                 deptPhones = data.deptPhones || {};
 maintenanceEngineers = data.maintenanceEngineers || [];
 kaizenComments = data.kaizenComments || {};
-knowledgeBaseData = data.knowledgeBase || [];
+knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
                 isDataLoaded = true; // 🛡️ تم تحميل الداتا بنجاح
 
                 if (isInitialLoad) {
@@ -711,50 +711,6 @@ function generateOPLPDF() {
 // ==========================================
 // TRUE AI VISION INSPECTOR & AI CAPA
 // ==========================================
-async function runAIVision(itemId, itemTitle) {
-    const apiKey = globalApiKeys.gemini;
-    if(!apiKey) return alert('⚠️ مفتاح Gemini غير موجود بالسيرفر. تواصل مع المدير.');
-
-    let previewBox = document.getElementById(`img_preview_elem_${itemId}`);
-    if(previewBox) previewBox.innerHTML += `<div class="ai-scan-line" style="display:block;"></div>`;
-    
-    document.getElementById('aiModalText').innerHTML = "<span style='color:var(--primary); font-weight:bold;'>⏳ جاري فحص الصورة ومطابقتها بمعايير المصنع الخاصة...</span>";
-    document.getElementById('aiModal').style.display = 'flex';
-
-    // 🧠 تجميع المعلومات من عقل المصنع
-    let kbContext = knowledgeBaseData.map(kb => `مرجع (${kb.title}):\n${kb.content}`).join("\n\n");
-
-    try {
-        const imgObj = currentStepImages['img_' + itemId];
-        if(!imgObj) throw new Error("الصورة غير موجودة.");
-        const base64Data = imgObj.data.split(',')[1];
-        
-        const promptText = `أنت مهندس ومفتش صيانة (TPM). 
-        هذه هي المعايير المعتمدة لمصنعنا:
-        """
-        ${kbContext}
-        """
-        قم بتحليل الصورة المرفقة بناءً على متطلبات البند: "${itemTitle}" وبناءً على المعايير المذكورة أعلاه إن وُجدت. 
-        هل تثبت الصورة تطبيق البند؟ ابحث عن تسريبات، أتربة، فوضى، أو مطابقة للمعايير. 
-        رد بالعربية بصيغة HTML: ✅ <b>تحليل المفتش الذكي للصورة:</b> (التحليل) <br><br> 💡 <b>نصيحة للتحسين:</b> (النصيحة العملية)`;
-        
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }, { inline_data: { mime_type: "image/jpeg", data: base64Data } }] }] })
-        });
-        const result = await response.json();
-        if(result.error) throw new Error(result.error.message);
-        
-        let aiText = result.candidates[0].content.parts[0].text;
-        aiText = aiText.replace(/```html/g, '').replace(/```/g, '');
-        document.getElementById('aiModalText').innerHTML = aiText;
-        logAction('فحص صورة حقيقي بـ AI وعقل المصنع');
-    } catch(e) { 
-        console.error("AI Error:", e);
-        document.getElementById('aiModalText').innerHTML = `❌ حدث خطأ من جوجل: ${e.message}`; 
-    } 
-    finally { if(previewBox){ let s = previewBox.querySelector('.ai-scan-line'); if(s) s.remove(); } }
-}
 
 async function autoGenerateCAPA() {
     if(currentStepImprovements.length === 0) return alert('لا توجد فرص تحسين لتوليد مهام لها.');
@@ -839,41 +795,6 @@ async function predictMachineFailures() {
     }
 }
 
-async function explainItem(title) {
-    const apiKey = globalApiKeys.gemini;
-    if(!apiKey) return alert('⚠️ مفتاح Gemini غير موجود بالسيرفر. تواصل مع المدير.');
-
-    document.getElementById('aiModalText').innerHTML = "<span style='color:var(--primary); font-weight:bold;'>⏳ جاري البحث في عقل وكتالوجات المصنع...</span>";
-    document.getElementById('aiModal').style.display = 'flex';
-
-    // 🧠 تجميع كل المعلومات اللي المدير رفعها في عقل المصنع
-    let kbContext = knowledgeBaseData.map(kb => `مرجع (${kb.title}):\n${kb.content}`).join("\n\n");
-    if(!kbContext) kbContext = "لا توجد معايير خاصة بالمصنع بعد. اعتمد على خبرتك الهندسية العامة في أنظمة TPM.";
-
-    const promptText = `أنت المساعد الذكي لمصنعنا (TPM Expert).
-    هذه هي قاعدة بيانات المصنع والكتالوجات المعتمدة لدينا:
-    """
-    ${kbContext}
-    """
-    بناءً على هذه المعلومات **فقط** (وإذا لم تجد إجابة واضحة استخدم خبرتك الهندسية لدعمها)، اشرح لي كيفية تطبيق هذا البند: "${title}".
-    ما هو المطلوب توفيره كدليل (سجلات، لوحات، صور) لاجتياز هذا البند بنجاح؟
-    رد باختصار، بشكل مباشر، وبدون مقدمات، واستخدم تنسيق HTML (مثل <b> و <br> وقوائم <ul>) لترتيب الإجابة.`;
-
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-        });
-        const result = await response.json();
-        if(result.error) throw new Error(result.error.message);
-        
-        let aiText = result.candidates[0].content.parts[0].text.replace(/```html/g, '').replace(/```/g, '');
-        document.getElementById('aiModalText').innerHTML = aiText;
-        logAction('استشارة عقل المصنع الذكي');
-    } catch(e) {
-        document.getElementById('aiModalText').innerHTML = `❌ حدث خطأ: ${e.message}`;
-    }
-}
 
 function openImageSourcePicker(itemId, itemTitle) {
     currentUploadItemId = itemId; currentUploadItemTitle = itemTitle;
@@ -1701,7 +1622,13 @@ function renderHistory() {
         return `<div class="card" style="border-right: 4px solid var(--${col}); cursor:pointer;" onclick="viewDetailedReport('${a.id}')"><div style="display:flex; justify-content:space-between;"><div><b>${escapeHtml(a.dept)}</b><br><span style="font-size:11px; color:gray;">${escapeHtml(a.date)}</span></div><b style="color:var(--${col}); font-size:18px;">${a.totalPct}%</b></div>${adminBtns}</div>`;
     }).join('');
 }
-function editReport(id) { const rep = historyData.find(h => h.id === id); if(rep && confirm('تعديل؟')) { currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; renderCurrentAuditStep(); } }
+function editReport(id) { 
+    const rep = historyData.find(h => h.id === id); 
+    if(rep) {
+        if(rep.stepsOrder && rep.stepsOrder.includes('ManualKaizen')) return alert('⚠️ لا يمكن تعديل تقرير الكايزن من هنا، استخدم مجتمع كايزن للحذف أو التعديل.');
+        if(confirm('تعديل التقرير؟')) { currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; renderCurrentAuditStep(); } 
+    }
+}
 function deleteReport(id) { if(confirm('حذف نهائي؟')) { historyData = historyData.filter(h => h.id !== id); renderHistory(); updateHomeDashboard(); syncToServer(); } }
 function viewDetailedReport(id) {
     const a = historyData.find(h => h.id === id); if(!a) return;
@@ -2349,25 +2276,62 @@ function saveApiKeys() {
 }
 
 // ==========================================
-// KNOWLEDGE BASE (عقل المصنع للذكاء الاصطناعي)
+// 🧠 عقل المصنع (PDF to Vision AI) 
 // ==========================================
-function renderKnowledgeBase() {
-    const c = document.getElementById('knowledgeListContainer');
-    if (!c) return;
+let currentKBPages = [];
 
-    c.innerHTML = (!knowledgeBaseData || knowledgeBaseData.length === 0) 
-        ? '<div style="color:gray; font-size:12px; text-align:center;">لا توجد مراجع محفوظة. أضف الكتالوج الأول!</div>' 
-        : knowledgeBaseData.map((kb, index) => `
-            <div style="background:var(--white); border:1px solid var(--border); padding:15px; border-radius:8px; margin-bottom:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div>
-                        <b style="color:var(--primary-dark); font-size:14px;">📑 ${escapeHtml(kb.title)}</b>
-                        <div style="font-size:11px; color:var(--gray); margin-top:5px;">تاريخ الإضافة: ${kb.date} | كلمات: ${kb.content.length}</div>
-                    </div>
-                    <button class="btn btn-danger btn-sm" style="padding:4px 8px; margin:0;" onclick="deleteKnowledgeBaseArticle(${index})">🗑️ مسح</button>
-                </div>
-            </div>
-        `).join('');
+if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+async function handlePDFUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') return alert('برجاء اختيار ملف PDF!');
+
+    const statusEl = document.getElementById('pdfExtractStatus');
+    const titleEl = document.getElementById('kbTitle');
+    const previewContainer = document.getElementById('kbImagesPreview');
+    
+    statusEl.innerHTML = "⏳ جاري تصوير الـ PDF للذكاء الاصطناعي... برجاء الانتظار";
+    currentKBPages = [];
+    previewContainer.innerHTML = '';
+    
+    if(!titleEl.value) titleEl.value = file.name.replace('.pdf', '');
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        // 🛡️ حماية: بناخد أول 5 صفحات كحد أقصى عشان الداتا متبقاش تقيلة على السيرفر المجاني
+        const maxPages = Math.min(pdf.numPages, 5);
+
+        for (let i = 1; i <= maxPages; i++) {
+            statusEl.innerHTML = `⏳ جاري معالجة صفحة ${i} من ${maxPages}...`;
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 1.5 }); // دقة ممتازة للـ AI
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            
+            const base64Img = canvas.toDataURL('image/jpeg', 0.7);
+            currentKBPages.push(base64Img);
+            
+            previewContainer.innerHTML += `<img src="${base64Img}" style="height:100px; border:1px solid #ccc; margin:5px; border-radius:4px; display:inline-block;">`;
+        }
+
+        statusEl.innerHTML = `✅ تم استخراج ${maxPages} صفحة كصور مرئية للـ AI! اضغط حفظ.`;
+        if(pdf.numPages > 5) statusEl.innerHTML += "<br>⚠️ (تم أخذ أول 5 صفحات فقط لضمان سرعة النظام ومجانيته).";
+
+    } catch (error) {
+        console.error(error);
+        statusEl.innerHTML = "❌ فشل قراءة الـ PDF.";
+    }
+    event.target.value = ''; 
 }
 
 function addKnowledgeBaseArticle() {
@@ -2376,8 +2340,8 @@ function addKnowledgeBaseArticle() {
     const title = sanitizeInput(document.getElementById('kbTitle').value);
     const content = sanitizeInput(document.getElementById('kbContent').value);
     
-    if(!title || !content) return alert('برجاء كتابة العنوان ونسخ المحتوى!');
-    if(content.length < 50) return alert('المحتوى قصير جداً! يجب أن يحتوي المرجع على معلومات وتفاصيل كافية للذكاء الاصطناعي.');
+    if(!title) return alert('برجاء كتابة العنوان!');
+    if(currentKBPages.length === 0 && content.trim() === '') return alert('يجب إضافة نص أو رفع ملف PDF!');
 
     if(!knowledgeBaseData) knowledgeBaseData = [];
     
@@ -2385,11 +2349,15 @@ function addKnowledgeBaseArticle() {
         id: uniqueNumericId(),
         title: title,
         content: content,
+        images: currentKBPages, // حفظ الصور المشفرة
         date: new Date().toLocaleDateString('ar-EG')
     });
 
     document.getElementById('kbTitle').value = '';
     document.getElementById('kbContent').value = '';
+    document.getElementById('kbImagesPreview').innerHTML = '';
+    document.getElementById('pdfExtractStatus').innerHTML = '';
+    currentKBPages = [];
     
     renderKnowledgeBase();
     syncToServer();
@@ -2397,67 +2365,119 @@ function addKnowledgeBaseArticle() {
     alert('✅ تم تغذية عقل المصنع بنجاح!');
 }
 
+function renderKnowledgeBase() {
+    const c = document.getElementById('knowledgeListContainer');
+    if (!c) return;
+
+    c.innerHTML = (!knowledgeBaseData || knowledgeBaseData.length === 0) 
+        ? '<div style="color:gray; font-size:12px; text-align:center;">لا توجد مراجع. ارفع أول PDF (معايير OPL أو CLIT)!</div>' 
+        : knowledgeBaseData.map((kb, index) => `
+            <div style="background:var(--white); border:1px solid var(--border); padding:15px; border-radius:8px; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <b style="color:var(--primary-dark); font-size:14px;">📑 ${escapeHtml(kb.title)}</b>
+                        <div style="font-size:11px; color:var(--gray); margin-top:5px;">📅 ${kb.date} | 🖼️ صور: ${kb.images ? kb.images.length : 0} | 📝 نص: ${kb.content ? kb.content.length : 0}</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding:4px 8px; margin:0;" onclick="deleteKnowledgeBaseArticle(${index})">🗑️ مسح</button>
+                </div>
+            </div>
+        `).join('');
+}
+
 function deleteKnowledgeBaseArticle(index) {
-    if(!hasRole('admin')) return alert('عفواً، للمدير فقط.');
-    if(confirm('هل أنت متأكد من مسح هذا المرجع؟ لن يستطيع الذكاء الاصطناعي استخدامه بعد الآن.')) {
-        logAction(`مسح مرجع من عقل المصنع: ${knowledgeBaseData[index].title}`);
+    if(!hasRole('admin')) return alert('للمدير فقط.');
+    if(confirm('متأكد من مسح هذا المرجع؟')) {
         knowledgeBaseData.splice(index, 1);
-        renderKnowledgeBase();
-        syncToServer();
+        renderKnowledgeBase(); syncToServer();
     }
 }
 
 // ==========================================
-// PDF TEXT EXTRACTOR (شفاط الـ PDF الذكي)
+// ربط عقل المصنع بـ Gemini AI
 // ==========================================
-// تهيئة محرك قراءة الـ PDF
-if (typeof pdfjsLib !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-}
+async function runAIVision(itemId, itemTitle) {
+    const apiKey = globalApiKeys.gemini;
+    if(!apiKey) return alert('⚠️ مفتاح Gemini غير موجود في الإعدادات.');
 
-async function handlePDFUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf') return alert('برجاء اختيار ملف PDF فقط!');
-
-    const statusEl = document.getElementById('pdfExtractStatus');
-    const contentEl = document.getElementById('kbContent');
-    const titleEl = document.getElementById('kbTitle');
+    let previewBox = document.getElementById(`img_preview_elem_${itemId}`);
+    if(previewBox) previewBox.innerHTML += `<div class="ai-scan-line" style="display:block;"></div>`;
     
-    statusEl.innerHTML = "⏳ جاري فتح الملف وشفط النصوص... برجاء الانتظار";
-    contentEl.value = ""; // تفريغ المربع
-    
-    // اقتراح عنوان من اسم الملف لو كان العنوان فاضي
-    if(!titleEl.value) {
-        titleEl.value = file.name.replace('.pdf', '');
-    }
+    document.getElementById('aiModalText').innerHTML = "<span style='color:var(--primary); font-weight:bold;'>⏳ جاري فحص الصورة ومطابقتها بصور وجداول كتالوجات المصنع...</span>";
+    document.getElementById('aiModal').style.display = 'flex';
 
     try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let fullText = "";
+        const imgObj = currentStepImages['img_' + itemId];
+        if(!imgObj) throw new Error("الصورة غير موجودة.");
+        const base64Data = imgObj.data.split(',')[1];
 
-        // الدوران على صفحات الـ PDF صفحة صفحة لسحب النص
-        for (let i = 1; i <= pdf.numPages; i++) {
-            statusEl.innerHTML = `⏳ جاري شفط صفحة ${i} من ${pdf.numPages}...`;
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            const pageStrings = textContent.items.map(item => item.str);
-            fullText += pageStrings.join(' ') + "\n\n";
+        let promptParts = [{ text: `أنت مهندس ومفتش صيانة (TPM). لديك المعايير والكتالوجات المعتمدة لمصنعنا (مرفقة في الصور والنصوص السابقة إن وجدت).\nقم بتحليل الصورة المرفقة للمعدة بناءً على متطلبات البند: "${itemTitle}".\nهل تثبت الصورة تطبيق البند؟ طابقها مع الكتالوجات (إن وجدت). رد بصيغة HTML: ✅ <b>التحليل:</b> ... <br><br> 💡 <b>نصيحة:</b> ...` }];
+
+        // 🧠 إرسال صور الـ PDF لـ Gemini عشان يشوفها!
+        if(knowledgeBaseData && knowledgeBaseData.length > 0) {
+            knowledgeBaseData.forEach(kb => {
+                if(kb.content) promptParts.unshift({ text: `نص مرجعي (${kb.title}): ${kb.content}` });
+                if(kb.images) {
+                    kb.images.forEach(imgB64 => {
+                        promptParts.unshift({ inline_data: { mime_type: "image/jpeg", data: imgB64.split(',')[1] } });
+                    });
+                }
+            });
+            promptParts.unshift({ text: "الصور والنصوص التالية هي كتالوجات ومعايير المصنع الخاصة بنا (جداول، OPLs). ادرسها جيداً لمطابقتها مع صورة الماكينة:" });
         }
 
-        // لو الملف عبارة عن صور (Scanned) ومش نصوص حقيقية
-        if (fullText.trim().length === 0) {
-            statusEl.innerHTML = "⚠️ الملف يبدو كصورة (Scanned). الشفاط يسحب النصوص المكتوبة فقط.";
-        } else {
-            contentEl.value = fullText;
-            statusEl.innerHTML = "✅ تم استخراج النص بنجاح! راجعه ثم اضغط حفظ.";
+        // إضافة صورة الماكينة اللي العامل صورها
+        promptParts.push({ inline_data: { mime_type: "image/jpeg", data: base64Data } });
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: promptParts }] })
+        });
+        
+        const result = await response.json();
+        if(result.error) throw new Error(result.error.message);
+        
+        let aiText = result.candidates[0].content.parts[0].text;
+        document.getElementById('aiModalText').innerHTML = aiText.replace(/```html/g, '').replace(/```/g, '');
+        logAction('فحص صورة حقيقي بـ AI وعقل المصنع');
+    } catch(e) { 
+        document.getElementById('aiModalText').innerHTML = `❌ حدث خطأ: ${e.message}`; 
+    } 
+    finally { if(previewBox){ let s = previewBox.querySelector('.ai-scan-line'); if(s) s.remove(); } }
+}
+
+async function explainItem(title) {
+    const apiKey = globalApiKeys.gemini;
+    if(!apiKey) return alert('⚠️ مفتاح Gemini غير موجود في الإعدادات.');
+
+    document.getElementById('aiModalText').innerHTML = "<span style='color:var(--primary); font-weight:bold;'>⏳ جاري البحث في جداول وكتالوجات المصنع...</span>";
+    document.getElementById('aiModal').style.display = 'flex';
+
+    try {
+        let promptParts = [{ text: `أنت المساعد الذكي لمصنعنا (TPM Expert).\nبناءً على معايير المصنع والكتالوجات (المرفقة كصور ونصوص)، اشرح لي كيفية تطبيق البند التالي: "${title}".\nرد باختصار وتنسيق HTML.` }];
+
+        if(knowledgeBaseData && knowledgeBaseData.length > 0) {
+            knowledgeBaseData.forEach(kb => {
+                if(kb.content) promptParts.unshift({ text: `نص مرجعي (${kb.title}): ${kb.content}` });
+                if(kb.images) {
+                    kb.images.forEach(imgB64 => {
+                        promptParts.unshift({ inline_data: { mime_type: "image/jpeg", data: imgB64.split(',')[1] } });
+                    });
+                }
+            });
+            promptParts.unshift({ text: "الصور والنصوص التالية هي كتالوجات ومعايير المصنع الخاصة بنا. ادرسها جيداً:" });
         }
 
-    } catch (error) {
-        console.error("PDF Extraction Error:", error);
-        statusEl.innerHTML = "❌ فشل استخراج النص. تأكد من سلامة الملف.";
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: promptParts }] })
+        });
+        const result = await response.json();
+        if(result.error) throw new Error(result.error.message);
+        
+        let aiText = result.candidates[0].content.parts[0].text;
+        document.getElementById('aiModalText').innerHTML = aiText.replace(/```html/g, '').replace(/```/g, '');
+        logAction('استشارة عقل المصنع الذكي');
+    } catch(e) {
+        document.getElementById('aiModalText').innerHTML = `❌ حدث خطأ: ${e.message}`;
     }
-    
-    event.target.value = ''; // تصفير الـ input عشان تقدر ترفع نفس الملف تاني لو حبيت
 }

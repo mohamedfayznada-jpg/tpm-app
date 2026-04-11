@@ -1665,16 +1665,12 @@ function downloadProfessionalPDF() {
     }
 }
 function shareWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(window.currentReportText)}`); }
-// ==========================================
-// KAIZEN SOCIAL & COMMENTS
-// ==========================================
+
 function renderKaizenFeed() {
     const selectedDept = document.getElementById('kaizenDeptSelect') ? document.getElementById('kaizenDeptSelect').value : 'الكل';
     let allPosts = [];
     historyData.forEach(audit => {
         if(selectedDept !== 'الكل' && audit.dept !== selectedDept) return;
-        
-        // 🛡️ الفلتر السحري: الحماية من التقارير الفاضية اللي بتعمل كراش للشاشة
         if (!audit.results) return; 
         
         Object.keys(audit.results).forEach(step => {
@@ -1698,6 +1694,12 @@ function renderKaizenFeed() {
             </div>
         `).join('');
 
+        let canEditDelete = currentUser.role === 'admin' || currentUser.name === p.auditor;
+        let adminBtns = canEditDelete ? `
+            <button class="action-btn" style="color:var(--danger);" onclick="deleteKaizenPost('${p.auditId}', '${p.key}')" title="مسح">🗑️</button>
+            <button class="action-btn" style="color:var(--warning);" onclick="editKaizenPost('${p.auditId}', '${p.key}')" title="تعديل">✏️</button>
+        ` : '';
+
         const postImgUrl = safeUrl(p.data);
         return `<div class="kaizen-post">
             <div class="kaizen-header"><b>${escapeHtml(p.auditor)}</b> <span style="font-size:11px;color:gray;">${escapeHtml(p.dept)}</span></div>
@@ -1706,6 +1708,7 @@ function renderKaizenFeed() {
             <div class="kaizen-footer" style="border-bottom: 1px solid var(--border);">
                 <button class="action-btn ${isLiked?'liked':''}" onclick="toggleKaizenLike('${likeId}')">👍 (${likeCount})</button>
                 <button class="action-btn" onclick="document.getElementById('comment_sec_${likeId}').style.display='block'">💬 تعليق (${comments.length})</button>
+                <div style="margin-right:auto; display:flex;">${adminBtns}</div>
             </div>
             <div id="comment_sec_${likeId}" style="display:none; padding:10px; background:var(--light-gray);">
                 <div style="max-height:150px; overflow-y:auto; margin-bottom:10px;">${commentsHtml || '<div style="font-size:11px; color:gray; text-align:center;">لا توجد تعليقات، كن أول من يعلق!</div>'}</div>
@@ -1727,7 +1730,7 @@ function addKaizenComment(likeId) {
     kaizenComments[likeId].push({ user: currentUser.name, text: text, date: new Date().toLocaleTimeString('ar-EG') });
     syncToServer(); awardPoints(2, 'كتابة تعليق'); input.value = '';
     renderKaizenFeed();
-    setTimeout(() => { document.getElementById(`comment_sec_${likeId}`).style.display='block'; }, 100); // إبقاء التعليقات مفتوحة
+    setTimeout(() => { document.getElementById(`comment_sec_${likeId}`).style.display='block'; }, 100); 
 }
 
 function toggleKaizenLike(likeId) {
@@ -1737,20 +1740,48 @@ function toggleKaizenLike(likeId) {
     syncToServer(); renderKaizenFeed();
 }
 
-
 function deleteKaizenPost(auditId, imgKey) {
-    if(!confirm('بصفتك مدير: هل أنت متأكد من مسح هذه الصورة نهائياً من تقرير المراجعة؟')) return;
     let audit = historyData.find(h => h.id === auditId);
     if(audit) {
-        Object.keys(audit.results).forEach(step => {
-            if(audit.results[step].images && audit.results[step].images[imgKey]) {
-                delete audit.results[step].images[imgKey];
-            }
-        });
-        syncToServer(); renderKaizenFeed(); logAction('مسح صورة بواسطة المدير');
+        if (currentUser.role !== 'admin' && currentUser.name !== audit.auditor) return alert('عفواً، لا تملك صلاحية مسح هذا الكايزن.');
+        if(!confirm('هل أنت متأكد من مسح هذه المشاركة نهائياً؟')) return;
+        
+        if (audit.stepsOrder && audit.stepsOrder.includes('ManualKaizen')) {
+            historyData = historyData.filter(h => h.id !== auditId);
+        } else {
+            Object.keys(audit.results).forEach(step => {
+                if(audit.results[step].images && audit.results[step].images[imgKey]) {
+                    delete audit.results[step].images[imgKey];
+                }
+            });
+        }
+        syncToServer(); renderKaizenFeed(); logAction('مسح كايزن');
     }
 }
 
+function editKaizenPost(auditId, imgKey) {
+    let audit = historyData.find(h => h.id === auditId);
+    if(!audit) return;
+    if (currentUser.role !== 'admin' && currentUser.name !== audit.auditor) return alert('عفواً، لا تملك صلاحية تعديل هذا الكايزن.');
+    
+    let currentTitle = "";
+    let targetImg = null;
+    
+    Object.keys(audit.results).forEach(step => {
+        if(audit.results[step].images && audit.results[step].images[imgKey]) {
+            targetImg = audit.results[step].images[imgKey];
+            currentTitle = targetImg.title;
+        }
+    });
+
+    if(targetImg) {
+        let newTitle = prompt("تعديل وصف التحسين:", currentTitle);
+        if (newTitle !== null && newTitle.trim() !== "") {
+            targetImg.title = sanitizeInput(newTitle);
+            syncToServer(); renderKaizenFeed(); logAction('تعديل كايزن');
+        }
+    }
+}
 // ==========================================
 // TAGS MANAGEMENT
 // ==========================================
@@ -1818,15 +1849,20 @@ function renderTags() {
         let tagClass = t.color === 'red' ? 'tag-red' : 'tag-blue';
         const tagImgUrl = safeUrl(t.image);
         let imgHtml = tagImgUrl ? `<img src="${tagImgUrl}" style="width:100%; max-height:200px; object-fit:cover; border-radius:8px; margin-top:10px; margin-bottom:10px; border:1px solid var(--border);">` : '';
-        let canDelete = currentUser.role === 'admin' || currentUser.name === t.auditor;
-        let deleteBtnHtml = canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteTag(${t.id})" style="margin-right:5px;">🗑️ مسح</button>` : '';
+        
+        let canEditDelete = currentUser.role === 'admin' || currentUser.name === t.auditor;
+        let deleteBtnHtml = canEditDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteTag(${t.id})" style="margin-right:3px; padding:2px 6px; font-size:11px;">🗑️ مسح</button>` : '';
+        let editBtnHtml = canEditDelete ? `<button class="btn btn-warning btn-sm" onclick="editTag(${t.id})" style="margin-right:3px; padding:2px 6px; font-size:11px;">✏️ تعديل</button>` : '';
+        
+        let canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'auditor' || currentUser.name === t.auditor;
+        let disabledStr = canChangeStatus ? '' : 'disabled';
 
         let statusSelect = `
-        <select class="form-control" style="width:130px; font-size:11px; padding:4px; font-weight:bold; background:${t.status==='closed'?'#E8F5E9':(t.status==='review'?'#E3F2FD':'#FFF3E0')};" onchange="updateTagState(${t.id}, this.value)">
+        <select class="form-control" style="width:110px; font-size:11px; padding:4px; font-weight:bold; background:${t.status==='closed'?'#E8F5E9':(t.status==='review'?'#E3F2FD':'#FFF3E0')};" onchange="updateTagState(${t.id}, this.value)" ${disabledStr}>
             <option value="open" ${t.status==='open'?'selected':''}>🔴 مفتوح</option>
-            <option value="progress" ${t.status==='progress'?'selected':''}>🟡 جاري العمل</option>
-            <option value="review" ${t.status==='review'?'selected':''}>🔵 قيد الاعتماد</option>
-            <option value="closed" ${t.status==='closed'?'selected':''}>🟢 مغلق نهائياً</option>
+            <option value="progress" ${t.status==='progress'?'selected':''}>🟡 جاري</option>
+            <option value="review" ${t.status==='review'?'selected':''}>🔵 اعتماد</option>
+            <option value="closed" ${t.status==='closed'?'selected':''}>🟢 مغلق</option>
         </select>`;
 
         return `<div class="tag-card ${tagClass}" style="opacity: ${t.status==='closed'?'0.6':'1'}; display:block;">
@@ -1836,7 +1872,7 @@ function renderTags() {
                     <div style="font-size:11px; color:var(--gray); margin-top:3px; font-weight:bold;">🏭 ${escapeHtml(t.dept)} | ⚙️ ${escapeHtml(t.machine || 'عام')}</div>
                     <div style="font-size:10px; color:var(--gray); margin-bottom:5px;">📅 ${escapeHtml(t.date)} - 👤 ${escapeHtml(t.auditor)}</div>
                 </div>
-                <div style="display:flex; gap:5px; align-items:center;">${deleteBtnHtml} ${statusSelect}</div>
+                <div style="display:flex; gap:3px; align-items:center;">${editBtnHtml} ${deleteBtnHtml} ${statusSelect}</div>
             </div>
             ${imgHtml}
             <div style="font-size:14px; font-weight:bold; margin-top:5px; background:var(--light-gray); padding:8px; border-radius:6px;">${escapeHtml(t.desc)}</div>
@@ -1845,10 +1881,36 @@ function renderTags() {
 }
 
 function deleteTag(id) {
-    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية مسح التاج.');
+    let t = tagsData.find(x => x.id === id);
+    if (!t) return;
+    if (currentUser.role !== 'admin' && currentUser.name !== t.auditor) return alert('عفواً، لا تملك صلاحية مسح هذا التاج.');
+    
     if(confirm('هل أنت متأكد من مسح هذا التاج نهائياً؟')) {
         tagsData = tagsData.filter(x => x.id !== id);
         renderTags(); syncToServer(); logAction('مسح تاج');
+    }
+}
+
+function editTag(id) {
+    let t = tagsData.find(x => x.id === id);
+    if (!t) return;
+    if (currentUser.role !== 'admin' && currentUser.name !== t.auditor) return alert('عفواً، لا تملك صلاحية تعديل هذا التاج.');
+    
+    let newDesc = prompt("تعديل وصف المشكلة:", t.desc);
+    if (newDesc !== null && newDesc.trim() !== "") {
+        t.desc = sanitizeInput(newDesc);
+        renderTags(); syncToServer(); logAction('تعديل محتوى التاج');
+    }
+}
+
+function updateTagState(id, newState) {
+    let t = tagsData.find(x => x.id === id);
+    if(t) { 
+        if (currentUser.role !== 'admin' && currentUser.role !== 'auditor' && currentUser.name !== t.auditor) return alert('عفواً، لا تملك صلاحية تعديل حالة التاج.');
+        t.status = newState; 
+        renderTags(); syncToServer(); 
+        logAction(`تغيير حالة التاج إلى: ${newState}`); 
+        if(newState === 'closed') awardPoints(20, 'إغلاق تاج معلق');
     }
 }
 

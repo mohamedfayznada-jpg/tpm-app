@@ -13,10 +13,9 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
-let globalApiKeys = { imgbb: "", gemini: "" }; // متغير لاستقبال المفاتيح من السيرفر
+let globalApiKeys = { imgbb: "", gemini: "" };
 
 let departments = []; let historyData = []; let tasksData = [];
-// ... (كمل باقي الكود عادي) ...ta = [];
 let usersData = {}; let logsData = []; let likesData = {};
 let currentUser = { name: '', username: '', role: '' };
 let radarChartInstance = null; let trendChartInstance = null;
@@ -29,11 +28,11 @@ let kaizenComments = {};
 let userPoints = {}; 
 let currentTagImg = null;
 let currentViewedDept = null;
-let isDataLoaded = false; // 🛡️ قفل الأمان اللي بيمنع مسح الداتا
+let isDataLoaded = false;
 let currentAudit = null; let currentStepSelections = {}; let currentStepImages = {}; let currentStepImprovements = []; let currentTaskDept = null;
 let deptPhones = {}; 
 let maintenanceEngineers = [];
-let isOnline = false; // متغير لمعرفة حالة النت
+let isOnline = false; 
 let tpmSystemRef = null;
 let tpmSystemListener = null;
 

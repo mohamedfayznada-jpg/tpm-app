@@ -461,19 +461,44 @@ function renderUsersPanel() {
     let html = '';
     for(let uName in usersData) {
         let currentRole = usersData[uName];
-        html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border);"><b>${uName}</b><select class="form-control" style="width:auto; padding:5px;" onchange="changeUserRole('${uName}', this.value)"><option value="viewer" ${currentRole === 'viewer' ? 'selected' : ''}>مشاهد</option><option value="auditor" ${currentRole === 'auditor' ? 'selected' : ''}>مراجع</option><option value="admin" ${currentRole === 'admin' ? 'selected' : ''}>مدير</option></select></div>`;
-    }
-    c.innerHTML = html || '<div style="color:gray;">لا يوجد مستخدمين آخرين</div>';
-}
+        
+        // 🛡️ زرار الحذف هيظهر لكل الناس ما عدا حسابك إنت (عشان متمسحش نفسك بالغلط)
+        let deleteBtn = (uName.toLowerCase() !== currentUser.username.toLowerCase() && uName.toLowerCase() !== 'mfayez') 
+            ? `<button class="btn btn-danger btn-sm" style="padding:3px 8px; margin-right:5px; height:fit-content;" onclick="deleteUserRecord('${uName}')" title="حذف المستخدم وإلغاء صلاحياته">🗑️</button>` 
+            : `<span style="width:38px; display:inline-block;"></span>`; // مسافة عشان شكل الجدول يبقى مظبوط
 
-function renderLogsPanel() {
-    const c = document.getElementById('logsContainer'); if(!c) return;
-    c.innerHTML = logsData.length === 0 ? '<div style="color:gray; font-size: 11px;">لا توجد سجلات حالياً</div>' : [...logsData].reverse().map(l => `<div class="log-item"><span style="font-weight:bold; color:var(--primary);">${l.user}</span><span>${l.action}</span><span style="color:var(--gray);">${l.time}</span></div>`).join('');
+        html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border);">
+            <b style="color:var(--primary-dark); font-size:14px;">${uName}</b>
+            <div style="display:flex; align-items:center;">
+                <select class="form-control" style="width:auto; padding:4px; margin:0; font-size:12px;" onchange="changeUserRole('${uName}', this.value)">
+                    <option value="viewer" ${currentRole === 'viewer' ? 'selected' : ''}>مشاهد</option>
+                    <option value="auditor" ${currentRole === 'auditor' ? 'selected' : ''}>مراجع</option>
+                    <option value="admin" ${currentRole === 'admin' ? 'selected' : ''}>مدير</option>
+                </select>
+                ${deleteBtn}
+            </div>
+        </div>`;
+    }
+    c.innerHTML = html || '<div style="color:gray; font-size:12px; text-align:center;">لا يوجد مستخدمين آخرين</div>';
 }
 
 function changeUserRole(userName, newRole) {
     if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
     usersData[userName] = newRole; logAction(`تعديل صلاحية (${userName}) إلى ${newRole}`); syncToServer(); alert(`تم التعديل بنجاح!`);
+}
+
+// 🚀 الدالة الجديدة الخاصة بحذف المستخدم نهائياً من القائمة
+function deleteUserRecord(userName) {
+    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
+    
+    if(confirm(`⚠️ هل أنت متأكد من حذف المستخدم (${userName}) وإلغاء جميع صلاحياته من النظام؟`)) {
+        delete usersData[userName];
+        syncToServer();
+        logAction(`قام بحذف المستخدم: ${userName}`);
+        renderUsersPanel();
+        alert('✅ تم حذف المستخدم بنجاح!');
+    }
 }
 
 function addNewUserRole() {

@@ -510,6 +510,30 @@
         </div>
         <button class="btn btn-danger" onclick="logout()">تسجيل الخروج</button>
     </div>
+<div class="container screen" id="knowledgeScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 10px; margin-bottom: 15px;">
+            <div class="card-title" style="margin:0; border:none; font-size:20px;">🧠 عقل المصنع (قاعدة المعرفة)</div>
+        </div>
+        <p style="font-size:12px; color:var(--gray); margin-bottom:15px;">هنا يتم تغذية الذكاء الاصطناعي بكتالوجات ومعايير المصنع ليعمل كخبير حصري لك (NotebookLM الخاص بك).</p>
+
+        <div class="card btn-role-admin">
+            <h3 style="color: var(--primary); font-size:15px; margin-top:0; margin-bottom:15px;">➕ إضافة مرجع جديد</h3>
+            <div class="form-group">
+                <label>عنوان المرجع / الكتالوج:</label>
+                <input type="text" id="kbTitle" class="form-control" placeholder="مثال: معايير تنظيف وتزييت ماكينة الحقن...">
+            </div>
+            <div class="form-group">
+                <label>محتوى المرجع (انسخ النص هنا):</label>
+                <textarea id="kbContent" class="form-control" rows="8" placeholder="انسخ محتوى الـ PDF أو التعليمات الفنية هنا..."></textarea>
+            </div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 5px;" onclick="addKnowledgeBaseArticle()">💾 حفظ في قاعدة المعرفة</button>
+        </div>
+
+        <h3 style="font-size:14px; color:var(--primary-dark); margin-bottom:10px; border-bottom:2px solid var(--border); padding-bottom:5px;">📚 المراجع المحفوظة حالياً</h3>
+        <div id="knowledgeListContainer"></div>
+    </div>
+
+
 <div class="nav-bar" id="bottomNav" style="display: none;">
         <div class="nav-item" onclick="showScreen('homeScreen'); updateHomeDashboard();"><span class="nav-icon">🏠</span>الرئيسية</div>
         <div class="nav-item btn-role-auditor" onclick="startNewAuditFlow()"><span class="nav-icon">📋</span>تقييم</div>
@@ -517,6 +541,7 @@
         <div class="nav-item" onclick="showScreen('historyScreen')"><span class="nav-icon">📊</span>التقارير</div>
         <div class="nav-item" onclick="showScreen('kaizenScreen'); renderKaizenFeed();"><span class="nav-icon">🌐</span>كايزن</div>
         <div class="nav-item" onclick="showScreen('tagsScreen'); renderTags();"><span class="nav-icon">🏷️</span>التاجات</div>
+<div class="nav-item btn-role-admin" onclick="showScreen('knowledgeScreen'); renderKnowledgeBase();"><span class="nav-icon">🧠</span>عقل المصنع</div>
         <div class="nav-item" onclick="showScreen('settingsScreen')"><span class="nav-icon">⚙️</span>الإعدادات</div>
     </div>
 <script>

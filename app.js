@@ -1752,7 +1752,6 @@ function deleteKaizenPost(auditId, imgKey) {
 // TAGS MANAGEMENT
 // ==========================================
 function addNewTag() {
-    if(!hasRole('admin', 'auditor')) return alert('عفواً، هذه الصلاحية للمراجع أو المدير فقط.');
     let desc = sanitizeInput(document.getElementById('newTagDesc').value);
     let color = document.getElementById('newTagColor').value;
     let dept = sanitizeInput(document.getElementById('newTagDept').value);
@@ -2037,7 +2036,6 @@ function handleKaizenImage(event, type) {
 }
 
 function submitManualKaizen() {
-    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية نشر كايزن.');
     const title = sanitizeInput(document.getElementById('newKaizenTitle').value);
     const dept = sanitizeInput(document.getElementById('newKaizenDept').value);
     

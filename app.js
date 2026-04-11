@@ -1027,7 +1027,7 @@ function updateHomeDashboard() {
     }
 
     let gridHtml = departments.map(d => {
-        let dAudits = historyData.filter(h => h.dept === d);
+       let dAudits = historyData.filter(h => h.dept === d && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
         let sc = dAudits.length > 0 ? dAudits[dAudits.length - 1].totalPct : 0;
         let col = sc >= 80 ? 'var(--success)' : (sc >= 50 ? 'var(--warning)' : 'var(--danger)');
         let tagsNum = tagsData.filter(t => t.dept === d && t.status === 'open').length;
@@ -1070,7 +1070,7 @@ function updateDeptDashboard() {
     document.getElementById('deptKpiTasks').innerText = pendingTasks;
     document.getElementById('deptKpiComp').innerText = `${compRate}%`;
 
-    let audits = historyData.filter(h => h.dept === currentViewedDept && (machine === '' || (h.machine && h.machine.toLowerCase().includes(machine))));
+ let audits = historyData.filter(h => h.dept === currentViewedDept && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')) && (machine === '' || (h.machine && h.machine.toLowerCase().includes(machine))));
     let scores = [0,0,0,0,0,0,0];
     
     if(audits.length > 0) {
@@ -1569,8 +1569,11 @@ function addManualTaskDept() {
 }
 
 function renderHistory() {
-    document.getElementById('historyListContainer').innerHTML = historyData.length === 0 ? '<div style="color:gray;">لا توجد تقارير</div>' : 
-    [...historyData].reverse().map(a => {
+    // 🛡️ فلترة التقارير الحقيقية فقط وإخفاء تقارير الكايزن الوهمية
+    let realAudits = historyData.filter(a => !(a.stepsOrder && a.stepsOrder.includes('ManualKaizen')));
+    
+    document.getElementById('historyListContainer').innerHTML = realAudits.length === 0 ? '<div style="color:gray;">لا توجد تقارير</div>' : 
+    [...realAudits].reverse().map(a => {
         let col = a.totalPct >= 80 ? 'success' : (a.totalPct >= 50 ? 'warning' : 'danger');
         let adminBtns = currentUser.role === 'admin' ? `<div style="margin-top: 15px; display: flex; gap: 5px; justify-content: flex-end;" onclick="event.stopPropagation();"><button class="btn btn-warning btn-sm" onclick="editReport('${a.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteReport('${a.id}')">🗑️</button></div>` : '';
         return `<div class="card" style="border-right: 4px solid var(--${col}); cursor:pointer;" onclick="viewDetailedReport('${a.id}')"><div style="display:flex; justify-content:space-between;"><div><b>${escapeHtml(a.dept)}</b><br><span style="font-size:11px; color:gray;">${escapeHtml(a.date)}</span></div><b style="color:var(--${col}); font-size:18px;">${a.totalPct}%</b></div>${adminBtns}</div>`;

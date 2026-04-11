@@ -270,9 +270,11 @@ kaizenComments = data.kaizenComments || {};
     }
 });
 
+// ==========================================
+// SYNC TO SERVER (دالة الحفظ الذكية - الإصدار النهائي)
+// ==========================================
 function syncToServer() {
-    if (!isDataLoaded) return; 
-    if (!firebase.auth().currentUser) return;
+    if (!isDataLoaded || !firebase.auth().currentUser) return; 
     
     let cloudStatus = document.getElementById('cloudStatus');
     if(cloudStatus) {
@@ -288,18 +290,30 @@ function syncToServer() {
     try {
         let safeHistory = {}; if(historyData) historyData.forEach(h => { if(h && h.id) safeHistory[h.id] = h; }); 
         let safeTasks = {}; if(tasksData) tasksData.forEach(t => { if(t && t.id) safeTasks[t.id] = t; }); 
-        let safeLogs = {}; if(logsData) logsData.forEach(l => { if(l && l.id) safeLogs[l.id] = l; }); 
         let safeTags = {}; if(tagsData) tagsData.forEach(t => { if(t && t.id) safeTags[t.id] = t; }); 
+        let safeLogs = {}; if(logsData) logsData.forEach(l => { if(l && l.id) safeLogs[l.id] = l; }); 
 
-        const finalData = JSON.parse(JSON.stringify({ 
-            departments: departments || [], history: safeHistory, tasks: safeTasks, 
-            users: usersData || {}, logs: safeLogs, likes: likesData || {}, 
-            tags: safeTags, points: userPoints || {}, deptPhones: deptPhones || {}, 
-            maintenanceEngineers: maintenanceEngineers || [], kaizenComments: kaizenComments || {} 
-        }));
+        // 🟢 البيانات المسموح لأي حد في المصنع يحفظها (كايزن وتاجات)
+        let updates = {
+            'tpm_system/history': safeHistory,
+            'tpm_system/tasks': safeTasks,
+            'tpm_system/tags': safeTags,
+            'tpm_system/kaizenComments': kaizenComments || {},
+            'tpm_system/points': userPoints || {},
+            'tpm_system/likes': likesData || {},
+            'tpm_system/logs': safeLogs
+        };
 
-        // Firebase سيقوم بحفظها في الـ Queue تلقائياً إذا كان أوفلاين
-        db.ref('tpm_system').update(finalData)
+        // 🔴 البيانات المسموح للمدير فقط يحفظها (عشان الفايربيز ميرفضش طلب العمال)
+        if (hasRole('admin')) {
+            updates['tpm_system/departments'] = departments || [];
+            updates['tpm_system/users'] = usersData || {};
+            updates['tpm_system/deptPhones'] = deptPhones || {};
+            updates['tpm_system/maintenanceEngineers'] = maintenanceEngineers || [];
+        }
+
+        // الحفظ الدقيق للمسارات عشان الفايربيز يقبل الداتا
+        db.ref().update(updates)
         .then(() => { 
             if(cloudStatus && isOnline) { 
                 cloudStatus.innerHTML = "☁️ متصل ومزامن"; 
@@ -309,9 +323,9 @@ function syncToServer() {
         .catch(e => {
             console.error("Firebase Save Error:", e);
             if(cloudStatus && isOnline) { 
-                cloudStatus.innerHTML = "❌ فشل الحفظ"; 
+                cloudStatus.innerHTML = "❌ فشل الحفظ (مرفوض)"; 
                 cloudStatus.style.backgroundColor = "#C62828"; 
-                alert("⚠️ تنبيه: حدث خطأ في الاتصال بقاعدة البيانات.");
+                alert("⚠️ النظام رفض الحفظ! راجع صلاحيات Firebase.");
             }
         });
     } catch(e) {

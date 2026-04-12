@@ -2664,13 +2664,13 @@ const ReliabilityEngine = {
     }
 };
 
-// 🛡️ صمام أمان: إخفاء الشاشة الزرقاء إجبارياً بعد 3 ثواني لو حصل أي تأخير في النت
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        const overlay = document.getElementById('globalLoadingOverlay');
-        if (overlay && overlay.style.display !== 'none') {
-            overlay.style.opacity = '0';
-            setTimeout(() => { overlay.style.display = 'none'; }, 500);
-        }
-    }, 3000);
-});
+// 💣 التدمير الشامل: مسح الشاشة الزرقاء من الوجود بمجرد تحميل التطبيق
+setInterval(() => {
+    const overlay = document.getElementById('globalLoadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'none'; // إخفاء فوري
+        overlay.style.zIndex = '-9999'; // رميها ورا التطبيق
+        overlay.remove(); // تدمير العنصر نهائياً من المتصفح
+        console.log("✅ تم تدمير شاشة التحميل بنجاح!");
+    }
+}, 2000); // هيشتغل بعد ثانيتين بالظبط ويمسحها

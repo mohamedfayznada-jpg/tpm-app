@@ -98,3 +98,10 @@ body {
     font-weight: bold;
     z-index: 10;
 }
+
+#globalLoadingOverlay {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    z-index: -9999 !important;
+}

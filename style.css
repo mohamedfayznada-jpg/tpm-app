@@ -105,3 +105,54 @@ body {
     opacity: 0 !important;
     z-index: -9999 !important;
 }
+/* =========================================
+   ✨ التنسيق السينمائي لشبكة المصنع (Grid) ✨
+   ========================================= */
+   
+/* حاوية الأقسام - بتظبط الكروت جنب بعض أوتوماتيك */
+#homeDeptGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+    gap: 15px;
+    margin-top: 20px;
+    padding: 5px;
+}
+
+/* تنسيق الكارت الزجاجي */
+.card {
+    background: rgba(15, 22, 33, 0.75) !important; /* لون داكن شيك جداً */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* تأثير اللمس */
+.card:active {
+    transform: scale(0.96);
+}
+
+/* تظبيط بادج الحالة (مستقر / خطر) */
+.heatmap-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-weight: 900;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    z-index: 2;
+}
+
+/* تظبيط الهيدر وشريط البحث عشان ميكونوش ملزوقين */
+.header {
+    padding-bottom: 20px !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 15px;
+}

@@ -10,32 +10,37 @@ const firebaseConfig = {
     messagingSenderId: "1047922099229",
     appId: "1:1047922099229:web:5e3d6fd5fa4c23ab2772f4"
 };
+
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
-let globalApiKeys = { imgbb: "", gemini: "" };
+// الحالة العامة للتطبيق - نسخة موحدة
+const AppState = {
+    globalApiKeys: { imgbb: "", gemini: "" },
+    departments: [],
+    historyData: [],
+    tasksData: [],
+    usersData: {},
+    logsData: [],
+    likesData: {},
+    currentUser: { name: '', username: '', role: '' },
+    radarChartInstance: null,
+    trendChartInstance: null,
+    factoryBarChartInstance: null,
+    isInitialLoad: true,
+    currentOplImg: null,
+    tagsData: [],
+    kaizenComments: {},
+    userPoints: {},
+    currentViewedDept: null,
+    isDataLoaded: false,
+    currentAudit: null,
+    isOnline: false,
+    knowledgeBaseData: []
+};
 
-let departments = []; let historyData = []; let tasksData = [];
-let usersData = {}; let logsData = []; let likesData = {};
-let currentUser = { name: '', username: '', role: '' };
-let radarChartInstance = null; let trendChartInstance = null;
-let factoryBarChartInstance = null;
-let isInitialLoad = true; let currentOplImg = null;
-let currentUploadItemId = null; let currentUploadItemTitle = '';
-let voiceAuditActive = false; 
-let tagsData = []; 
-let kaizenComments = {};
-let userPoints = {}; 
-let currentTagImg = null;
-let currentViewedDept = null;
-let isDataLoaded = false;
-let currentAudit = null; let currentStepSelections = {}; let currentStepImages = {}; let currentStepImprovements = []; let currentTaskDept = null;
-let deptPhones = {}; 
-let maintenanceEngineers = [];
-let isOnline = false; 
-let tpmSystemRef = null;
-let tpmSystemListener = null;
-let knowledgeBaseData = [];
+// تعريف المتغيرات للإشارة لـ AppState لسهولة الكود القديم
+let { globalApiKeys, departments, historyData, tasksData, usersData, logsData, likesData, currentUser, tagsData, isOnline } = AppState;
 function hasRole(...allowed) {
     return allowed.includes(currentUser.role);
 }
@@ -224,8 +229,16 @@ firebase.auth().onAuthStateChanged((user) => {
 maintenanceEngineers = data.maintenanceEngineers || [];
 kaizenComments = data.kaizenComments || {};
 knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
+// تحديث شريط التقدم
+const progressBar = document.getElementById('loadingProgressBar');
+if (progressBar) progressBar.style.width = '90%';
                 isDataLoaded = true; // 🛡️ تم تحميل الداتا بنجاح
-
+// إخفاء شاشة التحميل بعد تجهيز البيانات
+const overlay = document.getElementById('globalLoadingOverlay');
+if (overlay) {
+    overlay.style.opacity = '0';
+    setTimeout(() => { overlay.style.display = 'none'; }, 500);
+}
                 if (isInitialLoad) {
                     isInitialLoad = false;
                     const savedName = localStorage.getItem('tpm_user') || user.email.split('@')[0];
@@ -285,54 +298,59 @@ knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filte
     }
 });
 
-// ==========================================
-// SYNC TO SERVER (دالة الحفظ المباشر - ضد التهنيج)
-// ==========================================
 function syncToServer() {
     if (!isDataLoaded || !firebase.auth().currentUser) return;
-    
+
     let cloudStatus = document.getElementById('cloudStatus');
-    if(cloudStatus) {
+    if (cloudStatus) {
         cloudStatus.innerHTML = isOnline ? "⏳ جاري الحفظ..." : "📴 بالانتظار...";
         cloudStatus.style.backgroundColor = isOnline ? "rgba(46, 125, 50, 0.9)" : "#F57F17";
     }
-    
-    try {
-        let safeHistory = {}; if(historyData) historyData.forEach(h => { if(h && h.id) safeHistory[h.id] = h; }); 
-        let safeTasks = {}; if(tasksData) tasksData.forEach(t => { if(t && t.id) safeTasks[t.id] = t; }); 
-        let safeTags = {}; if(tagsData) tagsData.forEach(t => { if(t && t.id) safeTags[t.id] = t; }); 
-        let safeLogs = {}; if(logsData) logsData.forEach(l => { if(l && l.id) safeLogs[l.id] = l; }); 
 
-        // 🚀 الحفظ الصاروخي: الحفظ لكل ملف لوحده عشان نتفادى رفض وكراش الفايربيز
-        db.ref('tpm_system/history').set(safeHistory);
-        db.ref('tpm_system/tasks').set(safeTasks);
-        db.ref('tpm_system/tags').set(safeTags);
-        db.ref('tpm_system/kaizenComments').set(kaizenComments || {});
-        db.ref('tpm_system/likes').set(likesData || {});
-        db.ref('tpm_system/points').set(userPoints || {});
-        db.ref('tpm_system/logs').set(safeLogs);
+    try {
+        const updates = {};
+        
+        // بناء كائن التحديثات فقط للأجزاء التي تغيرت (هنا نرسل كل شيء لكن بطريقة آمنة)
+        // الأفضل مستقبلاً إرسال المسار المحدد فقط، لكن هذا حل آمن وسريع
+        if (historyData) historyData.forEach(h => { if (h && h.id) updates['tpm_system/history/' + h.id] = h; });
+        if (tasksData) tasksData.forEach(t => { if (t && t.id) updates['tpm_system/tasks/' + t.id] = t; });
+        if (tagsData) tagsData.forEach(t => { if (t && t.id) updates['tpm_system/tags/' + t.id] = t; });
+        if (logsData) logsData.forEach(l => { if (l && l.id) updates['tpm_system/logs/' + l.id] = l; });
+
+        // كائنات كاملة
+        updates['tpm_system/kaizenComments'] = kaizenComments || {};
+        updates['tpm_system/likes'] = likesData || {};
+        updates['tpm_system/points'] = userPoints || {};
 
         // إعدادات المدير
         if (hasRole('admin')) {
-            db.ref('tpm_system/departments').set(departments || []);
-            db.ref('tpm_system/users').set(usersData || {});
-            db.ref('tpm_system/deptPhones').set(deptPhones || {});
-            db.ref('tpm_system/maintenanceEngineers').set(maintenanceEngineers || []);
-db.ref('tpm_system/knowledgeBase').set(knowledgeBaseData || []);
+            updates['tpm_system/departments'] = departments || [];
+            updates['tpm_system/users'] = usersData || {};
+            updates['tpm_system/deptPhones'] = deptPhones || {};
+            updates['tpm_system/maintenanceEngineers'] = maintenanceEngineers || [];
+            updates['tpm_system/knowledgeBase'] = knowledgeBaseData || [];
             if (globalApiKeys && globalApiKeys.imgbb) {
-                db.ref('tpm_system/api_keys').set(globalApiKeys);
+                updates['tpm_system/api_keys'] = globalApiKeys;
             }
         }
 
-        if(cloudStatus && isOnline) { 
-            setTimeout(() => {
-                cloudStatus.innerHTML = "☁️ متصل ومزامن"; 
-                cloudStatus.style.backgroundColor = "rgba(46, 125, 50, 0.9)"; 
-            }, 1000);
-        }
-    } catch(e) {
-        console.error("Sync Data Error:", e);
-        if(cloudStatus) { cloudStatus.innerHTML = "❌ خطأ برمجي"; cloudStatus.style.backgroundColor = "#C62828"; }
+        // تحديث واحد متعدد المسارات (Multi-path Update) يمنع الكتابة فوق بعضها
+        return db.ref().update(updates)
+            .then(() => {
+                if (cloudStatus && isOnline) {
+                    setTimeout(() => {
+                        cloudStatus.innerHTML = "☁️ متصل ومزامن";
+                        cloudStatus.style.backgroundColor = "rgba(46, 125, 50, 0.9)";
+                    }, 1000);
+                }
+            })
+            .catch(e => {
+                console.error("Sync Data Error:", e);
+                if (cloudStatus) { cloudStatus.innerHTML = "❌ خطأ في المزامنة"; cloudStatus.style.backgroundColor = "#C62828"; }
+            });
+    } catch (e) {
+        console.error("Sync Prepare Error:", e);
+        if (cloudStatus) { cloudStatus.innerHTML = "❌ خطأ برمجي"; cloudStatus.style.backgroundColor = "#C62828"; }
     }
 }
 // ==========================================
@@ -1244,6 +1262,8 @@ function renderCurrentAuditStep() {
     document.getElementById('auditItemsContainer').innerHTML = html;
     window.scrollTo(0,0);
     showScreen('auditScreen');
+// تشغيل حساب الموثوقية فور اختيار الماكينة
+ReliabilityEngine.updateHealthIndicator();
 }
 
 function selectLevel(id, score, max, el) {
@@ -2660,3 +2680,47 @@ async function explainItem(title) {
         document.getElementById('aiModalText').innerHTML = `❌ حدث خطأ: ${e.message}`;
     }
 }
+
+/**
+ * موديول حساب الموثوقية (Reliability Engine)
+ * يستخدم معادلة التوزيع الأسي للتنبؤ بالأعطال: R(t) = e^(-λt)
+ */
+const ReliabilityEngine = {
+    calculateMachineHealth: function(machineName, deptName) {
+        if (!machineName || machineName === 'عام') return 100;
+
+        // حساب عدد التاجات الحمراء المفتوحة لهذه الماكينة
+        const redTagsCount = tagsData.filter(t => 
+            t.machine === machineName && 
+            t.dept === deptName && 
+            t.color === 'red' && 
+            t.status === 'open'
+        ).length;
+
+        // حساب λ (معدل الفشل) - نفترض متوسط عمر الماكينة الافتراضي 30 يوماً للتنظيف العميق
+        const lambda = (redTagsCount + 0.5) / 30; 
+        const predictionDays = 7; // التنبؤ للأسبوع القادم
+        
+        // المعادلة الرياضية للموثوقية
+        const reliability = Math.exp(-lambda * (predictionDays / 30));
+        
+        return Math.round(reliability * 100);
+    },
+
+    // تحديث الواجهة عند اختيار ماكينة في التقييم
+    updateHealthIndicator: function() {
+        if (!currentAudit || !currentAudit.machine) return;
+        
+        const health = this.calculateMachineHealth(currentAudit.machine, currentAudit.dept);
+        const el = document.getElementById('machineHealthIndicator');
+        
+        if (el) {
+            el.innerHTML = `🛡️ الموثوقية المتوقعة للمعدة (${currentAudit.machine}): <span style="font-size:14px;">${health}%</span>`;
+            el.style.color = health > 80 ? 'var(--success-neon)' : (health > 50 ? '#ffeb3b' : 'var(--danger-neon)');
+        }
+    }
+};
+
+// ربط الموثوقية بدورة التقييم
+// ابحث عن دالة renderCurrentAuditStep() وضيف السطر ده في آخرها:
+// ReliabilityEngine.updateHealthIndicator();

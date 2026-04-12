@@ -14,7 +14,21 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
-// الحالة العامة للتطبيق - نسخة موحدة
+// متغيرات الربط بفايربيز (لازم تتعرف هنا عشان الكود يشتغل)
+let tpmSystemRef = null;
+let tpmSystemListener = null;
+let currentUploadItemId = null;
+let currentUploadItemTitle = null;
+let currentStepSelections = {};
+let currentStepImages = {};
+let currentStepImprovements = [];
+let voiceAuditActive = false;
+let currentTagImg = null;
+let currentTaskDept = null;
+let deptPhones = {};
+let maintenanceEngineers = [];
+
+// الحالة العامة للتطبيق
 const AppState = {
     globalApiKeys: { imgbb: "", gemini: "" },
     departments: [],
@@ -39,8 +53,8 @@ const AppState = {
     knowledgeBaseData: []
 };
 
-// تعريف المتغيرات للإشارة لـ AppState لسهولة الكود القديم
-let { globalApiKeys, departments, historyData, tasksData, usersData, logsData, likesData, currentUser, tagsData, isOnline } = AppState;
+// فك المتغيرات لسهولة الاستخدام
+let { globalApiKeys, departments, historyData, tasksData, usersData, logsData, likesData, currentUser, tagsData, isOnline, knowledgeBaseData, userPoints, kaizenComments } = AppState;
 function hasRole(...allowed) {
     return allowed.includes(currentUser.role);
 }
@@ -1038,71 +1052,38 @@ function updateHomeDashboard() {
     let totalOpen = tagsData.filter(t => t.status === 'open').length;
     let totalClosed = tagsData.filter(t => t.status === 'closed').length;
     
-    let deptScores = [];
-    let deptLabels = [];
-    let bestDept = { name: 'لا يوجد', score: -1, openTags: 999 };
-
-    departments.forEach(d => {
-        // 🛡️ الفلتر هنا: تجاهل الكايزن اليدوي
+    let gridHtml = departments.map(d => {
         let dAudits = historyData.filter(h => h.dept === d && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
-        let latestPct = 0;
-        if(dAudits.length > 0) {
-            latestPct = dAudits[dAudits.length - 1].totalPct;
-            totalScore += latestPct; auditCount++;
-        }
-        deptLabels.push(d);
-        deptScores.push(latestPct);
-
-        let dOpenTags = tagsData.filter(t => t.dept === d && t.status === 'open').length;
+        let sc = dAudits.length > 0 ? dAudits[dAudits.length - 1].totalPct : 0;
         
-        let calcScore = latestPct - (dOpenTags * 2);
-        if(calcScore > bestDept.score && dAudits.length > 0) {
-            bestDept = { name: d, score: calcScore, actualPct: latestPct, openTags: dOpenTags };
-        }
-    });
+        // حساب كثافة التاجات الحمراء للمنطقة الساخنة
+        let redTagsNum = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
+        
+        // منطق المنطقة الساخنة (Hot Zone)
+        let zoneClass = (redTagsNum >= 3 || (sc < 50 && sc > 0)) ? 'hot-zone' : '';
+        let riskLevel = redTagsNum >= 3 ? '🔥 خطر' : '✅ مستقر';
 
+        let col = sc >= 80 ? 'var(--success-neon)' : (sc >= 50 ? '#ffeb3b' : 'var(--danger-neon)');
+        
+        return `
+        <div class="card ${zoneClass}" style="position:relative; cursor:pointer; padding:20px;" onclick="openDeptDashboard('${d}')">
+            <span class="heatmap-badge" style="background:${col}; color:black;">${riskLevel}</span>
+            <div style="margin-top:15px;">
+                <b style="display:block; font-size:16px; color:white;">${d}</b>
+                <div style="font-size:28px; font-weight:900; color:${col};">${sc}%</div>
+                <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:11px; opacity:0.8;">
+                    <span>🔴 ${redTagsNum} تاجات</span>
+                    <span>📈 كفاءة</span>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+    
+    document.getElementById('homeDeptGrid').innerHTML = gridHtml;
+    // تحديث باقي الـ KPIs
     document.getElementById('homeAvgScore').innerText = auditCount > 0 ? Math.round(totalScore/auditCount) + '%' : '0%';
     document.getElementById('homeOpenTags').innerText = totalOpen;
     document.getElementById('homeClosedTags').innerText = totalClosed;
-
-    if(bestDept.score !== -1) {
-        document.getElementById('homeBestDept').innerText = bestDept.name;
-        document.getElementById('homeBestReason').innerText = `بتقييم ${bestDept.actualPct}% و (${bestDept.openTags}) تاجات مفتوحة فقط.`;
-    } else {
-        document.getElementById('homeBestDept').innerText = "لا توجد تقييمات";
-        document.getElementById('homeBestReason').innerText = "";
-    }
-
-    if (typeof Chart !== 'undefined') {
-        const ctxBar = document.getElementById('factoryBarChart');
-        if(ctxBar) {
-            if(factoryBarChartInstance) factoryBarChartInstance.destroy();
-            const isDark = document.body.classList.contains('dark-mode');
-            const textColor = isDark ? '#e0e0e0' : '#666';
-            
-            factoryBarChartInstance = new Chart(ctxBar.getContext('2d'), {
-                type: 'bar',
-                data: { labels: deptLabels, datasets: [{ label: 'آخر تقييم %', data: deptScores, backgroundColor: '#1565C0', borderRadius: 4 }] },
-                options: { scales: { y: { min: 0, max: 100, ticks: { color: textColor } }, x: { ticks: { color: textColor } } }, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-        }
-    }
-
-    let gridHtml = departments.map(d => {
-        // 🛡️ الفلتر هنا برضه: تجاهل الكايزن اليدوي
-        let dAudits = historyData.filter(h => h.dept === d && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
-        let sc = dAudits.length > 0 ? dAudits[dAudits.length - 1].totalPct : 0;
-        let col = sc >= 80 ? 'var(--success)' : (sc >= 50 ? 'var(--warning)' : 'var(--danger)');
-        let tagsNum = tagsData.filter(t => t.dept === d && t.status === 'open').length;
-        
-        return `<div style="background:var(--white); border:1px solid var(--border); border-right:4px solid ${col}; padding:15px; border-radius:8px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.05); transition:0.2s;" onclick="openDeptDashboard('${d}')">
-            <b style="display:block; font-size:14px; margin-bottom:5px;">${d}</b>
-            <div style="font-size:22px; font-weight:bold; color:${col};">${sc}%</div>
-            <div style="font-size:11px; color:var(--danger); margin-top:5px;">🔴 ${tagsNum} تاجات مفتوحة</div>
-        </div>`;
-    }).join('');
-    document.getElementById('homeDeptGrid').innerHTML = gridHtml;
-
     updateUsersLeaderboard();
 }
 // 2. فتح شاشة تفاصيل القسم
@@ -1264,6 +1245,8 @@ function renderCurrentAuditStep() {
     showScreen('auditScreen');
 // تشغيل حساب الموثوقية فور اختيار الماكينة
 ReliabilityEngine.updateHealthIndicator();
+// استدعاء محرك الموثوقية لتحديث المؤشر في الهيدر فوراً
+if(typeof ReliabilityEngine !== 'undefined') ReliabilityEngine.updateHealthIndicator();
 }
 
 function selectLevel(id, score, max, el) {
@@ -2720,7 +2703,3 @@ const ReliabilityEngine = {
         }
     }
 };
-
-// ربط الموثوقية بدورة التقييم
-// ابحث عن دالة renderCurrentAuditStep() وضيف السطر ده في آخرها:
-// ReliabilityEngine.updateHealthIndicator();

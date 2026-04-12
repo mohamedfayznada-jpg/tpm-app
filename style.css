@@ -49,3 +49,52 @@ body {
 /* إخفاء شريط التمرير بشكل جمالي */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--primary-dark); border-radius: 10px; }
+/* أنيميشن النبض للأقسام عالية الخطورة */
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 23, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0); }
+}
+
+.hot-zone {
+    animation: pulse-red 2s infinite;
+    border: 2px solid var(--danger-neon) !important;
+}
+
+.cool-zone {
+    border: 1px solid var(--success-neon) !important;
+    background: rgba(0, 230, 118, 0.05) !important;
+}
+
+.heatmap-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+/* أنيميشن النبض للمناطق الساخنة 🔥 */
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 23, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0); }
+}
+
+.hot-zone {
+    animation: pulse-red 2s infinite;
+    border: 2px solid var(--danger-neon) !important;
+}
+
+.heatmap-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: bold;
+    z-index: 10;
+}

@@ -1099,6 +1099,49 @@ function updateHomeDashboard() {
     updateUsersLeaderboard();
 }
 
+function updateHomeDashboard() {
+    let totalScore = 0, auditCount = 0;
+    let totalOpen = tagsData.filter(t => t.status === 'open').length;
+    let totalClosed = tagsData.filter(t => t.status === 'closed').length;
+    
+    let gridHtml = departments.map(d => {
+        let dAudits = historyData.filter(h => h.dept === d && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
+        let sc = dAudits.length > 0 ? dAudits[dAudits.length - 1].totalPct : 0;
+        
+        if(dAudits.length > 0) {
+            totalScore += sc; auditCount++;
+        }
+        
+        // حساب كثافة التاجات الحمراء للمنطقة الساخنة
+        let redTagsNum = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
+        
+        // منطق المنطقة الساخنة (Hot Zone)
+        let zoneClass = (redTagsNum >= 3 || (sc < 50 && sc > 0)) ? 'hot-zone' : '';
+        let riskLevel = redTagsNum >= 3 ? '🔥 خطر' : '✅ مستقر';
+
+        let col = sc >= 80 ? 'var(--success-neon)' : (sc >= 50 ? '#ffeb3b' : 'var(--danger-neon)');
+        
+        return `
+        <div class="card ${zoneClass}" style="position:relative; cursor:pointer; padding:20px; transition:0.3s; overflow:hidden;" onclick="openDeptDashboard('${d}')">
+            <span class="heatmap-badge" style="background:${col}; color:black;">${riskLevel}</span>
+            <div style="margin-top:15px;">
+                <b style="display:block; font-size:16px; color:white; margin-bottom:5px;">${d}</b>
+                <div style="font-size:28px; font-weight:900; color:${col};">${sc}%</div>
+                <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:11px; opacity:0.8;">
+                    <span>🔴 ${redTagsNum} تاجات</span>
+                    <span>📈 كفاءة</span>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+    
+    document.getElementById('homeDeptGrid').innerHTML = gridHtml;
+    document.getElementById('homeAvgScore').innerText = auditCount > 0 ? Math.round(totalScore/auditCount) + '%' : '0%';
+    document.getElementById('homeOpenTags').innerText = totalOpen;
+    document.getElementById('homeClosedTags').innerText = totalClosed;
+    updateUsersLeaderboard();
+}
+
 // ==========================================
 // DEPT DASHBOARD (الدوال اللي كانت ناقصة)
 // ==========================================

@@ -16,7 +16,7 @@ if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
 // ------------------------------------------
-// 🧠 المتغيرات العالمية (آمنة ومباشرة)
+// 🧠 GLOBAL VARIABLES (SAFE STATE)
 // ------------------------------------------
 let tpmSystemRef = null;
 let tpmSystemListener = null;
@@ -55,7 +55,7 @@ let currentTaskDept = null;
 let currentOplImg = null;
 
 // ------------------------------------------
-// 🛡️ دوال المساعدة والحماية
+// 🛡️ CORE UTILITIES & PROTECTIONS
 // ------------------------------------------
 function hasRole(...allowed) {
     if (!currentUser || !currentUser.role) return false;
@@ -69,8 +69,15 @@ function safeUrl(url) { const val = String(url || '').trim(); return (val.starts
 function toCsvCell(value) { return `"${String(value ?? '').replace(/"/g, '""')}"`; }
 function uniqueNumericId() { return (Date.now() * 1000) + Math.floor(Math.random() * 1000); }
 
+// تحويل الداتا المعطوبة من Firebase إلى Array سليم لمنع الانهيار
+function safeArray(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    return Object.values(data);
+}
+
 // ------------------------------------------
-// 📡 حالة الاتصال بالشبكة
+// 📡 CONNECTION MONITORING
 // ------------------------------------------
 db.ref('.info/connected').on('value', function(snap) {
     isOnline = snap.val() === true;
@@ -80,14 +87,14 @@ db.ref('.info/connected').on('value', function(snap) {
             cloudStatus.innerHTML = "☁️ متصل ومزامن";
             cloudStatus.style.color = "var(--success-neon)";
         } else {
-            cloudStatus.innerHTML = "📴 أوفلاين (مؤقتاً)";
+            cloudStatus.innerHTML = "📴 أوفلاين (شغلك محفوظ)";
             cloudStatus.style.color = "var(--warning-neon)";
         }
     }
 });
 
 // ------------------------------------------
-// 🔐 تسجيل الدخول وجلب البيانات (مُحسّن وسريع)
+// 🔐 AUTHENTICATION & DATA FETCHING
 // ------------------------------------------
 firebase.auth().onAuthStateChanged((user) => {
     if (tpmSystemRef && tpmSystemListener) {
@@ -100,7 +107,12 @@ firebase.auth().onAuthStateChanged((user) => {
             try {
                 const data = snapshot.val() || {};
                 
-                departments = data.departments || ['قسم الإنتاج', 'قسم الصيانة'];
+                // استخدام SafeArray لحماية التطبيق من أخطاء الـ Map Crash
+                departments = safeArray(data.departments);
+                if(departments.length === 0) departments = ['قسم الإنتاج', 'قسم الصيانة'];
+                
+                maintenanceEngineers = safeArray(data.maintenanceEngineers);
+                
                 historyData = data.history ? Object.values(data.history).filter(x => x && x.id).sort((a,b) => Number(a.id) - Number(b.id)) : [];
                 tasksData = data.tasks ? Object.values(data.tasks).filter(x => x && x.id).sort((a,b) => Number(a.id) - Number(b.id)) : [];
                 logsData = data.logs ? Object.values(data.logs).filter(x => x).sort((a,b) => Number(a.id) - Number(b.id)) : [];
@@ -110,18 +122,10 @@ firebase.auth().onAuthStateChanged((user) => {
                 tagsData = data.tags ? Object.values(data.tags).filter(x => x && x.id).sort((a,b) => Number(b.id) - Number(a.id)) : [];
                 userPoints = data.points || {};
                 deptPhones = data.deptPhones || {};
-                maintenanceEngineers = data.maintenanceEngineers || [];
                 kaizenComments = data.kaizenComments || {};
                 knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
                 
                 isDataLoaded = true;
-
-                // تحديث حالة الشبكة عند اكتمال جلب البيانات
-                let cloudStatus = document.getElementById('cloudStatus');
-                if (cloudStatus && isOnline) {
-                    cloudStatus.innerHTML = "☁️ متصل ومزامن";
-                    cloudStatus.style.color = "var(--success-neon)";
-                }
 
                 // إعدادات المستخدم لأول مرة بعد الدخول
                 if (isInitialLoad) {
@@ -152,7 +156,7 @@ firebase.auth().onAuthStateChanged((user) => {
                     showScreen('homeScreen');
                 }
 
-                // تحديث الواجهات
+                // تحديث الواجهات بدون أي Crash
                 updateDeptDropdown(); 
                 updateDeptListUI(); 
                 renderHistory(); 
@@ -165,7 +169,7 @@ firebase.auth().onAuthStateChanged((user) => {
                             updateDeptDashboard();
                         }
                     }
-                } catch(dashErr) { console.error("Dashboard Error:", dashErr); }
+                } catch(dashErr) { console.error("Dashboard Render Error:", dashErr); }
                 
                 if(currentUser.role === 'admin') { renderUsersPanel(); renderLogsPanel(); }
                 if(document.getElementById('kaizenScreen') && document.getElementById('kaizenScreen').classList.contains('active')) renderKaizenFeed();
@@ -192,10 +196,7 @@ async function login() {
     if(!username || !password || !name) return alert('برجاء إكمال البيانات!');
     
     let cloudStatus = document.getElementById('cloudStatus');
-    if(cloudStatus) {
-        cloudStatus.innerHTML = "⏳ جاري الدخول...";
-        cloudStatus.style.color = "var(--text-bright)";
-    }
+    if(cloudStatus) { cloudStatus.innerHTML = "⏳ جاري الدخول..."; cloudStatus.style.color = "var(--text-bright)"; }
     
     const fakeEmail = username + "@tpm.app";
 
@@ -205,7 +206,7 @@ async function login() {
             localStorage.setItem('tpm_user', name); localStorage.setItem('tpm_username', username);
         }
         await firebase.auth().signInWithEmailAndPassword(fakeEmail, password);
-        setTimeout(() => { if(isDataLoaded) { logAction('تسجيل دخول للنظام'); syncToServer(); } }, 1500); 
+        setTimeout(() => { if(isDataLoaded) logAction('تسجيل دخول للنظام'); }, 1500); 
     } catch (error) { 
         alert('خطأ في البيانات أو الحساب غير موجود!'); 
         if(cloudStatus) cloudStatus.innerHTML = "❌ خطأ بالاتصال";
@@ -233,7 +234,7 @@ async function registerNewUser() {
 }
 
 function logout() {
-    logAction('تسجيل خروج'); syncToServer();
+    logAction('تسجيل خروج');
     setTimeout(() => { 
         firebase.auth().signOut().then(() => { 
             localStorage.removeItem('tpm_user'); localStorage.removeItem('tpm_username');
@@ -253,7 +254,7 @@ async function biometricLogin() {
 }
 
 // ------------------------------------------
-// 🔄 DATABASE SYNC
+// 🔄 DATABASE SYNC (SAFE & OPTIMIZED)
 // ------------------------------------------
 function syncToServer() {
     if (!isDataLoaded || !firebase.auth().currentUser) return;
@@ -262,8 +263,7 @@ function syncToServer() {
         if (historyData) historyData.forEach(h => { if (h && h.id) updates['tpm_system/history/' + h.id] = h; });
         if (tasksData) tasksData.forEach(t => { if (t && t.id) updates['tpm_system/tasks/' + t.id] = t; });
         if (tagsData) tagsData.forEach(t => { if (t && t.id) updates['tpm_system/tags/' + t.id] = t; });
-        if (logsData) logsData.forEach(l => { if (l && l.id) updates['tpm_system/logs/' + l.id] = l; });
-
+        
         updates['tpm_system/kaizenComments'] = kaizenComments || {};
         updates['tpm_system/likes'] = likesData || {};
         updates['tpm_system/points'] = userPoints || {};
@@ -274,7 +274,6 @@ function syncToServer() {
             updates['tpm_system/deptPhones'] = deptPhones || {};
             updates['tpm_system/maintenanceEngineers'] = maintenanceEngineers || [];
             updates['tpm_system/knowledgeBase'] = knowledgeBaseData || [];
-            if (globalApiKeys && globalApiKeys.imgbb) updates['tpm_system/api_keys'] = globalApiKeys;
         }
 
         db.ref().update(updates).catch(e => console.error("Sync Error:", e));
@@ -285,8 +284,11 @@ function logAction(actionDesc) {
     if(!currentUser || !currentUser.name) return;
     const now = new Date();
     const timeStr = now.toLocaleDateString('ar-EG') + ' ' + now.toLocaleTimeString('ar-EG');
-    logsData.push({ id: uniqueNumericId(), user: currentUser.name, action: actionDesc, time: timeStr });
+    const logObj = { id: uniqueNumericId(), user: currentUser.name, action: actionDesc, time: timeStr };
+    logsData.push(logObj);
     if(logsData.length > 50) logsData.shift(); 
+    // الدفع المباشر للسجلات بدون المساس بباقي البيانات (تجنب مسح الداتا)
+    if(isOnline && db) db.ref('tpm_system/logs/' + logObj.id).set(logObj);
 }
 
 function renderLogsPanel() {
@@ -341,7 +343,6 @@ function showScreen(id) {
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     
-    // خريطة الشريط السفلي (تم حذف زر التقييم ليكون بداخل الأقسام)
     const navMap = { 'homeScreen':0, 'tasksScreen':1, 'historyScreen':2, 'detailedReportScreen':2, 'kaizenScreen':3, 'tagsScreen':4, 'knowledgeScreen':5, 'settingsScreen':6 };
     if(navMap[id] !== undefined && document.querySelectorAll('.nav-item')[navMap[id]]) {
         document.querySelectorAll('.nav-item')[navMap[id]].classList.add('active');
@@ -367,10 +368,17 @@ function updateHomeDashboard() {
     let totalOpen = tagsData.filter(t => t.status === 'open').length;
     let totalClosed = tagsData.filter(t => t.status === 'closed').length;
     
+    let bestDept = "لا يوجد";
+    let bestScore = -1;
+
     let gridHtml = departments.map(d => {
         let dAudits = historyData.filter(h => h.dept === d && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
         let sc = dAudits.length > 0 ? dAudits[dAudits.length - 1].totalPct : 0;
-        if(dAudits.length > 0) { totalScore += sc; auditCount++; }
+        
+        if(dAudits.length > 0) { 
+            totalScore += sc; auditCount++; 
+            if (sc > bestScore) { bestScore = sc; bestDept = d; }
+        }
         
         let redTagsNum = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
         let zoneClass = (redTagsNum >= 3 || (sc < 50 && sc > 0)) ? 'hot-zone' : '';
@@ -395,6 +403,13 @@ function updateHomeDashboard() {
     document.getElementById('homeAvgScore').innerText = auditCount > 0 ? Math.round(totalScore/auditCount) + '%' : '0%';
     document.getElementById('homeOpenTags').innerText = totalOpen;
     document.getElementById('homeClosedTags').innerText = totalClosed;
+    
+    let bestDeptEl = document.getElementById('homeBestDept');
+    if(bestDeptEl) {
+        bestDeptEl.innerText = bestScore >= 0 ? bestDept : "جاري العمل...";
+        document.getElementById('homeBestReason').innerText = bestScore >= 0 ? `بنسبة نجاح ${bestScore}% في آخر مراجعة` : "لا توجد تقارير كافية";
+    }
+
     updateUsersLeaderboard();
 }
 
@@ -464,6 +479,128 @@ function updateDeptDashboard() {
     }
 }
 
+function updateDeptDropdown() {
+    const opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
+    if(document.getElementById('selectDept')) document.getElementById('selectDept').innerHTML = opts;
+    if(document.getElementById('dashDeptSelect')) document.getElementById('dashDeptSelect').innerHTML = opts;
+    if(document.getElementById('newTaskDept')) document.getElementById('newTaskDept').innerHTML = opts;
+    if(document.getElementById('newTagDept')) document.getElementById('newTagDept').innerHTML = opts; 
+    
+    const strictOpts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
+    if(document.getElementById('newKaizenDept')) document.getElementById('newKaizenDept').innerHTML = strictOpts;
+    if(document.getElementById('qrDeptSelect')) document.getElementById('qrDeptSelect').innerHTML = strictOpts;
+}
+
+function updateDeptListUI() {
+    if(!document.getElementById('deptListContainer')) return;
+    document.getElementById('deptListContainer').innerHTML = departments.map((d, i) => `
+        <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border); background:var(--glass-bg); border-radius:6px; margin-bottom:5px;">
+            <div style="cursor:pointer; flex:1;" onclick="editDeptUI(${i}, '${d}')" title="اضغط لتعديل القسم أو الرقم">
+                <b style="color:var(--primary-light);">${d} ✏️</b><br>
+                <span style="font-size:11px; color:var(--danger-neon); font-weight:bold;">📱 ${typeof deptPhones !== 'undefined' && deptPhones[d] ? deptPhones[d] : 'اضغط لإضافة رقم'}</span>
+            </div>
+            <button class="btn btn-danger btn-sm" style="height:fit-content; width:auto;" onclick="delDept(${i}, '${d}')">حذف</button>
+        </div>`).join('');
+        
+    const engContainer = document.getElementById('engListContainer');
+    if(engContainer && typeof maintenanceEngineers !== 'undefined') {
+        engContainer.innerHTML = maintenanceEngineers.map((eng, i) => `
+        <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid var(--glass-border);">
+            <div><b style="color:white;">${eng.name}</b><br><span style="font-size:11px; color:var(--gray);">📱 ${eng.phone}</span></div>
+            <button class="btn btn-danger btn-sm" style="height:fit-content; width:auto;" onclick="delEngineer(${i})">حذف</button>
+        </div>`).join('');
+    }
+        
+    const engSelect = document.getElementById('newTagEngineer');
+    if(engSelect && typeof maintenanceEngineers !== 'undefined') {
+        engSelect.innerHTML = `<option value="">اختيار مهندس الصيانة للتبليغ...</option>` + maintenanceEngineers.map(e => `<option value="${e.phone}">${e.name}</option>`).join('');
+    }
+}
+
+function editDeptUI(idx, deptName) {
+    document.getElementById('newDeptInput').value = deptName;
+    document.getElementById('newDeptPhone').value = (typeof deptPhones !== 'undefined' && deptPhones[deptName]) ? deptPhones[deptName] : '';
+    editingDeptIndex = idx;
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function addOrUpdateDept() {
+    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
+    const val = sanitizeInput(document.getElementById('newDeptInput').value);
+    const phone = document.getElementById('newDeptPhone') ? sanitizeInput(document.getElementById('newDeptPhone').value) : '';
+    if(!val) return alert('برجاء كتابة اسم القسم!');
+    
+    if(typeof deptPhones === 'undefined') deptPhones = {};
+
+    if (editingDeptIndex > -1) {
+        let oldName = departments[editingDeptIndex];
+        if (oldName !== val) {
+            departments[editingDeptIndex] = val;
+            historyData.forEach(h => { if(h.dept === oldName) h.dept = val; });
+            tasksData.forEach(t => { if(t.dept === oldName) t.dept = val; });
+            tagsData.forEach(t => { if(t.dept === oldName) t.dept = val; });
+            if(deptPhones[oldName]) { deptPhones[val] = phone || deptPhones[oldName]; delete deptPhones[oldName]; }
+            else if(phone) deptPhones[val] = phone;
+            logAction(`تعديل اسم قسم من ${oldName} إلى ${val}`);
+        } else {
+            if(phone) deptPhones[val] = phone; else delete deptPhones[val];
+            logAction(`تحديث رقم قسم: ${val}`);
+        }
+        editingDeptIndex = -1;
+    } else {
+        if(!departments.includes(val)) { departments.push(val); logAction(`إضافة قسم جديد: ${val}`); }
+        if(phone) deptPhones[val] = phone;
+    }
+    
+    updateDeptDropdown(); updateDeptListUI(); syncToServer(); 
+    document.getElementById('newDeptInput').value = ''; 
+    if(document.getElementById('newDeptPhone')) document.getElementById('newDeptPhone').value = '';
+    alert('تم الحفظ بنجاح!');
+}
+
+function delDept(i, deptName) {
+    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
+    deptName = deptName || departments[i];
+    if(departments.length > 1 && confirm(`متأكد من حذف قسم (${deptName})؟`)) { 
+        logAction(`حذف قسم: ${deptName}`); departments.splice(i, 1); 
+        if(typeof deptPhones !== 'undefined' && deptPhones[deptName]) delete deptPhones[deptName];
+        updateDeptDropdown(); updateDeptListUI(); syncToServer(); 
+    }
+}
+
+function addEngineer() {
+    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
+    const name = sanitizeInput(document.getElementById('newEngName').value);
+    const phone = sanitizeInput(document.getElementById('newEngPhone').value);
+    if(name && phone) {
+        if(typeof maintenanceEngineers === 'undefined') maintenanceEngineers = [];
+        maintenanceEngineers.push({name, phone}); updateDeptListUI(); syncToServer(); logAction(`إضافة مهندس: ${name}`);
+        document.getElementById('newEngName').value = ''; document.getElementById('newEngPhone').value = '';
+    }
+}
+function delEngineer(i) { if(!hasRole('admin')) return alert('عفواً، للمدير فقط.'); if(confirm('حذف المهندس؟')) { maintenanceEngineers.splice(i, 1); updateDeptListUI(); syncToServer(); } }
+
+function printDeptDashboard() {
+    window.scrollTo(0, 0);
+    const btns = document.querySelectorAll('#deptDashboardScreen .no-print'); btns.forEach(b => b.style.display = 'none');
+    
+    const element = document.getElementById('deptDashboardScreen');
+    const opt = { 
+        margin: 0.3, 
+        filename: `لوحة_قيادة_${currentViewedDept}_${new Date().toLocaleDateString('ar-EG').replace(/\//g,'-')}.pdf`, 
+        image: { type: 'jpeg', quality: 1 }, 
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 }, 
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
+    };
+    
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(element).save().then(() => { 
+            btns.forEach(b => b.style.display = 'flex');
+            document.querySelectorAll('#deptDashboardScreen .btn').forEach(b => b.style.display = 'block');
+        });
+    }
+}
+
 // ------------------------------------------
 // 🚀 FLOW AUDIT & EVALUATION
 // ------------------------------------------
@@ -512,8 +649,8 @@ function renderCurrentAuditStep() {
             <div id="img_preview_elem_${item.id}" style="position:relative; display:inline-block;">
                 <img src="${currentStepImages['img_' + item.id].data}" style="height:40px; border-radius:4px; margin-right:10px; border:1px solid var(--glass-border); vertical-align:middle;">
             </div>
-            <button class="btn btn-outline btn-sm" style="display:inline-block; vertical-align:middle; padding:4px 8px; margin-right:5px;" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')">👁️ AI</button>
-            <button class="btn btn-danger btn-sm" style="display:inline-block; vertical-align:middle; padding:4px 8px;" onclick="removeAuditImage(${item.id})">🗑️ مسح</button>
+            <button class="btn btn-outline btn-sm" style="display:inline-block; vertical-align:middle; padding:4px 8px; margin-right:5px; width:auto;" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')">👁️ AI</button>
+            <button class="btn btn-danger btn-sm" style="display:inline-block; vertical-align:middle; padding:4px 8px; width:auto;" onclick="removeAuditImage(${item.id})">🗑️ مسح</button>
             `;
         }
         
@@ -596,7 +733,7 @@ function renderStepSummary(stepKey, score, max) {
     let impHtml = currentStepImprovements.length === 0 ? '<div style="color:var(--success-neon); font-weight:bold;">🎉 أداء ممتاز!</div>' : currentStepImprovements.map(i => `
         <div class="improvement-box" style="margin-bottom: 10px; padding: 10px; border: 1px solid var(--glass-border); border-radius: 8px; background: rgba(255,255,255,0.05);">
             <b>${i.title}</b>
-            <div style="margin-top:10px; display:flex; gap:5px;"><button class="btn btn-primary btn-sm" onclick="sendToTask('${i.title.replace(/'/g,"")}')">➕ تحويل لمهمة (CAPA)</button></div>
+            <div style="margin-top:10px; display:flex; gap:5px;"><button class="btn btn-primary btn-sm" onclick="sendToTask('${i.title.replace(/'/g,"")}')" style="width:auto; margin:0;">➕ تحويل لمهمة</button></div>
         </div>`).join('');
     document.getElementById('opportunitiesContainer').innerHTML = impHtml;
     window.scrollTo(0,0);
@@ -654,10 +791,15 @@ function saveFinalAudit() {
         });
     }
 
+    if(typeof deptPhones !== 'undefined' && deptPhones[currentAudit.dept]) {
+        let cleanPhone = deptPhones[currentAudit.dept].replace(/[^0-9+]/g, '');
+        let msg = `*تقرير مراجعة TPM 🏭*\nتم الانتهاء من مراجعة قسم: ${currentAudit.dept}\nالنتيجة: ${currentAudit.totalPct}%\n\nتم إدراج فرص التحسين أوتوماتيكياً في مجلد خطة العمل بالتطبيق.\nعاش جداً! 🚀`;
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
     renderHistory(); updateHomeDashboard(); syncToServer(); clearAuditDraft();
     awardPoints(50, 'إتمام مراجعة'); alert('تم الحفظ وتم إنشاء فولدر خطة العمل أوتوماتيكياً!'); showScreen('homeScreen'); 
 }
-
 
 // ==========================================
 // 🛡️ الموثوقية (Reliability Engine)
@@ -676,14 +818,221 @@ const ReliabilityEngine = {
         const health = this.calculateMachineHealth(currentAudit.machine, currentAudit.dept);
         const el = document.getElementById('machineHealthIndicator');
         if (el) {
-            el.innerHTML = `🛡️ الموثوقية المتوقعة للمعدة (${currentAudit.machine}): <span style="font-size:14px;">${health}%</span>`;
+            el.innerHTML = `🛡️ الموثوقية للمعدة (${currentAudit.machine}): <span>${health}%</span>`;
             el.style.color = health > 80 ? 'var(--success-neon)' : (health > 50 ? 'var(--warning-neon)' : 'var(--danger-neon)');
         }
     }
 };
 
 // ==========================================
-// FULL AUDIT DATA (تم الاحتفاظ بها كاملة بدون اختصار)
+// CENTRAL API KEYS MANAGEMENT (للمدير فقط)
+// ==========================================
+function saveApiKeys() {
+    if(!hasRole('admin')) return alert('صلاحية المدير فقط.');
+    const imgbb = document.getElementById('imgbbKeyInput').value.trim();
+    const gemini = document.getElementById('geminiKeyInput').value.trim();
+    
+    document.getElementById('cloudStatus').innerHTML = "⏳ جاري حفظ المفاتيح...";
+    
+    db.ref('tpm_system/api_keys').set({ imgbb: imgbb, gemini: gemini })
+    .then(() => {
+        alert('✅ تم حفظ المفاتيح المركزية! ستعمل الآن عند جميع العمال تلقائياً.');
+        document.getElementById('cloudStatus').innerHTML = "☁️ متصل ومزامن";
+    })
+    .catch(e => alert('❌ خطأ: ' + e.message));
+}
+
+// ==========================================
+// TASKS, CAPA FOLDERS & REPORTS
+// ==========================================
+function renderTasks() {
+    let pendAll = 0, progAll = 0, doneAll = 0;
+    let deptStats = {};
+    departments.forEach(d => deptStats[d] = { pending: 0, done: 0, total: 0 });
+
+    tasksData.forEach(t => {
+        let isDone = false;
+        if(t.isFolder) {
+            let safeSubTasks = t.subTasks || [];
+            let doneSub = safeSubTasks.filter(s => s.status === 'done').length;
+            isDone = (doneSub === safeSubTasks.length && safeSubTasks.length > 0);
+            if(isDone) doneAll++; else if(doneSub > 0) progAll++; else pendAll++;
+        } else {
+            isDone = (t.status === 'done');
+            if(t.status === 'pending') pendAll++; else if(t.status === 'progress') progAll++; else doneAll++;
+        }
+        if(t.dept && deptStats[t.dept]) { 
+            deptStats[t.dept].total++; 
+            if(isDone) deptStats[t.dept].done++; else deptStats[t.dept].pending++; 
+        }
+    });
+
+    let mainPendingEl = document.getElementById('kpiTasksPendingAll');
+    if(mainPendingEl) {
+        mainPendingEl.innerText = pendAll; document.getElementById('kpiTasksProgressAll').innerText = progAll; document.getElementById('kpiTasksDoneAll').innerText = doneAll;
+        let gridHtml = departments.map(d => {
+            let s = deptStats[d]; let col = s.pending > 0 ? 'var(--danger-neon)' : (s.total > 0 ? 'var(--success-neon)' : 'var(--gray)');
+            return `<div style="background:var(--glass-bg); border:1px solid var(--glass-border); border-right:4px solid ${col}; padding:15px; border-radius:8px; cursor:pointer;" onclick="openTasksDept('${d}')">
+                <b style="font-size:14px; color:var(--text-bright);">${d}</b><div style="font-size:11px; margin-top:5px; color:var(--text-dim);">مهام معلقة: <b style="color:var(--danger-neon);">${s.pending}</b> | مكتملة: <b style="color:var(--success-neon);">${s.done}</b></div>
+            </div>`;
+        }).join('');
+        document.getElementById('tasksDeptGrid').innerHTML = gridHtml;
+    }
+
+    if(currentTaskDept) {
+        let pendingDept = deptStats[currentTaskDept] ? deptStats[currentTaskDept].pending : 0;
+        let doneDept = deptStats[currentTaskDept] ? deptStats[currentTaskDept].done : 0;
+        document.getElementById('kpiTasksPendingDept').innerText = pendingDept;
+        document.getElementById('kpiTasksDoneDept').innerText = doneDept;
+
+        let listHtml = ''; let folderHtml = '';
+        let deptTasks = [...tasksData].reverse().filter(t => t.dept === currentTaskDept);
+
+        deptTasks.forEach(t => {
+            if(t.isFolder) {
+                let safeSubTasks = t.subTasks || [];
+                let totalSub = safeSubTasks.length; let doneSub = safeSubTasks.filter(s => s.status === 'done').length;
+                let fStatus = doneSub === totalSub && totalSub > 0 ? '🟢 مكتمل' : (doneSub === 0 ? '🔴 معلق' : `🟡 جاري (${doneSub}/${totalSub})`);
+                let subsHtml = safeSubTasks.map((st, idx) => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed var(--glass-border);">
+                        <label style="font-size:12px; cursor:pointer; color:${st.status==='done'?'gray':'white'}; text-decoration:${st.status==='done'?'line-through':'none'};"><input type="checkbox" ${st.status==='done'?'checked':''} onclick="toggleFolderSubTask(${t.id}, ${idx})"> ${st.text}</label>
+                    </div>`).join('');
+                folderHtml += `<div class="card" style="border:1px solid var(--primary); border-top:4px solid var(--primary);"><div style="display:flex; justify-content:space-between; margin-bottom:10px;"><div><b style="color:var(--primary-light);">📁 ${t.task}</b><br><span style="font-size:11px; color:var(--text-dim);">⚙️ ${t.machine || 'عام'}</span></div><span style="font-size:11px; font-weight:bold;">${fStatus}</span></div><div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px;">${subsHtml || '<div style="font-size:11px;color:gray;">لا توجد تفاصيل</div>'}</div></div>`;
+            } else {
+                let selectStatus = `<select class="form-control" style="width:auto; padding:2px; font-size:11px; margin:0;" onchange="changeTaskStatus(${t.id}, this.value)"><option value="pending" ${t.status==='pending'?'selected':''}>⏳ انتظار</option><option value="progress" ${t.status==='progress'?'selected':''}>🛠️ تنفيذ</option><option value="done" ${t.status==='done'?'selected':''}>✔️ مكتملة</option></select>`;
+                let col = t.status === 'done' ? 'var(--success-neon)' : (t.status === 'progress' ? 'var(--warning-neon)' : 'var(--danger-neon)');
+                listHtml += `<div class="task-card" style="border-right-color:${col}; opacity:${t.status==='done'?'0.7':'1'};"><div style="display:flex; justify-content:space-between; align-items:center;"><div><span style="font-size:11px; color:var(--text-dim);">(${t.date})</span><p style="margin-top:5px; font-size:13px; font-weight:bold; color:var(--text-bright);">${t.task}</p></div><div>${selectStatus}</div></div></div>`;
+            }
+        });
+        let listC = document.getElementById('tasksListContainer'); if(listC) listC.innerHTML = listHtml || '<div style="color:gray; text-align:center; font-size:12px;">لا توجد مهام فردية</div>';
+        let folderC = document.getElementById('auditFoldersContainer'); if(folderC) folderC.innerHTML = folderHtml || '<div style="color:gray; text-align:center; font-size:12px;">لا توجد مجلدات مراجعات</div>';
+    }
+}
+function openTasksDept(dept) {
+    currentTaskDept = dept;
+    document.getElementById('tasksDeptTitle').innerText = 'مهام قسم: ' + dept;
+    document.getElementById('btnDeptName').innerText = dept;
+    document.getElementById('tasksMainView').style.display = 'none';
+    document.getElementById('tasksDeptView').style.display = 'block';
+    renderTasks();
+}
+
+function closeTasksDept() {
+    currentTaskDept = null;
+    document.getElementById('tasksDeptView').style.display = 'none';
+    document.getElementById('tasksMainView').style.display = 'block';
+    renderTasks();
+}
+
+function toggleFolderSubTask(folderId, subTaskIndex) { let folder = tasksData.find(x => x.id === folderId); if(folder) { let st = folder.subTasks[subTaskIndex]; st.status = st.status === 'done' ? 'pending' : 'done'; renderTasks(); syncToServer(); } }
+function changeTaskStatus(taskId, newStatus) { let t = tasksData.find(x => x.id === taskId); if(t) { t.status = newStatus; renderTasks(); syncToServer(); } }
+function exportTasksToCSV() {
+    if(currentUser.role !== 'admin') return alert('عفواً، للمدير فقط');
+    if(!tasksData || tasksData.length === 0) return alert('لا توجد مهام للتصدير.');
+
+    let csvContent = "data:text/csv;charset=utf-8,%EF%BB%BF";
+    csvContent += "ID,القسم,المهمة,النوع,الوقت,الحالة,التاريخ,الماكينة,الهاتف\n";
+
+    tasksData.forEach((task) => {
+        if (task.isFolder) {
+            const subTasks = Array.isArray(task.subTasks) ? task.subTasks : [];
+            subTasks.forEach((subTask, index) => {
+                const row = [ `${task.id}-${index + 1}`, task.dept || '', subTask.text || '', 'Folder SubTask', '', subTask.status || 'pending', task.date || '', task.machine || '', task.phone || '' ].map(toCsvCell);
+                csvContent += row.join(",") + "\n";
+            });
+        } else {
+            const row = [ task.id || '', task.dept || '', task.task || '', task.type || '', task.time || '', task.status || 'pending', task.date || '', task.machine || '', task.phone || '' ].map(toCsvCell);
+            csvContent += row.join(",") + "\n";
+        }
+    });
+
+    const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = `TPM_CAPA_${new Date().toLocaleDateString('ar-EG').replace(/\//g,'-')}.csv`; link.click();
+    logAction('استخراج المهام إلى Excel'); syncToServer();
+}
+
+function addManualTaskDept() {
+    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية إضافة مهام.');
+    const taskVal = sanitizeInput(document.getElementById('newTaskInput').value);
+    if(!taskVal) return alert('اكتب المهمة!');
+    tasksData.push({ id: uniqueNumericId(), dept: currentTaskDept, task: taskVal, status: 'pending', date: new Date().toLocaleDateString('ar-EG') });
+    renderTasks(); syncToServer(); document.getElementById('newTaskInput').value = '';
+}
+
+function renderHistory() {
+    let realAudits = historyData.filter(a => !(a.stepsOrder && a.stepsOrder.includes('ManualKaizen')));
+    document.getElementById('historyListContainer').innerHTML = realAudits.length === 0 ? '<div style="color:gray;">لا توجد تقارير</div>' : 
+    [...realAudits].reverse().map(a => {
+        let col = a.totalPct >= 80 ? 'success-neon' : (a.totalPct >= 50 ? 'warning-neon' : 'danger-neon');
+        let adminBtns = currentUser.role === 'admin' ? `<div style="margin-top: 15px; display: flex; gap: 5px; justify-content: flex-end;" onclick="event.stopPropagation();"><button class="btn btn-warning btn-sm" style="width:auto; margin:0;" onclick="editReport('${a.id}')">✏️</button><button class="btn btn-danger btn-sm" style="width:auto; margin:0;" onclick="deleteReport('${a.id}')">🗑️</button></div>` : '';
+        return `<div class="card" style="border-right: 4px solid var(--${col}) !important; cursor:pointer;" onclick="viewDetailedReport('${a.id}')"><div style="display:flex; justify-content:space-between;"><div><b style="color:white;">${escapeHtml(a.dept)}</b><br><span style="font-size:11px; color:var(--text-dim);">${escapeHtml(a.date)}</span></div><b style="color:var(--${col}); font-size:18px;">${a.totalPct}%</b></div>${adminBtns}</div>`;
+    }).join('');
+}
+
+function editReport(id) { 
+    const rep = historyData.find(h => h.id === id); 
+    if(rep) {
+        if(rep.stepsOrder && rep.stepsOrder.includes('ManualKaizen')) return alert('⚠️ لا يمكن تعديل تقرير الكايزن من هنا، استخدم مجتمع كايزن للحذف أو التعديل.');
+        if(confirm('تعديل التقرير؟')) { currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; renderCurrentAuditStep(); } 
+    }
+}
+
+function deleteReport(id) { if(confirm('حذف نهائي؟')) { historyData = historyData.filter(h => h.id !== id); renderHistory(); updateHomeDashboard(); syncToServer(); } }
+
+function viewDetailedReport(id) {
+    const a = historyData.find(h => h.id === id); if(!a) return;
+    
+    document.getElementById('detDept').innerText = a.dept;
+    document.getElementById('detMachine').innerText = a.machine || 'عام';
+    document.getElementById('detAuditor').innerText = a.auditor;
+    document.getElementById('detDate').innerText = a.date;
+    document.getElementById('detPct').innerText = `${a.totalPct}%`;
+    document.getElementById('detPct').style.color = a.totalPct >= 80 ? '#2E7D32' : (a.totalPct >= 50 ? '#F57F17' : '#C62828');
+
+    document.getElementById('detStepsContainer').innerHTML = a.stepsOrder.map(k => {
+        let r = a.results[k];
+        if(!r || r.skipped) return `<div class="print-section" style="page-break-inside: avoid; color: gray;"><b>${k}</b>: تم تخطي هذه الخطوة</div>`;
+        let p = Math.round((r.score/r.max)*100);
+        let col = p >= 80 ? '#2E7D32' : (p >= 50 ? '#F57F17' : '#C62828');
+        
+        let imps = (r.improvements || []).length > 0 ? r.improvements.map(i => {
+            let taskBtn = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? `<button class="btn btn-primary btn-sm no-print" style="padding: 2px 8px; font-size: 11px; margin-right:10px; display:inline-block; width:auto;" onclick="sendToTask('${i.replace(/'/g,"")}', '${a.dept}')">➕ تحويل لمهمة</button>` : '';
+            return `<li style="margin-bottom: 8px; display:flex; justify-content:space-between; align-items:flex-start;"><span style="flex:1; color:#444;">- ${escapeHtml(i)}</span>${taskBtn}</li>`;
+        }).join('') : '<span style="color:#2E7D32; font-weight:bold;">لا يوجد تعليقات - أداء ممتاز</span>';
+        
+        let imgsHtml = '';
+        if(r.images) { Object.values(r.images).forEach(img => { const url = safeUrl(img.data); if (url) imgsHtml += `<img src="${url}" style="height:80px; width:auto; border-radius:4px; margin:5px; border:1px solid #ccc; display:inline-block;">`; }); }
+        let galleryBlock = imgsHtml ? `<div style="margin-top:10px; background:#fafafa; padding:5px; border-radius:4px;"><b>📸 الأدلة المصورة:</b><br>${imgsHtml}</div>` : '';
+
+        return `<div class="print-section" style="margin-bottom:15px; border:1px solid #ddd; padding:15px; border-radius:8px; page-break-inside: avoid; background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f0f4f8; padding:10px; border-radius: 6px; border-right:4px solid ${col}; margin-bottom:10px;">
+                <b style="color:#333; font-size:15px;">${k} : ${AUDIT_DATA[k].name}</b> 
+                <b style="color:${col}; font-size:18px; background:#fff; padding:2px 10px; border-radius:4px; border:1px solid #ddd;">${p}%</b>
+            </div>
+            <div style="font-size:13px; margin-bottom:10px; color:#333;"><b>💡 فرص التحسين المكتشفة:</b><ul style="margin-right:20px; margin-top:5px; list-style:none; padding:0;">${imps}</ul></div>
+            ${galleryBlock}
+        </div>`;
+    }).join('');
+    
+    let relatedTags = tagsData.filter(t => t.dept === a.dept && t.status === 'open' && (a.machine === 'عام' || t.machine === a.machine));
+    let tagsHtml = '';
+    if(relatedTags.length > 0) {
+        tagsHtml = `<h3 style="color: #C62828; margin-bottom:10px; border-bottom:2px solid #eee; padding-bottom:5px;">🏷️ تاجات مفتوحة تتطلب تدخل (للمعدة: ${escapeHtml(a.machine)}):</h3>`;
+        tagsHtml += relatedTags.map(t => {
+            let colorCode = t.color === 'red' ? '#D32F2F' : '#1976D2';
+            let typeName = t.color === 'red' ? 'صيانة (أحمر)' : 'إنتاج (أزرق)';
+            return `<div style="border-right: 5px solid ${colorCode}; background: #fff; border: 1px solid #ddd; border-right-width: 5px; padding: 10px; margin-bottom: 8px; border-radius: 6px; font-size:13px; page-break-inside: avoid; color:#333;">
+                <b style="color:${colorCode};">تاج ${typeName}</b> | ${escapeHtml(t.desc)} <span style="color:#777; font-size:11px; float:left;">تاريخ الإصدار: ${escapeHtml(t.date)}</span>
+            </div>`;
+        }).join('');
+    }
+    document.getElementById('detTagsContainer').innerHTML = tagsHtml;
+
+    showScreen('detailedReportScreen');
+    window.currentReportText = `*تقرير TPM*\n🏭 القسم: ${a.dept}\n⚙️ الماكينة: ${a.machine||'عام'}\n👤 المراجع: ${a.auditor}\n📅 التاريخ: ${a.date}\n⭐ النتيجة: ${a.totalPct}%\n\nراجع النظام للتفاصيل.`;
+}
+
+// ==========================================
+// FULL AUDIT DATA
 // ==========================================
 const AUDIT_DATA = {
     "JH-0": { name: "الخطوة التحضيرية", items: [

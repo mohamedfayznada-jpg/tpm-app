@@ -1056,6 +1056,10 @@ function updateHomeDashboard() {
         let dAudits = historyData.filter(h => h.dept === d && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
         let sc = dAudits.length > 0 ? dAudits[dAudits.length - 1].totalPct : 0;
         
+        if(dAudits.length > 0) {
+            totalScore += sc; auditCount++;
+        }
+        
         // حساب كثافة التاجات الحمراء للمنطقة الساخنة
         let redTagsNum = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
         
@@ -1066,10 +1070,10 @@ function updateHomeDashboard() {
         let col = sc >= 80 ? 'var(--success-neon)' : (sc >= 50 ? '#ffeb3b' : 'var(--danger-neon)');
         
         return `
-        <div class="card ${zoneClass}" style="position:relative; cursor:pointer; padding:20px;" onclick="openDeptDashboard('${d}')">
+        <div class="card ${zoneClass}" style="position:relative; cursor:pointer; padding:20px; transition:0.3s; overflow:hidden;" onclick="openDeptDashboard('${d}')">
             <span class="heatmap-badge" style="background:${col}; color:black;">${riskLevel}</span>
             <div style="margin-top:15px;">
-                <b style="display:block; font-size:16px; color:white;">${d}</b>
+                <b style="display:block; font-size:16px; color:white; margin-bottom:5px;">${d}</b>
                 <div style="font-size:28px; font-weight:900; color:${col};">${sc}%</div>
                 <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:11px; opacity:0.8;">
                     <span>🔴 ${redTagsNum} تاجات</span>
@@ -1080,7 +1084,6 @@ function updateHomeDashboard() {
     }).join('');
     
     document.getElementById('homeDeptGrid').innerHTML = gridHtml;
-    // تحديث باقي الـ KPIs
     document.getElementById('homeAvgScore').innerText = auditCount > 0 ? Math.round(totalScore/auditCount) + '%' : '0%';
     document.getElementById('homeOpenTags').innerText = totalOpen;
     document.getElementById('homeClosedTags').innerText = totalClosed;
@@ -2554,7 +2557,22 @@ async function explainItem(title) {
  * موديول حساب الموثوقية (Reliability Engine)
  * يستخدم معادلة التوزيع الأسي للتنبؤ بالأعطال: R(t) = e^(-λt)
  */
+const ReliabilityEngine = {
+    calculateMachineHealth: function(machineName, deptName) {
+        if (!machineName || machineName === 'عام') return 100;
 
+        // حساب عدد التاجات الحمراء المفتوحة لهذه الماكينة
+        const redTagsCount = tagsData.filter(t => 
+            t.machine === machineName && 
+            t.dept === deptName && 
+            t.color === 'red' && 
+            t.status === 'open'
+        ).length;
+
+        // حساب λ (معدل الفشل) - نفترض متوسط عمر الماكينة الافتراضي 30 يوماً للتنظيف العميق
+        const lambda = (redTagsCount + 0.5) / 30; 
+        const predictionDays = 7; // التنبؤ للأسبوع القادم
+        
         // المعادلة الرياضية للموثوقية
         const reliability = Math.exp(-lambda * (predictionDays / 30));
         
@@ -2574,3 +2592,14 @@ async function explainItem(title) {
         }
     }
 };
+
+// 🛡️ صمام أمان: إخفاء الشاشة الزرقاء إجبارياً بعد 3 ثواني لو حصل أي تأخير في النت
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        const overlay = document.getElementById('globalLoadingOverlay');
+        if (overlay && overlay.style.display !== 'none') {
+            overlay.style.opacity = '0';
+            setTimeout(() => { overlay.style.display = 'none'; }, 500);
+        }
+    }, 3000);
+});

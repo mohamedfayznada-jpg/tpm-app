@@ -2278,122 +2278,6 @@ function saveApiKeys() {
     .catch(e => alert('❌ خطأ: ' + e.message));
 }
 
-// ==========================================
-// 🧠 عقل المصنع (PDF to Vision AI) 
-// ==========================================
-let currentKBPages = [];
-
-if (typeof pdfjsLib !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-}
-
-async function handlePDFUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf') return alert('برجاء اختيار ملف PDF!');
-
-    const statusEl = document.getElementById('pdfExtractStatus');
-    const titleEl = document.getElementById('kbTitle');
-    const previewContainer = document.getElementById('kbImagesPreview');
-    
-    statusEl.innerHTML = "⏳ جاري تصوير الـ PDF للذكاء الاصطناعي... برجاء الانتظار";
-    currentKBPages = [];
-    previewContainer.innerHTML = '';
-    
-    if(!titleEl.value) titleEl.value = file.name.replace('.pdf', '');
-
-    try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        
-        // 🛡️ حماية: بناخد أول 5 صفحات كحد أقصى عشان الداتا متبقاش تقيلة على السيرفر المجاني
-        const maxPages = Math.min(pdf.numPages, 5);
-
-        for (let i = 1; i <= maxPages; i++) {
-            statusEl.innerHTML = `⏳ جاري معالجة صفحة ${i} من ${maxPages}...`;
-            const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 1.5 }); // دقة ممتازة للـ AI
-            
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-            
-            const base64Img = canvas.toDataURL('image/jpeg', 0.7);
-            currentKBPages.push(base64Img);
-            
-            previewContainer.innerHTML += `<img src="${base64Img}" style="height:100px; border:1px solid #ccc; margin:5px; border-radius:4px; display:inline-block;">`;
-        }
-
-        statusEl.innerHTML = `✅ تم استخراج ${maxPages} صفحة كصور مرئية للـ AI! اضغط حفظ.`;
-        if(pdf.numPages > 5) statusEl.innerHTML += "<br>⚠️ (تم أخذ أول 5 صفحات فقط لضمان سرعة النظام ومجانيته).";
-
-    } catch (error) {
-        console.error(error);
-        statusEl.innerHTML = "❌ فشل قراءة الـ PDF.";
-    }
-    event.target.value = ''; 
-}
-
-function addKnowledgeBaseArticle() {
-    if(!hasRole('admin')) return alert('عفواً، للمدير فقط.');
-    
-    const title = sanitizeInput(document.getElementById('kbTitle').value);
-    const content = sanitizeInput(document.getElementById('kbContent').value);
-    
-    if(!title) return alert('برجاء كتابة العنوان!');
-    if(currentKBPages.length === 0 && content.trim() === '') return alert('يجب إضافة نص أو رفع ملف PDF!');
-
-    if(!knowledgeBaseData) knowledgeBaseData = [];
-    
-    knowledgeBaseData.push({
-        id: uniqueNumericId(),
-        title: title,
-        content: content,
-        images: currentKBPages, // حفظ الصور المشفرة
-        date: new Date().toLocaleDateString('ar-EG')
-    });
-
-    document.getElementById('kbTitle').value = '';
-    document.getElementById('kbContent').value = '';
-    document.getElementById('kbImagesPreview').innerHTML = '';
-    document.getElementById('pdfExtractStatus').innerHTML = '';
-    currentKBPages = [];
-    
-    renderKnowledgeBase();
-    syncToServer();
-    logAction(`إضافة مرجع جديد لعقل المصنع: ${title}`);
-    alert('✅ تم تغذية عقل المصنع بنجاح!');
-}
-
-function renderKnowledgeBase() {
-    const c = document.getElementById('knowledgeListContainer');
-    if (!c) return;
-
-    c.innerHTML = (!knowledgeBaseData || knowledgeBaseData.length === 0) 
-        ? '<div style="color:gray; font-size:12px; text-align:center;">لا توجد مراجع. ارفع أول PDF (معايير OPL أو CLIT)!</div>' 
-        : knowledgeBaseData.map((kb, index) => `
-            <div style="background:var(--white); border:1px solid var(--border); padding:15px; border-radius:8px; margin-bottom:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div>
-                        <b style="color:var(--primary-dark); font-size:14px;">📑 ${escapeHtml(kb.title)}</b>
-                        <div style="font-size:11px; color:var(--gray); margin-top:5px;">📅 ${kb.date} | 🖼️ صور: ${kb.images ? kb.images.length : 0} | 📝 نص: ${kb.content ? kb.content.length : 0}</div>
-                    </div>
-                    <button class="btn btn-danger btn-sm" style="padding:4px 8px; margin:0;" onclick="deleteKnowledgeBaseArticle(${index})">🗑️ مسح</button>
-                </div>
-            </div>
-        `).join('');
-}
-
-function deleteKnowledgeBaseArticle(index) {
-    if(!hasRole('admin')) return alert('للمدير فقط.');
-    if(confirm('متأكد من مسح هذا المرجع؟')) {
-        knowledgeBaseData.splice(index, 1);
-        renderKnowledgeBase(); syncToServer();
-    }
-}
 
 // ==========================================
 // 🧠 عقل المصنع (PDF to Vision AI - Unlimited Free)
@@ -2668,22 +2552,7 @@ async function explainItem(title) {
  * موديول حساب الموثوقية (Reliability Engine)
  * يستخدم معادلة التوزيع الأسي للتنبؤ بالأعطال: R(t) = e^(-λt)
  */
-const ReliabilityEngine = {
-    calculateMachineHealth: function(machineName, deptName) {
-        if (!machineName || machineName === 'عام') return 100;
 
-        // حساب عدد التاجات الحمراء المفتوحة لهذه الماكينة
-        const redTagsCount = tagsData.filter(t => 
-            t.machine === machineName && 
-            t.dept === deptName && 
-            t.color === 'red' && 
-            t.status === 'open'
-        ).length;
-
-        // حساب λ (معدل الفشل) - نفترض متوسط عمر الماكينة الافتراضي 30 يوماً للتنظيف العميق
-        const lambda = (redTagsCount + 0.5) / 30; 
-        const predictionDays = 7; // التنبؤ للأسبوع القادم
-        
         // المعادلة الرياضية للموثوقية
         const reliability = Math.exp(-lambda * (predictionDays / 30));
         

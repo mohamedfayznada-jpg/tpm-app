@@ -308,7 +308,14 @@ if (overlay) {
         };
         tpmSystemRef.on('value', tpmSystemListener);
     } else {
-        isInitialLoad = false; showScreen('loginScreen');
+        isInitialLoad = false; 
+        showScreen('loginScreen');
+        // 👇 الكود اللي كان ناقص عشان يخفي الشاشة الزرقاء ويظهر شاشة الدخول
+        const overlay = document.getElementById('globalLoadingOverlay');
+        if (overlay) {
+            overlay.style.opacity = '0';
+            setTimeout(() => { overlay.style.display = 'none'; }, 500);
+        }
     }
 });
 
@@ -2664,13 +2671,12 @@ const ReliabilityEngine = {
     }
 };
 
-// 💣 التدمير الشامل: مسح الشاشة الزرقاء من الوجود بمجرد تحميل التطبيق
-setInterval(() => {
+// 🛡️ صمام أمان فوري: إخفاء الشاشة الزرقاء بعد 3 ثواني في كل الحالات (بدون شروط)
+setTimeout(() => {
     const overlay = document.getElementById('globalLoadingOverlay');
-    if (overlay) {
-        overlay.style.display = 'none'; // إخفاء فوري
-        overlay.style.zIndex = '-9999'; // رميها ورا التطبيق
-        overlay.remove(); // تدمير العنصر نهائياً من المتصفح
-        console.log("✅ تم تدمير شاشة التحميل بنجاح!");
+    if (overlay && overlay.style.display !== 'none') {
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 500);
+        console.log("تم إخفاء الشاشة الزرقاء إجبارياً بواسطة صمام الأمان");
     }
-}, 2000); // هيشتغل بعد ثانيتين بالظبط ويمسحها
+}, 3000);

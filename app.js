@@ -56,7 +56,9 @@ const AppState = {
 // فك المتغيرات لسهولة الاستخدام
 let { globalApiKeys, departments, historyData, tasksData, usersData, logsData, likesData, currentUser, tagsData, isOnline, knowledgeBaseData, userPoints, kaizenComments } = AppState;
 function hasRole(...allowed) {
-    return allowed.includes(currentUser.role);
+    // 🛡️ قراءة آمنة من المصدر الأساسي لتجنب أخطاء التحميل المبدئي
+    if (!AppState || !AppState.currentUser) return false;
+    return allowed.includes(AppState.currentUser.role);
 }
 
 function sanitizeInput(value) {

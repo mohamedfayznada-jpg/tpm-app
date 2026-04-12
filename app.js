@@ -1089,6 +1089,80 @@ function updateHomeDashboard() {
     document.getElementById('homeClosedTags').innerText = totalClosed;
     updateUsersLeaderboard();
 }
+
+// ==========================================
+// DEPT DASHBOARD (الدوال اللي كانت ناقصة)
+// ==========================================
+
+function openDeptDashboard(dept) {
+    currentViewedDept = dept;
+    document.getElementById('deptDashTitle').innerText = dept;
+    document.getElementById('selectDept').value = dept; 
+    showScreen('deptDashboardScreen');
+    updateDeptDashboard();
+}
+
+function updateDeptDashboard() {
+    if(!currentViewedDept) return;
+    
+    const machine = document.getElementById('dashMachineFilter').value.trim().toLowerCase();
+    const filter = document.getElementById('dashTimeFilter').value;
+    
+    let dTags = tagsData.filter(t => t.dept === currentViewedDept && t.status !== 'closed' && (machine === '' || (t.machine && t.machine.toLowerCase().includes(machine))));
+    let dTasks = tasksData.filter(t => t.dept === currentViewedDept && (machine === '' || (t.machine && t.machine.toLowerCase().includes(machine))));
+    
+    let pendingTasks = dTasks.filter(t => t.status === 'pending').length;
+    let doneTasks = dTasks.filter(t => t.status === 'done').length;
+    let compRate = dTasks.length === 0 ? 0 : Math.round((doneTasks / dTasks.length) * 100);
+
+    document.getElementById('deptKpiOpenTags').innerText = dTags.length;
+    document.getElementById('deptKpiTasks').innerText = pendingTasks;
+    document.getElementById('deptKpiComp').innerText = `${compRate}%`;
+
+    // الفلتر السحري لإخفاء التقارير الوهمية من الإحصائيات والرسم البياني
+    let audits = historyData.filter(h => h.dept === currentViewedDept && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')) && (machine === '' || (h.machine && h.machine.toLowerCase().includes(machine))));
+    let scores = [0,0,0,0,0,0,0];
+    
+    if(audits.length > 0) {
+        if(filter === 'latest') {
+            const last = audits[audits.length - 1];
+            ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'].forEach((k, i) => {
+                if(last.results && last.results[k] && !last.results[k].skipped && last.results[k].max > 0) { scores[i] = Math.round((last.results[k].score / last.results[k].max) * 100); }
+            });
+        } else if(filter === 'avg3') {
+            let last3 = audits.slice(-3);
+            ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'].forEach((k, i) => {
+                let tS = 0, tM = 0;
+                last3.forEach(a => { if(a.results && a.results[k] && !a.results[k].skipped) { tS += a.results[k].score; tM += a.results[k].max; } });
+                scores[i] = tM > 0 ? Math.round((tS / tM) * 100) : 0;
+            });
+        }
+    }
+
+    if (typeof Chart !== 'undefined') {
+        const ctxRadar = document.getElementById('radarChart');
+        if(ctxRadar) {
+            if(radarChartInstance) radarChartInstance.destroy();
+            const isDark = document.body.classList.contains('dark-mode');
+            radarChartInstance = new Chart(ctxRadar.getContext('2d'), {
+                type: 'radar',
+                data: { labels: ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'], datasets: [{ label: machine ? `أداء (${machine})` : 'أداء القسم', data: scores, backgroundColor: 'rgba(21, 101, 192, 0.3)', borderColor: '#1565C0', pointBackgroundColor: '#2E7D32', borderWidth: 2 }] },
+                options: { scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, color: isDark?'#eee':'#666', backdropColor: 'transparent' }, grid: { color: isDark?'#444':'#ddd' }, pointLabels: { color: isDark?'#eee':'#666' } } }, maintainAspectRatio: false }
+            });
+        }
+
+        const ctxTrend = document.getElementById('trendChart');
+        if(ctxTrend) {
+            if(trendChartInstance) trendChartInstance.destroy();
+            const isDark = document.body.classList.contains('dark-mode');
+            trendChartInstance = new Chart(ctxTrend.getContext('2d'), {
+                type: 'line',
+                data: { labels: audits.map(a => a.date), datasets: [{ label: 'تطور التقييم %', data: audits.map(a => a.totalPct), borderColor: '#F57F17', backgroundColor: 'rgba(245, 127, 23, 0.2)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4 }] },
+                options: { scales: { y: { min: 0, max: 100, ticks: { color: isDark?'#eee':'#666' } }, x: { ticks: { color: isDark?'#eee':'#666' } } }, maintainAspectRatio: false }
+            });
+        }
+    }
+}
 // 2. فتح شاشة تفاصيل القسم
 function openDeptDashboard(dept) {
     currentViewedDept = dept;

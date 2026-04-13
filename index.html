@@ -76,16 +76,16 @@
             <div class="form-group"><label>القسم:</label><select id="newKaizenDept" class="form-control"></select></div>
             <div class="row-flex">
                 <div class="upload-box flex-1 danger-border">
-                    <label style="color:var(--danger); cursor:pointer;">الصورة قبل<input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'before')"></label>
+                    <label style="color:var(--danger); cursor:pointer;">صورة قبل المراجعة<input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'before')"></label>
                     <div id="kaizenBeforePreview"></div>
                 </div>
                 <div class="upload-box flex-1 success-border">
-                    <label style="color:var(--success); cursor:pointer;">الصورة بعد<input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'after')"></label>
+                    <label style="color:var(--success); cursor:pointer;">صورة بعد المراجعة<input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'after')"></label>
                     <div id="kaizenAfterPreview"></div>
                 </div>
             </div>
             <div class="row-flex" style="margin-top:20px;">
-                <button class="btn btn-success flex-2" onclick="submitManualKaizen()" id="submitKaizenBtn">دمج ونشر بالمجتمع</button>
+                <button class="btn btn-success flex-2" onclick="submitManualKaizen()" id="submitKaizenBtn">دمج ونشر</button>
                 <button class="btn btn-danger flex-1" onclick="document.getElementById('kaizenUploadModal').style.display='none'">إلغاء</button>
             </div>
         </div>
@@ -134,7 +134,7 @@
         <div id="homeDeptGrid" class="grid-layout"></div>
         
         <div class="card" style="margin-top: 20px;">
-            <h3 class="card-title">منصة التتويج (أبطال التحسين)</h3>
+            <h3 class="card-title">منصة التتويج</h3>
             <div id="podiumContainer" class="podium-container"></div>
             <div id="usersLeaderboardContainer" class="leaderboard-list"></div>
         </div>
@@ -244,7 +244,7 @@
             <h3 class="section-title" style="margin:0; border:none; padding:0;">مجتمع كايزن</h3>
             <div>
                 <button class="btn btn-primary btn-sm" style="width:auto; margin:0;" onclick="document.getElementById('kaizenUploadModal').style.display='flex'">مشاركة</button>
-                <button class="btn btn-outline btn-sm" style="width:auto; margin:0;" onclick="document.getElementById('oplModal').style.display='flex'">OPL</button>
+                <button class="btn btn-outline btn-sm" style="width:auto; margin:0;" onclick="document.getElementById('oplModal').style.display='flex'">إنشاء OPL</button>
             </div>
         </div>
         <select id="kaizenDeptSelect" class="form-control" onchange="renderKaizenFeed()"><option value="الكل">عرض جميع الأقسام</option></select>
@@ -269,8 +269,8 @@
             <button class="btn btn-outline btn-sm" style="margin-bottom:15px; width:auto;" onclick="closeTasksDept()">العودة للأقسام</button>
             <h2 id="tasksDeptTitle" class="section-title">المهام</h2>
             <div class="dashboard-stats">
-                <div class="card stat-card danger-border" style="padding:10px;"><div id="kpiTasksPendingDept" class="stat-value danger-text">0</div></div>
-                <div class="card stat-card success-border" style="padding:10px;"><div id="kpiTasksDoneDept" class="stat-value success-text">0</div></div>
+                <div class="card stat-card danger-border" style="padding:10px;"><div class="stat-label">معلقة</div><div id="kpiTasksPendingDept" class="stat-value danger-text">0</div></div>
+                <div class="card stat-card success-border" style="padding:10px;"><div class="stat-label">مكتملة</div><div id="kpiTasksDoneDept" class="stat-value success-text">0</div></div>
             </div>
             <div class="card btn-role-auditor">
                 <h4 style="color:var(--gold); margin-bottom:10px;">إضافة مهمة:</h4>

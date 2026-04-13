@@ -22,7 +22,7 @@ let currentTagImg = null, currentTaskDept = null, currentOplImg = null, kaizenIm
 let sigCanvas, sigCtx, isDrawing = false;
 
 // ------------------------------------------
-// 🛡️ أدوات مساعدة ونظام الإشعارات
+// أدوات النظام والتنبيهات
 // ------------------------------------------
 function hasRole(...allowed) { return currentUser && currentUser.role && allowed.includes(currentUser.role); }
 function sanitizeInput(val) { return String(val || '').replace(/[<>]/g, '').trim(); }
@@ -45,7 +45,7 @@ db.ref('.info/connected').on('value', snap => {
 });
 
 // ------------------------------------------
-// 🔐 تسجيل الدخول وجلب البيانات
+// تسجيل الدخول وجلب البيانات والمزامنة
 // ------------------------------------------
 firebase.auth().onAuthStateChanged(user => {
     if (tpmSystemRef && tpmSystemListener) tpmSystemRef.off('value', tpmSystemListener);
@@ -128,9 +128,6 @@ function biometricLogin() {
     showToast('تم استدعاء بياناتك، أدخل الرقم السري للدخول');
 }
 
-// ------------------------------------------
-// 🔄 المزامنة الصارمة مع فايربيز (بدون تعليق)
-// ------------------------------------------
 function syncToServer() {
     if (!isDataLoaded || !firebase.auth().currentUser) return;
     try {
@@ -164,11 +161,14 @@ function logAction(act) { logsData.push({id: uniqueNumericId().toString(), user:
 function awardPoints(pts, reason) { if(!currentUser.name) return; userPoints[currentUser.name] = (userPoints[currentUser.name] || 0) + pts; syncToServer(); showToast(`كسبت ${pts} نقطة: ${reason}`); }
 
 // ------------------------------------------
-// 🚀 رفع الصور باستخدام ImgBB (لحماية النظام من البطء)
+// محرك الرفع الأساسي (ImgBB)
 // ------------------------------------------
 async function uploadImageToStorage(base64Data, folder) {
     const apiKey = globalApiKeys.imgbb;
-    if (!apiKey) return base64Data; // Fallback
+    if (!apiKey) {
+        showToast('مفتاح ImgBB مفقود، لا يمكن حفظ الصورة');
+        return null; // الحماية القصوى من رفع Base64 للفايربيز
+    }
     try {
         const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
         const formData = new FormData(); formData.append('image', cleanBase64);
@@ -194,7 +194,7 @@ function processAndEnhanceImage(file, callback) {
 }
 
 // ------------------------------------------
-// 📱 التحكم بالشاشات والداشبورد
+// الشاشات والداشبورد ومنصة التتويج
 // ------------------------------------------
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -267,7 +267,7 @@ function printDeptDashboard() {
 }
 
 // ------------------------------------------
-// 📝 دورة المراجعة والتقييم (Audit Flow)
+// 📝 المراجعات، التقارير وحفظ المهام التلقائي
 // ------------------------------------------
 function startNewAuditFlow() { if(currentViewedDept) document.getElementById('selectDept').value = currentViewedDept; showScreen('setupScreen'); }
 function initAuditSequential() {
@@ -280,11 +280,11 @@ function renderCurrentAuditStep() {
     document.getElementById('auditStepTitle').innerText = `${k}: ${sd.name}`;
     document.getElementById('auditProgressBar').style.width = `${((currentAudit.currentStepIndex) / 7) * 100}%`;
     document.getElementById('auditItemsContainer').innerHTML = sd.items.map(item => {
-        let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:5px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:40px; border-radius:4px; margin-left:5px; border:1px solid var(--copper);"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')">👁️ تحليل AI</button></div>` : '';
+        let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:5px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:40px; border-radius:4px; margin-left:5px; border:1px solid var(--copper);"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')">استشارة الذكاء الاصطناعي</button></div>` : '';
         return `
         <div class="audit-item"><div class="item-header"><div class="item-num">${item.id}</div><div class="item-title" style="flex:1; font-weight:bold;">${item.title}</div>
-        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 8px;" onclick="explainItem('${item.title}')">مستشار AI</button>
-        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 8px;" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')">📸 إضافة صورة</button>
+        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 8px;" onclick="explainItem('${item.title}')">شرح المرجع</button>
+        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 8px;" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')">إضافة صورة</button>
         </div>
         <div id="preview_img_${item.id}">${hasImage}</div>
         ${item.levels.map(lvl => `<div class="level-opt" onclick="selectLevel(${item.id}, ${lvl.score}, ${item.maxScore}, this)"><div class="level-num">${lvl.level}</div><div style="flex:1; font-size:12px;">${lvl.desc}</div></div>`).join('')}
@@ -319,7 +319,7 @@ function finishCurrentStep() {
     currentAudit.results[k] = { skipped:false, score:s, max:m, improvements:currentStepImprovements, images: JSON.parse(JSON.stringify(currentStepImages)) };
     document.getElementById('summaryPct').innerText = Math.round((s/m)*100)+'%';
     document.getElementById('summaryScoreStr').innerText = `${s} من ${m}`;
-    document.getElementById('opportunitiesContainer').innerHTML = currentStepImprovements.length > 0 ? currentStepImprovements.map(i=>`<div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:5px; margin-bottom:5px; border-right:3px solid var(--warning); font-size:12px; text-align:right;">- ${i}</div>`).join('') : '<div style="color:var(--success); font-weight:bold;">لا توجد ملاحظات، أداء ممتاز!</div>';
+    document.getElementById('opportunitiesContainer').innerHTML = currentStepImprovements.length > 0 ? currentStepImprovements.map(i=>`<div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:5px; margin-bottom:5px; border-right:3px solid var(--warning); font-size:12px; text-align:right;">- ${i}</div>`).join('') : '<div style="color:var(--success); font-weight:bold;">لا توجد ملاحظات، أداء ممتاز</div>';
     document.getElementById('aiCapaBtn').style.display = currentStepImprovements.length>0?'inline-block':'none';
     currentStepImages = {};
     showScreen('stepSummaryScreen');
@@ -377,7 +377,7 @@ function saveFinalAudit() {
     
     awardPoints(50, 'إتمام مراجعة رسمية');
     syncToServer(); 
-    showToast('✅ تم حفظ التقرير وإنشاء المهام بنجاح!');
+    showToast('تم حفظ التقرير وإنشاء المهام بنجاح');
     
     renderHistory();
     renderTasks();
@@ -385,9 +385,6 @@ function saveFinalAudit() {
     showScreen('historyScreen'); 
 }
 
-// ------------------------------------------
-// 📊 إدارة التقارير (History) والتفاصيل
-// ------------------------------------------
 function renderHistory() {
     let real = historyData.filter(h=>!h.stepsOrder.includes('ManualKaizen')).reverse();
     let html = real.map(a => {
@@ -471,7 +468,7 @@ function downloadProfessionalPDF() {
 function shareWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(window.currentReportText)}`); }
 
 // ------------------------------------------
-// 🎯 المهام وخطة العمل (Tasks & CAPA)
+// 🎯 المهام وخطة العمل (Tasks)
 // ------------------------------------------
 function renderTasks() {
     let htmlFolders = '', htmlSingle = '';
@@ -481,7 +478,7 @@ function renderTasks() {
         if(t.isFolder) {
             let total = t.subTasks.length; let done = t.subTasks.filter(s=>s.status==='done').length;
             htmlFolders += `<div class="card" style="border:1px solid var(--gold); border-top:4px solid var(--gold);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><div class="card-title" style="margin:0; border:none; padding:0;">📁 ${t.task}</div><span style="font-size:11px; font-weight:bold; color:var(--text-muted);">${done}/${total}</span></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><div class="card-title" style="margin:0; border:none; padding:0;">مجلد: ${t.task}</div><span style="font-size:11px; font-weight:bold; color:var(--text-muted);">${done}/${total}</span></div>
                 ${t.subTasks.map((s,i)=>`<div style="font-size:13px; padding:5px 0; border-bottom:1px dashed rgba(255,255,255,0.1);"><label style="cursor:pointer; display:flex; gap:8px; align-items:center; ${s.status==='done'?'text-decoration:line-through; color:gray;':''}"><input type="checkbox" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask('${t.id}', ${i})"> ${s.text}</label></div>`).join('')}
             </div>`;
         } else {
@@ -530,11 +527,11 @@ function changeTaskStatus(id, st) { let t=tasksData.find(x=>x.id==id); if(t) {t.
 function addManualTaskDept() { let v=document.getElementById('newTaskInput').value; if(v){ tasksData.push({id:uniqueNumericId().toString(), task:v, dept:currentTaskDept, status:'pending'}); syncToServer(); renderTasks(); document.getElementById('newTaskInput').value=''; showToast('تمت الإضافة'); } }
 
 // ------------------------------------------
-// 🌐 مجتمع كايزن (الدمج الاحترافي)
+// 🌐 مجتمع كايزن (الدمج والتعليقات والصلاحيات)
 // ------------------------------------------
 function handleKaizenImage(e, type) {
     const f=e.target.files[0]; if(!f) return;
-    showToast('تم التقاط الصورة، جاري معالجتها');
+    showToast('تم التقاط الصورة، جاري المعالجة');
     processAndEnhanceImage(f, function(dataUrl) {
         kaizenImgs[type] = dataUrl;
         document.getElementById(type==='before'?'kaizenBeforePreview':'kaizenAfterPreview').innerHTML=`<span style="color:var(--success); font-size:11px; font-weight:bold;">تم الإرفاق</span>`;
@@ -543,7 +540,7 @@ function handleKaizenImage(e, type) {
 
 function submitManualKaizen() {
     let t = document.getElementById('newKaizenTitle').value; let d = document.getElementById('newKaizenDept').value;
-    if(!t || !kaizenImgs.before || !kaizenImgs.after) { showToast('برجاء كتابة الوصف وإرفاق الصورتين.'); return; }
+    if(!t || !kaizenImgs.before || !kaizenImgs.after) { showToast('برجاء كتابة الوصف وإرفاق الصورتين'); return; }
     
     document.getElementById('submitKaizenBtn').innerText = "جاري الدمج والرفع...";
     document.getElementById('submitKaizenBtn').disabled = true;
@@ -559,7 +556,6 @@ function submitManualKaizen() {
             ctx.drawImage(imgBefore, 0, 0, 295, 300);
             ctx.drawImage(imgAfter, 305, 0, 295, 300);
             
-            // سهم الدمج الذهبي
             ctx.fillStyle = "#d4af37";
             ctx.beginPath(); ctx.moveTo(280, 150); ctx.lineTo(320, 130); ctx.lineTo(320, 170); ctx.fill();
             
@@ -586,12 +582,12 @@ function submitManualKaizen() {
                 
                 awardPoints(40, 'مشاركة كايزن');
                 syncToServer(); renderKaizenFeed(); 
-                showToast('✅ تم نشر واعتماد الكايزن بنجاح!');
+                showToast('تم نشر الكايزن بنجاح');
             } else {
-                showToast('❌ فشل الرفع للسيرفر، تأكد من إعدادات ImgBB');
+                showToast('فشل الرفع للسيرفر، تأكد من إعدادات ImgBB');
             }
             
-            document.getElementById('submitKaizenBtn').innerText = "دمج ونشر بالمجتمع";
+            document.getElementById('submitKaizenBtn').innerText = "دمج ونشر";
             document.getElementById('submitKaizenBtn').disabled = false;
         };
         imgAfter.src = kaizenImgs.after;
@@ -643,7 +639,7 @@ function editKaizen(id) { let k=historyData.find(x=>x.id===id); if(!k) return; l
 function addKaizenComment(id) { let el=document.getElementById(`comment_input_${id}`); let txt=sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; kaizenComments[id].push({user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}); el.value=''; syncToServer(); renderKaizenFeed(); awardPoints(2, 'كتابة تعليق'); }
 
 // ------------------------------------------
-// 🏷️ إدارة التاجات والمشكلات
+// 🏷️ إدارة التاجات والصلاحيات والحالات
 // ------------------------------------------
 function handleTagImage(e) {
     const f=e.target.files[0]; if(!f) return;
@@ -680,7 +676,7 @@ async function addNewTag() {
     renderTags(); 
     updateHomeDashboard();
     
-    showToast('✅ تم إصدار وتسجيل التاج بنجاح!');
+    showToast('تم إصدار وتسجيل التاج بنجاح');
     
     if(c==='red' && document.getElementById('newTagEngineer').value) window.open(`https://wa.me/${document.getElementById('newTagEngineer').value.replace(/\D/g,'')}?text=${encodeURIComponent(`إشعار عطل (تاج أحمر)\nالقسم: ${dp}\nالماكينة: ${m||'عام'}\nالوصف: ${fullDesc}`)}`);
 }
@@ -716,7 +712,7 @@ function deleteTag(id) { if(confirm('تأكيد حذف التاج نهائياً
 function editTag(id) { let t=tagsData.find(x=>x.id==id); if(!t) return; let v=prompt('تعديل وصف المشكلة:', t.desc); if(v) { t.desc=sanitizeInput(v); syncToServer(); renderTags(); showToast('تم التعديل'); } }
 
 // ------------------------------------------
-// ⚙️ إعدادات الـ API والمفاتيح
+// ⚙️ إعدادات الـ API وحمايتها
 // ------------------------------------------
 function saveApiKeys() {
     globalApiKeys.imgbb = document.getElementById('imgbbKeyInput').value.trim();
@@ -724,19 +720,17 @@ function saveApiKeys() {
     document.getElementById('imgbbKeyInput').disabled = true;
     document.getElementById('geminiKeyInput').disabled = true;
     syncToServer();
-    showToast('✅ تم حفظ وتشفير المفاتيح المركزية بنجاح!');
+    showToast('تم حفظ وتأمين المفاتيح المركزية بنجاح');
 }
 function enableApiKeysEdit() {
     document.getElementById('imgbbKeyInput').disabled = false;
     document.getElementById('geminiKeyInput').disabled = false;
-    showToast('💡 يمكنك الآن تعديل المفاتيح، لا تنس الضغط على حفظ.');
+    showToast('تم فتح الحقول للتعديل، لا تنس الحفظ');
 }
 
 // ------------------------------------------
 // 🤖 الذكاء الاصطناعي (المستشار وتحليل الماكينات وعقل المصنع)
 // ------------------------------------------
-
-// تحويل رابط الـ URL لـ Base64 عشان يتبعت لـ Gemini
 async function getBase64FromUrl(url) {
     try {
         const res = await fetch(url);
@@ -765,7 +759,7 @@ async function runAIVision(itemId, itemTitle) {
     let imgObj = currentStepImages['img_' + itemId];
     if(!imgObj) return showToast('لا توجد صورة لفحصها');
 
-    document.getElementById('aiModalText').innerHTML = "⏳ جاري فحص الصورة ومطابقتها بكتالوجات المصنع...";
+    document.getElementById('aiModalText').innerHTML = "جاري فحص الصورة ومطابقتها بكتالوجات المصنع...";
     document.getElementById('aiModal').style.display = 'flex';
 
     try {
@@ -793,32 +787,32 @@ async function runAIVision(itemId, itemTitle) {
         });
         const result = await response.json();
         document.getElementById('aiModalText').innerHTML = nl2brSafe(result.candidates[0].content.parts[0].text);
-        awardPoints(5, 'استخدام فحص الذكاء الاصطناعي');
-    } catch(e) { document.getElementById('aiModalText').innerHTML = "❌ خطأ في الاتصال بالذكاء الاصطناعي."; }
+        awardPoints(5, 'استخدام الذكاء الاصطناعي');
+    } catch(e) { document.getElementById('aiModalText').innerHTML = "خطأ في الاتصال بالذكاء الاصطناعي."; }
 }
 
 async function predictMachineFailures() {
-    const k = globalApiKeys.gemini; if(!k) return showToast('مفتاح Gemini غير مفعل باللإعدادات');
-    const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerText='⏳ جاري تحليل بيانات تاجات المصنع...';
+    const k = globalApiKeys.gemini; if(!k) return showToast('مفتاح Gemini غير مفعل');
+    const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerText='جاري تحليل البيانات...';
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: "بناءً على التاجات التالية، توقع الماكينات المعرضة للتوقف وقدم نصيحة في سطرين: " + tagsData.map(t=>t.desc).join(',') }] }] })
         });
         const j = await res.json(); r.innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
-    } catch(e) { r.innerText='❌ فشل الاتصال بالذكاء الاصطناعي.'; }
+    } catch(e) { r.innerText='فشل الاتصال'; }
 }
 
 async function explainItem(t) {
     const k = globalApiKeys.gemini; if(!k) return showToast('مفتاح Gemini مفقود');
-    document.getElementById('aiModal').style.display='flex'; document.getElementById('aiModalText').innerText='⏳ جاري استشارة الذكاء الاصطناعي...';
+    document.getElementById('aiModal').style.display='flex'; document.getElementById('aiModalText').innerText='جاري استشارة الذكاء الاصطناعي...';
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: "اشرح باختصار بند الصيانة الذاتية التالي وكيفية تطبيقه: " + t }] }] })
         });
         const j = await res.json(); document.getElementById('aiModalText').innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
-    } catch(e) { document.getElementById('aiModalText').innerText='❌ خطأ في الاتصال.'; }
+    } catch(e) { document.getElementById('aiModalText').innerText='خطأ في الاتصال'; }
 }
 
 async function autoGenerateCAPA() {
@@ -836,7 +830,7 @@ function updateDeptListUI() { }
 function addOrUpdateDept() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); syncToServer(); updateDeptDropdown(); showToast('تم الحفظ'); } }
 function addEngineer() { let n=document.getElementById('newEngName').value, p=document.getElementById('newEngPhone').value; if(n&&p) { maintenanceEngineers.push({name:n, phone:p}); syncToServer(); document.getElementById('newTagEngineer').innerHTML+=`<option value="${p}">${n}</option>`; showToast('تم الإضافة'); } }
 
-// بنود المراجعة محتفظة بكامل بياناتها:
+// بنود المراجعة بكامل بياناتها:
 const AUDIT_DATA = {
     "JH-0": { name: "الخطوة التحضيرية", items: [
         { id: 1, title: "إعداد خطة عمل لتنفيذ انشطة الخطوه التحضيرية", maxScore: 5, levels: [{level:1,score:0,desc:"لا توجد أى دلائل علي وجود خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم"},{level:2,score:1,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم ، ولكن توجد أدلة ضعيفة علي إستخدامها في الواقع"},{level:3,score:2,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم ، وتوجد بعض الأدلة علي إستخدامها ، كما أن الخطة غير مثبتة علي لوحة أنشطة الـ TPM لكل قسم"},{level:4,score:3,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم وتغطي كثير من أنشطة الخطوة ، والخطة متاحة ومعتمدة ومثبتة علي لوحة أنشطة الـ TPM لكل قسم وكثير من مشغلي الماكينات على دراية بها"},{level:5,score:4,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم وتغطي معظم أنشطة الخطوة، والخطة متاحة ومعتمدة ومثبتة علي لوحة أنشطة الـ TPM لكل قسم ومعظم مشغلي الماكينات بالقسم علي دراية كاملة بكافة تفاصيلها"},{level:6,score:5,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية للقسم وتغطي كافة أنشطة الخطوة ، والخطة متاحة ومعتمدة ومثبتة علي لوحة أنشطة الـ TPM لكل قسم وجميع مشغلي الماكينات بالقسم علي دراية بتفاصيلها"}] },

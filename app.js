@@ -1,7 +1,3 @@
-// ==========================================
-// 🚀 FACTORY OS - CORE ENGINE v3.0 (STABLE)
-// ==========================================
-
 const firebaseConfig = {
     apiKey: "AIzaSyADr-QEzWt6xeT8oeF7wXfNySvXiKXMEy4",
     authDomain: "tpm-audit-system.firebaseapp.com",
@@ -11,180 +7,68 @@ const firebaseConfig = {
     messagingSenderId: "1047922099229",
     appId: "1:1047922099229:web:5e3d6fd5fa4c23ab2772f4"
 };
-
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
-
-// ------------------------------------------
-// 🧠 GLOBAL VARIABLES (SAFE STATE)
-// ------------------------------------------
-let tpmSystemRef = null;
-let tpmSystemListener = null;
-
+let tpmSystemRef = null, tpmSystemListener = null;
 let globalApiKeys = { imgbb: "", gemini: "" };
-let departments = [];
-let historyData = [];
-let tasksData = [];
-let usersData = {};
-let logsData = [];
-let likesData = {};
-let tagsData = [];
-let kaizenComments = {};
-let userPoints = {};
-let knowledgeBaseData = [];
-let deptPhones = {};
-let maintenanceEngineers = [];
-
+let departments = [], historyData = [], tasksData = [], usersData = {}, logsData = [], likesData = {}, tagsData = [], kaizenComments = {}, userPoints = {}, knowledgeBaseData = [], deptPhones = [], maintenanceEngineers = [];
 let currentUser = { name: '', username: '', role: '' };
-let currentAudit = null;
-let isOnline = false;
-let isDataLoaded = false;
-let isInitialLoad = true;
+let currentAudit = null, isOnline = false, isDataLoaded = false, isInitialLoad = true;
+let radarChartInstance = null, trendChartInstance = null, currentViewedDept = null, currentUploadItemId = null, currentUploadItemTitle = null, currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [], currentTagImg = null, currentTaskDept = null, currentOplImg = null, kaizenImgs = { before: null, after: null };
 
-let radarChartInstance = null;
-let trendChartInstance = null;
-let currentViewedDept = null;
-let currentUploadItemId = null;
-let currentUploadItemTitle = null;
-let currentStepSelections = {};
-let currentStepImages = {};
-let currentStepImprovements = [];
-let voiceAuditActive = false;
-let currentTagImg = null;
-let currentTaskDept = null;
-let currentOplImg = null;
-
-// ------------------------------------------
-// 🛡️ CORE UTILITIES & PROTECTIONS
-// ------------------------------------------
-function hasRole(...allowed) {
-    if (!currentUser || !currentUser.role) return false;
-    return allowed.includes(currentUser.role);
-}
-
-function sanitizeInput(value) { return String(value || '').replace(/[<>]/g, '').trim(); }
-function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
-function nl2brSafe(text) { return escapeHtml(text).replace(/\n/g, '<br>'); }
-function safeUrl(url) { const val = String(url || '').trim(); return (val.startsWith('https://') || val.startsWith('http://') || val.startsWith('data:image/')) ? val : ''; }
-function toCsvCell(value) { return `"${String(value ?? '').replace(/"/g, '""')}"`; }
+function hasRole(...allowed) { return currentUser && currentUser.role && allowed.includes(currentUser.role); }
+function sanitizeInput(val) { return String(val || '').replace(/[<>]/g, '').trim(); }
 function uniqueNumericId() { return (Date.now() * 1000) + Math.floor(Math.random() * 1000); }
 
-// تحويل الداتا المعطوبة من Firebase إلى Array سليم لمنع الانهيار
-function safeArray(data) {
-    if (!data) return [];
-    if (Array.isArray(data)) return data;
-    return Object.values(data);
-}
-
-// ------------------------------------------
-// 📡 CONNECTION MONITORING
-// ------------------------------------------
-db.ref('.info/connected').on('value', function(snap) {
+db.ref('.info/connected').on('value', snap => {
     isOnline = snap.val() === true;
-    let cloudStatus = document.getElementById('cloudStatus');
-    if(cloudStatus) {
-        if(isOnline) {
-            cloudStatus.innerHTML = "☁️ متصل ومزامن";
-            cloudStatus.style.color = "var(--success-neon)";
-        } else {
-            cloudStatus.innerHTML = "📴 أوفلاين (شغلك محفوظ)";
-            cloudStatus.style.color = "var(--warning-neon)";
-        }
-    }
+    const el = document.getElementById('cloudStatus');
+    if(el) el.innerHTML = isOnline ? "متصل" : "غير متصل";
 });
 
-// ------------------------------------------
-// 🔐 AUTHENTICATION & DATA FETCHING
-// ------------------------------------------
-firebase.auth().onAuthStateChanged((user) => {
-    if (tpmSystemRef && tpmSystemListener) {
-        tpmSystemRef.off('value', tpmSystemListener);
-    }
-
+firebase.auth().onAuthStateChanged(user => {
+    if (tpmSystemRef && tpmSystemListener) tpmSystemRef.off('value', tpmSystemListener);
     if (user) {
         tpmSystemRef = db.ref('tpm_system');
-        tpmSystemListener = (snapshot) => {
-            try {
-                const data = snapshot.val() || {};
-                
-                // استخدام SafeArray لحماية التطبيق من أخطاء الـ Map Crash
-                departments = safeArray(data.departments);
-                if(departments.length === 0) departments = ['قسم الإنتاج', 'قسم الصيانة'];
-                
-                maintenanceEngineers = safeArray(data.maintenanceEngineers);
-                
-                historyData = data.history ? Object.values(data.history).filter(x => x && x.id).sort((a,b) => Number(a.id) - Number(b.id)) : [];
-                tasksData = data.tasks ? Object.values(data.tasks).filter(x => x && x.id).sort((a,b) => Number(a.id) - Number(b.id)) : [];
-                logsData = data.logs ? Object.values(data.logs).filter(x => x).sort((a,b) => Number(a.id) - Number(b.id)) : [];
-                usersData = data.users || {};
-                globalApiKeys = data.api_keys || { imgbb: "", gemini: "" };
-                likesData = data.likes || {}; 
-                tagsData = data.tags ? Object.values(data.tags).filter(x => x && x.id).sort((a,b) => Number(b.id) - Number(a.id)) : [];
-                userPoints = data.points || {};
-                deptPhones = data.deptPhones || {};
-                kaizenComments = data.kaizenComments || {};
-                knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
-                
-                isDataLoaded = true;
+        tpmSystemListener = snapshot => {
+            const data = snapshot.val() || {};
+            departments = data.departments || ['إنتاج', 'صيانة'];
+            historyData = data.history ? Object.values(data.history).filter(x => x.id).sort((a,b)=>a.id-b.id) : [];
+            tasksData = data.tasks ? Object.values(data.tasks).filter(x => x.id).sort((a,b)=>a.id-b.id) : [];
+            logsData = data.logs ? Object.values(data.logs).filter(x => x).sort((a,b)=>a.id-b.id) : [];
+            usersData = data.users || {};
+            globalApiKeys = data.api_keys || { imgbb: "", gemini: "" };
+            likesData = data.likes || {};
+            tagsData = data.tags ? Object.values(data.tags).filter(x => x.id).sort((a,b)=>b.id-a.id) : [];
+            userPoints = data.points || {};
+            deptPhones = data.deptPhones || {};
+            maintenanceEngineers = data.maintenanceEngineers || [];
+            kaizenComments = data.kaizenComments || {};
+            knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
+            isDataLoaded = true;
 
-                // إعدادات المستخدم لأول مرة بعد الدخول
-                if (isInitialLoad) {
-                    isInitialLoad = false;
-                    const savedName = localStorage.getItem('tpm_user') || user.email.split('@')[0];
-                    const savedUsername = localStorage.getItem('tpm_username') || user.email.split('@')[0];
-                    
-                    let role = 'viewer';
-                    let userEmail = (user && user.email) ? user.email.toLowerCase() : '';
-                    
-                    if (userEmail.includes('mfayez') || savedUsername.toLowerCase() === 'mfayez') {
-                        role = 'admin';
-                        if (usersData[user.uid] !== 'admin') { db.ref('tpm_system/users/' + user.uid).set('admin'); usersData[user.uid] = 'admin'; }
-                    } else if (usersData[user.uid]) { role = usersData[user.uid]; } 
-                    else if (usersData[savedUsername]) { role = usersData[savedUsername]; }
-
-                    currentUser = { name: savedName, username: savedUsername, role: role };
-                    
-                    let greetingEl = document.getElementById('userGreeting');
-                    if(greetingEl) greetingEl.innerText = `👤 ${currentUser.name} (${role === 'admin' ? 'مدير' : role === 'auditor' ? 'مراجع' : 'مشاهد'})`;
-                    
-                    document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = role === 'admin' ? 'block' : 'none');
-                    document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (role === 'admin' || role === 'auditor') ? 'block' : 'none');
-                    
-                    let navBar = document.getElementById('bottomNav');
-                    if(navBar) navBar.style.display = 'flex';
-                    
-                    showScreen('homeScreen');
-                }
-
-                // تحديث الواجهات بدون أي Crash
-                updateDeptDropdown(); 
-                updateDeptListUI(); 
-                renderHistory(); 
-                renderTasks();
-                
-                try {
-                    if(currentUser && currentUser.role) {
-                        updateHomeDashboard();
-                        if(currentViewedDept && document.getElementById('deptDashboardScreen').classList.contains('active')){
-                            updateDeptDashboard();
-                        }
-                    }
-                } catch(dashErr) { console.error("Dashboard Render Error:", dashErr); }
-                
-                if(currentUser.role === 'admin') { renderUsersPanel(); renderLogsPanel(); }
-                if(document.getElementById('kaizenScreen') && document.getElementById('kaizenScreen').classList.contains('active')) renderKaizenFeed();
-                if(document.getElementById('tagsScreen') && document.getElementById('tagsScreen').classList.contains('active')) renderTags();
-                
-            } catch(e) { 
-                console.error("Data Parse Error:", e); 
+            if (isInitialLoad) {
+                isInitialLoad = false;
+                const savedName = localStorage.getItem('tpm_user') || user.email.split('@')[0];
+                const savedUsername = localStorage.getItem('tpm_username') || user.email.split('@')[0];
+                let role = 'viewer';
+                if (user.email.toLowerCase().includes('mfayez') || savedUsername.toLowerCase() === 'mfayez') { role = 'admin'; db.ref('tpm_system/users/' + user.uid).set('admin'); }
+                else if (usersData[user.uid]) role = usersData[user.uid];
+                else if (usersData[savedUsername]) role = usersData[savedUsername];
+                currentUser = { name: savedName, username: savedUsername, role: role };
+                document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = role === 'admin' ? 'block' : 'none');
+                document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (role === 'admin' || role === 'auditor') ? 'block' : 'none');
+                document.getElementById('bottomNav').style.display = 'flex';
+                showScreen('homeScreen');
             }
+            updateDeptDropdown(); updateDeptListUI(); renderHistory(); renderTasks();
+            if(currentUser.role) { updateHomeDashboard(); if(currentViewedDept) updateDeptDashboard(); }
+            if(currentUser.role === 'admin') { renderUsersPanel(); renderLogsPanel(); }
+            renderKaizenFeed(); renderTags(); renderKnowledgeBase();
         };
         tpmSystemRef.on('value', tpmSystemListener);
     } else {
-        isInitialLoad = true;
-        isDataLoaded = false;
-        document.getElementById('bottomNav').style.display = 'none';
-        showScreen('loginScreen');
+        isInitialLoad = true; isDataLoaded = false; document.getElementById('bottomNav').style.display = 'none'; showScreen('loginScreen');
     }
 });
 
@@ -192,844 +76,257 @@ async function login() {
     const username = sanitizeInput(document.getElementById('loginUsername').value).toLowerCase();
     const password = document.getElementById('loginPassword').value.trim();
     const name = sanitizeInput(document.getElementById('displayName').value);
-
-    if(!username || !password || !name) return alert('برجاء إكمال البيانات!');
-    
-    let cloudStatus = document.getElementById('cloudStatus');
-    if(cloudStatus) { cloudStatus.innerHTML = "⏳ جاري الدخول..."; cloudStatus.style.color = "var(--text-bright)"; }
-    
-    const fakeEmail = username + "@tpm.app";
-
-    try {
-        let rememberMeBox = document.getElementById('rememberMe');
-        if(rememberMeBox && rememberMeBox.checked) {
-            localStorage.setItem('tpm_user', name); localStorage.setItem('tpm_username', username);
-        }
-        await firebase.auth().signInWithEmailAndPassword(fakeEmail, password);
-        setTimeout(() => { if(isDataLoaded) logAction('تسجيل دخول للنظام'); }, 1500); 
-    } catch (error) { 
-        alert('خطأ في البيانات أو الحساب غير موجود!'); 
-        if(cloudStatus) cloudStatus.innerHTML = "❌ خطأ بالاتصال";
-    }
+    if(!username || !password || !name) return;
+    document.getElementById('cloudStatus').innerHTML = "جاري الدخول";
+    if(document.getElementById('rememberMe').checked) { localStorage.setItem('tpm_user', name); localStorage.setItem('tpm_username', username); }
+    try { await firebase.auth().signInWithEmailAndPassword(username + "@tpm.app", password); } catch (e) {}
 }
 
 async function registerNewUser() {
     const name = sanitizeInput(document.getElementById('regName').value);
     const username = sanitizeInput(document.getElementById('regUsername').value).toLowerCase();
     const password = document.getElementById('regPassword').value.trim();
-
-    if(!name || !username || !password) return alert('أكمل البيانات!');
-    if(password.length < 6) return alert('كلمة المرور 6 أحرف على الأقل.');
-
-    const fakeEmail = username + "@tpm.app";
-    try {
-        await firebase.auth().createUserWithEmailAndPassword(fakeEmail, password);
-        await db.ref('tpm_system/users/' + username).set('viewer');
-        const timeStr = new Date().toLocaleDateString('ar-EG') + ' ' + new Date().toLocaleTimeString('ar-EG');
-        await db.ref('tpm_system/logs/' + Date.now()).set({ id: Date.now(), user: 'النظام', action: `تسجيل جديد: ${name} (${username})`, time: timeStr });
-        alert('تم الإنشاء بنجاح!');
-        localStorage.setItem('tpm_user', name); localStorage.setItem('tpm_username', username);
-        window.location.reload();
-    } catch(error) { alert('حدث خطأ، ربما اسم المستخدم مسجل مسبقاً.'); }
+    if(!name || !username || password.length < 6) return;
+    try { await firebase.auth().createUserWithEmailAndPassword(username + "@tpm.app", password); await db.ref('tpm_system/users/' + username).set('viewer'); localStorage.setItem('tpm_user', name); localStorage.setItem('tpm_username', username); window.location.reload(); } catch(e) {}
 }
 
-function logout() {
-    logAction('تسجيل خروج');
-    setTimeout(() => { 
-        firebase.auth().signOut().then(() => { 
-            localStorage.removeItem('tpm_user'); localStorage.removeItem('tpm_username');
-            window.location.reload(); 
-        }); 
-    }, 500);
+function logout() { firebase.auth().signOut().then(() => { localStorage.clear(); window.location.reload(); }); }
+
+function biometricLogin() {
+    const u = localStorage.getItem('tpm_username'); const n = localStorage.getItem('tpm_user');
+    if(!u) return; document.getElementById('loginUsername').value = u; document.getElementById('displayName').value = n;
 }
 
-async function biometricLogin() {
-    const savedUser = localStorage.getItem('tpm_user');
-    const savedUsername = localStorage.getItem('tpm_username');
-    if (!savedUser || !savedUsername) return alert('عفواً، يجب تسجيل الدخول يدوياً أول مرة مع تفعيل (تذكرني).');
-    
-    document.getElementById('loginUsername').value = savedUsername;
-    document.getElementById('displayName').value = savedUser;
-    alert('الجلسة الحالية منتهية، يرجى إدخال كلمة المرور مرة واحدة لتجديد الدخول الأوتوماتيكي.');
-}
-
-// ------------------------------------------
-// 🔄 DATABASE SYNC (SAFE & OPTIMIZED)
-// ------------------------------------------
 function syncToServer() {
     if (!isDataLoaded || !firebase.auth().currentUser) return;
-    try {
-        const updates = {};
-        if (historyData) historyData.forEach(h => { if (h && h.id) updates['tpm_system/history/' + h.id] = h; });
-        if (tasksData) tasksData.forEach(t => { if (t && t.id) updates['tpm_system/tasks/' + t.id] = t; });
-        if (tagsData) tagsData.forEach(t => { if (t && t.id) updates['tpm_system/tags/' + t.id] = t; });
-        
-        updates['tpm_system/kaizenComments'] = kaizenComments || {};
-        updates['tpm_system/likes'] = likesData || {};
-        updates['tpm_system/points'] = userPoints || {};
-
-        if (hasRole('admin')) {
-            updates['tpm_system/departments'] = departments || [];
-            updates['tpm_system/users'] = usersData || {};
-            updates['tpm_system/deptPhones'] = deptPhones || {};
-            updates['tpm_system/maintenanceEngineers'] = maintenanceEngineers || [];
-            updates['tpm_system/knowledgeBase'] = knowledgeBaseData || [];
-        }
-
-        db.ref().update(updates).catch(e => console.error("Sync Error:", e));
-    } catch (e) { console.error("Sync Error:", e); }
+    const updates = {};
+    historyData.forEach(h => updates['tpm_system/history/' + h.id] = h);
+    tasksData.forEach(t => updates['tpm_system/tasks/' + t.id] = t);
+    tagsData.forEach(t => updates['tpm_system/tags/' + t.id] = t);
+    logsData.forEach(l => updates['tpm_system/logs/' + l.id] = l);
+    updates['tpm_system/kaizenComments'] = kaizenComments || {}; updates['tpm_system/likes'] = likesData || {}; updates['tpm_system/points'] = userPoints || {};
+    if (hasRole('admin')) { updates['tpm_system/departments'] = departments; updates['tpm_system/users'] = usersData; updates['tpm_system/deptPhones'] = deptPhones; updates['tpm_system/maintenanceEngineers'] = maintenanceEngineers; updates['tpm_system/knowledgeBase'] = knowledgeBaseData; updates['tpm_system/api_keys'] = globalApiKeys; }
+    db.ref().update(updates).catch(e => {});
 }
 
-function logAction(actionDesc) {
-    if(!currentUser || !currentUser.name) return;
-    const now = new Date();
-    const timeStr = now.toLocaleDateString('ar-EG') + ' ' + now.toLocaleTimeString('ar-EG');
-    const logObj = { id: uniqueNumericId(), user: currentUser.name, action: actionDesc, time: timeStr };
-    logsData.push(logObj);
-    if(logsData.length > 50) logsData.shift(); 
-    // الدفع المباشر للسجلات بدون المساس بباقي البيانات (تجنب مسح الداتا)
-    if(isOnline && db) db.ref('tpm_system/logs/' + logObj.id).set(logObj);
+function awardPoints(pts, reason) {
+    if(!currentUser.name) return;
+    userPoints[currentUser.name] = (userPoints[currentUser.name] || 0) + pts;
+    syncToServer(); logAction(`كسب ${pts} نقطة: ${reason}`);
 }
 
-function renderLogsPanel() {
-    const c = document.getElementById('logsContainer');
-    if(!c) return;
-    c.innerHTML = logsData.length === 0 ? '<div style="color:gray; font-size:11px; text-align:center;">لا توجد سجلات</div>' : 
-    [...logsData].reverse().slice(0, 50).map(l => `
-        <div style="font-size:11px; border-bottom:1px solid var(--glass-border); padding:5px 0;">
-            <b style="color:var(--accent);">${escapeHtml(l.user)}</b>: ${escapeHtml(l.action)} <span style="color:gray; font-size:9px; float:left;">${l.time}</span>
-        </div>
-    `).join('');
-}
-
-function renderUsersPanel() {
-    const c = document.getElementById('usersListContainer'); if(!c) return;
-    let html = '';
-    for(let uName in usersData) {
-        let currentRole = usersData[uName];
-        let deleteBtn = (uName.toLowerCase() !== currentUser.username.toLowerCase() && uName.toLowerCase() !== 'mfayez') 
-            ? `<button class="btn btn-danger btn-sm" style="padding:3px 8px; margin-right:5px;" onclick="deleteUserRecord('${uName}')">🗑️</button>` 
-            : ``;
-        html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--glass-border);">
-            <b style="color:var(--text-bright); font-size:14px;">${uName}</b>
-            <div style="display:flex; align-items:center;">
-                <select class="form-control" style="width:auto; padding:4px; margin:0; font-size:12px;" onchange="changeUserRole('${uName}', this.value)">
-                    <option value="viewer" ${currentRole === 'viewer' ? 'selected' : ''}>مشاهد</option>
-                    <option value="auditor" ${currentRole === 'auditor' ? 'selected' : ''}>مراجع</option>
-                    <option value="admin" ${currentRole === 'admin' ? 'selected' : ''}>مدير</option>
-                </select>
-                ${deleteBtn}
-            </div>
-        </div>`;
-    }
-    c.innerHTML = html || '<div style="color:gray; text-align:center;">لا يوجد مستخدمين آخرين</div>';
-}
-
-function changeUserRole(userName, newRole) { if(!hasRole('admin')) return; usersData[userName] = newRole; logAction(`تعديل صلاحية (${userName}) إلى ${newRole}`); syncToServer(); alert(`تم التعديل بنجاح!`); }
-function deleteUserRecord(userName) { if(!hasRole('admin')) return; if(confirm(`حذف المستخدم (${userName}) نهائياً؟`)) { delete usersData[userName]; syncToServer(); logAction(`حذف المستخدم: ${userName}`); renderUsersPanel(); } }
-function addNewUserRole() {
-    if(!hasRole('admin')) return;
-    const uname = document.getElementById('newUsernameRole').value.trim(); const role = document.getElementById('newRoleSelect').value;
-    if(!uname) return alert('اكتب اسم المستخدم!');
-    usersData[uname] = role; syncToServer(); logAction(`إضافة مستخدم: ${uname}`); document.getElementById('newUsernameRole').value = ''; renderUsersPanel();
-}
-
-// ------------------------------------------
-// 📱 UI & DASHBOARD LOGIC
-// ------------------------------------------
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    
-    const navMap = { 'homeScreen':0, 'tasksScreen':1, 'historyScreen':2, 'detailedReportScreen':2, 'kaizenScreen':3, 'tagsScreen':4, 'knowledgeScreen':5, 'settingsScreen':6 };
-    if(navMap[id] !== undefined && document.querySelectorAll('.nav-item')[navMap[id]]) {
-        document.querySelectorAll('.nav-item')[navMap[id]].classList.add('active');
-    }
+    const map = { 'homeScreen':0, 'tasksScreen':1, 'historyScreen':2, 'kaizenScreen':3, 'tagsScreen':4, 'knowledgeScreen':5, 'settingsScreen':6 };
+    if(map[id]!==undefined && document.querySelectorAll('.nav-item')[map[id]]) document.querySelectorAll('.nav-item')[map[id]].classList.add('active');
     window.scrollTo(0,0);
 }
 
 function updateUsersLeaderboard() {
-    const c = document.getElementById('usersLeaderboardContainer'); if(!c) return;
+    const c = document.getElementById('podiumContainer'); const lc = document.getElementById('usersLeaderboardContainer');
+    if(!c || !lc) return;
     let sortable = []; for (let user in userPoints) { sortable.push({ user: user, points: userPoints[user] }); }
     sortable.sort((a, b) => b.points - a.points);
-    c.innerHTML = sortable.length === 0 ? '<div style="color:gray; font-size:12px;">لا يوجد نقاط مسجلة</div>' : sortable.slice(0, 5).map((item, index) => {
-        let medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : '🏅'));
-        return `<div style="display:flex; justify-content:space-between; align-items:center; background:var(--glass-bg); padding:8px 15px; border-radius:8px; border:1px solid var(--glass-border);">
-            <div><span style="font-size:18px; margin-right:8px;">${medal}</span> <b>${item.user}</b></div>
-            <div style="font-weight:bold; color:var(--success-neon);">${item.points} نقطة</div>
-        </div>`;
-    }).join('');
+    if(sortable.length === 0) { c.innerHTML = ''; lc.innerHTML = 'لا يوجد'; return; }
+    
+    let htmlPodium = '';
+    if(sortable[1]) htmlPodium += `<div class="podium-step step-2"><div>2</div><div>${sortable[1].user}</div><div style="font-size:10px;">${sortable[1].points}</div></div>`;
+    if(sortable[0]) htmlPodium += `<div class="podium-step step-1"><div>1</div><div>${sortable[0].user}</div><div style="font-size:10px;">${sortable[0].points}</div></div>`;
+    if(sortable[2]) htmlPodium += `<div class="podium-step step-3"><div>3</div><div>${sortable[2].user}</div><div style="font-size:10px;">${sortable[2].points}</div></div>`;
+    c.innerHTML = htmlPodium;
+    
+    lc.innerHTML = sortable.slice(3).map((item, idx) => `<div class="leaderboard-item"><span>${idx+4}. ${item.user}</span><span>${item.points} نقطة</span></div>`).join('');
 }
 
 function updateHomeDashboard() {
-    let totalScore = 0, auditCount = 0;
-    let totalOpen = tagsData.filter(t => t.status === 'open').length;
-    let totalClosed = tagsData.filter(t => t.status === 'closed').length;
-    
-    let bestDept = "لا يوجد";
-    let bestScore = -1;
-
-    let gridHtml = departments.map(d => {
-        let dAudits = historyData.filter(h => h.dept === d && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
-        let sc = dAudits.length > 0 ? dAudits[dAudits.length - 1].totalPct : 0;
-        
-        if(dAudits.length > 0) { 
-            totalScore += sc; auditCount++; 
-            if (sc > bestScore) { bestScore = sc; bestDept = d; }
-        }
-        
-        let redTagsNum = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
-        let zoneClass = (redTagsNum >= 3 || (sc < 50 && sc > 0)) ? 'hot-zone' : '';
-        let riskLevel = redTagsNum >= 3 ? '🔥 خطر' : '✅ مستقر';
-        let col = sc >= 80 ? 'var(--success-neon)' : (sc >= 50 ? 'var(--warning-neon)' : 'var(--danger-neon)');
-        
-        return `
-        <div class="card ${zoneClass}" style="cursor:pointer;" onclick="openDeptDashboard('${d}')">
-            <span class="heatmap-badge" style="background:${col}; color:black;">${riskLevel}</span>
-            <div style="margin-top:15px;">
-                <b style="display:block; font-size:16px;">${d}</b>
-                <div style="font-size:28px; font-weight:900; color:${col};">${sc}%</div>
-                <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:11px; color:var(--text-dim);">
-                    <span>🔴 ${redTagsNum} تاجات</span>
-                    <span>📈 كفاءة</span>
-                </div>
-            </div>
-        </div>`;
+    let tScore = 0, aCount = 0;
+    let grid = departments.map(d => {
+        let auds = historyData.filter(h => h.dept === d && !h.stepsOrder.includes('ManualKaizen'));
+        let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
+        if(auds.length > 0) { tScore+=sc; aCount++; }
+        let rTags = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
+        return `<div class="card" onclick="openDeptDashboard('${d}')"><div class="card-title">${d}</div><div class="stat-value ${sc>=80?'success-text':(sc>=50?'warning-text':'danger-text')}">${sc}%</div><div>تاجات صيانة: ${rTags}</div></div>`;
     }).join('');
-    
-    document.getElementById('homeDeptGrid').innerHTML = gridHtml;
-    document.getElementById('homeAvgScore').innerText = auditCount > 0 ? Math.round(totalScore/auditCount) + '%' : '0%';
-    document.getElementById('homeOpenTags').innerText = totalOpen;
-    document.getElementById('homeClosedTags').innerText = totalClosed;
-    
-    let bestDeptEl = document.getElementById('homeBestDept');
-    if(bestDeptEl) {
-        bestDeptEl.innerText = bestScore >= 0 ? bestDept : "جاري العمل...";
-        document.getElementById('homeBestReason').innerText = bestScore >= 0 ? `بنسبة نجاح ${bestScore}% في آخر مراجعة` : "لا توجد تقارير كافية";
-    }
-
+    document.getElementById('homeDeptGrid').innerHTML = grid;
+    document.getElementById('homeAvgScore').innerText = aCount > 0 ? Math.round(tScore/aCount) + '%' : '0%';
+    document.getElementById('homeOpenTags').innerText = tagsData.filter(t => t.status === 'open').length;
+    document.getElementById('homeClosedTags').innerText = tagsData.filter(t => t.status === 'closed').length;
     updateUsersLeaderboard();
 }
 
-function openDeptDashboard(dept) {
-    currentViewedDept = dept;
-    document.getElementById('deptDashTitle').innerText = dept;
-    document.getElementById('selectDept').value = dept; 
-    showScreen('deptDashboardScreen');
-    updateDeptDashboard();
-}
+function openDeptDashboard(dept) { currentViewedDept = dept; document.getElementById('deptDashTitle').innerText = dept; document.getElementById('selectDept').value = dept; showScreen('deptDashboardScreen'); updateDeptDashboard(); }
 
 function updateDeptDashboard() {
     if(!currentViewedDept) return;
-    const machine = document.getElementById('dashMachineFilter').value.trim().toLowerCase();
-    const filter = document.getElementById('dashTimeFilter').value;
-    
-    let dTags = tagsData.filter(t => t.dept === currentViewedDept && t.status !== 'closed' && (machine === '' || (t.machine && t.machine.toLowerCase().includes(machine))));
-    let dTasks = tasksData.filter(t => t.dept === currentViewedDept && (machine === '' || (t.machine && t.machine.toLowerCase().includes(machine))));
-    
-    let pendingTasks = dTasks.filter(t => t.status === 'pending').length;
-    let doneTasks = dTasks.filter(t => t.status === 'done').length;
-    let compRate = dTasks.length === 0 ? 0 : Math.round((doneTasks / dTasks.length) * 100);
-
+    let dTags = tagsData.filter(t => t.dept === currentViewedDept && t.status !== 'closed');
+    let dTasks = tasksData.filter(t => t.dept === currentViewedDept);
     document.getElementById('deptKpiOpenTags').innerText = dTags.length;
-    document.getElementById('deptKpiTasks').innerText = pendingTasks;
-    document.getElementById('deptKpiComp').innerText = `${compRate}%`;
-
-    let audits = historyData.filter(h => h.dept === currentViewedDept && !(h.stepsOrder && h.stepsOrder.includes('ManualKaizen')) && (machine === '' || (h.machine && h.machine.toLowerCase().includes(machine))));
-    let scores = [0,0,0,0,0,0,0];
+    document.getElementById('deptKpiTasks').innerText = dTasks.filter(t=>t.status==='pending').length;
+    document.getElementById('deptKpiComp').innerText = dTasks.length===0?0:Math.round((dTasks.filter(t=>t.status==='done').length/dTasks.length)*100)+'%';
     
-    if(audits.length > 0) {
-        if(filter === 'latest') {
-            const last = audits[audits.length - 1];
-            ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'].forEach((k, i) => {
-                if(last.results && last.results[k] && !last.results[k].skipped && last.results[k].max > 0) { scores[i] = Math.round((last.results[k].score / last.results[k].max) * 100); }
-            });
-        } else if(filter === 'avg3') {
-            let last3 = audits.slice(-3);
-            ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'].forEach((k, i) => {
-                let tS = 0, tM = 0;
-                last3.forEach(a => { if(a.results && a.results[k] && !a.results[k].skipped) { tS += a.results[k].score; tM += a.results[k].max; } });
-                scores[i] = tM > 0 ? Math.round((tS / tM) * 100) : 0;
-            });
-        }
+    let auds = historyData.filter(h => h.dept === currentViewedDept && !h.stepsOrder.includes('ManualKaizen'));
+    let scArr = [0,0,0,0,0,0,0];
+    if(auds.length > 0) {
+        const last = auds[auds.length - 1];
+        ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'].forEach((k,i) => { if(last.results[k] && !last.results[k].skipped) scArr[i] = Math.round((last.results[k].score/last.results[k].max)*100); });
     }
-
-    if (typeof Chart !== 'undefined') {
-        const ctxRadar = document.getElementById('radarChart');
-        if(ctxRadar && ctxRadar.getContext) {
-            if(radarChartInstance) radarChartInstance.destroy();
-            radarChartInstance = new Chart(ctxRadar.getContext('2d'), {
-                type: 'radar',
-                data: { labels: ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'], datasets: [{ label: machine ? `أداء (${machine})` : 'أداء القسم', data: scores, backgroundColor: 'rgba(21, 101, 192, 0.3)', borderColor: '#1565C0', pointBackgroundColor: '#2E7D32', borderWidth: 2 }] },
-                options: { scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, color: '#eee', backdropColor: 'transparent' }, grid: { color: '#444' }, pointLabels: { color: '#eee' } } }, maintainAspectRatio: false }
-            });
-        }
-
-        const ctxTrend = document.getElementById('trendChart');
-        if(ctxTrend && ctxTrend.getContext) {
-            if(trendChartInstance) trendChartInstance.destroy();
-            trendChartInstance = new Chart(ctxTrend.getContext('2d'), {
-                type: 'line',
-                data: { labels: audits.map(a => a.date), datasets: [{ label: 'تطور التقييم %', data: audits.map(a => a.totalPct), borderColor: '#F57F17', backgroundColor: 'rgba(245, 127, 23, 0.2)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4 }] },
-                options: { scales: { y: { min: 0, max: 100, ticks: { color: '#eee' } }, x: { ticks: { color: '#eee' } } }, maintainAspectRatio: false }
-            });
-        }
-    }
+    if(radarChartInstance) radarChartInstance.destroy();
+    if(document.getElementById('radarChart')) radarChartInstance = new Chart(document.getElementById('radarChart'), { type:'radar', data:{labels:['0','1','2','3','4','5','6'], datasets:[{label:'أداء', data:scArr, borderColor:'#d4af37'}]} });
 }
 
-function updateDeptDropdown() {
-    const opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
-    if(document.getElementById('selectDept')) document.getElementById('selectDept').innerHTML = opts;
-    if(document.getElementById('dashDeptSelect')) document.getElementById('dashDeptSelect').innerHTML = opts;
-    if(document.getElementById('newTaskDept')) document.getElementById('newTaskDept').innerHTML = opts;
-    if(document.getElementById('newTagDept')) document.getElementById('newTagDept').innerHTML = opts; 
-    
-    const strictOpts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
-    if(document.getElementById('newKaizenDept')) document.getElementById('newKaizenDept').innerHTML = strictOpts;
-    if(document.getElementById('qrDeptSelect')) document.getElementById('qrDeptSelect').innerHTML = strictOpts;
-}
-
-function updateDeptListUI() {
-    if(!document.getElementById('deptListContainer')) return;
-    document.getElementById('deptListContainer').innerHTML = departments.map((d, i) => `
-        <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border); background:var(--glass-bg); border-radius:6px; margin-bottom:5px;">
-            <div style="cursor:pointer; flex:1;" onclick="editDeptUI(${i}, '${d}')" title="اضغط لتعديل القسم أو الرقم">
-                <b style="color:var(--primary-light);">${d} ✏️</b><br>
-                <span style="font-size:11px; color:var(--danger-neon); font-weight:bold;">📱 ${typeof deptPhones !== 'undefined' && deptPhones[d] ? deptPhones[d] : 'اضغط لإضافة رقم'}</span>
-            </div>
-            <button class="btn btn-danger btn-sm" style="height:fit-content; width:auto;" onclick="delDept(${i}, '${d}')">حذف</button>
-        </div>`).join('');
-        
-    const engContainer = document.getElementById('engListContainer');
-    if(engContainer && typeof maintenanceEngineers !== 'undefined') {
-        engContainer.innerHTML = maintenanceEngineers.map((eng, i) => `
-        <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid var(--glass-border);">
-            <div><b style="color:white;">${eng.name}</b><br><span style="font-size:11px; color:var(--gray);">📱 ${eng.phone}</span></div>
-            <button class="btn btn-danger btn-sm" style="height:fit-content; width:auto;" onclick="delEngineer(${i})">حذف</button>
-        </div>`).join('');
-    }
-        
-    const engSelect = document.getElementById('newTagEngineer');
-    if(engSelect && typeof maintenanceEngineers !== 'undefined') {
-        engSelect.innerHTML = `<option value="">اختيار مهندس الصيانة للتبليغ...</option>` + maintenanceEngineers.map(e => `<option value="${e.phone}">${e.name}</option>`).join('');
-    }
-}
-
-function editDeptUI(idx, deptName) {
-    document.getElementById('newDeptInput').value = deptName;
-    document.getElementById('newDeptPhone').value = (typeof deptPhones !== 'undefined' && deptPhones[deptName]) ? deptPhones[deptName] : '';
-    editingDeptIndex = idx;
-    window.scrollTo({top: 0, behavior: 'smooth'});
-}
-
-function addOrUpdateDept() {
-    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
-    const val = sanitizeInput(document.getElementById('newDeptInput').value);
-    const phone = document.getElementById('newDeptPhone') ? sanitizeInput(document.getElementById('newDeptPhone').value) : '';
-    if(!val) return alert('برجاء كتابة اسم القسم!');
-    
-    if(typeof deptPhones === 'undefined') deptPhones = {};
-
-    if (editingDeptIndex > -1) {
-        let oldName = departments[editingDeptIndex];
-        if (oldName !== val) {
-            departments[editingDeptIndex] = val;
-            historyData.forEach(h => { if(h.dept === oldName) h.dept = val; });
-            tasksData.forEach(t => { if(t.dept === oldName) t.dept = val; });
-            tagsData.forEach(t => { if(t.dept === oldName) t.dept = val; });
-            if(deptPhones[oldName]) { deptPhones[val] = phone || deptPhones[oldName]; delete deptPhones[oldName]; }
-            else if(phone) deptPhones[val] = phone;
-            logAction(`تعديل اسم قسم من ${oldName} إلى ${val}`);
-        } else {
-            if(phone) deptPhones[val] = phone; else delete deptPhones[val];
-            logAction(`تحديث رقم قسم: ${val}`);
-        }
-        editingDeptIndex = -1;
-    } else {
-        if(!departments.includes(val)) { departments.push(val); logAction(`إضافة قسم جديد: ${val}`); }
-        if(phone) deptPhones[val] = phone;
-    }
-    
-    updateDeptDropdown(); updateDeptListUI(); syncToServer(); 
-    document.getElementById('newDeptInput').value = ''; 
-    if(document.getElementById('newDeptPhone')) document.getElementById('newDeptPhone').value = '';
-    alert('تم الحفظ بنجاح!');
-}
-
-function delDept(i, deptName) {
-    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
-    deptName = deptName || departments[i];
-    if(departments.length > 1 && confirm(`متأكد من حذف قسم (${deptName})؟`)) { 
-        logAction(`حذف قسم: ${deptName}`); departments.splice(i, 1); 
-        if(typeof deptPhones !== 'undefined' && deptPhones[deptName]) delete deptPhones[deptName];
-        updateDeptDropdown(); updateDeptListUI(); syncToServer(); 
-    }
-}
-
-function addEngineer() {
-    if(!hasRole('admin')) return alert('عفواً، هذه الصلاحية للمدير فقط.');
-    const name = sanitizeInput(document.getElementById('newEngName').value);
-    const phone = sanitizeInput(document.getElementById('newEngPhone').value);
-    if(name && phone) {
-        if(typeof maintenanceEngineers === 'undefined') maintenanceEngineers = [];
-        maintenanceEngineers.push({name, phone}); updateDeptListUI(); syncToServer(); logAction(`إضافة مهندس: ${name}`);
-        document.getElementById('newEngName').value = ''; document.getElementById('newEngPhone').value = '';
-    }
-}
-function delEngineer(i) { if(!hasRole('admin')) return alert('عفواً، للمدير فقط.'); if(confirm('حذف المهندس؟')) { maintenanceEngineers.splice(i, 1); updateDeptListUI(); syncToServer(); } }
-
-function printDeptDashboard() {
-    window.scrollTo(0, 0);
-    const btns = document.querySelectorAll('#deptDashboardScreen .no-print'); btns.forEach(b => b.style.display = 'none');
-    
-    const element = document.getElementById('deptDashboardScreen');
-    const opt = { 
-        margin: 0.3, 
-        filename: `لوحة_قيادة_${currentViewedDept}_${new Date().toLocaleDateString('ar-EG').replace(/\//g,'-')}.pdf`, 
-        image: { type: 'jpeg', quality: 1 }, 
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 }, 
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
-    };
-    
-    if (typeof html2pdf !== 'undefined') {
-        html2pdf().set(opt).from(element).save().then(() => { 
-            btns.forEach(b => b.style.display = 'flex');
-            document.querySelectorAll('#deptDashboardScreen .btn').forEach(b => b.style.display = 'block');
-        });
-    }
-}
-
-// ------------------------------------------
-// 🚀 FLOW AUDIT & EVALUATION
-// ------------------------------------------
-function startNewAuditFlow() { 
-    if(currentViewedDept) {
-        let selectDeptEl = document.getElementById('selectDept');
-        if (selectDeptEl) selectDeptEl.value = currentViewedDept;
-    }
-    
-    const draft = localStorage.getItem('tpm_audit_draft');
-    if(draft) {
-        const draftObj = JSON.parse(draft);
-        if(confirm(`يوجد تقييم غير مكتمل لقسم (${draftObj.dept}). هل تريد استكماله؟\n\n- اضغط OK للاستكمال.\n- اضغط Cancel لبدء تقييم جديد (سيتم مسح القديم).`)) {
-            loadAuditDraft(); return; 
-        } else { clearAuditDraft(); }
-    }
-    showScreen('setupScreen'); 
-}
-
+function startNewAuditFlow() { if(currentViewedDept) document.getElementById('selectDept').value = currentViewedDept; showScreen('setupScreen'); }
 function initAuditSequential() {
-    let machineName = document.getElementById('setupMachine').value.trim() || 'عام';
-    currentAudit = {
-        id: uniqueNumericId().toString(), dept: document.getElementById('selectDept').value, machine: machineName,
-        auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'),
-        stepsOrder: ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'],
-        currentStepIndex: 0, results: {}
-    };
+    currentAudit = { id: uniqueNumericId().toString(), dept: document.getElementById('selectDept').value, machine: document.getElementById('setupMachine').value||'عام', auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'), stepsOrder: ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'], currentStepIndex: 0, results: {} };
     renderCurrentAuditStep();
 }
 
 function renderCurrentAuditStep() {
-    const stepKey = currentAudit.stepsOrder[currentAudit.currentStepIndex];
-    const stepData = AUDIT_DATA[stepKey];
-    
-    currentStepSelections = (currentAudit.results[stepKey] && currentAudit.results[stepKey].selections) ? JSON.parse(JSON.stringify(currentAudit.results[stepKey].selections)) : {};
-    currentStepImages = (currentAudit.results[stepKey] && currentAudit.results[stepKey].images) ? JSON.parse(JSON.stringify(currentAudit.results[stepKey].images)) : {};
-
-    document.getElementById('auditStepTitle').innerText = `${stepKey}: ${stepData.name}`;
-    document.getElementById('auditProgressBar').style.width = `${((currentAudit.currentStepIndex) / 7) * 100}%`;
-
-    let html = '';
-    stepData.items.forEach(item => {
-        let hasImage = '';
-        if (currentStepImages['img_' + item.id]) {
-            hasImage = `
-            <div id="img_preview_elem_${item.id}" style="position:relative; display:inline-block;">
-                <img src="${currentStepImages['img_' + item.id].data}" style="height:40px; border-radius:4px; margin-right:10px; border:1px solid var(--glass-border); vertical-align:middle;">
-            </div>
-            <button class="btn btn-outline btn-sm" style="display:inline-block; vertical-align:middle; padding:4px 8px; margin-right:5px; width:auto;" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')">👁️ AI</button>
-            <button class="btn btn-danger btn-sm" style="display:inline-block; vertical-align:middle; padding:4px 8px; width:auto;" onclick="removeAuditImage(${item.id})">🗑️ مسح</button>
-            `;
-        }
-        
-        html += `<div class="audit-item"><div class="item-header"><div class="item-num">${item.id}</div>
-        <div class="item-title">${item.title} <span style="font-size:12px; color:var(--primary-light); font-weight:normal;">(${item.maxScore} درجة)</span>
-            <div style="margin-top: 5px; display:flex; align-items:center;">
-                <span class="icon-btn" onclick="explainItem('${item.title}')" title="شرح">💡</span>
-                <span class="icon-btn" title="إضافة صورة" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')">📸</span>
-                <div id="preview_img_${item.id}">${hasImage}</div>
-            </div>
-        </div></div><div>`;
-        
-        item.levels.forEach(lvl => {
-            let isSel = (currentStepSelections['item_' + item.id] && currentStepSelections['item_' + item.id].score === lvl.score) ? 'selected' : '';
-            html += `<div class="level-opt ${isSel}" onclick="selectLevel(${item.id}, ${lvl.score}, ${item.maxScore}, this)"><div class="level-num">${lvl.level}</div><div class="level-text" style="flex:1;">${lvl.desc}</div><div style="font-size:11px; color:var(--success-neon); font-weight:bold; white-space:nowrap;">(+${lvl.score} درجة)</div></div>`;
-        });
-        html += `</div></div>`;
-    });
-    document.getElementById('auditItemsContainer').innerHTML = html;
-    window.scrollTo(0,0);
-    showScreen('auditScreen');
-    ReliabilityEngine.updateHealthIndicator();
+    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; const sd = AUDIT_DATA[k];
+    document.getElementById('auditStepTitle').innerText = `${k}: ${sd.name}`;
+    document.getElementById('auditItemsContainer').innerHTML = sd.items.map(item => `
+        <div class="audit-item"><div class="item-header"><div class="item-num">${item.id}</div><div class="item-title">${item.title}</div>
+        <button class="btn btn-sm btn-outline" onclick="explainItem('${item.title}')">AI نصيحة</button></div>
+        ${item.levels.map(lvl => `<div class="level-opt" onclick="selectLevel(${item.id}, ${lvl.score}, ${item.maxScore}, this)"><div class="level-num">${lvl.level}</div><div>${lvl.desc}</div></div>`).join('')}
+        </div>`).join('');
+    currentStepSelections = {}; currentStepImprovements = []; showScreen('auditScreen');
 }
 
-function selectLevel(id, score, max, el) {
-    currentStepSelections['item_' + id] = { score, max };
-    if(el) {
-        el.parentElement.querySelectorAll('.level-opt').forEach(o => o.classList.remove('selected'));
-        el.classList.add('selected');
-    }
-}
+function selectLevel(id, score, max, el) { currentStepSelections['item_'+id] = {score, max}; el.parentElement.querySelectorAll('.level-opt').forEach(o=>o.classList.remove('selected')); el.classList.add('selected'); }
 
 function finishCurrentStep() {
-    const stepKey = currentAudit.stepsOrder[currentAudit.currentStepIndex];
-    const stepData = AUDIT_DATA[stepKey];
-
-    if(Object.keys(currentStepSelections).length < stepData.items.length) return alert('يجب الإجابة على جميع البنود للخطوة!');
-
-    let tScore = 0, tMax = 0; currentStepImprovements = [];
-    for(let safeKey in currentStepSelections) {
-        let sc = currentStepSelections[safeKey].score, mx = currentStepSelections[safeKey].max;
-        tScore += sc; tMax += mx;
-        if(sc < mx) {
-            let actualId = safeKey.replace('item_', '');
-            let item = stepData.items.find(i => i.id == actualId);
-            if(item) currentStepImprovements.push({ title: item.title });
-        }
-    }
-
-    currentAudit.results[stepKey] = { 
-        skipped: false, score: tScore, max: tMax, 
-        improvements: currentStepImprovements.map(i => i.title || i),
-        selections: JSON.parse(JSON.stringify(currentStepSelections)),
-        images: JSON.parse(JSON.stringify(currentStepImages))
-    };
-    
-    const aiBtn = document.getElementById('aiCapaBtn');
-    if(aiBtn) aiBtn.style.display = currentStepImprovements.length > 0 ? 'inline-block' : 'none';
-    
-    saveAuditDraft(); 
-    renderStepSummary(stepKey, tScore, tMax);
-}
-
-function skipCurrentStep() {
-    if(confirm('تخطي هذه الخطوة؟')) {
-        currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = { skipped: true, score: 0, max: 0, improvements: [], selections: {}, images: {} };
-        goToNextStep();
-    }
-}
-
-function renderStepSummary(stepKey, score, max) {
-    document.getElementById('summaryStepTitle').innerText = `نتيجة ${stepKey}`;
-    let pct = Math.round((score / max) * 100);
-    document.getElementById('summaryPct').innerText = `${pct}%`;
-    document.getElementById('summaryScoreStr').innerText = `${score} / ${max}`;
-    document.querySelector('#stepSummaryScreen .score-circle').style.borderColor = pct >= 80 ? 'var(--success-neon)' : (pct >= 50 ? 'var(--warning-neon)' : 'var(--danger-neon)');
-
-    if(pct >= 90 && typeof confetti !== 'undefined') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-
-    let impHtml = currentStepImprovements.length === 0 ? '<div style="color:var(--success-neon); font-weight:bold;">🎉 أداء ممتاز!</div>' : currentStepImprovements.map(i => `
-        <div class="improvement-box" style="margin-bottom: 10px; padding: 10px; border: 1px solid var(--glass-border); border-radius: 8px; background: rgba(255,255,255,0.05);">
-            <b>${i.title}</b>
-            <div style="margin-top:10px; display:flex; gap:5px;"><button class="btn btn-primary btn-sm" onclick="sendToTask('${i.title.replace(/'/g,"")}')" style="width:auto; margin:0;">➕ تحويل لمهمة</button></div>
-        </div>`).join('');
-    document.getElementById('opportunitiesContainer').innerHTML = impHtml;
-    window.scrollTo(0,0);
+    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; const sd = AUDIT_DATA[k];
+    if(Object.keys(currentStepSelections).length < sd.items.length) return;
+    let s=0, m=0; currentStepImprovements=[];
+    for(let key in currentStepSelections) { s+=currentStepSelections[key].score; m+=currentStepSelections[key].max; if(currentStepSelections[key].score < currentStepSelections[key].max) { let id = key.split('_')[1]; let itm = sd.items.find(i=>i.id==id); if(itm) currentStepImprovements.push(itm.title); } }
+    currentAudit.results[k] = { skipped:false, score:s, max:m, improvements:currentStepImprovements };
+    document.getElementById('summaryPct').innerText = Math.round((s/m)*100)+'%';
+    document.getElementById('opportunitiesContainer').innerHTML = currentStepImprovements.map(i=>`<div>${i}</div>`).join('');
+    document.getElementById('aiCapaBtn').style.display = currentStepImprovements.length>0?'block':'none';
     showScreen('stepSummaryScreen');
 }
-
-function goToNextStep() {
-    currentAudit.currentStepIndex++;
-    if(currentAudit.currentStepIndex < 7) renderCurrentAuditStep(); else generateFinalReport();
-}
+function skipCurrentStep() { currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = {skipped:true, score:0, max:0, improvements:[]}; goToNextStep(); }
+function goToNextStep() { currentAudit.currentStepIndex++; if(currentAudit.currentStepIndex < 7) renderCurrentAuditStep(); else generateFinalReport(); }
 
 function generateFinalReport() {
-    let tS = 0, tM = 0;
-    currentAudit.stepsOrder.forEach(k => {
-        if(!currentAudit.results[k].skipped) { tS += currentAudit.results[k].score; tM += currentAudit.results[k].max; }
-    });
-    let finalPct = tM === 0 ? 0 : Math.round((tS / tM) * 100);
-    document.getElementById('finalDeptName').innerText = currentAudit.dept;
-    document.getElementById('finalTotalPct').innerText = `${finalPct}%`;
-    currentAudit.totalScore = tS; currentAudit.totalMax = tM; currentAudit.totalPct = finalPct;
-    
-    if(finalPct >= 90 && typeof confetti !== 'undefined') {
-        let duration = 3 * 1000; let animationEnd = Date.now() + duration;
-        let interval = setInterval(function() {
-            let timeLeft = animationEnd - Date.now();
-            if (timeLeft <= 0) return clearInterval(interval);
-            let particleCount = 50 * (timeLeft / duration);
-            confetti(Object.assign({}, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
-        }, 250);
-    }
-    showScreen('finalReportScreen');
-    setTimeout(initSignaturePad, 200); 
+    let s=0, m=0; currentAudit.stepsOrder.forEach(k=>{if(!currentAudit.results[k].skipped){s+=currentAudit.results[k].score; m+=currentAudit.results[k].max;}});
+    let p=m===0?0:Math.round((s/m)*100); currentAudit.totalPct = p;
+    document.getElementById('finalTotalPct').innerText = p+'%'; document.getElementById('finalDeptName').innerText = currentAudit.dept;
+    showScreen('finalReportScreen'); initSignaturePad();
 }
 
 function saveFinalAudit() {
-    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية حفظ تقرير مراجعة.');
-    if(sigCanvas) { currentAudit.signature = sigCanvas.toDataURL('image/png'); } 
-    const existingIndex = historyData.findIndex(h => h.id === currentAudit.id);
-    if(existingIndex >= 0) { historyData[existingIndex] = currentAudit; logAction(`تعديل تقرير ${currentAudit.dept}`); } 
-    else { historyData.push(currentAudit); logAction(`إنشاء تقرير ${currentAudit.dept}`); }
-    
-    let allImprovements = [];
-    Object.keys(currentAudit.results).forEach(step => {
-        if(currentAudit.results[step].improvements && currentAudit.results[step].improvements.length > 0) {
-            allImprovements.push(...currentAudit.results[step].improvements);
-        }
-    });
-    if(allImprovements.length > 0) {
-        tasksData.push({
-            id: uniqueNumericId(),
-            isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام',
-            task: `مجلد تحسينات مراجعة (${currentAudit.date})`,
-            subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })),
-            status: 'pending'
-        });
-    }
-
-    if(typeof deptPhones !== 'undefined' && deptPhones[currentAudit.dept]) {
-        let cleanPhone = deptPhones[currentAudit.dept].replace(/[^0-9+]/g, '');
-        let msg = `*تقرير مراجعة TPM 🏭*\nتم الانتهاء من مراجعة قسم: ${currentAudit.dept}\nالنتيجة: ${currentAudit.totalPct}%\n\nتم إدراج فرص التحسين أوتوماتيكياً في مجلد خطة العمل بالتطبيق.\nعاش جداً! 🚀`;
-        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-    }
-
-    renderHistory(); updateHomeDashboard(); syncToServer(); clearAuditDraft();
-    awardPoints(50, 'إتمام مراجعة'); alert('تم الحفظ وتم إنشاء فولدر خطة العمل أوتوماتيكياً!'); showScreen('homeScreen'); 
-}
-
-// ==========================================
-// 🛡️ الموثوقية (Reliability Engine)
-// ==========================================
-const ReliabilityEngine = {
-    calculateMachineHealth: function(machineName, deptName) {
-        if (!machineName || machineName === 'عام') return 100;
-        const redTagsCount = tagsData.filter(t => t.machine === machineName && t.dept === deptName && t.color === 'red' && t.status === 'open').length;
-        const lambda = (redTagsCount + 0.5) / 30; 
-        const predictionDays = 7; 
-        const reliability = Math.exp(-lambda * (predictionDays / 30));
-        return Math.round(reliability * 100);
-    },
-    updateHealthIndicator: function() {
-        if (!currentAudit || !currentAudit.machine) return;
-        const health = this.calculateMachineHealth(currentAudit.machine, currentAudit.dept);
-        const el = document.getElementById('machineHealthIndicator');
-        if (el) {
-            el.innerHTML = `🛡️ الموثوقية للمعدة (${currentAudit.machine}): <span>${health}%</span>`;
-            el.style.color = health > 80 ? 'var(--success-neon)' : (health > 50 ? 'var(--warning-neon)' : 'var(--danger-neon)');
-        }
-    }
-};
-
-// ==========================================
-// CENTRAL API KEYS MANAGEMENT (للمدير فقط)
-// ==========================================
-function saveApiKeys() {
-    if(!hasRole('admin')) return alert('صلاحية المدير فقط.');
-    const imgbb = document.getElementById('imgbbKeyInput').value.trim();
-    const gemini = document.getElementById('geminiKeyInput').value.trim();
-    
-    document.getElementById('cloudStatus').innerHTML = "⏳ جاري حفظ المفاتيح...";
-    
-    db.ref('tpm_system/api_keys').set({ imgbb: imgbb, gemini: gemini })
-    .then(() => {
-        alert('✅ تم حفظ المفاتيح المركزية! ستعمل الآن عند جميع العمال تلقائياً.');
-        document.getElementById('cloudStatus').innerHTML = "☁️ متصل ومزامن";
-    })
-    .catch(e => alert('❌ خطأ: ' + e.message));
-}
-
-// ==========================================
-// TASKS, CAPA FOLDERS & REPORTS
-// ==========================================
-function renderTasks() {
-    let pendAll = 0, progAll = 0, doneAll = 0;
-    let deptStats = {};
-    departments.forEach(d => deptStats[d] = { pending: 0, done: 0, total: 0 });
-
-    tasksData.forEach(t => {
-        let isDone = false;
-        if(t.isFolder) {
-            let safeSubTasks = t.subTasks || [];
-            let doneSub = safeSubTasks.filter(s => s.status === 'done').length;
-            isDone = (doneSub === safeSubTasks.length && safeSubTasks.length > 0);
-            if(isDone) doneAll++; else if(doneSub > 0) progAll++; else pendAll++;
-        } else {
-            isDone = (t.status === 'done');
-            if(t.status === 'pending') pendAll++; else if(t.status === 'progress') progAll++; else doneAll++;
-        }
-        if(t.dept && deptStats[t.dept]) { 
-            deptStats[t.dept].total++; 
-            if(isDone) deptStats[t.dept].done++; else deptStats[t.dept].pending++; 
-        }
-    });
-
-    let mainPendingEl = document.getElementById('kpiTasksPendingAll');
-    if(mainPendingEl) {
-        mainPendingEl.innerText = pendAll; document.getElementById('kpiTasksProgressAll').innerText = progAll; document.getElementById('kpiTasksDoneAll').innerText = doneAll;
-        let gridHtml = departments.map(d => {
-            let s = deptStats[d]; let col = s.pending > 0 ? 'var(--danger-neon)' : (s.total > 0 ? 'var(--success-neon)' : 'var(--gray)');
-            return `<div style="background:var(--glass-bg); border:1px solid var(--glass-border); border-right:4px solid ${col}; padding:15px; border-radius:8px; cursor:pointer;" onclick="openTasksDept('${d}')">
-                <b style="font-size:14px; color:var(--text-bright);">${d}</b><div style="font-size:11px; margin-top:5px; color:var(--text-dim);">مهام معلقة: <b style="color:var(--danger-neon);">${s.pending}</b> | مكتملة: <b style="color:var(--success-neon);">${s.done}</b></div>
-            </div>`;
-        }).join('');
-        document.getElementById('tasksDeptGrid').innerHTML = gridHtml;
-    }
-
-    if(currentTaskDept) {
-        let pendingDept = deptStats[currentTaskDept] ? deptStats[currentTaskDept].pending : 0;
-        let doneDept = deptStats[currentTaskDept] ? deptStats[currentTaskDept].done : 0;
-        document.getElementById('kpiTasksPendingDept').innerText = pendingDept;
-        document.getElementById('kpiTasksDoneDept').innerText = doneDept;
-
-        let listHtml = ''; let folderHtml = '';
-        let deptTasks = [...tasksData].reverse().filter(t => t.dept === currentTaskDept);
-
-        deptTasks.forEach(t => {
-            if(t.isFolder) {
-                let safeSubTasks = t.subTasks || [];
-                let totalSub = safeSubTasks.length; let doneSub = safeSubTasks.filter(s => s.status === 'done').length;
-                let fStatus = doneSub === totalSub && totalSub > 0 ? '🟢 مكتمل' : (doneSub === 0 ? '🔴 معلق' : `🟡 جاري (${doneSub}/${totalSub})`);
-                let subsHtml = safeSubTasks.map((st, idx) => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed var(--glass-border);">
-                        <label style="font-size:12px; cursor:pointer; color:${st.status==='done'?'gray':'white'}; text-decoration:${st.status==='done'?'line-through':'none'};"><input type="checkbox" ${st.status==='done'?'checked':''} onclick="toggleFolderSubTask(${t.id}, ${idx})"> ${st.text}</label>
-                    </div>`).join('');
-                folderHtml += `<div class="card" style="border:1px solid var(--primary); border-top:4px solid var(--primary);"><div style="display:flex; justify-content:space-between; margin-bottom:10px;"><div><b style="color:var(--primary-light);">📁 ${t.task}</b><br><span style="font-size:11px; color:var(--text-dim);">⚙️ ${t.machine || 'عام'}</span></div><span style="font-size:11px; font-weight:bold;">${fStatus}</span></div><div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px;">${subsHtml || '<div style="font-size:11px;color:gray;">لا توجد تفاصيل</div>'}</div></div>`;
-            } else {
-                let selectStatus = `<select class="form-control" style="width:auto; padding:2px; font-size:11px; margin:0;" onchange="changeTaskStatus(${t.id}, this.value)"><option value="pending" ${t.status==='pending'?'selected':''}>⏳ انتظار</option><option value="progress" ${t.status==='progress'?'selected':''}>🛠️ تنفيذ</option><option value="done" ${t.status==='done'?'selected':''}>✔️ مكتملة</option></select>`;
-                let col = t.status === 'done' ? 'var(--success-neon)' : (t.status === 'progress' ? 'var(--warning-neon)' : 'var(--danger-neon)');
-                listHtml += `<div class="task-card" style="border-right-color:${col}; opacity:${t.status==='done'?'0.7':'1'};"><div style="display:flex; justify-content:space-between; align-items:center;"><div><span style="font-size:11px; color:var(--text-dim);">(${t.date})</span><p style="margin-top:5px; font-size:13px; font-weight:bold; color:var(--text-bright);">${t.task}</p></div><div>${selectStatus}</div></div></div>`;
-            }
-        });
-        let listC = document.getElementById('tasksListContainer'); if(listC) listC.innerHTML = listHtml || '<div style="color:gray; text-align:center; font-size:12px;">لا توجد مهام فردية</div>';
-        let folderC = document.getElementById('auditFoldersContainer'); if(folderC) folderC.innerHTML = folderHtml || '<div style="color:gray; text-align:center; font-size:12px;">لا توجد مجلدات مراجعات</div>';
-    }
-}
-function openTasksDept(dept) {
-    currentTaskDept = dept;
-    document.getElementById('tasksDeptTitle').innerText = 'مهام قسم: ' + dept;
-    document.getElementById('btnDeptName').innerText = dept;
-    document.getElementById('tasksMainView').style.display = 'none';
-    document.getElementById('tasksDeptView').style.display = 'block';
-    renderTasks();
-}
-
-function closeTasksDept() {
-    currentTaskDept = null;
-    document.getElementById('tasksDeptView').style.display = 'none';
-    document.getElementById('tasksMainView').style.display = 'block';
-    renderTasks();
-}
-
-function toggleFolderSubTask(folderId, subTaskIndex) { let folder = tasksData.find(x => x.id === folderId); if(folder) { let st = folder.subTasks[subTaskIndex]; st.status = st.status === 'done' ? 'pending' : 'done'; renderTasks(); syncToServer(); } }
-function changeTaskStatus(taskId, newStatus) { let t = tasksData.find(x => x.id === taskId); if(t) { t.status = newStatus; renderTasks(); syncToServer(); } }
-function exportTasksToCSV() {
-    if(currentUser.role !== 'admin') return alert('عفواً، للمدير فقط');
-    if(!tasksData || tasksData.length === 0) return alert('لا توجد مهام للتصدير.');
-
-    let csvContent = "data:text/csv;charset=utf-8,%EF%BB%BF";
-    csvContent += "ID,القسم,المهمة,النوع,الوقت,الحالة,التاريخ,الماكينة,الهاتف\n";
-
-    tasksData.forEach((task) => {
-        if (task.isFolder) {
-            const subTasks = Array.isArray(task.subTasks) ? task.subTasks : [];
-            subTasks.forEach((subTask, index) => {
-                const row = [ `${task.id}-${index + 1}`, task.dept || '', subTask.text || '', 'Folder SubTask', '', subTask.status || 'pending', task.date || '', task.machine || '', task.phone || '' ].map(toCsvCell);
-                csvContent += row.join(",") + "\n";
-            });
-        } else {
-            const row = [ task.id || '', task.dept || '', task.task || '', task.type || '', task.time || '', task.status || 'pending', task.date || '', task.machine || '', task.phone || '' ].map(toCsvCell);
-            csvContent += row.join(",") + "\n";
-        }
-    });
-
-    const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = `TPM_CAPA_${new Date().toLocaleDateString('ar-EG').replace(/\//g,'-')}.csv`; link.click();
-    logAction('استخراج المهام إلى Excel'); syncToServer();
-}
-
-function addManualTaskDept() {
-    if(!hasRole('admin', 'auditor')) return alert('عفواً، لا تملك صلاحية إضافة مهام.');
-    const taskVal = sanitizeInput(document.getElementById('newTaskInput').value);
-    if(!taskVal) return alert('اكتب المهمة!');
-    tasksData.push({ id: uniqueNumericId(), dept: currentTaskDept, task: taskVal, status: 'pending', date: new Date().toLocaleDateString('ar-EG') });
-    renderTasks(); syncToServer(); document.getElementById('newTaskInput').value = '';
+    if(!hasRole('auditor', 'admin')) return;
+    if(sigCanvas) currentAudit.signature = sigCanvas.toDataURL();
+    historyData.push(currentAudit); awardPoints(50, 'إتمام مراجعة');
+    if(deptPhones[currentAudit.dept]) window.open(`https://wa.me/${deptPhones[currentAudit.dept].replace(/\D/g,'')}?text=${encodeURIComponent(`تقرير مراجعة قسم ${currentAudit.dept} بنسبة ${currentAudit.totalPct}%`)}`);
+    syncToServer(); showScreen('homeScreen'); updateHomeDashboard();
 }
 
 function renderHistory() {
-    let realAudits = historyData.filter(a => !(a.stepsOrder && a.stepsOrder.includes('ManualKaizen')));
-    document.getElementById('historyListContainer').innerHTML = realAudits.length === 0 ? '<div style="color:gray;">لا توجد تقارير</div>' : 
-    [...realAudits].reverse().map(a => {
-        let col = a.totalPct >= 80 ? 'success-neon' : (a.totalPct >= 50 ? 'warning-neon' : 'danger-neon');
-        let adminBtns = currentUser.role === 'admin' ? `<div style="margin-top: 15px; display: flex; gap: 5px; justify-content: flex-end;" onclick="event.stopPropagation();"><button class="btn btn-warning btn-sm" style="width:auto; margin:0;" onclick="editReport('${a.id}')">✏️</button><button class="btn btn-danger btn-sm" style="width:auto; margin:0;" onclick="deleteReport('${a.id}')">🗑️</button></div>` : '';
-        return `<div class="card" style="border-right: 4px solid var(--${col}) !important; cursor:pointer;" onclick="viewDetailedReport('${a.id}')"><div style="display:flex; justify-content:space-between;"><div><b style="color:white;">${escapeHtml(a.dept)}</b><br><span style="font-size:11px; color:var(--text-dim);">${escapeHtml(a.date)}</span></div><b style="color:var(--${col}); font-size:18px;">${a.totalPct}%</b></div>${adminBtns}</div>`;
-    }).join('');
+    let real = historyData.filter(h=>!h.stepsOrder.includes('ManualKaizen')).reverse();
+    document.getElementById('historyListContainer').innerHTML = real.map(a=>`<div class="card" onclick="viewDetailedReport('${a.id}')"><div class="card-title">${a.dept}</div><div>${a.date} | ${a.totalPct}%</div></div>`).join('');
 }
-
-function editReport(id) { 
-    const rep = historyData.find(h => h.id === id); 
-    if(rep) {
-        if(rep.stepsOrder && rep.stepsOrder.includes('ManualKaizen')) return alert('⚠️ لا يمكن تعديل تقرير الكايزن من هنا، استخدم مجتمع كايزن للحذف أو التعديل.');
-        if(confirm('تعديل التقرير؟')) { currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; renderCurrentAuditStep(); } 
-    }
-}
-
-function deleteReport(id) { if(confirm('حذف نهائي؟')) { historyData = historyData.filter(h => h.id !== id); renderHistory(); updateHomeDashboard(); syncToServer(); } }
 
 function viewDetailedReport(id) {
-    const a = historyData.find(h => h.id === id); if(!a) return;
-    
-    document.getElementById('detDept').innerText = a.dept;
-    document.getElementById('detMachine').innerText = a.machine || 'عام';
-    document.getElementById('detAuditor').innerText = a.auditor;
-    document.getElementById('detDate').innerText = a.date;
-    document.getElementById('detPct').innerText = `${a.totalPct}%`;
-    document.getElementById('detPct').style.color = a.totalPct >= 80 ? '#2E7D32' : (a.totalPct >= 50 ? '#F57F17' : '#C62828');
-
-    document.getElementById('detStepsContainer').innerHTML = a.stepsOrder.map(k => {
-        let r = a.results[k];
-        if(!r || r.skipped) return `<div class="print-section" style="page-break-inside: avoid; color: gray;"><b>${k}</b>: تم تخطي هذه الخطوة</div>`;
-        let p = Math.round((r.score/r.max)*100);
-        let col = p >= 80 ? '#2E7D32' : (p >= 50 ? '#F57F17' : '#C62828');
-        
-        let imps = (r.improvements || []).length > 0 ? r.improvements.map(i => {
-            let taskBtn = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? `<button class="btn btn-primary btn-sm no-print" style="padding: 2px 8px; font-size: 11px; margin-right:10px; display:inline-block; width:auto;" onclick="sendToTask('${i.replace(/'/g,"")}', '${a.dept}')">➕ تحويل لمهمة</button>` : '';
-            return `<li style="margin-bottom: 8px; display:flex; justify-content:space-between; align-items:flex-start;"><span style="flex:1; color:#444;">- ${escapeHtml(i)}</span>${taskBtn}</li>`;
-        }).join('') : '<span style="color:#2E7D32; font-weight:bold;">لا يوجد تعليقات - أداء ممتاز</span>';
-        
-        let imgsHtml = '';
-        if(r.images) { Object.values(r.images).forEach(img => { const url = safeUrl(img.data); if (url) imgsHtml += `<img src="${url}" style="height:80px; width:auto; border-radius:4px; margin:5px; border:1px solid #ccc; display:inline-block;">`; }); }
-        let galleryBlock = imgsHtml ? `<div style="margin-top:10px; background:#fafafa; padding:5px; border-radius:4px;"><b>📸 الأدلة المصورة:</b><br>${imgsHtml}</div>` : '';
-
-        return `<div class="print-section" style="margin-bottom:15px; border:1px solid #ddd; padding:15px; border-radius:8px; page-break-inside: avoid; background:#fff;">
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#f0f4f8; padding:10px; border-radius: 6px; border-right:4px solid ${col}; margin-bottom:10px;">
-                <b style="color:#333; font-size:15px;">${k} : ${AUDIT_DATA[k].name}</b> 
-                <b style="color:${col}; font-size:18px; background:#fff; padding:2px 10px; border-radius:4px; border:1px solid #ddd;">${p}%</b>
-            </div>
-            <div style="font-size:13px; margin-bottom:10px; color:#333;"><b>💡 فرص التحسين المكتشفة:</b><ul style="margin-right:20px; margin-top:5px; list-style:none; padding:0;">${imps}</ul></div>
-            ${galleryBlock}
-        </div>`;
+    let a = historyData.find(h=>h.id===id); if(!a) return;
+    document.getElementById('detDept').innerText = a.dept; document.getElementById('detMachine').innerText = a.machine; document.getElementById('detAuditor').innerText = a.auditor; document.getElementById('detDate').innerText = a.date; document.getElementById('detPct').innerText = a.totalPct+'%';
+    document.getElementById('detStepsContainer').innerHTML = a.stepsOrder.map(k=> {
+        let r=a.results[k]; if(!r||r.skipped) return '';
+        return `<div><b>${k}</b>: ${Math.round((r.score/r.max)*100)}%<br>${r.improvements.map(i=>`- ${i}`).join('<br>')}</div>`;
     }).join('');
-    
-    let relatedTags = tagsData.filter(t => t.dept === a.dept && t.status === 'open' && (a.machine === 'عام' || t.machine === a.machine));
-    let tagsHtml = '';
-    if(relatedTags.length > 0) {
-        tagsHtml = `<h3 style="color: #C62828; margin-bottom:10px; border-bottom:2px solid #eee; padding-bottom:5px;">🏷️ تاجات مفتوحة تتطلب تدخل (للمعدة: ${escapeHtml(a.machine)}):</h3>`;
-        tagsHtml += relatedTags.map(t => {
-            let colorCode = t.color === 'red' ? '#D32F2F' : '#1976D2';
-            let typeName = t.color === 'red' ? 'صيانة (أحمر)' : 'إنتاج (أزرق)';
-            return `<div style="border-right: 5px solid ${colorCode}; background: #fff; border: 1px solid #ddd; border-right-width: 5px; padding: 10px; margin-bottom: 8px; border-radius: 6px; font-size:13px; page-break-inside: avoid; color:#333;">
-                <b style="color:${colorCode};">تاج ${typeName}</b> | ${escapeHtml(t.desc)} <span style="color:#777; font-size:11px; float:left;">تاريخ الإصدار: ${escapeHtml(t.date)}</span>
-            </div>`;
-        }).join('');
-    }
-    document.getElementById('detTagsContainer').innerHTML = tagsHtml;
-
     showScreen('detailedReportScreen');
-    window.currentReportText = `*تقرير TPM*\n🏭 القسم: ${a.dept}\n⚙️ الماكينة: ${a.machine||'عام'}\n👤 المراجع: ${a.auditor}\n📅 التاريخ: ${a.date}\n⭐ النتيجة: ${a.totalPct}%\n\nراجع النظام للتفاصيل.`;
 }
+
+function renderTasks() {
+    let html = tasksData.map(t=>`<div class="audit-item"><div>${t.task} (${t.status})</div><button class="btn btn-outline btn-sm" onclick="changeTaskStatus(${t.id}, 'done')">إتمام</button></div>`).join('');
+    let c = document.getElementById('tasksListContainer'); if(c) c.innerHTML = html;
+}
+function changeTaskStatus(id, st) { let t=tasksData.find(x=>x.id==id); if(t) {t.status=st; syncToServer(); renderTasks();} }
+function addManualTaskDept() { let v=document.getElementById('newTaskInput').value; if(v){ tasksData.push({id:uniqueNumericId(), task:v, dept:document.getElementById('selectDept').value, status:'pending'}); syncToServer(); renderTasks(); document.getElementById('newTaskInput').value=''; } }
+
+function renderKaizenFeed() {
+    let c = document.getElementById('kaizenFeedContainer'); if(!c) return;
+    let html = historyData.filter(h=>h.stepsOrder.includes('ManualKaizen')).map(k=> {
+        let lId = k.id; let liked = likesData[lId] && likesData[lId].includes(currentUser.name);
+        return `<div class="kaizen-post"><b>${k.auditor}</b><br><img src="${k.results.ManualKaizen.images.img_1.data}" class="kaizen-img"><br>${k.results.ManualKaizen.images.img_1.title}<br><button class="btn btn-sm ${liked?'btn-success':'btn-outline'}" onclick="toggleKaizenLike('${lId}')">إعجاب</button></div>`;
+    }).join('');
+    c.innerHTML = html;
+}
+
+function handleKaizenImage(e, type) {
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=ev=>{ kaizenImgs[type]=ev.target.result; document.getElementById(type==='before'?'kaizenBeforePreview':'kaizenAfterPreview').innerHTML=`تمت إضافة الصورة`; }; r.readAsDataURL(f);
+}
+function submitManualKaizen() {
+    let t = document.getElementById('newKaizenTitle').value; let d = document.getElementById('newKaizenDept').value;
+    if(!t || !kaizenImgs.before || !kaizenImgs.after) return;
+    historyData.push({ id:uniqueNumericId().toString(), dept:d, auditor:currentUser.name, date:new Date().toLocaleDateString('ar-EG'), stepsOrder:['ManualKaizen'], results:{'ManualKaizen':{images:{'img_1':{title:t, data:kaizenImgs.after}}}}});
+    awardPoints(40, 'نشر كايزن'); syncToServer(); renderKaizenFeed(); document.getElementById('kaizenUploadModal').style.display='none';
+}
+function toggleKaizenLike(id) { if(!likesData[id]) likesData[id]=[]; let i=likesData[id].indexOf(currentUser.name); if(i>-1) likesData[id].splice(i,1); else likesData[id].push(currentUser.name); syncToServer(); renderKaizenFeed(); }
+
+function renderTags() {
+    let c = document.getElementById('tagsListContainer'); if(!c) return;
+    c.innerHTML = tagsData.map(t=>`<div class="audit-item" style="border-right: 5px solid ${t.color==='red'?'var(--danger)':'var(--primary-light)'}"><b>${t.desc}</b><br>${t.dept} | ${t.status}<br><button class="btn btn-sm btn-outline" onclick="closeTag(${t.id})">إغلاق</button></div>`).join('');
+}
+function addNewTag() {
+    let d=document.getElementById('newTagDesc').value, c=document.getElementById('newTagColor').value, dp=document.getElementById('newTagDept').value, m=document.getElementById('newTagMachine').value;
+    if(!d) return;
+    tagsData.unshift({id:uniqueNumericId(), desc:d, color:c, dept:dp, machine:m, status:'open', auditor:currentUser.name, date:new Date().toLocaleDateString('ar-EG')});
+    awardPoints(10, 'إصدار تاج'); syncToServer(); renderTags(); document.getElementById('newTagDesc').value='';
+    if(c==='red' && document.getElementById('newTagEngineer').value) window.open(`https://wa.me/${document.getElementById('newTagEngineer').value.replace(/\D/g,'')}?text=${encodeURIComponent(`تاج أحمر قسم ${dp}: ${d}`)}`);
+}
+function closeTag(id) { let t=tagsData.find(x=>x.id===id); if(t){ t.status='closed'; awardPoints(20, 'إغلاق تاج'); syncToServer(); renderTags(); } }
+
+async function predictMachineFailures() {
+    const k = globalApiKeys.gemini; if(!k) return;
+    const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerText='جاري التحليل...';
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: "توقع اعطال بناء على: " + tagsData.map(t=>t.desc).join(',') }] }] })
+        });
+        const j = await res.json(); r.innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
+    } catch(e) { r.innerText='خطأ'; }
+}
+
+async function explainItem(t) {
+    const k = globalApiKeys.gemini; if(!k) return;
+    document.getElementById('aiModal').style.display='flex'; document.getElementById('aiModalText').innerText='جاري الشرح...';
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: "اشرح بند الصيانة: " + t }] }] })
+        });
+        const j = await res.json(); document.getElementById('aiModalText').innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
+    } catch(e) { document.getElementById('aiModalText').innerText='خطأ'; }
+}
+
+async function autoGenerateCAPA() {
+    if(currentStepImprovements.length===0) return;
+    currentStepImprovements.forEach(i => tasksData.push({id:uniqueNumericId(), task:i, dept:currentAudit.dept, status:'pending'}));
+    syncToServer(); alert('تم التوليد بنجاح');
+}
+
+function toggleDarkMode() { document.body.style.filter = document.body.style.filter === 'invert(1)' ? 'none' : 'invert(1)'; }
+let sigCanvas, sigCtx, isDrawing = false;
+function initSignaturePad() {
+    sigCanvas = document.getElementById('signatureCanvas'); if(!sigCanvas) return;
+    sigCtx = sigCanvas.getContext('2d'); sigCtx.lineWidth = 2; sigCtx.strokeStyle = '#d4af37';
+    sigCanvas.onmousedown = (e) => { isDrawing = true; sigCtx.beginPath(); sigCtx.moveTo(e.offsetX, e.offsetY); };
+    sigCanvas.onmousemove = (e) => { if(isDrawing) { sigCtx.lineTo(e.offsetX, e.offsetY); sigCtx.stroke(); } };
+    sigCanvas.onmouseup = () => isDrawing = false;
+}
+function clearSignature() { if(sigCtx) sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); }
+function updateDeptDropdown() { let opts = departments.map(d=>`<option value="${d}">${d}</option>`).join(''); document.querySelectorAll('select').forEach(s => {if(s.id.includes('Dept')) s.innerHTML=opts;}); }
+function updateDeptListUI() { }
+function addOrUpdateDept() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); syncToServer(); updateDeptDropdown(); } }
+function addEngineer() { let n=document.getElementById('newEngName').value, p=document.getElementById('newEngPhone').value; if(n&&p) { maintenanceEngineers.push({name:n, phone:p}); syncToServer(); document.getElementById('newTagEngineer').innerHTML+=`<option value="${p}">${n}</option>`; } }
+function saveApiKeys() { globalApiKeys.gemini = document.getElementById('geminiKeyInput').value; syncToServer(); }
+function logAction(act) { logsData.push({user:currentUser.name, action:act, time:new Date().toLocaleTimeString('ar-EG')}); syncToServer(); }
+
 
 // ==========================================
 // FULL AUDIT DATA

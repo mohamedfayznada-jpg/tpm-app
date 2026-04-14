@@ -30,7 +30,9 @@ let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
 // ------------------------------------------
 function hasRole(...allowed) { return currentUser && currentUser.role && allowed.includes(currentUser.role); }
 function sanitizeInput(val) { return String(val || '').replace(/[<>]/g, '').trim(); }
-function uniqueNumericId() { return (Date.now() * 1000) + Math.floor(Math.random() * 1000); }
+function uniqueNumericId() {
+    return Date.now().toString() + Math.floor(Math.random()*1000);
+}
 function safeUrl(url) { const val = String(url || '').trim(); return (val.startsWith('https://') || val.startsWith('http://') || val.startsWith('data:image/')) ? val : ''; }
 function nl2brSafe(text) { return sanitizeInput(text).replace(/\n/g, '<br>'); }
 
@@ -134,7 +136,26 @@ function biometricLogin() {
 // 🔄 محرك المزامنة الذري (Atomic Sync Engine)
 // ------------------------------------------
 // تم إلغاء المسح الشامل، كل دالة تحفظ مسارها فقط لحماية البيانات من الـ Race Conditions
-function syncRecord(path, data) { if (isOnline && firebase.auth().currentUser) db.ref('tpm_system/' + path).set(data); }
+async function syncRecord(path, data) {
+
+    try {
+
+        if (!isOnline) {
+            throw new Error("لا يوجد اتصال بالسيرفر");
+        }
+
+        await db.ref('tpm_system/' + path).set(data);
+
+        showToast("تم الحفظ بنجاح");
+
+    } catch (e) {
+
+        console.error(e);
+        showToast(e.message || "فشل في الحفظ");
+
+    }
+
+}
 function deleteRecord(path) { if (isOnline && firebase.auth().currentUser) db.ref('tpm_system/' + path).remove(); }
 
 function logAction(act) { 
@@ -505,8 +526,31 @@ function closeTasksDept() { currentTaskDept = null; document.getElementById('tas
 
 function toggleFolderSubTask(fId, sIdx) { let f = tasksData.find(x=>x.id==fId); if(f) { f.subTasks[sIdx].status = f.subTasks[sIdx].status==='done'?'pending':'done'; syncRecord('tasks/' + fId, f); } }
 function changeTaskStatus(id, st) { let t=tasksData.find(x=>x.id==id); if(t) {t.status=st; syncRecord('tasks/' + id, t);} }
-function addManualTaskDept() { let v=document.getElementById('newTaskInput').value; if(v){ let id = uniqueNumericId().toString(); syncRecord('tasks/' + id, {id:id, task:v, dept:currentTaskDept, status:'pending'}); document.getElementById('newTaskInput').value=''; showToast('تمت الإضافة'); } }
+function addManualTaskDept() {
 
+    let v = document.getElementById('newTaskInput').value;
+
+    if (!v) return;
+
+    if (tasksData.some(t => t.task === v)) {
+        showToast("المهمة موجودة بالفعل");
+        return;
+    }
+
+    let id = uniqueNumericId().toString();
+
+    syncRecord('tasks/' + id, {
+        id: id,
+        task: v,
+        dept: currentTaskDept,
+        status: 'pending'
+    });
+
+    document.getElementById('newTaskInput').value = '';
+
+    showToast("تمت الإضافة");
+
+}
 // ------------------------------------------
 // 🌐 مجتمع كايزن (الدمج الاحترافي)
 // ------------------------------------------

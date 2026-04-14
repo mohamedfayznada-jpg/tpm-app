@@ -94,3 +94,12 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
 .step-2 { height: 110px; width: 28%; }
 .step-3 { height: 90px; width: 28%; }
 .rank-badge { background: var(--bg-color); color: var(--gold); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px auto; font-size: 12px; border: 1px solid var(--gold); }
+button {
+    min-height: 48px;
+    font-size: 16px;
+}
+
+input, select {
+    height: 44px;
+    font-size: 15px;
+}

@@ -255,6 +255,109 @@ function printDeptDashboard() {
     html2pdf().set({margin:0.2, filename:`داشبورد_${currentViewedDept}.pdf`, image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:'in', format:'a4', orientation:'portrait'}}).from(document.getElementById('deptDashboardScreen')).save().then(()=>{ btns.forEach(b => b.style.display = ''); });
 }
 
+// ==========================================
+// 📈 محرك لوحة الإدارة العليا (Executive Dashboard)
+// ==========================================
+let execChartInstance = null;
+
+function renderExecutiveDashboard() {
+    // 1. حساب متوسط كفاءة المصنع (OEE)
+    let totalOee = 0, oeeCount = 0;
+    let deptOeeMap = {};
+    productionData.forEach(p => {
+        totalOee += p.oee; oeeCount++;
+        if(!deptOeeMap[p.dept]) deptOeeMap[p.dept] = [];
+        deptOeeMap[p.dept].push(p.oee);
+    });
+    let plantOee = oeeCount > 0 ? Math.round(totalOee / oeeCount) : 0;
+    document.getElementById('execOeeAvg').innerText = plantOee + '%';
+
+    // 2. التاجات الحرجة (أحمر + خطورة عالية)
+    let criticalTags = tagsData.filter(t => t.status === 'open' && t.color === 'red' && t.priority === 'عالي');
+    document.getElementById('execCriticalTags').innerText = criticalTags.length;
+
+    // 3. نسبة إنجاز المهام الكلية
+    let totalTasks = 0, completedTasks = 0;
+    tasksData.forEach(t => {
+        if(t.isFolder) {
+            totalTasks += t.subTasks.length;
+            completedTasks += t.subTasks.filter(s => s.status === 'done').length;
+        } else {
+            totalTasks++;
+            if(t.status === 'done') completedTasks++;
+        }
+    });
+    let taskPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    document.getElementById('execTaskCompletion').innerText = taskPct + '%';
+
+    // 4. تحليل الماكينات الأكثر أعطالاً
+    let machineTagsCount = {};
+    tagsData.filter(t => t.status === 'open').forEach(t => {
+        let name = t.machine || 'عام';
+        machineTagsCount[name] = (machineTagsCount[name] || 0) + 1;
+    });
+    
+    let worstMachines = Object.keys(machineTagsCount).map(k => ({ name: k, count: machineTagsCount[k] }))
+        .sort((a, b) => b.count - a.count).slice(0, 3);
+        
+    let worstMachinesHtml = worstMachines.map((m, idx) => `
+        <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px dashed var(--danger); background:rgba(198, 40, 40, 0.1); margin-bottom:5px; border-radius:5px;">
+            <span><b class="danger-text">#${idx + 1}</b> ${m.name}</span>
+            <span style="color:var(--text-main); font-weight:bold;">${m.count} أعطال</span>
+        </div>
+    `).join('');
+    document.getElementById('execWorstMachines').innerHTML = worstMachinesHtml || '<div style="text-align:center; color:var(--success);">جميع الماكينات مستقرة</div>';
+
+    // 5. رسم بياني لمقارنة الأقسام
+    let labels = [], dataPoints = [];
+    departments.forEach(d => {
+        labels.push(d);
+        if(deptOeeMap[d] && deptOeeMap[d].length > 0) {
+            let avg = deptOeeMap[d].reduce((a,b)=>a+b, 0) / deptOeeMap[d].length;
+            dataPoints.push(Math.round(avg));
+        } else {
+            dataPoints.push(0);
+        }
+    });
+
+    if(execChartInstance) execChartInstance.destroy();
+    let ctx = document.getElementById('execDeptChart').getContext('2d');
+    execChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'متوسط كفاءة الإنتاج %',
+                data: dataPoints,
+                backgroundColor: 'rgba(212, 175, 55, 0.6)',
+                borderColor: '#d4af37',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true, max: 100 } }
+        }
+    });
+}
+
+async function generateExecutiveAIReport() {
+    const k = globalApiKeys.gemini; if(!k) return showToast('مفتاح Gemini غير مفعل');
+    document.getElementById('aiModal').style.display = 'flex';
+    document.getElementById('aiModalText').innerHTML = "جاري كتابة التقرير الإداري التنفيذي... 🧠";
+    
+    let promptText = `أنت مدير مصنع خبير. اكتب ملخص تنفيذي (Executive Summary) للإدارة العليا بناءً على هذه البيانات الحالية: 
+    - كفاءة المصنع: ${document.getElementById('execOeeAvg').innerText}
+    - الأعطال الحرجة المفتوحة: ${document.getElementById('execCriticalTags').innerText}
+    - نسبة إنجاز المهام: ${document.getElementById('execTaskCompletion').innerText}
+    اكتب التقرير في 3 نقاط قصيرة وحاسمة باللغة العربية: 1. تقييم الوضع الحالي، 2. المخاطر، 3. توصية فورية.`;
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }) });
+        const j = await res.json(); 
+        document.getElementById('aiModalText').innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
+    } catch(e) { document.getElementById('aiModalText').innerText = 'فشل الاتصال بمحرك الذكاء الاصطناعي'; }
+}
+
 // ------------------------------------------
 // 📝 المراجعات والمسودات (Audit Flow)
 // ------------------------------------------

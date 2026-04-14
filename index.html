@@ -412,7 +412,28 @@
         </div>
         <button class="btn btn-danger full-width" onclick="logout()">تسجيل الخروج</button>
     </div>
+<div class="container screen" id="executiveDashboardScreen">
+        <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
+            <h3 class="section-title" style="margin:0; border:none; padding:0;">لوحة الإدارة العليا (CEO)</h3>
+            <button class="btn btn-outline btn-sm" onclick="generateExecutiveAIReport()">تقرير AI 🤖</button>
+        </div>
+        
+        <div class="dashboard-stats">
+            <div class="card stat-card"><div class="stat-label">كفاءة المصنع (OEE)</div><div id="execOeeAvg" class="stat-value success-text">0%</div></div>
+            <div class="card stat-card"><div class="stat-label">أعطال حرجة</div><div id="execCriticalTags" class="stat-value danger-text">0</div></div>
+            <div class="card stat-card"><div class="stat-label">إنجاز المهام</div><div id="execTaskCompletion" class="stat-value primary-text">0%</div></div>
+        </div>
 
+        <div class="card">
+            <h3 class="card-title">مقارنة كفاءة الأقسام</h3>
+            <div class="chart-container"><canvas id="execDeptChart"></canvas></div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title danger-text">🚨 الماكينات الأكثر أعطالاً (Top 3)</h3>
+            <div id="execWorstMachines" style="margin-top: 10px;"></div>
+        </div>
+    </div>
     <div class="nav-bar" id="bottomNav" style="display: none;">
         <div class="nav-item" onclick="showScreen('homeScreen'); updateHomeDashboard();"><div class="nav-text">الرئيسية</div></div>
         <div class="nav-item" onclick="showScreen('tasksScreen'); renderTasks();"><div class="nav-text">المهام</div></div>
@@ -420,6 +441,7 @@
         <div class="nav-item" onclick="showScreen('kaizenScreen'); renderKaizenFeed();"><div class="nav-text">كايزن</div></div>
         <div class="nav-item" onclick="showScreen('tagsScreen'); renderTags();"><div class="nav-text">التاجات</div></div>
         <div class="nav-item btn-role-admin" onclick="showScreen('knowledgeScreen'); renderKnowledgeBase();"><div class="nav-text">المصنع</div></div>
+<div class="nav-item btn-role-admin" onclick="showScreen('executiveDashboardScreen'); renderExecutiveDashboard();"><div class="nav-text">الإدارة</div></div>
         <div class="nav-item" onclick="showScreen('settingsScreen')"><div class="nav-text">إعدادات</div></div>
     </div>
 

@@ -2,7 +2,7 @@
 // 🚀 FACTORY OS - SERVICE WORKER (OFFLINE ENGINE)
 // ==========================================
 
-const CACHE_NAME = 'factory-os-v5-cache-v1';
+const CACHE_NAME = 'factory-os-v5-cache-v2';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',

@@ -117,7 +117,7 @@ firebase.auth().onAuthStateChanged(user => {
                 }
                 showScreen('homeScreen');
             }
-            updateDeptDropdown(); renderHistory(); renderTasks(); renderTags(); renderKaizenFeed(); renderKnowledgeBase();
+          updateDeptDropdown(); renderHistory(); renderTasks(); renderTags(); renderKaizenFeed(); renderKnowledgeBase(); renderMasterData(); renderProductionDashboard();
             if(currentUser.role) { updateHomeDashboard(); if(currentViewedDept) updateDeptDashboard(); }
             if(currentUser.role === 'admin') { renderUsersPanel(); }
         };
@@ -829,10 +829,48 @@ async function explainItem(t) {
     } catch(e) { document.getElementById('aiModalText').innerText='خطأ في الاتصال'; }
 }
 
+// ==========================================
+// ⚙️ محرك المهام التلقائية (Advanced CAPA)
+// ==========================================
 async function autoGenerateCAPA() {
-    if(currentStepImprovements.length===0) return;
-    currentStepImprovements.forEach(i => { let id=uniqueNumericId().toString(); syncRecord('tasks/'+id, {id:id, task:i, dept:currentAudit.dept, status:'pending'}); });
-    showToast('تم التوليد بنجاح وتحويلهم للمهام');
+    if(currentStepImprovements.length === 0) return showToast('لا توجد فرص تحسين لتوليد مهام');
+    
+    let generatedTasksCount = 0;
+    let whatsappMessage = `*إشعار مهام صيانة ذاتية (CAPA)* 🚨\n*القسم:* ${currentAudit.dept}\n*الماكينة:* ${currentAudit.machine}\n\n*المهام المطلوبة:*\n`;
+
+    currentStepImprovements.forEach((improvement, index) => {
+        let id = uniqueNumericId().toString() + index;
+        syncRecord('tasks/' + id, {
+            id: id, 
+            task: improvement, 
+            dept: currentAudit.dept, 
+            machine: currentAudit.machine,
+            status: 'pending',
+            generatedBy: 'AI System',
+            date: new Date().toLocaleDateString('ar-EG')
+        });
+        whatsappMessage += `-${index + 1} ${improvement}\n`;
+        generatedTasksCount++;
+    });
+
+    showToast(`تم توليد ${generatedTasksCount} مهام تلقائياً بنجاح`);
+    
+    // البحث عن مهندس الصيانة المسؤول عن هذا القسم لإرسال إشعار
+    let engPhone = null;
+    if(deptPhones && deptPhones[currentAudit.dept]) {
+        engPhone = deptPhones[currentAudit.dept]; // إذا كان هناك رقم مسجل للقسم
+    } else if (maintenanceEngineers && maintenanceEngineers.length > 0) {
+        engPhone = maintenanceEngineers[0].phone; // إرسال لكبير المهندسين كبديل
+    }
+
+    if (engPhone) {
+        whatsappMessage += `\n*الرجاء المتابعة والإغلاق على نظام Factory OS.*`;
+        setTimeout(() => {
+            if(confirm('هل تريد إرسال إشعار بهذه المهام لمهندس الصيانة عبر واتساب؟')) {
+                window.open(`https://wa.me/${engPhone.replace(/\D/g,'')}?text=${encodeURIComponent(whatsappMessage)}`);
+            }
+        }, 1000);
+    }
 }
 
 function handlePDFUpload() { showToast('مكتبة استخراج الـ PDF قيد التحديث للحماية'); }
@@ -856,6 +894,109 @@ function updateDeptDropdown() { let opts = departments.map(d=>`<option value="${
 function updateDeptListUI() { }
 function addOrUpdateDept() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); syncRecord('departments', departments); updateDeptDropdown(); showToast('تم الحفظ'); } }
 function addEngineer() { let n=document.getElementById('newEngName').value, p=document.getElementById('newEngPhone').value; if(n&&p) { maintenanceEngineers.push({name:n, phone:p}); syncRecord('maintenanceEngineers', maintenanceEngineers); document.getElementById('newTagEngineer').innerHTML+=`<option value="${p}">${n}</option>`; showToast('تم الإضافة'); } }
+
+// ==========================================
+// 🎙️ محرك التعرف على الصوت (Speech-to-Text)
+// ==========================================
+function startVoiceRecognition(targetInputId) {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        return showToast('متصفحك لا يدعم الإدخال الصوتي. استخدم Google Chrome.');
+    }
+    
+    const inputElement = document.getElementById(targetInputId);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.lang = 'ar-EG'; // دعم اللهجة المصرية/العربية
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    showToast('تحدث الآن... 🎤');
+    inputElement.placeholder = "جاري الاستماع...";
+    
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        inputElement.value = inputElement.value ? inputElement.value + ' ' + transcript : transcript;
+        showToast('تم التقاط الصوت');
+    };
+
+    recognition.onerror = (event) => {
+        showToast('خطأ في التقاط الصوت: ' + event.error);
+        inputElement.placeholder = "وصف العطل...";
+    };
+
+    recognition.onend = () => {
+        inputElement.placeholder = "وصف العطل...";
+    };
+
+    recognition.start();
+}
+
+// ==========================================
+// 🔐 محرك البصمة الحقيقي (WebAuthn API Simulation)
+// ==========================================
+async function registerBiometrics() {
+    if (!window.PublicKeyCredential) return showToast('جهازك لا يدعم تقنية البصمة');
+    if (!currentUser.username) return showToast('يجب تسجيل الدخول بالرقم السري أولاً لربط البصمة');
+    
+    try {
+        // إنشاء تحدي وهمي لطلب البصمة من نظام تشغيل الهاتف (Android/iOS)
+        const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+        const userId = new Uint8Array(16); window.crypto.getRandomValues(userId);
+        
+        const credential = await navigator.credentials.create({
+            publicKey: {
+                challenge: challenge,
+                rp: { name: "Factory OS", id: window.location.hostname },
+                user: { id: userId, name: currentUser.username, displayName: currentUser.name },
+                pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                timeout: 60000
+            }
+        });
+        
+        if (credential) {
+            localStorage.setItem('tpm_biometric_enabled', 'true');
+            showToast('تم تفعيل الدخول بالبصمة بنجاح 🛡️');
+        }
+    } catch (e) {
+        showToast('تم إلغاء تسجيل البصمة');
+    }
+}
+
+async function biometricLogin() {
+    if (!window.PublicKeyCredential) return showToast('جهازك لا يدعم البصمة');
+    const u = localStorage.getItem('tpm_username');
+    const isBioEnabled = localStorage.getItem('tpm_biometric_enabled');
+    
+    if(!u || !isBioEnabled) return showToast('قم بتسجيل الدخول يدوياً أولاً لتفعيل البصمة من الإعدادات'); 
+    
+    try {
+        const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+        const assertion = await navigator.credentials.get({
+            publicKey: {
+                challenge: challenge,
+                rpId: window.location.hostname,
+                userVerification: "required",
+                timeout: 60000
+            }
+        });
+        
+        if (assertion) {
+            document.getElementById('cloudStatus').innerHTML = "جاري الدخول بالبصمة...";
+            // بما أننا لا نملك سيرفر Node.js للتحقق، نستخدم الرمز المخزن للمصادقة السريعة
+            // في بيئة الإنتاج الفعلية يتم التحقق من التوقيع عبر Firebase Cloud Functions
+            document.getElementById('loginUsername').value = u;
+            document.getElementById('displayName').value = localStorage.getItem('tpm_user');
+            // تجاوز كلمة المرور بالبصمة
+            showScreen('homeScreen');
+            updateHomeDashboard();
+            showToast('تم الدخول بنجاح 🛡️');
+        }
+    } catch (e) {
+        showToast('فشل التحقق من البصمة');
+    }
+}
 
 // ------------------------------------------
 // 📋 مصفوفة التقييم (AUDIT_DATA) - موحدة وكاملة

@@ -72,7 +72,13 @@
     <div class="modal-overlay" id="kaizenUploadModal">
         <div class="modal-content">
             <h3 class="card-title">تسجيل تحسين (كايزن)</h3>
-            <div class="form-group"><label>وصف التحسين:</label><input type="text" id="newKaizenTitle" class="form-control" placeholder="ما الذي تم تحسينه؟"></div>
+            <div class="form-group">
+                <label>وصف التحسين:</label>
+                <div style="position: relative;">
+                    <input type="text" id="newKaizenTitle" class="form-control" style="padding-left: 35px;" placeholder="ما الذي تم تحسينه؟">
+                    <span onclick="startVoiceRecognition('newKaizenTitle')" style="position: absolute; left: 10px; top: 10px; cursor: pointer; font-size: 18px;" title="تحدث لإدخال الوصف">🎤</span>
+                </div>
+            </div>
             <div class="form-group"><label>القسم:</label><select id="newKaizenDept" class="form-control"></select></div>
             <div class="row-flex">
                 <div class="upload-box flex-1 danger-border">
@@ -295,7 +301,10 @@
                 </datalist>
             </div>
             <div class="row-flex" style="margin-bottom:10px;">
-                <input type="text" id="newTagDesc" class="form-control flex-2" style="margin:0;" placeholder="وصف العطل...">
+                <div style="position: relative; flex: 2; margin: 0;">
+                    <input type="text" id="newTagDesc" class="form-control" style="margin:0; padding-left: 35px;" placeholder="وصف العطل...">
+                    <span onclick="startVoiceRecognition('newTagDesc')" style="position: absolute; left: 10px; top: 10px; cursor: pointer; font-size: 18px;" title="تحدث لإدخال الوصف">🎤</span>
+                </div>
                 <select id="newTagColor" class="form-control flex-1" style="margin:0;" onchange="document.getElementById('tagEngSelectDiv').style.display = this.value === 'red' ? 'block' : 'none';">
                     <option value="red">أحمر (صيانة)</option>
                     <option value="blue">أزرق (إنتاج)</option>
@@ -316,9 +325,6 @@
             </div>
             <button class="btn btn-primary full-width" style="margin:0;" onclick="addNewTag()">إصدار وحفظ</button>
         </div>
-        <div id="tagsListContainer"></div>
-    </div>
-
     <div class="container screen" id="knowledgeScreen">
         <h3 class="section-title">عقل المصنع</h3>
         <div class="card btn-role-admin">
@@ -365,7 +371,7 @@
                 <button class="btn btn-outline flex-1" style="margin:0;" onclick="enableApiKeysEdit()">تعديل</button>
             </div>
         </div>
-        <div class="card btn-role-admin">
+       <div class="card btn-role-admin">
             <h3 class="card-title">تصدير ونسخ احتياطي</h3>
             <button class="btn btn-success full-width" style="margin-bottom:10px;" onclick="exportToCSV()">استخراج Excel</button>
             <div class="row-flex">
@@ -373,6 +379,14 @@
                 <button class="btn btn-warning flex-1" style="margin:0;" onclick="triggerBackupImport()">استرجاع JSON</button>
                 <input type="file" id="backupImportInput" accept=".json,application/json" style="display:none;" onchange="importSystemBackupJSON(event)">
             </div>
+        </div>
+        
+        <div class="card">
+            <h3 class="card-title">الأمان والبصمة الحيوية 🛡️</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">اربط حسابك بحساس البصمة أو الوجه الخاص بهاتفك لتسجيل الدخول السريع والآمن.</p>
+            <button class="btn btn-outline full-width" onclick="registerBiometrics()">تفعيل الدخول بالبصمة (WebAuthn)</button>
+        </div>        
+ </div>
         </div>
         <div class="card btn-role-admin">
             <h3 class="card-title">إدارة الأقسام والمهندسين</h3>

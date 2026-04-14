@@ -50,7 +50,6 @@ db.ref('.info/connected').on('value', snap => {
 // ------------------------------------------
 // 🔄 محرك المزامنة الذري (Atomic Sync Engine)
 // ------------------------------------------
-// 🚨 الإلغاء التام لمزامنة (God-Object) لضمان 0% فقدان للبيانات 🚨
 function syncRecord(path, data) { 
     if (firebase.auth().currentUser) db.ref('tpm_system/' + path).set(data); 
 }
@@ -114,7 +113,6 @@ firebase.auth().onAuthStateChanged(user => {
                 }
                 showScreen('homeScreen');
             }
-            // التحديث اللحظي للواجهات بناءً على السيرفر
             updateDeptDropdown(); renderHistory(); renderTasks(); renderTags(); renderKaizenFeed();
             if(currentUser.role) { updateHomeDashboard(); if(currentViewedDept) updateDeptDashboard(); }
             if(currentUser.role === 'admin') { renderUsersPanel(); }
@@ -259,7 +257,8 @@ function startNewAuditFlow() {
     const draft = localStorage.getItem('tpm_audit_draft');
     if(draft) {
         let dObj = JSON.parse(draft);
-        if(confirm(`يوجد تقييم غير مكتمل لقسم (${dObj.dept}). استكماله؟`)) { loadAuditDraft(); return; } else { clearAuditDraft(); }
+        if(confirm(`يوجد تقييم غير مكتمل لقسم (${dObj.dept}). هل تريد استكماله؟`)) { loadAuditDraft(); return; } 
+        else { clearAuditDraft(); }
     }
     showScreen('setupScreen'); 
 }
@@ -327,12 +326,15 @@ function finishCurrentStep() {
     document.getElementById('summaryScoreStr').innerText = `${s} من ${m}`;
     document.getElementById('opportunitiesContainer').innerHTML = currentStepImprovements.length > 0 ? currentStepImprovements.map(i=>`<div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:5px; margin-bottom:5px; border-right:3px solid var(--warning); font-size:12px; text-align:right;">- ${i}</div>`).join('') : '<div style="color:var(--success); font-weight:bold;">لا توجد ملاحظات، أداء ممتاز</div>';
     document.getElementById('aiCapaBtn').style.display = currentStepImprovements.length>0?'inline-block':'none';
-    currentStepImages = {}; showScreen('stepSummaryScreen');
+    showScreen('stepSummaryScreen');
 }
 
 function skipCurrentStep() { currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = {skipped:true, score:0, max:0, improvements:[], selections:{}, images:{}}; saveAuditDraft(); goToNextStep(); }
 function goToNextStep() { currentAudit.currentStepIndex++; if(currentAudit.currentStepIndex < 7) renderCurrentAuditStep(); else generateFinalReport(); }
 
+// ------------------------------------------
+// ✍️ التوقيع الفائق السرعة (Hardware Accelerated)
+// ------------------------------------------
 function initSignaturePad() {
     setTimeout(() => {
         sigCanvas = document.getElementById('signatureCanvas'); if(!sigCanvas) return;
@@ -381,7 +383,7 @@ function saveFinalAudit() {
 }
 
 // ------------------------------------------
-// 📊 التقارير التفصيلية
+// 📊 أرشيف التقارير (History)
 // ------------------------------------------
 function renderHistory() {
     let real = historyData.filter(h=>!h.stepsOrder.includes('ManualKaizen')).reverse();
@@ -435,6 +437,13 @@ function viewDetailedReport(id) {
     window.currentReportText = `تقرير مراجعة مصنع\nالقسم: ${a.dept}\nالنتيجة: ${a.totalPct}%\nالمراجع: ${a.auditor}\nالتاريخ: ${a.date}`;
     showScreen('detailedReportScreen');
 }
+
+function downloadProfessionalPDF() {
+    window.scrollTo(0,0);
+    const btns = document.querySelectorAll('#detailedReportScreen .no-print'); btns.forEach(b => b.style.display = 'none');
+    html2pdf().set({margin:0.2, filename:'تقرير_مراجعة.pdf', image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:'in', format:'a4', orientation:'portrait'}}).from(document.getElementById('printableReportArea')).save().then(()=>{ btns.forEach(b => b.style.display = ''); });
+}
+function shareWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(window.currentReportText)}`); }
 
 // ------------------------------------------
 // 🎯 المهام (Tasks)
@@ -494,7 +503,7 @@ function addManualTaskDept() { let v=document.getElementById('newTaskInput').val
 function handleKaizenImage(e, type) {
     const f=e.target.files[0]; if(!f) return;
     showToast('جاري تحضير الصورة...');
-    processAndEnhanceImage(f, function(dataUrl) { kaizenImgs[type] = dataUrl; document.getElementById(type==='before'?'kaizenBeforePreview':'kaizenAfterPreview').innerHTML=`<span style="color:var(--success); font-size:11px; font-weight:bold;">تم الإرفاق</span>`; });
+    processAndEnhanceImage(f, function(dataUrl) { kaizenImgs[type] = dataUrl; document.getElementById(type==='before'?'kaizenBeforePreview').innerHTML=`<span style="color:var(--success); font-size:11px; font-weight:bold;">تم الإرفاق</span>`; });
 }
 
 function submitManualKaizen() {
@@ -575,7 +584,7 @@ function editKaizen(id) { let k=historyData.find(x=>x.id===id); if(!k) return; l
 function addKaizenComment(id) { let el=document.getElementById(`comment_input_${id}`); let txt=sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; kaizenComments[id].push({user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}); syncRecord('kaizenComments/' + id, kaizenComments[id]); el.value=''; awardPoints(2, 'كتابة تعليق'); }
 
 // ------------------------------------------
-// 🏷️ التاجات (Tags Engine)
+// 🏷️ التاجات والمشكلات (Tags Engine)
 // ------------------------------------------
 function handleTagImage(e) {
     const f=e.target.files[0]; if(!f) return;

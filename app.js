@@ -144,7 +144,9 @@ async function syncRecord(path, data) {
             throw new Error("لا يوجد اتصال بالسيرفر");
         }
 
-        await db.ref('tpm_system/' + path).set(data);
+        const ref = db.ref('tpm_system/' + path);
+
+        await ref.update(data);
 
         showToast("تم الحفظ بنجاح");
 

@@ -25,3 +25,14 @@ const Validator = {
     }
 
 };
+range(value, min, max, name) {
+    if (value < min || value > max) {
+        throw new Error(name + " خارج النطاق المسموح");
+    }
+},
+
+maxLength(value, max, name) {
+    if (value.length > max) {
+        throw new Error(name + " طويل زيادة عن اللازم");
+    }
+}

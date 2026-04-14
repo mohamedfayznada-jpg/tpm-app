@@ -24,7 +24,8 @@ let radarChartInstance = null, trendChartInstance = null, currentViewedDept = nu
 let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];
 let currentTagImg = null, currentTaskDept = null, kaizenImgs = { before: null, after: null };
 let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
-
+let currentUser
+let offlineQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
 // ------------------------------------------
 // 🛡️ أدوات النظام والتنبيهات (Utilities)
 // ------------------------------------------
@@ -48,6 +49,9 @@ db.ref('.info/connected').on('value', snap => {
     isOnline = snap.val() === true;
     const el = document.getElementById('cloudStatus');
     if(el) { el.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل بالسيرفر"; el.style.color = isOnline ? "var(--success)" : "var(--danger)"; }
+if (isOnline) {
+    processOfflineQueue();
+}
 });
 
 // ------------------------------------------
@@ -110,7 +114,16 @@ async function login() {
     const username = sanitizeInput(document.getElementById('loginUsername').value).toLowerCase();
     const password = document.getElementById('loginPassword').value.trim();
     const name = sanitizeInput(document.getElementById('displayName').value);
-    if(!username || !password || !name) return showToast('برجاء كتابة جميع البيانات');
+   try {
+    Validator.required(username, "اسم المستخدم");
+    Validator.required(password, "كلمة المرور");
+    Validator.required(name, "الاسم");
+Validator.maxLength(username, 30, "اسم المستخدم");
+Validator.maxLength(name, 50, "الاسم");
+} catch (e) {
+    showToast(e.message);
+    return;
+}
     document.getElementById('cloudStatus').innerHTML = "جاري الدخول";
     if(document.getElementById('rememberMe').checked) { localStorage.setItem('tpm_user', name); localStorage.setItem('tpm_username', username); }
     try { await firebase.auth().signInWithEmailAndPassword(username + "@tpm.app", password); } catch (e) { showToast('بيانات الدخول غير صحيحة'); }
@@ -141,7 +154,12 @@ async function syncRecord(path, data) {
     try {
 
         if (!isOnline) {
-            throw new Error("لا يوجد اتصال بالسيرفر");
+
+            offlineQueue.push({ path, data });
+            localStorage.setItem('offlineQueue', JSON.stringify(offlineQueue));
+
+            showToast("تم الحفظ مؤقتًا (بدون إنترنت)");
+            return;
         }
 
         const ref = db.ref('tpm_system/' + path);
@@ -153,7 +171,11 @@ async function syncRecord(path, data) {
     } catch (e) {
 
         console.error(e);
-        showToast(e.message || "فشل في الحفظ");
+
+        offlineQueue.push({ path, data });
+        localStorage.setItem('offlineQueue', JSON.stringify(offlineQueue));
+
+        showToast("تم الحفظ مؤقتًا بسبب خطأ");
 
     }
 
@@ -532,25 +554,33 @@ function addManualTaskDept() {
 
     let v = document.getElementById('newTaskInput').value;
 
-    if (!v) return;
+    try {
 
-    if (tasksData.some(t => t.task === v)) {
-        showToast("المهمة موجودة بالفعل");
-        return;
+       Validator.required(v, "اسم المهمة");
+Validator.maxLength(v, 100, "اسم المهمة");
+
+        if (tasksData.some(t => t.task === v)) {
+            throw new Error("المهمة موجودة بالفعل");
+        }
+
+        let id = uniqueNumericId().toString();
+
+        syncRecord('tasks/' + id, {
+            id: id,
+            task: v,
+            dept: currentTaskDept,
+            status: 'pending'
+        });
+
+        document.getElementById('newTaskInput').value = '';
+
+        showToast("تمت الإضافة");
+
+    } catch (e) {
+
+        showToast(e.message);
+
     }
-
-    let id = uniqueNumericId().toString();
-
-    syncRecord('tasks/' + id, {
-        id: id,
-        task: v,
-        dept: currentTaskDept,
-        status: 'pending'
-    });
-
-    document.getElementById('newTaskInput').value = '';
-
-    showToast("تمت الإضافة");
 
 }
 // ------------------------------------------
@@ -564,7 +594,21 @@ function handleKaizenImage(e, type) {
 
 function submitManualKaizen() {
     let t = document.getElementById('newKaizenTitle').value; let d = document.getElementById('newKaizenDept').value;
-    if(!t || !kaizenImgs.before || !kaizenImgs.after) { showToast('برجاء كتابة الوصف وإرفاق الصورتين'); return; }
+   try {
+
+    Validator.required(t, "وصف التحسين");
+    Validator.required(d, "القسم");
+Validator.maxLength(t, 200, "وصف التحسين");
+    if (!kaizenImgs.before || !kaizenImgs.after) {
+        throw new Error("لازم صورتين قبل وبعد");
+    }
+
+} catch (e) {
+
+    showToast(e.message);
+    return;
+
+}
     
     document.getElementById('submitKaizenBtn').innerText = "جاري الدمج والرفع...";
     document.getElementById('submitKaizenBtn').disabled = true;
@@ -848,3 +892,28 @@ const AUDIT_DATA = {
         { id: 7, title: "المراجعة الذاتية بواسطة فريق الصيانة الذاتية", maxScore: 5, levels: [{level:1,score:0,desc:"لا توجد دلائل علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:2,score:1,desc:"توجد أدلة ضعيفة علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:3,score:2,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ولا يتم نشر النتائج ونقاط القوة وفرص التحسين بالقسم"},{level:4,score:3,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين كثير العاملين بالقسم"},{level:5,score:4,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لمعظم العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"},{level:6,score:5,desc:"يتم تنفيذ المراجعة الداخلية الدورية على أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لجميع العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"}] }
     ]}
 };
+async function processOfflineQueue() {
+
+    if (!isOnline || offlineQueue.length === 0) return;
+
+    showToast("جاري مزامنة البيانات...");
+
+    for (let i = 0; i < offlineQueue.length; i++) {
+
+        const item = offlineQueue[i];
+
+        try {
+            await db.ref('tpm_system/' + item.path).update(item.data);
+        } catch (e) {
+            console.error("فشل مزامنة عنصر", item);
+            return;
+        }
+
+    }
+
+    offlineQueue = [];
+    localStorage.removeItem('offlineQueue');
+
+    showToast("تمت المزامنة بنجاح");
+
+}

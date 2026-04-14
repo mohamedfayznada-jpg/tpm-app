@@ -381,13 +381,12 @@
             </div>
         </div>
         
-        <div class="card">
+       <div class="card">
             <h3 class="card-title">الأمان والبصمة الحيوية 🛡️</h3>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">اربط حسابك بحساس البصمة أو الوجه الخاص بهاتفك لتسجيل الدخول السريع والآمن.</p>
             <button class="btn btn-outline full-width" onclick="registerBiometrics()">تفعيل الدخول بالبصمة (WebAuthn)</button>
         </div>        
- </div>
-        </div>
+        
         <div class="card btn-role-admin">
             <h3 class="card-title">إدارة الأقسام والمهندسين</h3>
             <div class="row-flex" style="margin-bottom:10px;">
@@ -401,17 +400,23 @@
             </div>
             <div id="engListContainer"></div>
         </div>
+
         <div class="card btn-role-admin">
             <h3 class="card-title">سجل الصلاحيات</h3>
             <div class="row-flex" style="margin-bottom:15px;">
                 <input type="text" id="newUsernameRole" class="form-control flex-2" placeholder="المستخدم" style="margin:0;">
-                <select id="newRoleSelect" class="form-control flex-1" style="margin:0;"><option value="viewer">مشاهد</option><option value="auditor">مراجع</option><option value="admin">مدير</option></select>
+                <select id="newRoleSelect" class="form-control flex-1" style="margin:0;">
+                    <option value="viewer">مشاهد</option>
+                    <option value="auditor">مراجع</option>
+                    <option value="admin">مدير</option>
+                </select>
                 <button class="btn btn-primary flex-1" style="margin:0;" onclick="addNewUserRole()">تعيين</button>
             </div>
             <div id="usersListContainer"></div>
         </div>
+
         <button class="btn btn-danger full-width" onclick="logout()">تسجيل الخروج</button>
-    </div>
+    </div> <div class="container screen" id="executiveDashboardScreen">
 <div class="container screen" id="executiveDashboardScreen">
         <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
             <h3 class="section-title" style="margin:0; border:none; padding:0;">لوحة الإدارة العليا (CEO)</h3>

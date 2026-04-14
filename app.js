@@ -48,6 +48,17 @@ db.ref('.info/connected').on('value', snap => {
     if(el) { el.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل (البيانات ستُحفظ تلقائياً)"; el.style.color = isOnline ? "var(--success)" : "var(--warning)"; }
 });
 
+// دالة مسح الباركود (مؤقتة لحين ربط مكتبة القراءة)
+function scanBarcodeFromImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    showToast('جاري قراءة الباركود... 🔍');
+    // هنا سيتم دمج مكتبة مثل html5-qrcode لاحقاً
+    setTimeout(() => {
+        showToast('سيتم تفعيل ميزة فك تشفير الباركود في التحديث القادم');
+    }, 1500);
+}
+
 // ------------------------------------------
 // 🔄 محرك المزامنة الذري (Atomic Sync Engine)
 // ------------------------------------------
@@ -606,7 +617,7 @@ function closeTasksDept() { currentTaskDept = null; document.getElementById('tas
 function toggleFolderSubTask(fId, sIdx) { let f = tasksData.find(x=>x.id==fId); if(f) { f.subTasks[sIdx].status = f.subTasks[sIdx].status==='done'?'pending':'done'; syncRecord('tasks/' + fId, f); } }
 function changeTaskStatus(id, st) { let t=tasksData.find(x=>x.id==id); if(t) {t.status=st; syncRecord('tasks/' + id, t);} }
 function addManualTaskDept() { let v=document.getElementById('newTaskInput').value; if(v){ let id = uniqueNumericId().toString(); syncRecord('tasks/' + id, {id:id, task:v, dept:currentTaskDept, status:'pending'}); document.getElementById('newTaskInput').value=''; showToast('تمت الإضافة'); } }
-function exportTasksToCSV() { showToast('جاري تصدير المهام... (قريباً)'); }
+
 
 // ------------------------------------------
 // 🌐 الكايزن و OPL

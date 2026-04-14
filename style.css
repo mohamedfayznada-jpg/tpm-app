@@ -118,3 +118,21 @@ body.loading::after {
     font-size: 18px;
     z-index: 99999;
 }
+.nav-bar {
+    justify-content: flex-start;
+    gap: 15px;
+    padding: 10px 15px;
+    overflow-x: auto; /* السماح بالتمرير الجانبي */
+    scroll-behavior: smooth;
+    scrollbar-width: none; /* إخفاء شريط التمرير في فايرفوكس */
+}
+.nav-bar::-webkit-scrollbar {
+    display: none; /* إخفاء شريط التمرير في كروم وسفاري */
+}
+.nav-item {
+    flex: 0 0 auto; /* منع انكماش الأزرار */
+    min-width: 60px;
+}
+@media print {
+    .card, .audit-item { page-break-inside: avoid; } /* منع قص الكروت في الـ PDF */
+}

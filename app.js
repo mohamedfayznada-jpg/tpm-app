@@ -15,7 +15,7 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
-let tpmSystemRef = null, tpmSystemListener = null;
+let tpmSystemListener = null;
 let globalApiKeys = { imgbb: "", gemini: "" };
 let departments = [], historyData = [], tasksData = [], usersData = {}, logsData = [], likesData = {}, tagsData = [], kaizenComments = {}, userPoints = {}, knowledgeBaseData = [], deptPhones = {}, maintenanceEngineers = [];
 let currentUser = { name: '', username: '', role: '' };
@@ -24,17 +24,13 @@ let radarChartInstance = null, trendChartInstance = null, currentViewedDept = nu
 let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];
 let currentTagImg = null, currentTaskDept = null, kaizenImgs = { before: null, after: null };
 let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
-let currentUser
-let offlineQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+
 // ------------------------------------------
-// 🛡️ أدوات النظام والتنبيهات (Utilities)
+// 🛡️ أدوات النظام (Utilities)
 // ------------------------------------------
 function hasRole(...allowed) { return currentUser && currentUser.role && allowed.includes(currentUser.role); }
 function sanitizeInput(val) { return String(val || '').replace(/[<>]/g, '').trim(); }
-function uniqueNumericId() {
-    return Date.now().toString() + Math.floor(Math.random()*1000);
-}
-function safeUrl(url) { const val = String(url || '').trim(); return (val.startsWith('https://') || val.startsWith('http://') || val.startsWith('data:image/')) ? val : ''; }
+function uniqueNumericId() { return (Date.now() * 1000) + Math.floor(Math.random() * 1000); }
 function nl2brSafe(text) { return sanitizeInput(text).replace(/\n/g, '<br>'); }
 
 function showToast(msg) {
@@ -48,19 +44,37 @@ function showToast(msg) {
 db.ref('.info/connected').on('value', snap => {
     isOnline = snap.val() === true;
     const el = document.getElementById('cloudStatus');
-    if(el) { el.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل بالسيرفر"; el.style.color = isOnline ? "var(--success)" : "var(--danger)"; }
-if (isOnline) {
-    processOfflineQueue();
-}
+    if(el) { el.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل (البيانات ستُحفظ تلقائياً عند العودة)"; el.style.color = isOnline ? "var(--success)" : "var(--warning)"; }
 });
 
 // ------------------------------------------
-// 🔐 تسجيل الدخول وإدارة الحالة (State)
+// 🔄 محرك المزامنة الذري (Atomic Sync Engine)
+// ------------------------------------------
+// 🚨 الإلغاء التام لمزامنة (God-Object) لضمان 0% فقدان للبيانات 🚨
+function syncRecord(path, data) { 
+    if (firebase.auth().currentUser) db.ref('tpm_system/' + path).set(data); 
+}
+function deleteRecord(path) { 
+    if (firebase.auth().currentUser) db.ref('tpm_system/' + path).remove(); 
+}
+function logAction(act) { 
+    if(!currentUser.name) return;
+    let logObj = {id: uniqueNumericId().toString(), user:currentUser.name, action:act, time:new Date().toLocaleTimeString('ar-EG')};
+    syncRecord('logs/' + logObj.id, logObj);
+}
+function awardPoints(pts, reason) { 
+    if(!currentUser.name) return; 
+    userPoints[currentUser.name] = (userPoints[currentUser.name] || 0) + pts; 
+    syncRecord('points/' + currentUser.name, userPoints[currentUser.name]);
+    showToast(`اكتسبت ${pts} نقطة: ${reason}`); 
+}
+
+// ------------------------------------------
+// 🔐 تسجيل الدخول وجلب البيانات
 // ------------------------------------------
 firebase.auth().onAuthStateChanged(user => {
-    if (tpmSystemRef && tpmSystemListener) tpmSystemRef.off('value', tpmSystemListener);
+    if (tpmSystemListener) db.ref('tpm_system').off('value', tpmSystemListener);
     if (user) {
-        tpmSystemRef = db.ref('tpm_system');
         tpmSystemListener = snapshot => {
             const data = snapshot.val() || {};
             departments = data.departments || ['إنتاج', 'صيانة'];
@@ -100,11 +114,12 @@ firebase.auth().onAuthStateChanged(user => {
                 }
                 showScreen('homeScreen');
             }
+            // التحديث اللحظي للواجهات بناءً على السيرفر
             updateDeptDropdown(); renderHistory(); renderTasks(); renderTags(); renderKaizenFeed();
             if(currentUser.role) { updateHomeDashboard(); if(currentViewedDept) updateDeptDashboard(); }
             if(currentUser.role === 'admin') { renderUsersPanel(); }
         };
-        tpmSystemRef.on('value', tpmSystemListener);
+        db.ref('tpm_system').on('value', tpmSystemListener);
     } else {
         isInitialLoad = true; isDataLoaded = false; document.getElementById('bottomNav').style.display = 'none'; showScreen('loginScreen');
     }
@@ -114,19 +129,10 @@ async function login() {
     const username = sanitizeInput(document.getElementById('loginUsername').value).toLowerCase();
     const password = document.getElementById('loginPassword').value.trim();
     const name = sanitizeInput(document.getElementById('displayName').value);
-   try {
-    Validator.required(username, "اسم المستخدم");
-    Validator.required(password, "كلمة المرور");
-    Validator.required(name, "الاسم");
-Validator.maxLength(username, 30, "اسم المستخدم");
-Validator.maxLength(name, 50, "الاسم");
-} catch (e) {
-    showToast(e.message);
-    return;
-}
-    document.getElementById('cloudStatus').innerHTML = "جاري الدخول";
+    if(!username || !password || !name) return showToast('برجاء كتابة جميع البيانات');
+    document.getElementById('cloudStatus').innerHTML = "جاري الدخول...";
     if(document.getElementById('rememberMe').checked) { localStorage.setItem('tpm_user', name); localStorage.setItem('tpm_username', username); }
-    try { await firebase.auth().signInWithEmailAndPassword(username + "@tpm.app", password); } catch (e) { showToast('بيانات الدخول غير صحيحة'); }
+    try { await firebase.auth().signInWithEmailAndPassword(username + "@tpm.app", password); logAction('تسجيل دخول'); } catch (e) { showToast('بيانات الدخول غير صحيحة'); document.getElementById('cloudStatus').innerHTML = "الرجاء المحاولة مجدداً"; }
 }
 
 async function registerNewUser() {
@@ -143,55 +149,6 @@ function biometricLogin() {
     if(!u) return showToast('سجل يدوياً أولاً لتفعيل الدخول السريع'); 
     document.getElementById('loginUsername').value = u; document.getElementById('displayName').value = n;
     showToast('تم استدعاء بياناتك، أدخل الرقم السري');
-}
-
-// ------------------------------------------
-// 🔄 محرك المزامنة الذري (Atomic Sync Engine)
-// ------------------------------------------
-// تم إلغاء المسح الشامل، كل دالة تحفظ مسارها فقط لحماية البيانات من الـ Race Conditions
-async function syncRecord(path, data) {
-
-    try {
-
-        if (!isOnline) {
-
-            offlineQueue.push({ path, data });
-            localStorage.setItem('offlineQueue', JSON.stringify(offlineQueue));
-
-            showToast("تم الحفظ مؤقتًا (بدون إنترنت)");
-            return;
-        }
-
-        const ref = db.ref('tpm_system/' + path);
-
-        await ref.update(data);
-
-        showToast("تم الحفظ بنجاح");
-
-    } catch (e) {
-
-        console.error(e);
-
-        offlineQueue.push({ path, data });
-        localStorage.setItem('offlineQueue', JSON.stringify(offlineQueue));
-
-        showToast("تم الحفظ مؤقتًا بسبب خطأ");
-
-    }
-
-}
-function deleteRecord(path) { if (isOnline && firebase.auth().currentUser) db.ref('tpm_system/' + path).remove(); }
-
-function logAction(act) { 
-    if(!currentUser.name) return;
-    let logObj = {id: uniqueNumericId().toString(), user:currentUser.name, action:act, time:new Date().toLocaleTimeString('ar-EG')};
-    syncRecord('logs/' + logObj.id, logObj);
-}
-function awardPoints(pts, reason) { 
-    if(!currentUser.name) return; 
-    userPoints[currentUser.name] = (userPoints[currentUser.name] || 0) + pts; 
-    syncRecord('points/' + currentUser.name, userPoints[currentUser.name]);
-    showToast(`اكتسبت ${pts} نقطة: ${reason}`); 
 }
 
 // ------------------------------------------
@@ -225,7 +182,7 @@ function processAndEnhanceImage(file, callback) {
 }
 
 // ------------------------------------------
-// 📱 التحكم بالشاشات ومنصة التتويج
+// 📱 التنقل والداشبورد ومنصة التتويج
 // ------------------------------------------
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -244,7 +201,6 @@ function updateUsersLeaderboard() {
     if(sortable.length === 0) { c.innerHTML = ''; lc.innerHTML = '<div style="color:var(--text-muted); text-align:center;">لا توجد إحصائيات</div>'; return; }
     
     let htmlPodium = '';
-    // منصة التتويج: الترتيب (2 ثم 1 ثم 3) ليظهر بشكل صحيح مع RTL
     if(sortable[1]) htmlPodium += `<div class="podium-step step-2"><div class="rank-badge">2</div><div style="font-size:12px;">${sortable[1].user}</div><div style="font-size:10px;">${sortable[1].points}</div></div>`;
     if(sortable[0]) htmlPodium += `<div class="podium-step step-1"><div class="rank-badge" style="color:#000;">1</div><div style="font-size:13px;">${sortable[0].user}</div><div style="font-size:10px;">${sortable[0].points}</div></div>`;
     if(sortable[2]) htmlPodium += `<div class="podium-step step-3"><div class="rank-badge">3</div><div style="font-size:11px;">${sortable[2].user}</div><div style="font-size:10px;">${sortable[2].points}</div></div>`;
@@ -292,7 +248,7 @@ function updateDeptDashboard() {
 }
 
 // ------------------------------------------
-// 📝 المسودات والمراجعات (Audit Engine & Drafts)
+// 📝 المراجعات والمسودات (Audit Engine)
 // ------------------------------------------
 function saveAuditDraft() { if(currentAudit) localStorage.setItem('tpm_audit_draft', JSON.stringify(currentAudit)); }
 function loadAuditDraft() { const draft = localStorage.getItem('tpm_audit_draft'); if(draft) { currentAudit = JSON.parse(draft); renderCurrentAuditStep(); } }
@@ -303,8 +259,7 @@ function startNewAuditFlow() {
     const draft = localStorage.getItem('tpm_audit_draft');
     if(draft) {
         let dObj = JSON.parse(draft);
-        if(confirm(`يوجد تقييم غير مكتمل لقسم (${dObj.dept}). هل تريد استكماله؟`)) { loadAuditDraft(); return; } 
-        else { clearAuditDraft(); }
+        if(confirm(`يوجد تقييم غير مكتمل لقسم (${dObj.dept}). استكماله؟`)) { loadAuditDraft(); return; } else { clearAuditDraft(); }
     }
     showScreen('setupScreen'); 
 }
@@ -316,7 +271,6 @@ function initAuditSequential() {
 
 function renderCurrentAuditStep() {
     const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; const sd = AUDIT_DATA[k];
-    
     currentStepSelections = (currentAudit.results[k] && currentAudit.results[k].selections) ? currentAudit.results[k].selections : {};
     currentStepImages = (currentAudit.results[k] && currentAudit.results[k].images) ? currentAudit.results[k].images : {};
 
@@ -341,8 +295,7 @@ function renderCurrentAuditStep() {
 
 function selectLevel(id, score, max, el) { 
     currentStepSelections['item_'+id] = {score, max}; 
-    el.parentElement.querySelectorAll('.level-opt').forEach(o=>o.classList.remove('selected')); 
-    el.classList.add('selected'); 
+    el.parentElement.querySelectorAll('.level-opt').forEach(o=>o.classList.remove('selected')); el.classList.add('selected'); 
     saveAuditDraft();
 }
 
@@ -374,25 +327,19 @@ function finishCurrentStep() {
     document.getElementById('summaryScoreStr').innerText = `${s} من ${m}`;
     document.getElementById('opportunitiesContainer').innerHTML = currentStepImprovements.length > 0 ? currentStepImprovements.map(i=>`<div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:5px; margin-bottom:5px; border-right:3px solid var(--warning); font-size:12px; text-align:right;">- ${i}</div>`).join('') : '<div style="color:var(--success); font-weight:bold;">لا توجد ملاحظات، أداء ممتاز</div>';
     document.getElementById('aiCapaBtn').style.display = currentStepImprovements.length>0?'inline-block':'none';
-    showScreen('stepSummaryScreen');
+    currentStepImages = {}; showScreen('stepSummaryScreen');
 }
 
 function skipCurrentStep() { currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = {skipped:true, score:0, max:0, improvements:[], selections:{}, images:{}}; saveAuditDraft(); goToNextStep(); }
 function goToNextStep() { currentAudit.currentStepIndex++; if(currentAudit.currentStepIndex < 7) renderCurrentAuditStep(); else generateFinalReport(); }
 
-// ------------------------------------------
-// ✍️ التوقيع الفائق السرعة (Hardware Accelerated)
-// ------------------------------------------
 function initSignaturePad() {
     setTimeout(() => {
         sigCanvas = document.getElementById('signatureCanvas'); if(!sigCanvas) return;
         sigCtx = sigCanvas.getContext('2d'); sigCtx.lineWidth = 3; sigCtx.strokeStyle = '#b87333'; sigCtx.lineCap = 'round';
         clearSignature(); 
-        
-        // Caching Client Rect to prevent Layout Thrashing
         const startDrawing = (x, y) => { isDrawing = true; canvasRect = sigCanvas.getBoundingClientRect(); sigCtx.beginPath(); sigCtx.moveTo(x - canvasRect.left, y - canvasRect.top); };
         const draw = (x, y) => { if(isDrawing) { sigCtx.lineTo(x - canvasRect.left, y - canvasRect.top); sigCtx.stroke(); } };
-        
         sigCanvas.onmousedown = (e) => startDrawing(e.clientX, e.clientY);
         sigCanvas.onmousemove = (e) => draw(e.clientX, e.clientY);
         sigCanvas.onmouseup = () => isDrawing = false;
@@ -408,8 +355,7 @@ function generateFinalReport() {
     let s=0, m=0; currentAudit.stepsOrder.forEach(k=>{if(!currentAudit.results[k].skipped){s+=currentAudit.results[k].score; m+=currentAudit.results[k].max;}});
     let p=m===0?0:Math.round((s/m)*100); currentAudit.totalPct = p;
     document.getElementById('finalTotalPct').innerText = p+'%'; document.getElementById('finalDeptName').innerText = currentAudit.dept;
-    showScreen('finalReportScreen');
-    initSignaturePad();
+    showScreen('finalReportScreen'); initSignaturePad();
 }
 
 function saveFinalAudit() {
@@ -423,10 +369,7 @@ function saveFinalAudit() {
     
     if(allImprovements.length > 0) {
         let fId = uniqueNumericId().toString();
-        let folderTask = {
-            id: fId, isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام',
-            task: `تحسينات مراجعة (${currentAudit.date})`, subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })), status: 'pending'
-        };
+        let folderTask = { id: fId, isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام', task: `تحسينات مراجعة (${currentAudit.date})`, subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })), status: 'pending' };
         syncRecord('tasks/' + fId, folderTask);
     }
 
@@ -438,7 +381,7 @@ function saveFinalAudit() {
 }
 
 // ------------------------------------------
-// 📊 أرشيف التقارير (History)
+// 📊 التقارير التفصيلية
 // ------------------------------------------
 function renderHistory() {
     let real = historyData.filter(h=>!h.stepsOrder.includes('ManualKaizen')).reverse();
@@ -493,13 +436,6 @@ function viewDetailedReport(id) {
     showScreen('detailedReportScreen');
 }
 
-function downloadProfessionalPDF() {
-    window.scrollTo(0,0);
-    const btns = document.querySelectorAll('#detailedReportScreen .no-print'); btns.forEach(b => b.style.display = 'none');
-    html2pdf().set({margin:0.2, filename:'تقرير_مراجعة.pdf', image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:'in', format:'a4', orientation:'portrait'}}).from(document.getElementById('printableReportArea')).save().then(()=>{ btns.forEach(b => b.style.display = ''); });
-}
-function shareWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(window.currentReportText)}`); }
-
 // ------------------------------------------
 // 🎯 المهام (Tasks)
 // ------------------------------------------
@@ -550,39 +486,8 @@ function closeTasksDept() { currentTaskDept = null; document.getElementById('tas
 
 function toggleFolderSubTask(fId, sIdx) { let f = tasksData.find(x=>x.id==fId); if(f) { f.subTasks[sIdx].status = f.subTasks[sIdx].status==='done'?'pending':'done'; syncRecord('tasks/' + fId, f); } }
 function changeTaskStatus(id, st) { let t=tasksData.find(x=>x.id==id); if(t) {t.status=st; syncRecord('tasks/' + id, t);} }
-function addManualTaskDept() {
+function addManualTaskDept() { let v=document.getElementById('newTaskInput').value; if(v){ let id = uniqueNumericId().toString(); syncRecord('tasks/' + id, {id:id, task:v, dept:currentTaskDept, status:'pending'}); document.getElementById('newTaskInput').value=''; showToast('تمت الإضافة'); } }
 
-    let v = document.getElementById('newTaskInput').value;
-
-    try {
-
-       Validator.required(v, "اسم المهمة");
-Validator.maxLength(v, 100, "اسم المهمة");
-
-        if (tasksData.some(t => t.task === v)) {
-            throw new Error("المهمة موجودة بالفعل");
-        }
-
-        let id = uniqueNumericId().toString();
-
-        syncRecord('tasks/' + id, {
-            id: id,
-            task: v,
-            dept: currentTaskDept,
-            status: 'pending'
-        });
-
-        document.getElementById('newTaskInput').value = '';
-
-        showToast("تمت الإضافة");
-
-    } catch (e) {
-
-        showToast(e.message);
-
-    }
-
-}
 // ------------------------------------------
 // 🌐 مجتمع كايزن (الدمج الاحترافي)
 // ------------------------------------------
@@ -594,21 +499,7 @@ function handleKaizenImage(e, type) {
 
 function submitManualKaizen() {
     let t = document.getElementById('newKaizenTitle').value; let d = document.getElementById('newKaizenDept').value;
-   try {
-
-    Validator.required(t, "وصف التحسين");
-    Validator.required(d, "القسم");
-Validator.maxLength(t, 200, "وصف التحسين");
-    if (!kaizenImgs.before || !kaizenImgs.after) {
-        throw new Error("لازم صورتين قبل وبعد");
-    }
-
-} catch (e) {
-
-    showToast(e.message);
-    return;
-
-}
+    if(!t || !kaizenImgs.before || !kaizenImgs.after) { showToast('برجاء كتابة الوصف وإرفاق الصورتين'); return; }
     
     document.getElementById('submitKaizenBtn').innerText = "جاري الدمج والرفع...";
     document.getElementById('submitKaizenBtn').disabled = true;
@@ -684,7 +575,7 @@ function editKaizen(id) { let k=historyData.find(x=>x.id===id); if(!k) return; l
 function addKaizenComment(id) { let el=document.getElementById(`comment_input_${id}`); let txt=sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; kaizenComments[id].push({user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}); syncRecord('kaizenComments/' + id, kaizenComments[id]); el.value=''; awardPoints(2, 'كتابة تعليق'); }
 
 // ------------------------------------------
-// 🏷️ التاجات والمشكلات (Tags Engine)
+// 🏷️ التاجات (Tags Engine)
 // ------------------------------------------
 function handleTagImage(e) {
     const f=e.target.files[0]; if(!f) return;
@@ -695,7 +586,6 @@ function handleTagImage(e) {
 async function addNewTag() {
     let d=document.getElementById('newTagDesc').value, c=document.getElementById('newTagColor').value, dp=document.getElementById('newTagDept').value, m=document.getElementById('newTagMachine').value, sp=document.getElementById('newTagSpareParts').value;
     if(!d) { showToast('أدخل وصف المشكلة'); return; }
-    
     let fullDesc = sp ? `${d} [أجزاء: ${sp}]` : d;
     let uploadedUrl = null;
     
@@ -712,14 +602,12 @@ async function addNewTag() {
     let preview = document.getElementById('tagImagePreview'); if(preview) preview.innerHTML = '';
     
     awardPoints(10, 'إصدار تاج جديد'); showToast('تم إصدار التاج بنجاح');
-    
     if(c==='red' && document.getElementById('newTagEngineer').value) window.open(`https://wa.me/${document.getElementById('newTagEngineer').value.replace(/\D/g,'')}?text=${encodeURIComponent(`إشعار عطل (تاج أحمر)\nالقسم: ${dp}\nالماكينة: ${m||'عام'}\nالوصف: ${fullDesc}`)}`);
 }
 
 function renderTags() {
     let c = document.getElementById('tagsListContainer'); if(!c) return;
     let fDept = document.getElementById('filterTagDept').value; let fMach = document.getElementById('filterTagMachine').value.trim().toLowerCase();
-    
     let html = tagsData.filter(t => (fDept==='الكل' || t.dept===fDept) && (fMach==='' || (t.machine && t.machine.toLowerCase().includes(fMach)))).map(t => {
         let canEdit = hasRole('admin', 'auditor') || currentUser.name === t.auditor;
         let controls = canEdit ? `
@@ -732,7 +620,6 @@ function renderTags() {
             <button class="btn btn-sm btn-warning flex-1" style="margin:0;" onclick="editTag('${t.id}')">تعديل</button>
             <button class="btn btn-sm btn-danger flex-1" style="margin:0;" onclick="deleteTag('${t.id}')">حذف</button>
         ` : `<span style="font-size:12px; font-weight:bold; color:var(--gold); padding:5px; background:rgba(0,0,0,0.2); border-radius:5px;">حالة التاج: ${t.status}</span>`;
-        
         return `<div class="audit-item" style="border-right: 5px solid ${t.color==='red'?'var(--danger)':'var(--primary-light)'}">
             <div style="font-size:15px; font-weight:bold; margin-bottom:5px;">${t.desc}</div>
             <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">${t.dept} | الماكينة: ${t.machine||'عام'} | التاريخ: ${t.date} | بواسطة: ${t.auditor}</div>
@@ -742,25 +629,16 @@ function renderTags() {
     }).join('');
     c.innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">لا توجد تاجات مطابقة</div>';
 }
-
 function updateTagState(id, st) { let t=tagsData.find(x=>x.id==id); if(t) {t.status=st; syncRecord('tags/' + id, t); if(st==='closed') awardPoints(20, 'إغلاق تاج');} }
 function deleteTag(id) { if(confirm('تأكيد حذف التاج نهائياً؟')) { deleteRecord('tags/' + id); showToast('تم الحذف'); } }
 function editTag(id) { let t=tagsData.find(x=>x.id==id); if(!t) return; let v=prompt('تعديل وصف المشكلة:', t.desc); if(v) { t.desc=sanitizeInput(v); syncRecord('tags/' + id, t); showToast('تم التعديل'); } }
 
 // ------------------------------------------
-// ⚙️ إعدادات الـ API
+// ⚙️ إعدادات הـ API والمستشار الذكي (AI)
 // ------------------------------------------
-function saveApiKeys() {
-    globalApiKeys.imgbb = document.getElementById('imgbbKeyInput').value.trim();
-    globalApiKeys.gemini = document.getElementById('geminiKeyInput').value.trim();
-    document.getElementById('imgbbKeyInput').disabled = true; document.getElementById('geminiKeyInput').disabled = true;
-    syncRecord('api_keys', globalApiKeys); showToast('تم حفظ وتأمين المفاتيح المركزية');
-}
+function saveApiKeys() { globalApiKeys.imgbb = document.getElementById('imgbbKeyInput').value.trim(); globalApiKeys.gemini = document.getElementById('geminiKeyInput').value.trim(); document.getElementById('imgbbKeyInput').disabled = true; document.getElementById('geminiKeyInput').disabled = true; syncRecord('api_keys', globalApiKeys); showToast('تم حفظ وتأمين المفاتيح المركزية'); }
 function enableApiKeysEdit() { document.getElementById('imgbbKeyInput').disabled = false; document.getElementById('geminiKeyInput').disabled = false; showToast('الحقول جاهزة للتعديل'); }
 
-// ------------------------------------------
-// 🤖 المستشار الذكي وعقل المصنع (AI)
-// ------------------------------------------
 async function getBase64FromUrl(url) {
     try { const res = await fetch(url); const blob = await res.blob(); return new Promise(resolve => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result.split(',')[1]); reader.readAsDataURL(blob); });
     } catch(e) { return new Promise((resolve, reject) => { let img = new Image(); img.crossOrigin = 'Anonymous'; img.onload = () => { let canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]); }; img.onerror = reject; img.src = url; }); }
@@ -810,7 +688,9 @@ function updateDeptListUI() { }
 function addOrUpdateDept() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); syncRecord('departments', departments); updateDeptDropdown(); showToast('تم الحفظ'); } }
 function addEngineer() { let n=document.getElementById('newEngName').value, p=document.getElementById('newEngPhone').value; if(n&&p) { maintenanceEngineers.push({name:n, phone:p}); syncRecord('maintenanceEngineers', maintenanceEngineers); document.getElementById('newTagEngineer').innerHTML+=`<option value="${p}">${n}</option>`; showToast('تم الإضافة'); } }
 
-// بنود المراجعة مدمجة بشكل دقيق وبدون تكرار:
+// ------------------------------------------
+// 📋 مصفوفة التقييم (AUDIT_DATA) - مكتوبة مرة واحدة
+// ------------------------------------------
 const AUDIT_DATA = {
     "JH-0": { name: "الخطوة التحضيرية", items: [
         { id: 1, title: "إعداد خطة عمل لتنفيذ انشطة الخطوه التحضيرية", maxScore: 5, levels: [{level:1,score:0,desc:"لا توجد أى دلائل علي وجود خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم"},{level:2,score:1,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم ، ولكن توجد أدلة ضعيفة علي إستخدامها في الواقع"},{level:3,score:2,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم ، وتوجد بعض الأدلة علي إستخدامها ، كما أن الخطة غير مثبتة علي لوحة أنشطة الـ TPM لكل قسم"},{level:4,score:3,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم وتغطي كثير من أنشطة الخطوة ، والخطة متاحة ومعتمدة ومثبتة علي لوحة أنشطة الـ TPM لكل قسم وكثير من مشغلي الماكينات على دراية بها"},{level:5,score:4,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم وتغطي معظم أنشطة الخطوة، والخطة متاحة ومعتمدة ومثبتة علي لوحة أنشطة الـ TPM لكل قسم ومعظم مشغلي الماكينات بالقسم علي دراية كاملة بكافة تفاصيلها"},{level:6,score:5,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية للقسم وتغطي كافة أنشطة الخطوة ، والخطة متاحة ومعتمدة ومثبتة علي لوحة أنشطة الـ TPM لكل قسم وجميع مشغلي الماكينات بالقسم علي دراية بتفاصيلها"}] },
@@ -892,28 +772,3 @@ const AUDIT_DATA = {
         { id: 7, title: "المراجعة الذاتية بواسطة فريق الصيانة الذاتية", maxScore: 5, levels: [{level:1,score:0,desc:"لا توجد دلائل علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:2,score:1,desc:"توجد أدلة ضعيفة علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:3,score:2,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ولا يتم نشر النتائج ونقاط القوة وفرص التحسين بالقسم"},{level:4,score:3,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين كثير العاملين بالقسم"},{level:5,score:4,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لمعظم العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"},{level:6,score:5,desc:"يتم تنفيذ المراجعة الداخلية الدورية على أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لجميع العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"}] }
     ]}
 };
-async function processOfflineQueue() {
-
-    if (!isOnline || offlineQueue.length === 0) return;
-
-    showToast("جاري مزامنة البيانات...");
-
-    for (let i = 0; i < offlineQueue.length; i++) {
-
-        const item = offlineQueue[i];
-
-        try {
-            await db.ref('tpm_system/' + item.path).update(item.data);
-        } catch (e) {
-            console.error("فشل مزامنة عنصر", item);
-            return;
-        }
-
-    }
-
-    offlineQueue = [];
-    localStorage.removeItem('offlineQueue');
-
-    showToast("تمت المزامنة بنجاح");
-
-}

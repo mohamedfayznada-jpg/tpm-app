@@ -124,6 +124,20 @@
             <h3 class="card-title" style="text-align:center;">لوحة أبطال الجودة</h3>
             <div id="podiumContainer" class="podium-container"></div>
             <div id="usersLeaderboardContainer" class="leaderboard-list"></div>
+<h3 class="section-title" style="margin-top: 20px;">الإنتاج الفعلي (OEE)</h3>
+        <div class="card btn-role-auditor">
+            <h4 style="color:var(--gold); margin-bottom:10px;">تسجيل الإنتاج اليومي:</h4>
+            <div class="row-flex" style="margin-bottom:10px;">
+                <select id="prodDept" class="form-control flex-1" style="margin:0;"></select>
+                <input type="text" id="prodMachine" class="form-control flex-1" style="margin:0;" placeholder="الماكينة" list="machinesList">
+            </div>
+            <div class="row-flex" style="margin-bottom:10px;">
+                <input type="number" id="prodTarget" class="form-control flex-1" style="margin:0;" placeholder="الهدف (كمية)">
+                <input type="number" id="prodActual" class="form-control flex-1" style="margin:0;" placeholder="الفعلي (كمية)">
+            </div>
+            <button class="btn btn-primary full-width" style="margin:0;" onclick="submitProductionData()">تسجيل الإنتاج</button>
+        </div>
+        <div id="productionDashboardContainer"></div>
         </div>
     </div>
 
@@ -269,15 +283,31 @@
             <select id="filterTagDept" class="form-control flex-1" style="margin:0;" onchange="renderTags()"><option value="الكل">الكل</option></select>
             <input type="text" id="filterTagMachine" class="form-control flex-1" style="margin:0;" placeholder="تصفية بالماكينة" onkeyup="renderTags()">
         </div>
-        <div class="card">
+<div class="card">
             <h4 style="color:var(--gold); margin-bottom:10px;">إصدار تاج:</h4>
             <div class="row-flex" style="margin-bottom:10px;">
                 <select id="newTagDept" class="form-control flex-1" style="margin:0;"></select>
-                <input type="text" id="newTagMachine" class="form-control flex-1" style="margin:0;" placeholder="الماكينة">
+                <input type="text" id="newTagMachine" class="form-control flex-1" style="margin:0;" placeholder="الماكينة" list="machinesList">
+                <datalist id="machinesList">
+                    <option value="عام">
+                    <option value="خط تعبئة 1">
+                    <option value="طلمبات التبريد">
+                </datalist>
             </div>
             <div class="row-flex" style="margin-bottom:10px;">
                 <input type="text" id="newTagDesc" class="form-control flex-2" style="margin:0;" placeholder="وصف العطل...">
-                <select id="newTagColor" class="form-control flex-1" style="margin:0;" onchange="document.getElementById('tagEngSelectDiv').style.display = this.value === 'red' ? 'block' : 'none';"><option value="red">أحمر (صيانة)</option><option value="blue">أزرق (إنتاج)</option></select>
+                <select id="newTagColor" class="form-control flex-1" style="margin:0;" onchange="document.getElementById('tagEngSelectDiv').style.display = this.value === 'red' ? 'block' : 'none';">
+                    <option value="red">أحمر (صيانة)</option>
+                    <option value="blue">أزرق (إنتاج)</option>
+                </select>
+            </div>
+            <div class="row-flex" style="margin-bottom:10px;">
+                <input type="text" id="newTagSpareParts" class="form-control flex-2" style="margin:0;" placeholder="قطع الغيار المطلوبة (اختياري)">
+                <select id="newTagPriority" class="form-control flex-1" style="margin:0;">
+                    <option value="عالي">خطورة: عالي</option>
+                    <option value="متوسط" selected>خطورة: متوسط</option>
+                    <option value="منخفض">خطورة: منخفض</option>
+                </select>
             </div>
             <div id="tagEngSelectDiv" style="display: none; margin-bottom:10px;"><select id="newTagEngineer" class="form-control" style="margin:0; border-color:var(--danger);"></select></div>
             <div class="upload-box" style="margin-bottom:10px; border-color:var(--primary-light);">
@@ -308,6 +338,24 @@
     </div>
 
     <div class="container screen" id="settingsScreen">
+<div class="card btn-role-admin">
+            <h3 class="card-title">إدارة هيكل المصنع (Master Data)</h3>
+            <h4 style="color:var(--gold); margin-bottom:10px; font-size: 14px;">ربط الماكينات بالأقسام:</h4>
+            <div class="row-flex" style="margin-bottom:10px;">
+                <select id="masterDeptSelect" class="form-control flex-1" style="margin:0;"></select>
+                <input type="text" id="newMachineName" class="form-control flex-2" placeholder="اسم الماكينة (مثال: خط 1)" style="margin:0;">
+                <button class="btn btn-primary" style="margin:0;" onclick="addMachineToDept()">إضافة</button>
+            </div>
+            <div id="masterMachinesList" style="margin-bottom: 20px; max-height: 150px; overflow-y: auto;"></div>
+
+            <h4 style="color:var(--gold); margin-bottom:10px; font-size: 14px;">قائمة قطع الغيار (Spare Parts):</h4>
+            <div class="row-flex" style="margin-bottom:10px;">
+                <input type="text" id="newSparePartCode" class="form-control flex-1" placeholder="الكود (اختياري)" style="margin:0;">
+                <input type="text" id="newSparePartName" class="form-control flex-2" placeholder="اسم القطعة" style="margin:0;">
+                <button class="btn btn-warning" style="margin:0;" onclick="addSparePart()">تسجيل</button>
+            </div>
+            <div id="masterSparePartsList" style="max-height: 100px; overflow-y: auto;"></div>
+        </div>
         <div class="card btn-role-admin">
             <h3 class="card-title">مفاتيح الربط (API Keys)</h3>
             <input type="password" id="imgbbKeyInput" class="form-control" placeholder="مفتاح ImgBB">

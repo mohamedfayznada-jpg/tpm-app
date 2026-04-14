@@ -24,7 +24,8 @@ let radarChartInstance = null, trendChartInstance = null, currentViewedDept = nu
 let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];
 let currentTagImg = null, currentTaskDept = null, currentOplImg = null, kaizenImgs = { before: null, after: null };
 let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
-
+let machinesData = {}; // { "الإنتاج": ["خط 1", "خط 2"], "الصيانة": ["طلمبة 1"] }
+let sparePartsData = []; // [{code: "P1", name: "رولمان بلي"}]
 // ------------------------------------------
 // 🛡️ أدوات النظام العامة (Utilities)
 // ------------------------------------------
@@ -70,7 +71,7 @@ function awardPoints(pts, reason) {
 firebase.auth().onAuthStateChanged(user => {
     if (tpmSystemListener) db.ref('tpm_system').off('value', tpmSystemListener);
     if (user) {
-        tpmSystemListener = snapshot => {
+      tpmSystemListener = snapshot => {
             const data = snapshot.val() || {};
             departments = data.departments || ['إنتاج', 'صيانة'];
             historyData = data.history ? Object.values(data.history).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
@@ -85,9 +86,16 @@ firebase.auth().onAuthStateChanged(user => {
             maintenanceEngineers = data.maintenanceEngineers || [];
             kaizenComments = data.kaizenComments || {};
             knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
+            
+            // 👇 الأسطر التي تم تصحيحها لضمان قراءة البيانات الجديدة
+            productionData = data.production ? Object.values(data.production).filter(x => x && x.id).sort((a,b)=>b.id-a.id) : [];
+            machinesData = data.machinesData || {};
+            sparePartsData = data.spareParts || [];
+            
             isDataLoaded = true;
 
             if (isInitialLoad) {
+                // ... (باقي كود isInitialLoad كما هو لديك)
                 isInitialLoad = false;
                 const savedName = localStorage.getItem('tpm_user') || user.email.split('@')[0];
                 const savedUsername = localStorage.getItem('tpm_username') || user.email.split('@')[0];
@@ -596,25 +604,54 @@ function handleTagImage(e) {
 }
 
 async function addNewTag() {
-    let d=document.getElementById('newTagDesc').value, c=document.getElementById('newTagColor').value, dp=document.getElementById('newTagDept').value, m=document.getElementById('newTagMachine').value, sp=document.getElementById('newTagSpareParts').value;
+    let d = sanitizeInput(document.getElementById('newTagDesc').value);
+    let c = document.getElementById('newTagColor').value;
+    let dp = document.getElementById('newTagDept').value;
+    let m = sanitizeInput(document.getElementById('newTagMachine').value);
+    let sp = sanitizeInput(document.getElementById('newTagSpareParts').value);
+    let priority = document.getElementById('newTagPriority').value;
+    
     if(!d) { showToast('أدخل وصف المشكلة'); return; }
-    let fullDesc = sp ? `${d} [أجزاء: ${sp}]` : d;
+    
+    let fullDesc = d;
+    if (sp) fullDesc += ` [قطع مطلوبة: ${sp}]`;
+    if (priority) fullDesc = `[${priority}] ` + fullDesc;
+
     let uploadedUrl = null;
     
     if (currentTagImg) {
+        document.getElementById('submitKaizenBtn') ? document.getElementById('submitKaizenBtn').disabled = true : null;
         showToast('جاري رفع التاج...');
         uploadedUrl = await uploadImageToStorage(currentTagImg);
         if(!uploadedUrl) return showToast('فشل رفع الصورة');
     }
     
     let tId = uniqueNumericId().toString();
-    syncRecord('tags/' + tId, {id:tId, desc:fullDesc, color:c, dept:dp, machine:m, image:uploadedUrl, status:'open', auditor:currentUser.name, date:new Date().toLocaleDateString('ar-EG')});
+    syncRecord('tags/' + tId, {
+        id: tId, 
+        desc: fullDesc, 
+        color: c, 
+        dept: dp, 
+        machine: m, 
+        image: uploadedUrl, 
+        status: 'open', 
+        priority: priority,
+        auditor: currentUser.name, 
+        date: new Date().toLocaleDateString('ar-EG')
+    });
     
-    document.getElementById('newTagDesc').value=''; document.getElementById('newTagMachine').value=''; document.getElementById('newTagSpareParts').value=''; currentTagImg = null;
+    document.getElementById('newTagDesc').value=''; 
+    document.getElementById('newTagMachine').value=''; 
+    document.getElementById('newTagSpareParts').value=''; 
+    currentTagImg = null;
     let preview = document.getElementById('tagImagePreview'); if(preview) preview.innerHTML = '';
     
-    awardPoints(10, 'إصدار تاج جديد'); showToast('تم إصدار التاج بنجاح');
-    if(c==='red' && document.getElementById('newTagEngineer').value) window.open(`https://wa.me/${document.getElementById('newTagEngineer').value.replace(/\D/g,'')}?text=${encodeURIComponent(`إشعار عطل (تاج أحمر)\nالقسم: ${dp}\nالماكينة: ${m||'عام'}\nالوصف: ${fullDesc}`)}`);
+    awardPoints(10, 'إصدار تاج جديد'); 
+    showToast('تم إصدار التاج بنجاح');
+    
+    if(c === 'red' && document.getElementById('newTagEngineer').value) {
+        window.open(`https://wa.me/${document.getElementById('newTagEngineer').value.replace(/\D/g,'')}?text=${encodeURIComponent(`إشعار عطل (تاج أحمر)\nالخطورة: ${priority}\nالقسم: ${dp}\nالماكينة: ${m||'عام'}\nالوصف: ${fullDesc}`)}`);
+    }
 }
 
 function renderTags() {
@@ -676,13 +713,79 @@ function executeGlobalSearch() {
 }
 document.addEventListener('click', e => { if(e.target.id !== 'globalSearchInput') { let b = document.getElementById('searchResults'); if(b) b.style.display='none'; } });
 
-function scanBarcodeFromImage() { showToast('تفعيل الباركود يحتاج إذن الكاميرا (قريباً)'); }
-function exportToCSV() { showToast('جاري تصدير ملفات Excel...'); }
-function exportSystemBackupJSON() { showToast('تم تجهيز النسخة الاحتياطية'); }
-function triggerBackupImport() { document.getElementById('backupImportInput').click(); }
-function importSystemBackupJSON(e) { showToast('الميزة قيد التطوير للحماية'); }
-function generateAndPrintQR() { showToast('تم توليد الباركود وجاهز للطباعة'); }
+// استبدل الدوال الوهمية القديمة بهذا الكود
 
+function exportSystemBackupJSON() {
+    if (!hasRole('admin')) return showToast('صلاحيات مدير مطلوبة');
+    showToast('جاري تجهيز النسخة الاحتياطية...');
+    db.ref('tpm_system').once('value').then(snap => {
+        const data = snap.val();
+        if(!data) return showToast('لا توجد بيانات لتصديرها');
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `FactoryOS_Backup_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('تم تحميل النسخة الاحتياطية بنجاح');
+    }).catch(e => {
+        showToast('خطأ في الاتصال بقاعدة البيانات');
+    });
+}
+
+function triggerBackupImport() { document.getElementById('backupImportInput').click(); }
+
+function importSystemBackupJSON(e) {
+    if (!hasRole('admin')) return showToast('صلاحيات مدير مطلوبة');
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if(!confirm('تحذير: هذا الإجراء سيمسح البيانات الحالية ويستبدلها بالنسخة المرفوعة. هل أنت متأكد؟')) {
+        e.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        try {
+            const parsedData = JSON.parse(event.target.result);
+            db.ref('tpm_system').set(parsedData).then(() => {
+                showToast('تم استرجاع النظام بنجاح. سيتم إعادة التحميل.');
+                setTimeout(() => window.location.reload(), 2000);
+            });
+        } catch (error) {
+            showToast('ملف النسخة الاحتياطية تالف أو غير صالح');
+        }
+    };
+    reader.readAsText(file);
+}
+
+function exportTasksToCSV() {
+    if(tasksData.length === 0) return showToast('لا توجد مهام لتصديرها');
+    let csvContent = "data:text/csv;charset=utf-8,%EF%BB%BF"; // BOM for Arabic support
+    csvContent += "الرقم التعريفي,المهمة,القسم,الحالة\n";
+    
+    tasksData.forEach(t => {
+        if(t.isFolder) {
+            t.subTasks.forEach(s => {
+                csvContent += `${t.id},"${s.text.replace(/"/g, '""')}","${t.dept}","${s.status}"\n`;
+            });
+        } else {
+            csvContent += `${t.id},"${t.task.replace(/"/g, '""')}","${t.dept}","${t.status}"\n`;
+        }
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const a = document.createElement("a");
+    a.href = encodedUri;
+    a.download = `Tasks_Report_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
 // ------------------------------------------
 // 🤖 المستشار الذكي وعقل المصنع (AI)
 // ------------------------------------------
@@ -838,3 +941,162 @@ const AUDIT_DATA = {
         { id: 7, title: "المراجعة الذاتية بواسطة فريق الصيانة الذاتية", maxScore: 5, levels: [{level:1,score:0,desc:"لا توجد دلائل علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:2,score:1,desc:"توجد أدلة ضعيفة علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:3,score:2,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ولا يتم نشر النتائج ونقاط القوة وفرص التحسين بالقسم"},{level:4,score:3,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين كثير العاملين بالقسم"},{level:5,score:4,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لمعظم العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"},{level:6,score:5,desc:"يتم تنفيذ المراجعة الداخلية الدورية على أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لجميع العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"}] }
     ]}
 };
+// ==========================================
+// 📊 محرك الإنتاج والكفاءة (OEE & Production Track)
+// ==========================================
+
+let productionData = []; // سيتم سحبها من Firebase في دالة OnAuthStateChanged
+
+// يجب إضافة هذا السطر داخل دالة tpmSystemListener في جزء OnAuthStateChanged
+// productionData = data.production ? Object.values(data.production).filter(x => x && x.id).sort((a,b)=>b.id-a.id) : [];
+
+function submitProductionData() {
+    let dept = document.getElementById('prodDept').value;
+    let machine = sanitizeInput(document.getElementById('prodMachine').value);
+    let target = parseFloat(document.getElementById('prodTarget').value);
+    let actual = parseFloat(document.getElementById('prodActual').value);
+
+    if (!dept || !machine || isNaN(target) || isNaN(actual) || target <= 0) {
+        return showToast('برجاء إدخال بيانات إنتاج صحيحة والهدف يجب أن يكون أكبر من صفر');
+    }
+
+    let oeePct = Math.round((actual / target) * 100);
+    let pId = uniqueNumericId().toString();
+    
+    let prodRecord = {
+        id: pId,
+        dept: dept,
+        machine: machine,
+        target: target,
+        actual: actual,
+        oee: oeePct,
+        auditor: currentUser.name,
+        date: new Date().toLocaleDateString('ar-EG'),
+        time: new Date().toLocaleTimeString('ar-EG')
+    };
+
+    syncRecord('production/' + pId, prodRecord);
+    
+    document.getElementById('prodTarget').value = '';
+    document.getElementById('prodActual').value = '';
+    
+    awardPoints(15, 'تسجيل بيانات الإنتاج');
+    showToast('تم تحديث أرقام الإنتاج للخط');
+    renderProductionDashboard();
+}
+
+function renderProductionDashboard() {
+    let c = document.getElementById('productionDashboardContainer');
+    if (!c) return;
+
+    // تجميع آخر إنتاج لكل خط
+    let latestProduction = {};
+    productionData.forEach(p => {
+        let key = p.dept + '_' + p.machine;
+        // بما أن البيانات مرتبة من الأحدث للأقدم، سنأخذ أول سجل نقابله لكل خط
+        if (!latestProduction[key]) {
+            latestProduction[key] = p;
+        }
+    });
+
+    let html = Object.values(latestProduction).map(p => {
+        let isDanger = p.oee < 70;
+        let isWarning = p.oee >= 70 && p.oee < 90;
+        let statusClass = isDanger ? 'danger-border danger-text' : (isWarning ? 'warning-border warning-text' : 'success-border success-text');
+        
+        return `
+        <div class="card ${statusClass.split(' ')[0]}" style="padding:15px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h4 style="margin:0; color:var(--gold);">${p.machine} <span style="font-size:11px; color:var(--text-muted);">(${p.dept})</span></h4>
+                <div class="stat-value ${statusClass.split(' ')[1]}">${p.oee}%</div>
+            </div>
+            <div class="row-flex" style="text-align:center; font-size:12px;">
+                <div class="flex-1">الهدف: <b>${p.target}</b></div>
+                <div class="flex-1">الفعلي: <b>${p.actual}</b></div>
+                <div class="flex-1" style="color:var(--text-muted);">آخر تحديث: ${p.time}</div>
+            </div>
+        </div>`;
+    }).join('');
+
+    c.innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">لا توجد بيانات إنتاج مسجلة اليوم</div>';
+}
+function addMachineToDept() {
+    let dept = document.getElementById('masterDeptSelect').value;
+    let machineName = sanitizeInput(document.getElementById('newMachineName').value);
+    
+    if(!dept || !machineName) return showToast('أدخل اسم الماكينة وحدد القسم');
+    
+    if(!machinesData[dept]) machinesData[dept] = [];
+    if(!machinesData[dept].includes(machineName)) {
+        machinesData[dept].push(machineName);
+        syncRecord('machinesData', machinesData);
+        document.getElementById('newMachineName').value = '';
+        showToast('تم ربط الماكينة بالقسم');
+        renderMasterData();
+    } else {
+        showToast('الماكينة مسجلة مسبقاً في هذا القسم');
+    }
+}
+
+function removeMachine(dept, machineName) {
+    if(confirm(`تأكيد مسح ${machineName} من قسم ${dept}؟`)) {
+        machinesData[dept] = machinesData[dept].filter(m => m !== machineName);
+        syncRecord('machinesData', machinesData);
+        renderMasterData();
+    }
+}
+
+function addSparePart() {
+    let code = sanitizeInput(document.getElementById('newSparePartCode').value);
+    let name = sanitizeInput(document.getElementById('newSparePartName').value);
+    
+    if(!name) return showToast('اسم القطعة مطلوب');
+    
+    sparePartsData.push({code: code, name: name});
+    syncRecord('spareParts', sparePartsData);
+    document.getElementById('newSparePartCode').value = '';
+    document.getElementById('newSparePartName').value = '';
+    showToast('تم تسجيل قطعة الغيار');
+    renderMasterData();
+}
+
+function renderMasterData() {
+    let mList = document.getElementById('masterMachinesList');
+    let spList = document.getElementById('masterSparePartsList');
+    if(!mList || !spList) return;
+
+    let mHtml = '';
+    for(let dept in machinesData) {
+        if(machinesData[dept].length > 0) {
+            mHtml += `<div style="margin-bottom:5px; font-weight:bold; color:var(--text-muted); font-size:12px;">${dept}</div>`;
+            machinesData[dept].forEach(m => {
+                mHtml += `<div style="display:flex; justify-content:space-between; padding:5px; background:rgba(255,255,255,0.05); border-radius:5px; margin-bottom:2px; font-size:13px;">
+                    <span>${m}</span>
+                    <span style="color:var(--danger); cursor:pointer;" onclick="removeMachine('${dept}', '${m}')">❌</span>
+                </div>`;
+            });
+        }
+    }
+    mList.innerHTML = mHtml || '<div style="font-size:11px; text-align:center;">لا توجد ماكينات مسجلة</div>';
+
+    spList.innerHTML = sparePartsData.map((sp, idx) => `
+        <div style="display:flex; justify-content:space-between; padding:5px; background:rgba(255,255,255,0.05); border-radius:5px; margin-bottom:2px; font-size:13px;">
+            <span>${sp.code ? `[${sp.code}] ` : ''}${sp.name}</span>
+            <span style="color:var(--danger); cursor:pointer;" onclick="sparePartsData.splice(${idx},1); syncRecord('spareParts', sparePartsData); renderMasterData();">❌</span>
+        </div>
+    `).join('') || '<div style="font-size:11px; text-align:center;">لا توجد قطع غيار مسجلة</div>';
+    
+    // تحديث قوائم الـ Datalist في النظام
+    updateDatalists();
+}
+
+function updateDatalists() {
+    let ml = document.getElementById('machinesList');
+    if(ml) {
+        let options = '';
+        for(let dept in machinesData) {
+            machinesData[dept].forEach(m => options += `<option value="${m}">`);
+        }
+        ml.innerHTML = options;
+    }
+}

@@ -416,7 +416,7 @@
         </div>
 
         <button class="btn btn-danger full-width" onclick="logout()">تسجيل الخروج</button>
-    </div> <div class="container screen" id="executiveDashboardScreen">
+    </div> 
 <div class="container screen" id="executiveDashboardScreen">
         <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
             <h3 class="section-title" style="margin:0; border:none; padding:0;">لوحة الإدارة العليا (CEO)</h3>
@@ -440,14 +440,14 @@
         </div>
     </div>
     <div class="nav-bar" id="bottomNav" style="display: none;">
-        <div class="nav-item" onclick="showScreen('homeScreen'); updateHomeDashboard();"><div class="nav-text">الرئيسية</div></div>
-        <div class="nav-item" onclick="showScreen('tasksScreen'); renderTasks();"><div class="nav-text">المهام</div></div>
-        <div class="nav-item" onclick="showScreen('historyScreen')"><div class="nav-text">التقارير</div></div>
-        <div class="nav-item" onclick="showScreen('kaizenScreen'); renderKaizenFeed();"><div class="nav-text">كايزن</div></div>
-        <div class="nav-item" onclick="showScreen('tagsScreen'); renderTags();"><div class="nav-text">التاجات</div></div>
-        <div class="nav-item btn-role-admin" onclick="showScreen('knowledgeScreen'); renderKnowledgeBase();"><div class="nav-text">المصنع</div></div>
-<div class="nav-item btn-role-admin" onclick="showScreen('executiveDashboardScreen'); renderExecutiveDashboard();"><div class="nav-text">الإدارة</div></div>
-        <div class="nav-item" onclick="showScreen('settingsScreen')"><div class="nav-text">إعدادات</div></div>
+        <div class="nav-item" onclick="showScreen('homeScreen'); updateHomeDashboard();"><div class="nav-text">🏠 الرئيسية</div></div>
+        <div class="nav-item" onclick="showScreen('tasksScreen'); renderTasks();"><div class="nav-text">📋 المهام</div></div>
+        <div class="nav-item" onclick="showScreen('historyScreen')"><div class="nav-text">📂 التقارير</div></div>
+        <div class="nav-item" onclick="showScreen('kaizenScreen'); renderKaizenFeed();"><div class="nav-text">💡 كايزن</div></div>
+        <div class="nav-item" onclick="showScreen('tagsScreen'); renderTags();"><div class="nav-text">🔖 التاجات</div></div>
+        <div class="nav-item btn-role-admin" onclick="showScreen('knowledgeScreen'); renderKnowledgeBase();"><div class="nav-text">🧠 المصنع</div></div>
+        <div class="nav-item btn-role-admin" onclick="showScreen('executiveDashboardScreen'); renderExecutiveDashboard();"><div class="nav-text">📊 الإدارة</div></div>
+        <div class="nav-item" onclick="showScreen('settingsScreen')"><div class="nav-text">⚙️ إعدادات</div></div>
     </div>
 
     <script src="app.js"></script>

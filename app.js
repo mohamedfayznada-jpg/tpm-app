@@ -29,7 +29,13 @@ let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
 // 🛡️ أدوات النظام والتنبيهات (Utilities)
 // ------------------------------------------
 function hasRole(...allowed) { return currentUser && currentUser.role && allowed.includes(currentUser.role); }
-function sanitizeInput(val) { return String(val || '').replace(/[<>]/g, '').trim(); }
+// 🛡️ دالة التعقيم المحسنة (لمنع الاختراق)
+function sanitizeInput(val) { 
+    if (!val) return '';
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(val));
+    return div.innerHTML.trim(); 
+}
 function uniqueNumericId() { return (Date.now() * 1000) + Math.floor(Math.random() * 1000); }
 function safeUrl(url) { const val = String(url || '').trim(); return (val.startsWith('https://') || val.startsWith('http://') || val.startsWith('data:image/')) ? val : ''; }
 function nl2brSafe(text) { return sanitizeInput(text).replace(/\n/g, '<br>'); }
@@ -49,37 +55,46 @@ db.ref('.info/connected').on('value', snap => {
 });
 
 // ------------------------------------------
-// 🔐 تسجيل الدخول وإدارة الحالة (State)
+// 🔄 محرك المزامنة الذكي (Granular Sync Engine) - التحديث الجديد
 // ------------------------------------------
+let dbListeners = {};
+function clearAllListeners() {
+    for (let path in dbListeners) {
+        db.ref('tpm_system/' + path).off('value', dbListeners[path]);
+    }
+    dbListeners = {};
+}
+
 firebase.auth().onAuthStateChanged(user => {
-    if (tpmSystemRef && tpmSystemListener) tpmSystemRef.off('value', tpmSystemListener);
+    clearAllListeners(); // تنظيف أي اتصالات قديمة
+    
     if (user) {
-        tpmSystemRef = db.ref('tpm_system');
-        tpmSystemListener = snapshot => {
+        isDataLoaded = true;
+
+        // 1. جلب البيانات الثابتة أو البطيئة التغير مرة واحدة لتخفيف الحمل
+        db.ref('tpm_system').once('value').then(snapshot => {
             const data = snapshot.val() || {};
             departments = data.departments || ['إنتاج', 'صيانة'];
-            historyData = data.history ? Object.values(data.history).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
-            tasksData = data.tasks ? Object.values(data.tasks).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
-            logsData = data.logs ? Object.values(data.logs).filter(x => x).sort((a,b)=>a.id-b.id) : [];
-            usersData = data.users || {};
             globalApiKeys = data.api_keys || { imgbb: "", gemini: "" };
-            likesData = data.likes || {};
-            tagsData = data.tags ? Object.values(data.tags).filter(x => x && x.id).sort((a,b)=>b.id-a.id) : [];
-            userPoints = data.points || {};
+            usersData = data.users || {};
             deptPhones = data.deptPhones || {};
             maintenanceEngineers = data.maintenanceEngineers || [];
-            kaizenComments = data.kaizenComments || {};
             knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
-            isDataLoaded = true;
-
+            machinesData = data.machinesData || {};
+            sparePartsData = data.spareParts || [];
+            
+            // إعداد المستخدم
             if (isInitialLoad) {
                 isInitialLoad = false;
                 const savedName = localStorage.getItem('tpm_user') || user.email.split('@')[0];
                 const savedUsername = localStorage.getItem('tpm_username') || user.email.split('@')[0];
                 let role = 'viewer';
-                if (user.email.toLowerCase().includes('mfayez') || savedUsername.toLowerCase() === 'mfayez') { role = 'admin'; db.ref('tpm_system/users/' + user.uid).set('admin'); }
-                else if (usersData[user.uid]) role = usersData[user.uid];
-                else if (usersData[savedUsername]) role = usersData[savedUsername];
+                if (user.email.toLowerCase().includes('mfayez') || savedUsername.toLowerCase() === 'mfayez') { 
+                    role = 'admin'; 
+                    db.ref('tpm_system/users/' + user.uid).set('admin'); 
+                } else if (usersData[user.uid]) { role = usersData[user.uid]; }
+                else if (usersData[savedUsername]) { role = usersData[savedUsername]; }
+                
                 currentUser = { name: savedName, username: savedUsername, role: role };
                 
                 document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = role === 'admin' ? 'block' : 'none');
@@ -89,18 +104,55 @@ firebase.auth().onAuthStateChanged(user => {
                 if(globalApiKeys.imgbb || globalApiKeys.gemini) {
                     document.getElementById('imgbbKeyInput').value = globalApiKeys.imgbb || '';
                     document.getElementById('geminiKeyInput').value = globalApiKeys.gemini || '';
-                    document.getElementById('imgbbKeyInput').disabled = true;
-                    document.getElementById('geminiKeyInput').disabled = true;
                 }
                 showScreen('homeScreen');
             }
-            updateDeptDropdown(); renderHistory(); renderTasks(); renderTags(); renderKaizenFeed();
-            if(currentUser.role) { updateHomeDashboard(); if(currentViewedDept) updateDeptDashboard(); }
-            if(currentUser.role === 'admin') { renderUsersPanel(); }
-        };
-        tpmSystemRef.on('value', tpmSystemListener);
+            updateDeptDropdown(); renderKnowledgeBase(); renderMasterData();
+        });
+
+        // 2. مراقبة البيانات الحية والمستمرة (Realtime Listeners) منفصلة
+        dbListeners.tags = db.ref('tpm_system/tags').on('value', snap => {
+            tagsData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>b.id-a.id) : [];
+            renderTags(); if(currentUser.role) updateHomeDashboard();
+        });
+
+        dbListeners.tasks = db.ref('tpm_system/tasks').on('value', snap => {
+            tasksData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
+            renderTasks();
+        });
+
+        dbListeners.history = db.ref('tpm_system/history').on('value', snap => {
+            historyData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
+            renderHistory(); renderKaizenFeed(); if(currentUser.role) updateHomeDashboard();
+        });
+
+        dbListeners.production = db.ref('tpm_system/production').on('value', snap => {
+            productionData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>b.id-a.id) : [];
+            renderProductionDashboard();
+        });
+
+        dbListeners.points = db.ref('tpm_system/points').on('value', snap => {
+            userPoints = snap.val() || {};
+            updateUsersLeaderboard();
+        });
+
+        dbListeners.likes = db.ref('tpm_system/likes').on('value', snap => {
+            likesData = snap.val() || {};
+        });
+        
+        dbListeners.kaizenComments = db.ref('tpm_system/kaizenComments').on('value', snap => {
+            kaizenComments = snap.val() || {};
+        });
+
+        dbListeners.logs = db.ref('tpm_system/logs').limitToLast(50).on('value', snap => {
+            logsData = snap.val() ? Object.values(snap.val()).filter(x => x).sort((a,b)=>a.id-b.id) : [];
+            if(currentUser.role === 'admin') renderUsersPanel();
+        });
+
     } else {
-        isInitialLoad = true; isDataLoaded = false; document.getElementById('bottomNav').style.display = 'none'; showScreen('loginScreen');
+        isInitialLoad = true; isDataLoaded = false; 
+        document.getElementById('bottomNav').style.display = 'none'; 
+        showScreen('loginScreen');
     }
 });
 
@@ -147,6 +199,34 @@ function awardPoints(pts, reason) {
     userPoints[currentUser.name] = (userPoints[currentUser.name] || 0) + pts; 
     syncRecord('points/' + currentUser.name, userPoints[currentUser.name]);
     showToast(`اكتسبت ${pts} نقطة: ${reason}`); 
+}
+
+// ------------------------------------------
+// 🔍 دالة مسح الباركود الفعالة
+// ------------------------------------------
+async function scanBarcodeFromImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    showToast('جاري قراءة الباركود... 🔍');
+    const html5QrCode = new Html5Qrcode("searchResults"); // استخدام العنصر المخفي
+    
+    try {
+        const decodedText = await html5QrCode.scanFile(file, true);
+        showToast('تمت القراءة بنجاح!');
+        
+        document.getElementById('globalSearchInput').value = decodedText;
+        document.getElementById('searchResults').style.display = 'block';
+        document.getElementById('searchResults').innerHTML = `
+            <div style="padding:15px; border-bottom:1px solid var(--copper);">
+                <b class="success-text">البيانات المستخرجة:</b><br>
+                <span style="font-size: 14px; color: var(--text-main);">${decodedText}</span>
+            </div>
+        `;
+        executeGlobalSearch();
+    } catch (err) {
+        showToast('تعذرت قراءة الباركود، تأكد من وضوح الصورة.');
+    }
 }
 
 // ------------------------------------------

@@ -82,32 +82,43 @@ firebase.auth().onAuthStateChanged(user => {
             knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
             machinesData = data.machinesData || {};
           sparePartsData = data.spareParts || [];
-
-            // إعداد المستخدم
+// إعداد المستخدم (المحرك المحسن)
             if (isInitialLoad) {
                 isInitialLoad = false;
-                const savedName = localStorage.getItem('tpm_user') || user.email.split('@')[0];
-                const savedUsername = localStorage.getItem('tpm_username') || user.email.split('@')[0];
+                
+                // الاعتماد على الإيميل لضمان عدم فقدان الهوية
+                const userEmail = user.email ? user.email.toLowerCase() : '';
+                const isMasterAdmin = userEmail.includes('mfayez01');
+                
+                const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
+                // إذا كان هو المدير، نفرض اسم المستخدم، غير ذلك نجلبه
+                const finalUsername = isMasterAdmin ? 'mfayez01' : (localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
+                
                 let role = 'viewer';
-                
-                if (user.email.toLowerCase().includes('mfayez') || savedUsername.toLowerCase() === 'mfayez') { 
-                    role = 'admin'; 
-                    db.ref('tpm_system/users/' + user.uid).set('admin'); 
-                } else if (usersData[user.uid] && typeof usersData[user.uid] === 'string') { 
-                    role = usersData[user.uid]; 
-                } else if (usersData[user.uid] && usersData[user.uid].role) {
-                    role = usersData[user.uid].role;
-                }
-                
-                currentUser = { name: savedName, username: savedUsername, role: role };
-                
-                // 👑 منطق مدير المديرين (في المكان الصحيح)
-                if (savedUsername === 'mfayez01') {
-                    currentUser.role = 'admin'; // إعطاء صلاحية مطلقة فوراً
+                let status = 'active';
+
+                // 👑 تحديد هوية مدير المديرين بدقة مطلقة
+                if (isMasterAdmin) {
+                    role = 'admin';
+                    currentUser = { name: "م. محمد فايز", username: "mfayez01", role: "admin", status: "active" };
+                    localStorage.setItem('tpm_username', 'mfayez01'); 
+                    
+                    // تحديث الإشعار وتفعيل لوحة الإدارة
                     let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
                     let notifyIcon = document.getElementById('adminNotification');
                     if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
                     renderUserManagement(); 
+                    
+                } else {
+                    // المستخدمين العاديين
+                    let uData = usersData[user.uid];
+                    if (typeof uData === 'string') {
+                        role = uData; // حساب قديم
+                    } else if (uData && typeof uData === 'object') {
+                        role = uData.role || 'viewer';
+                        status = uData.status || 'active';
+                    }
+                    currentUser = { name: savedName, username: finalUsername, role: role, status: status };
                 }
 
                 document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = currentUser.role === 'admin' ? 'block' : 'none');
@@ -118,9 +129,15 @@ firebase.auth().onAuthStateChanged(user => {
                     document.getElementById('imgbbKeyInput').value = globalApiKeys.imgbb || '';
                     document.getElementById('geminiKeyInput').value = globalApiKeys.gemini || '';
                 }
-                showScreen('homeScreen');
-            }
-            updateDeptDropdown(); renderKnowledgeBase(); renderMasterData();
+                
+                // توجيه المستخدم حسب حالته
+                if (currentUser.status === 'pending') {
+                    showToast("حسابك قيد المراجعة. يرجى انتظار موافقة الإدارة.");
+                    firebase.auth().signOut();
+                } else {
+                    showScreen('homeScreen');
+                }
+            }            updateDeptDropdown(); renderKnowledgeBase(); renderMasterData();
         });
 
         // 2. مراقبة البيانات الحية والمستمرة (Realtime Listeners) منفصلة
@@ -968,10 +985,22 @@ function renderUserManagement() {
     container.innerHTML = html;
 }
 
-// 🛡️ دالة التحكم في الدخول لكل صفحة (المنطق الجديد)
+// 🛡️ دالة التحكم في الدخول لكل صفحة (محصنة)
 function canAccess(screenId, action = 'view') {
-    if (currentUser.username === 'mfayez01') return true; // المدير له كل شيء
-    const userPerms = usersData[firebase.auth().currentUser.uid]?.permissions;
+    // أي مدير له الصلاحية الكاملة فوراً لضمان عدم تعطل النظام
+    if (currentUser.role === 'admin') return true; 
+    
+    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
+    if (!uid) return false;
+
+    const uData = usersData[uid];
+    // إذا كان المستخدم قديم (بياناته مسجلة كنص وليس كائن جديد)
+    if (!uData || typeof uData === 'string') {
+        return screenId === 'homeScreen' || screenId === 'tasksScreen' || screenId === 'tagsScreen';
+    }
+
+    // إذا كان مستخدم جديد بنظام الأذونات
+    const userPerms = uData.permissions;
     if (!userPerms || !userPerms[screenId]) return false;
     
     if (action === 'edit') return userPerms[screenId] === 'edit';
@@ -999,4 +1028,61 @@ async function approveUser(uid) {
             {homeScreen:'view', tasksScreen:'view', historyScreen:'view', kaizenScreen:'view', tagsScreen:'view', knowledgeScreen:'none'}
     });
     showToast(`تم تفعيل حساب ${u.name}`);
+}
+// 🗑️ دالة حذف المستخدم (رفض الطلب)
+function deleteUser(uid) {
+    if(confirm('هل أنت متأكد من حذف هذا المستخدم/الطلب نهائياً؟')) {
+        db.ref('tpm_system/users/' + uid).remove();
+        showToast('تم حذف المستخدم بنجاح');
+    }
+}
+
+// 🔐 دوال التحكم في نافذة الأذونات المتقدمة
+let editingUserUid = null;
+
+function openPermissionsModal(uid) {
+    const u = usersData[uid];
+    if (!u || !u.permissions) return showToast('لا توجد أذونات قابلة للتعديل لهذا المستخدم (قديم)');
+    
+    editingUserUid = uid;
+    const perms = u.permissions;
+    const container = document.getElementById('permissionsContainer');
+    
+    const pages = {
+        homeScreen: 'الرئيسية (Dashboard)', tasksScreen: 'المهام', historyScreen: 'التقارير (History)',
+        kaizenScreen: 'كايزن', tagsScreen: 'التاجات', knowledgeScreen: 'عقل المصنع'
+    };
+
+    let html = `<div style="margin-bottom:10px; color:var(--gold); font-weight:bold;">المستخدم: ${u.name}</div>`;
+    
+    for (let screen in pages) {
+        let currentPerm = perms[screen] || 'none';
+        html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.1);">
+            <span style="font-size:12px;">${pages[screen]}</span>
+            <select id="perm_${screen}" class="form-control" style="width:auto; padding:2px 5px; margin:0; height:auto; font-size:12px;">
+                <option value="none" ${currentPerm==='none'?'selected':''}>مخفية 🚫</option>
+                <option value="view" ${currentPerm==='view'?'selected':''}>مشاهدة فقط 👁️</option>
+                <option value="edit" ${currentPerm==='edit'?'selected':''}>مشاهدة وتعديل ✍️</option>
+            </select>
+        </div>`;
+    }
+    
+    container.innerHTML = html;
+    document.getElementById('permissionsModal').style.display = 'flex';
+}
+
+async function saveUserPermissions() {
+    if (!editingUserUid) return;
+    const pages = ['homeScreen', 'tasksScreen', 'historyScreen', 'kaizenScreen', 'tagsScreen', 'knowledgeScreen'];
+    let newPerms = {};
+    
+    pages.forEach(p => {
+        let sel = document.getElementById('perm_' + p);
+        if (sel) newPerms[p] = sel.value;
+    });
+
+    await db.ref(`tpm_system/users/${editingUserUid}/permissions`).set(newPerms);
+    showToast('تم تحديث الأذونات بنجاح');
+    document.getElementById('permissionsModal').style.display = 'none';
 }

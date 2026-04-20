@@ -94,7 +94,16 @@
             </div>
         </div>
     </div>
-
+<div class="modal-overlay" id="permissionsModal">
+        <div class="modal-content">
+            <h3 class="card-title">تعديل أذونات المستخدم</h3>
+            <div id="permissionsContainer"></div>
+            <div class="row-flex" style="margin-top:15px;">
+                <button class="btn btn-success flex-2" onclick="saveUserPermissions()">حفظ الأذونات</button>
+                <button class="btn btn-danger flex-1" onclick="document.getElementById('permissionsModal').style.display='none'">إلغاء</button>
+            </div>
+        </div>
+    </div>
    <div class="container screen active" id="loginScreen">
         <div class="login-wrapper">
             <div class="login-header">

@@ -81,24 +81,37 @@ firebase.auth().onAuthStateChanged(user => {
             maintenanceEngineers = data.maintenanceEngineers || [];
             knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
             machinesData = data.machinesData || {};
-            sparePartsData = data.spareParts || [];
-            
+          sparePartsData = data.spareParts || [];
+
             // إعداد المستخدم
             if (isInitialLoad) {
                 isInitialLoad = false;
                 const savedName = localStorage.getItem('tpm_user') || user.email.split('@')[0];
                 const savedUsername = localStorage.getItem('tpm_username') || user.email.split('@')[0];
                 let role = 'viewer';
+                
                 if (user.email.toLowerCase().includes('mfayez') || savedUsername.toLowerCase() === 'mfayez') { 
                     role = 'admin'; 
                     db.ref('tpm_system/users/' + user.uid).set('admin'); 
-                } else if (usersData[user.uid]) { role = usersData[user.uid]; }
-                else if (usersData[savedUsername]) { role = usersData[savedUsername]; }
+                } else if (usersData[user.uid] && typeof usersData[user.uid] === 'string') { 
+                    role = usersData[user.uid]; 
+                } else if (usersData[user.uid] && usersData[user.uid].role) {
+                    role = usersData[user.uid].role;
+                }
                 
                 currentUser = { name: savedName, username: savedUsername, role: role };
                 
-                document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = role === 'admin' ? 'block' : 'none');
-                document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (role === 'admin' || role === 'auditor') ? 'block' : 'none');
+                // 👑 منطق مدير المديرين (في المكان الصحيح)
+                if (savedUsername === 'mfayez01') {
+                    currentUser.role = 'admin'; // إعطاء صلاحية مطلقة فوراً
+                    let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
+                    let notifyIcon = document.getElementById('adminNotification');
+                    if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
+                    renderUserManagement(); 
+                }
+
+                document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = currentUser.role === 'admin' ? 'block' : 'none');
+                document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? 'block' : 'none');
                 document.getElementById('bottomNav').style.display = 'flex';
                 
                 if(globalApiKeys.imgbb || globalApiKeys.gemini) {
@@ -175,31 +188,43 @@ async function login() {
     }
 }
 
-// 📝 إنشاء حساب جديد (مع الصلاحيات)
+// 📝 إنشاء حساب جديد (بوضع الانتظار Pending)
 async function signup() {
     const fullName = sanitizeInput(document.getElementById('signupFullName').value);
     const user = sanitizeInput(document.getElementById('signupUsername').value).toLowerCase().trim();
     const pass = document.getElementById('signupPassword').value.trim();
-    const role = document.getElementById('signupRole').value; // admin, auditor, operator
+    const requestedRole = document.getElementById('signupRole').value;
 
     if(!user || !pass || !fullName) return showToast("برجاء إكمال كافة البيانات");
-    if(pass.length < 6) return showToast("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
 
     try {
-        showToast("جاري إنشاء الحساب...");
+        showToast("جاري إرسال طلب الانضمام...");
         const res = await firebase.auth().createUserWithEmailAndPassword(user + "@tpm.app", pass);
         
-        // حفظ الصلاحية في المسار الصحيح للمستخدم
-        await db.ref('tpm_system/users/' + res.user.uid).set(role);
+        // هيكل بيانات المستخدم الجديد (حالة معلقة + أذونات افتراضية)
+        const newUserObj = {
+            name: fullName,
+            username: user,
+            requestedRole: requestedRole,
+            role: 'viewer', // صلاحية مشاهد فقط لحين القبول
+            status: 'pending', // حالة الانتظار
+            // مصفوفة الأذونات لكل صفحة (view = رؤية فقط، edit = تعديل، none = مخفية)
+            permissions: {
+                homeScreen: 'view',
+                tasksScreen: 'none',
+                historyScreen: 'none',
+                kaizenScreen: 'view',
+                tagsScreen: 'none',
+                knowledgeScreen: 'none'
+            }
+        };
+
+        await db.ref('tpm_system/users/' + res.user.uid).set(newUserObj);
         
-        // حفظ اسم المستخدم الفعلي
-        localStorage.setItem('tpm_user', fullName);
-        localStorage.setItem('tpm_username', user);
-        
-        showToast("تم التسجيل بنجاح! جاري الدخول...");
-        setTimeout(() => window.location.reload(), 1000);
+        showToast("تم إرسال طلبك للمدير mfayez01 بنجاح! يرجى انتظار الموافقة.");
+        setTimeout(() => firebase.auth().signOut().then(() => window.location.reload()), 2000);
     } catch (e) {
-        showToast("خطأ في التسجيل، قد يكون اسم المستخدم محجوزاً");
+        showToast("خطأ: اسم المستخدم محجوز أو البيانات غير صحيحة");
     }
 }
 
@@ -912,3 +937,66 @@ const AUDIT_DATA = {
         { id: 7, title: "المراجعة الذاتية بواسطة فريق الصيانة الذاتية", maxScore: 5, levels: [{level:1,score:0,desc:"لا توجد دلائل علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:2,score:1,desc:"توجد أدلة ضعيفة علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:3,score:2,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ولا يتم نشر النتائج ونقاط القوة وفرص التحسين بالقسم"},{level:4,score:3,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين كثير العاملين بالقسم"},{level:5,score:4,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لمعظم العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"},{level:6,score:5,desc:"يتم تنفيذ المراجعة الداخلية الدورية على أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لجميع العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"}] }
     ]}
 };
+// 👑 دالة عرض لوحة التحكم في المستخدمين (للمدير الكبير فقط)
+function renderUserManagement() {
+    if (currentUser.username !== 'mfayez01') return;
+    
+    const container = document.getElementById('usersListContainer');
+    let html = '<h4 style="color:var(--gold); margin:10px 0;">إدارة المستخدمين والصلاحيات</h4>';
+    
+    // تحويل الكائن إلى مصفوفة للفحص
+    Object.keys(usersData).forEach(uid => {
+        const u = usersData[uid];
+        if (typeof u !== 'object') return; // لتجنب البيانات القديمة
+
+        const isPending = u.status === 'pending';
+        html += `
+        <div class="card modern-card" style="margin-bottom:10px; border-right:4px solid ${isPending?'var(--danger)':'var(--success)'}">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="text-align:right;">
+                    <b style="color:var(--gold);">${u.name}</b> <small>(${u.username})</small><br>
+                    <span style="font-size:10px;">المطلوب: ${u.requestedRole} | الحالية: ${u.role}</span>
+                </div>
+                <div>
+                    ${isPending ? `<button class="btn btn-sm btn-success" onclick="approveUser('${uid}')">موافقة</button>` : ''}
+                    <button class="btn btn-sm btn-outline" onclick="openPermissionsModal('${uid}')">الأذونات</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser('${uid}')">حذف</button>
+                </div>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+// 🛡️ دالة التحكم في الدخول لكل صفحة (المنطق الجديد)
+function canAccess(screenId, action = 'view') {
+    if (currentUser.username === 'mfayez01') return true; // المدير له كل شيء
+    const userPerms = usersData[firebase.auth().currentUser.uid]?.permissions;
+    if (!userPerms || !userPerms[screenId]) return false;
+    
+    if (action === 'edit') return userPerms[screenId] === 'edit';
+    return userPerms[screenId] === 'view' || userPerms[screenId] === 'edit';
+}
+
+// تعديل دالة showScreen الأصلية لتشمل فحص الأذونات
+const originalShowScreen = showScreen;
+showScreen = function(id) {
+    if (id === 'loginScreen' || id === 'signupScreen' || canAccess(id)) {
+        originalShowScreen(id);
+    } else {
+        showToast("عذراً، لا تملك صلاحية الدخول لهذه الصفحة. تواصل مع م. محمد فايز");
+    }
+};
+
+async function approveUser(uid) {
+    const u = usersData[uid];
+    await db.ref(`tpm_system/users/${uid}`).update({
+        status: 'active',
+        role: u.requestedRole,
+        // منح أذونات افتراضية بناءً على الدور عند الموافقة
+        permissions: u.requestedRole === 'admin' ? 
+            {homeScreen:'edit', tasksScreen:'edit', historyScreen:'edit', kaizenScreen:'edit', tagsScreen:'edit', knowledgeScreen:'edit'} :
+            {homeScreen:'view', tasksScreen:'view', historyScreen:'view', kaizenScreen:'view', tagsScreen:'view', knowledgeScreen:'none'}
+    });
+    showToast(`تم تفعيل حساب ${u.name}`);
+}

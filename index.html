@@ -23,8 +23,11 @@
             <div class="status-dot"></div>
             <div class="header-titles">
                 <h1>نظام إدارة المصنع</h1>
-                <p>إشراف: م. محمد فايز</p>
-            </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+    <p>إشراف: م. محمد فايز</p>
+    <div id="adminNotification" style="display:none; width:12px; height:12px; background:var(--danger); border-radius:50%; border:2px solid white; animation: pulse 1s infinite; cursor:pointer;" onclick="showScreen('settingsScreen')"></div>
+</div>
+ </div>
             <button class="theme-toggle" onclick="toggleDarkMode()">التباين</button>
         </div>
         <div class="search-bar-container">

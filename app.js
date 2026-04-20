@@ -150,7 +150,19 @@ firebase.auth().onAuthStateChanged(user => {
             renderMasterData();
         });
 
-        // 2. مراقبة البيانات الحية والمستمرة (Realtime Listeners) منفصلة
+ 
+// 2. مراقبة البيانات الحية والمستمرة (Realtime Listeners) منفصلة
+        
+        // 👑 تشغيل الرادار اللحظي للمدير العام فقط
+        if (currentUser.username === 'mfayez') {
+            dbListeners.users = db.ref('tpm_system/users').on('value', snap => {
+                usersData = snap.val() || {};
+                let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
+                let notifyIcon = document.getElementById('adminNotification');
+                if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
+                renderUserManagement(); // تحديث اللوحة فوراً بدون ريفريش
+            });
+        }
         dbListeners.tags = db.ref('tpm_system/tags').on('value', snap => {
             tagsData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>b.id-a.id) : [];
             renderTags(); if(currentUser.role) updateHomeDashboard();
@@ -996,20 +1008,20 @@ function renderUserManagement() {
 }
 
 // 🛡️ دالة التحكم في الدخول لكل صفحة (محصنة)
+// 🛡️ دالة التحكم في الدخول لكل صفحة (التحكم الصارم)
 function canAccess(screenId, action = 'view') {
-    // أي مدير له الصلاحية الكاملة فوراً لضمان عدم تعطل النظام
-    if (currentUser.role === 'admin') return true; 
+    // 👑 أنت فقط (mfayez) من يملك الصلاحية المطلقة لتجاوز القواعد
+    if (currentUser.username === 'mfayez') return true; 
     
     const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
     if (!uid) return false;
 
     const uData = usersData[uid];
-    // إذا كان المستخدم قديم (بياناته مسجلة كنص وليس كائن جديد)
     if (!uData || typeof uData === 'string') {
         return screenId === 'homeScreen' || screenId === 'tasksScreen' || screenId === 'tagsScreen';
     }
 
-    // إذا كان مستخدم جديد بنظام الأذونات
+    // الاعتماد الكلي على مصفوفة الأذونات (حتى لو كان المسمى الوظيفي admin)
     const userPerms = uData.permissions;
     if (!userPerms || !userPerms[screenId]) return false;
     
@@ -1027,17 +1039,19 @@ showScreen = function(id) {
     }
 };
 
+// ✅ الموافقة على المستخدم مع الحفاظ على الأذونات المخصصة
 async function approveUser(uid) {
     const u = usersData[uid];
+    
+    // إذا قمت أنت بتعديل الأذونات مسبقاً، النظام سيحتفظ بها، ولن يفرض أذونات افتراضية
+    let finalPerms = u.permissions;
+    
     await db.ref(`tpm_system/users/${uid}`).update({
         status: 'active',
         role: u.requestedRole,
-        // منح أذونات افتراضية بناءً على الدور عند الموافقة
-        permissions: u.requestedRole === 'admin' ? 
-            {homeScreen:'edit', tasksScreen:'edit', historyScreen:'edit', kaizenScreen:'edit', tagsScreen:'edit', knowledgeScreen:'edit'} :
-            {homeScreen:'view', tasksScreen:'view', historyScreen:'view', kaizenScreen:'view', tagsScreen:'view', knowledgeScreen:'none'}
+        permissions: finalPerms
     });
-    showToast(`تم تفعيل حساب ${u.name}`);
+    showToast(`تم تفعيل حساب ${u.name} بالصلاحيات المحددة`);
 }
 // 🗑️ دالة حذف المستخدم (رفض الطلب)
 function deleteUser(uid) {

@@ -65,6 +65,12 @@ function clearAllListeners() {
     dbListeners = {};
 }
 
+// إضافة دوال وهمية لمنع حدوث ReferenceError حتى نقوم ببرمجتها لاحقاً
+function renderProductionDashboard() { /* سيتم برمجتها لاحقاً */ }
+function renderKnowledgeBase() { /* سيتم برمجتها لاحقاً */ }
+function renderMasterData() { /* سيتم برمجتها لاحقاً */ }
+function renderUsersPanel() { /* سيتم برمجتها لاحقاً */ }
+
 firebase.auth().onAuthStateChanged(user => {
     clearAllListeners(); // تنظيف أي اتصالات قديمة
     
@@ -81,8 +87,9 @@ firebase.auth().onAuthStateChanged(user => {
             maintenanceEngineers = data.maintenanceEngineers || [];
             knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
             machinesData = data.machinesData || {};
-          sparePartsData = data.spareParts || [];
-// إعداد المستخدم (المحرك المحسن)
+            sparePartsData = data.spareParts || [];
+
+            // إعداد المستخدم (المحرك المحسن)
             if (isInitialLoad) {
                 isInitialLoad = false;
                 
@@ -137,7 +144,10 @@ firebase.auth().onAuthStateChanged(user => {
                 } else {
                     showScreen('homeScreen');
                 }
-            }            updateDeptDropdown(); renderKnowledgeBase(); renderMasterData();
+            }            
+            updateDeptDropdown(); 
+            renderKnowledgeBase(); 
+            renderMasterData();
         });
 
         // 2. مراقبة البيانات الحية والمستمرة (Realtime Listeners) منفصلة

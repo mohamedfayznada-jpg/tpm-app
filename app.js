@@ -95,11 +95,11 @@ firebase.auth().onAuthStateChanged(user => {
                 
                 // الاعتماد على الإيميل لضمان عدم فقدان الهوية
                 const userEmail = user.email ? user.email.toLowerCase() : '';
-                const isMasterAdmin = userEmail.includes('mfayez01');
+                const isMasterAdmin = userEmail.includes('mfayez');
                 
                 const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
                 // إذا كان هو المدير، نفرض اسم المستخدم، غير ذلك نجلبه
-                const finalUsername = isMasterAdmin ? 'mfayez01' : (localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
+                const finalUsername = isMasterAdmin ? 'mfayez' : (localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
                 
                 let role = 'viewer';
                 let status = 'active';
@@ -107,8 +107,8 @@ firebase.auth().onAuthStateChanged(user => {
                 // 👑 تحديد هوية مدير المديرين بدقة مطلقة
                 if (isMasterAdmin) {
                     role = 'admin';
-                    currentUser = { name: "م. محمد فايز", username: "mfayez01", role: "admin", status: "active" };
-                    localStorage.setItem('tpm_username', 'mfayez01'); 
+                    currentUser = { name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
+                    localStorage.setItem('tpm_username', 'mfayez'); 
                     
                     // تحديث الإشعار وتفعيل لوحة الإدارة
                     let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
@@ -248,7 +248,7 @@ async function signup() {
 
         await db.ref('tpm_system/users/' + res.user.uid).set(newUserObj);
         
-        showToast("تم إرسال طلبك للمدير mfayez01 بنجاح! يرجى انتظار الموافقة.");
+        showToast("تم إرسال طلبك للمدير mfayez بنجاح! يرجى انتظار الموافقة.");
         setTimeout(() => firebase.auth().signOut().then(() => window.location.reload()), 2000);
     } catch (e) {
         showToast("خطأ: اسم المستخدم محجوز أو البيانات غير صحيحة");
@@ -966,7 +966,7 @@ const AUDIT_DATA = {
 };
 // 👑 دالة عرض لوحة التحكم في المستخدمين (للمدير الكبير فقط)
 function renderUserManagement() {
-    if (currentUser.username !== 'mfayez01') return;
+    if (currentUser.username !== 'mfayez') return;
     
     const container = document.getElementById('usersListContainer');
     let html = '<h4 style="color:var(--gold); margin:10px 0;">إدارة المستخدمين والصلاحيات</h4>';

@@ -115,3 +115,11 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: var(--copper); border-radius: 10px; }
+
+/* التنسيق العصري لمنظومة الدخول */
+.login-wrapper { padding: 30px 10px; text-align: center; }
+.logo-circle { width: 70px; height: 70px; background: linear-gradient(135deg, var(--gold), var(--copper)); color: var(--bg-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-weight: 900; font-size: 20px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
+.modern-card { background: rgba(27, 42, 71, 0.6) !important; backdrop-filter: blur(10px); border: 1px solid rgba(212, 175, 55, 0.3) !important; padding: 25px !important; border-radius: 20px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important; }
+.divider { margin: 25px 0 15px; position: relative; border-top: 1px solid rgba(255,255,255,0.1); }
+.divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--card-bg); padding: 0 15px; font-size: 11px; color: var(--text-muted); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+.shadow-btn { box-shadow: 0 4px 10px rgba(212, 175, 55, 0.2); }

@@ -92,16 +92,53 @@
         </div>
     </div>
 
-    <div class="container screen active" id="loginScreen">
-        <div class="card login-card" style="margin-top: 50px;">
-            <h2 style="color:var(--gold); margin-bottom:20px;">الدخول للنظام الصناعي</h2>
-            <input type="text" id="loginUsername" class="form-control" placeholder="اسم المستخدم">
-            <input type="password" id="loginPassword" class="form-control" placeholder="كلمة المرور">
-            <input type="text" id="displayName" class="form-control" placeholder="الاسم الكامل (يظهر بالتقارير)">
-            <div class="checkbox-group"><label><input type="checkbox" id="rememberMe" checked> تذكرني</label></div>
-            <button class="btn btn-primary full-width" onclick="login()">دخول آمن</button>
-            <div class="quick-login" style="margin-top:20px;">
-                <button class="btn btn-outline" style="width:auto; padding:5px 20px;" onclick="biometricLogin()">الدخول السريع (للمسجلين)</button>
+   <div class="container screen active" id="loginScreen">
+        <div class="login-wrapper">
+            <div class="login-header">
+                <div class="logo-circle">TPM</div>
+                <h2 style="color:var(--gold);">مرحباً بك مجدداً</h2>
+                <p style="color:var(--text-muted); font-size:12px; margin-bottom:20px;">سجل دخولك للوصول إلى لوحة التحكم</p>
+            </div>
+            
+            <div class="card modern-card">
+                <div class="input-group">
+                    <input type="text" id="loginUsername" class="form-control" placeholder="اسم المستخدم (مثال: mfayez)">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="loginPassword" class="form-control" placeholder="كلمة المرور">
+                </div>
+                <div class="checkbox-group" style="text-align:right; margin-bottom:15px;"><label style="font-size:12px; color:var(--text-main);"><input type="checkbox" id="rememberMe" checked> تذكر بياناتي</label></div>
+                
+                <button class="btn btn-primary full-width shadow-btn" onclick="login()">دخول آمن</button>
+                <button class="btn btn-outline full-width" style="margin-top:10px;" onclick="biometricLogin()">⚡ الدخول السريع</button>
+                
+                <div class="divider"><span>أو</span></div>
+                <button class="btn btn-outline full-width" style="border-color:var(--copper); color:var(--text-main);" onclick="showScreen('signupScreen')">مستخدم جديد؟ إنشاء حساب</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container screen" id="signupScreen">
+        <div class="login-wrapper">
+            <div class="login-header">
+                <h2 style="color:var(--gold);">إنشاء حساب جديد</h2>
+                <p style="color:var(--text-muted); font-size:12px; margin-bottom:20px;">انضم إلى فريق عمل Factory OS</p>
+            </div>
+            
+            <div class="card modern-card">
+                <input type="text" id="signupFullName" class="form-control" placeholder="الاسم الكامل (يظهر في التقارير)">
+                <input type="text" id="signupUsername" class="form-control" placeholder="اسم المستخدم الدائم (إنجليزي)">
+                <input type="password" id="signupPassword" class="form-control" placeholder="كلمة المرور (6 أحرف على الأقل)">
+                
+                <label style="display:block; margin: 15px 0 5px; font-size:12px; color:var(--gold); text-align:right;">طلب صلاحية الوصول كـ:</label>
+                <select id="signupRole" class="form-control" style="border-color:var(--gold);">
+                    <option value="operator">مشغل (إدخال بيانات وتاجات)</option>
+                    <option value="auditor">مراجع (تقييم JH وخطوات العمل)</option>
+                    <option value="admin">مدير (صلاحيات كاملة)</option>
+                </select>
+                
+                <button class="btn btn-success full-width" style="margin-top:15px;" onclick="signup()">إرسال طلب التسجيل</button>
+                <button class="btn btn-link full-width" style="margin-top:10px; background:transparent; color:var(--gold); border:none; text-decoration:underline;" onclick="showScreen('loginScreen')">لدي حساب بالفعل؟ دخول</button>
             </div>
         </div>
     </div>

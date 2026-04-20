@@ -156,32 +156,62 @@ firebase.auth().onAuthStateChanged(user => {
     }
 });
 
+// 🔐 تسجيل الدخول (للمسجلين)
 async function login() {
     const username = sanitizeInput(document.getElementById('loginUsername').value).toLowerCase();
     const password = document.getElementById('loginPassword').value.trim();
-    const name = sanitizeInput(document.getElementById('displayName').value);
-    if(!username || !password || !name) return showToast('برجاء كتابة جميع البيانات');
-    document.getElementById('cloudStatus').innerHTML = "جاري الدخول";
-    if(document.getElementById('rememberMe').checked) { localStorage.setItem('tpm_user', name); localStorage.setItem('tpm_username', username); }
-    try { await firebase.auth().signInWithEmailAndPassword(username + "@tpm.app", password); } catch (e) { showToast('بيانات الدخول غير صحيحة'); }
+    if(!username || !password) return showToast('برجاء كتابة اسم المستخدم وكلمة المرور');
+    document.getElementById('cloudStatus').innerHTML = "جاري الدخول...";
+    
+    if(document.getElementById('rememberMe') && document.getElementById('rememberMe').checked) { 
+        localStorage.setItem('tpm_username', username); 
+    }
+    
+    try { 
+        await firebase.auth().signInWithEmailAndPassword(username + "@tpm.app", password); 
+    } catch (e) { 
+        showToast('بيانات الدخول غير صحيحة'); 
+        document.getElementById('cloudStatus').innerHTML = "غير متصل";
+    }
 }
 
-async function registerNewUser() {
-    const name = sanitizeInput(document.getElementById('regName').value);
-    const username = sanitizeInput(document.getElementById('regUsername').value).toLowerCase();
-    const password = document.getElementById('regPassword').value.trim();
-    if(!name || !username || password.length < 6) return showToast('بيانات ناقصة أو كلمة السر قصيرة');
-    try { await firebase.auth().createUserWithEmailAndPassword(username + "@tpm.app", password); await db.ref('tpm_system/users/' + username).set('viewer'); localStorage.setItem('tpm_user', name); localStorage.setItem('tpm_username', username); window.location.reload(); } catch(e) { showToast('حدث خطأ أثناء التسجيل'); }
+// 📝 إنشاء حساب جديد (مع الصلاحيات)
+async function signup() {
+    const fullName = sanitizeInput(document.getElementById('signupFullName').value);
+    const user = sanitizeInput(document.getElementById('signupUsername').value).toLowerCase().trim();
+    const pass = document.getElementById('signupPassword').value.trim();
+    const role = document.getElementById('signupRole').value; // admin, auditor, operator
+
+    if(!user || !pass || !fullName) return showToast("برجاء إكمال كافة البيانات");
+    if(pass.length < 6) return showToast("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+
+    try {
+        showToast("جاري إنشاء الحساب...");
+        const res = await firebase.auth().createUserWithEmailAndPassword(user + "@tpm.app", pass);
+        
+        // حفظ الصلاحية في المسار الصحيح للمستخدم
+        await db.ref('tpm_system/users/' + res.user.uid).set(role);
+        
+        // حفظ اسم المستخدم الفعلي
+        localStorage.setItem('tpm_user', fullName);
+        localStorage.setItem('tpm_username', user);
+        
+        showToast("تم التسجيل بنجاح! جاري الدخول...");
+        setTimeout(() => window.location.reload(), 1000);
+    } catch (e) {
+        showToast("خطأ في التسجيل، قد يكون اسم المستخدم محجوزاً");
+    }
 }
 
+// 🚪 تسجيل الخروج والدخول السريع
 function logout() { firebase.auth().signOut().then(() => { localStorage.clear(); window.location.reload(); }); }
-function biometricLogin() {
-    const u = localStorage.getItem('tpm_username'); const n = localStorage.getItem('tpm_user');
-    if(!u) return showToast('سجل يدوياً أولاً لتفعيل الدخول السريع'); 
-    document.getElementById('loginUsername').value = u; document.getElementById('displayName').value = n;
-    showToast('تم استدعاء بياناتك، أدخل الرقم السري');
-}
 
+function biometricLogin() {
+    const u = localStorage.getItem('tpm_username');
+    if(!u) return showToast('سجل دخولك يدوياً أول مرة لتفعيل الدخول السريع'); 
+    document.getElementById('loginUsername').value = u;
+    showToast('تم استدعاء بياناتك، أدخل كلمة المرور فقط');
+}
 // ------------------------------------------
 // 🔄 محرك المزامنة الذري (Atomic Sync Engine)
 // ------------------------------------------

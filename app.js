@@ -1524,22 +1524,7 @@ function filterCat(cat, btn) {
 
 function filterLibrary() { renderKnowledgeBase(); }
 
-function addKnowledgeBaseArticle() {
-    let title = document.getElementById('kbTitle').value.trim();
-    let cat = document.getElementById('kbCategory').value;
-    let content = document.getElementById('kbContent').value.trim();
-    
-    if(!title || !content) { showToast('أدخل العنوان والمحتوى'); return; }
-    
-    let id = uniqueNumericId().toString();
-    let article = { id: id, title: title, category: cat, content: content, date: new Date().toLocaleDateString('ar-EG'), author: currentUser.name };
-    
-    syncRecord('knowledgeBase/' + id, article);
-    
-    document.getElementById('kbTitle').value = ''; document.getElementById('kbContent').value = '';
-    document.getElementById('addBookModal').style.display = 'none';
-    showToast('تمت إضافة الكتاب إلى رفوف المكتبة 📚');
-}
+
 
 // ------------------------------------------
 // 🧠 محرك المعرفة الذكي 2.0 (NotebookLM Experience)

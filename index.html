@@ -506,50 +506,29 @@
         </div>
     </div>
 
-   <div class="container screen" id="knowledgeScreen">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 class="section-title" style="margin:0; border:none;">🧠 عقل المصنع</h3>
-            <button class="btn btn-sm btn-primary btn-role-admin" style="width:auto;" onclick="document.getElementById('addBookModal').style.display='flex'">➕ إضافة مرجع</button>
-        </div>
-
-        <div class="search-box-kb" style="margin-bottom:20px;">
-            <input type="text" id="kbSearchInput" class="form-control" placeholder="🔍 ابحث عن معلومة تقنية داخل عقل المصنع..." onkeyup="filterLibrary()">
-            <div id="quickSearchStatus" style="font-size:10px; color:var(--gold); margin-top:-5px; padding-right:5px;"></div>
-        </div>
-
-        <div class="kb-categories" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; margin-bottom:15px;">
-            <button class="cat-btn active" onclick="filterCat('الكل', this)">الكل</button>
-            <button class="cat-btn" onclick="filterCat('صيانة', this)">🛠️ صيانة</button>
-            <button class="cat-btn" onclick="filterCat('تشغيل', this)">⚙️ تشغيل</button>
-            <button class="cat-btn" onclick="filterCat('أمان', this)">🛡️ أمان</button>
-            <button class="cat-btn" onclick="filterCat('TPM', this)">🏆 TPM</button>
-        </div>
-
-        <div id="knowledgeListContainer" class="library-grid"></div>
-    </div>
-
-    <div class="modal-overlay" id="addBookModal">
-        <div class="modal-content">
-            <h3 class="card-title">إضافة مرجع تعليمي جديد</h3>
-            <input type="text" id="kbTitle" class="form-control" placeholder="عنوان الكتاب / المرجع">
-            <select id="kbCategory" class="form-control">
-                <option value="صيانة">تصنيف: صيانة 🛠️</option>
-                <option value="تشغيل">تصنيف: تشغيل ⚙️</option>
-                <option value="أمان">تصنيف: أمان 🛡️</option>
-                <option value="TPM">تصنيف: TPM 🏆</option>
-            </select>
-            <div class="upload-box" onclick="document.getElementById('pdfInput').click()">
-                <div id="pdfExtractStatus">اضغط لرفع ملف PDF (كتالوج أو مرجع) 📄</div>
-                <input type="file" id="pdfInput" accept="application/pdf" style="display:none;" onchange="handlePDFUpload(event)">
+  <div class="container screen" id="knowledgeScreen">
+        <div class="library-header-main">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="lib-icon-circle">📚</div>
+                <div>
+                    <h3 style="color:var(--gold); margin:0; font-size:18px;">المكتبة الهندسية</h3>
+                    <p style="color:var(--text-muted); font-size:10px; margin:0;">مدعومة بالذكاء الاصطناعي (Factory AI)</p>
+                </div>
             </div>
-            <textarea id="kbContent" class="form-control" rows="5" placeholder="سيظهر النص المستخرج هنا تلقائياً..."></textarea>
-            <div class="row-flex">
-                <button class="btn btn-success flex-2" onclick="addKnowledgeBaseArticle()">حفظ في المكتبة</button>
-                <button class="btn btn-danger flex-1" onclick="document.getElementById('addBookModal').style.display='none'">إلغاء</button>
-            </div>
+            <button class="btn btn-sm btn-primary btn-role-admin" style="width:auto; border-radius:12px;" onclick="document.getElementById('addBookModal').style.display='flex'">➕ إضافة مرجع</button>
         </div>
-    </div>
 
+        <div class="ai-search-container">
+            <div class="search-input-wrapper">
+                <input type="text" id="kbSearchInput" class="form-control" placeholder="اسأل عقل المصنع عن أي معلومة فنية (مثال: كيف يتم فحص طلمبة الحقن؟)...">
+                <button class="btn-ai-ask" onclick="askFactoryAI()">🧠 اسأل AI</button>
+            </div>
+            <div id="aiSearchResponse" class="ai-response-bubble" style="display:none;"></div>
+        </div>
+
+        <h4 class="section-title">رفوف الكتب</h4>
+        <div id="knowledgeListContainer" class="library-shelves-grid"></div>
+    </div>
     <div class="container screen" id="settingsScreen">
         <div class="card btn-role-admin">
             <h3 class="card-title">مفاتيح الربط (API Keys)</h3>

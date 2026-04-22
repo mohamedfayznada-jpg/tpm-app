@@ -1541,51 +1541,124 @@ function addKnowledgeBaseArticle() {
     showToast('تمت إضافة الكتاب إلى رفوف المكتبة 📚');
 }
 
+// ------------------------------------------
+// 🧠 محرك المعرفة الذكي 2.0 (NotebookLM Experience)
+// ------------------------------------------
+
 function renderKnowledgeBase() {
-    let container = document.getElementById('knowledgeListContainer');
-    let search = document.getElementById('kbSearchInput').value.toLowerCase();
+    const container = document.getElementById('knowledgeListContainer');
     if(!container) return;
     
-    let filtered = knowledgeBaseData.filter(kb => {
-        let matchCat = currentKbFilter === 'الكل' || kb.category === currentKbFilter;
-        let matchSearch = kb.title.toLowerCase().includes(search) || kb.content.toLowerCase().includes(search);
-        return matchCat && matchSearch;
-    });
-
-    if(filtered.length === 0) {
-        container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:40px;">لا توجد مراجع تطابق البحث أو التصنيف 🧐</div>';
+    if(!knowledgeBaseData || knowledgeBaseData.length === 0) {
+        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:40px;">لا توجد كتب في المكتبة حالياً</div>';
         return;
     }
     
-    container.innerHTML = filtered.map(kb => `
-        <div class="book-card" onclick="openBookDetail('${kb.id}')">
-            <span class="book-badge">${kb.category}</span>
-            <div class="book-title">${kb.title}</div>
-            <div class="book-footer">
+    container.innerHTML = knowledgeBaseData.map(kb => `
+        <div class="book-cover" onclick="openBookDetail('${kb.id}')">
+            <div>
+                <div class="book-tag">${kb.category || 'عام'}</div>
+                <div class="book-title-main">${kb.title}</div>
+            </div>
+            <div style="font-size:8px; color:var(--text-muted);">
                 📅 ${kb.date}<br>
                 ✍️ ${kb.author}
+                ${kb.hasPdf ? '<div style="color:var(--success); margin-top:5px;">📄 كتالوج كامل متوفر</div>' : ''}
             </div>
-            ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="margin-top:5px; padding:2px;" onclick="event.stopPropagation(); deleteRecord('knowledgeBase/${kb.id}')">🗑️</button>` : ''}
-        </div>`).join('');
+            ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="position:absolute; bottom:5px; left:5px; padding:2px;" onclick="event.stopPropagation(); deleteRecord('knowledgeBase/${kb.id}')">🗑️</button>` : ''}
+        </div>
+    `).join('');
 }
 
-function openBookDetail(id) {
+async function openBookDetail(id) {
     let kb = knowledgeBaseData.find(x => x.id === id);
     if(!kb) return;
-    document.getElementById('aiModal').style.display = 'flex';
     
-    // إظهار زر الاختبار والترجمة فقط إذا كان هناك PDF مرفوع
-    let quizBtn = kb.hasPdf ? `<button class="btn btn-warning full-width shadow-btn" style="margin-top:15px; border-radius:10px; font-size:14px; font-weight:bold;" onclick="generateAutoQuiz('${id}')">🎓 ترجمة الكتالوج وإنشاء اختبار فني للفنيين</button>` : '';
+    document.getElementById('aiModal').style.display = 'flex';
+    document.getElementById('aiModalText').innerHTML = `<div style="text-align:center; padding:40px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري تلخيص الكتاب وبناء الاختبار الفني... 🧠</h3></div>`;
+    
+    const k = globalApiKeys.gemini;
+    if(!k) return showToast('مفتاح Gemini مفقود');
 
-    document.getElementById('aiModalText').innerHTML = `
-        <h2 style="color:var(--gold); border-bottom:1px solid var(--copper); padding-bottom:10px;">${kb.title}</h2>
-        <div style="font-size:10px; color:var(--text-muted); margin-bottom:15px;">الفئة: ${kb.category} | بواسطة: ${kb.author}</div>
-        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; font-size:13px; line-height:1.6; max-height:300px; overflow-y:auto;">
-            ${nl2brSafe(kb.content)}
-            <br><br><span style="color:var(--success); font-size:11px;">(تم إرفاق الكتالوج الكامل بنجاح)</span>
-        </div>
-        ${quizBtn}
-    `;
+    try {
+        // 🚀 توليد "ملخص فني" واختبار ذكي فور فتح الكتاب
+        let prompt = `أنت الخبير الفني لـ Factory OS. بناءً على هذا المرجع المعنون بـ "${kb.title}":
+        1. قم بكتابة ملخص تنفيذي (Executive Summary) في 3 نقاط "رؤوس أقلام" بلغة فنية مبسطة جداً للفنيين.
+        2. وضح أهم تعليمات الأمان المذكورة في هذا الملف.
+        3. هل يتوفر كتالوج كامل؟ (ملاحظة: المرجع يحتوي على: ${kb.content.substring(0,500)}...)
+        رد بتنسيق HTML أنيق جداً.`;
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const j = await res.json();
+        const summaryHtml = j.candidates[0].content.parts[0].text;
+
+        document.getElementById('aiModalText').innerHTML = `
+            <div style="background:linear-gradient(135deg, var(--primary), var(--bg-color)); padding:20px; border-radius:15px; border-bottom: 2px solid var(--gold); margin-bottom:20px;">
+                <h2 style="color:var(--gold); margin:0;">${kb.title}</h2>
+                <p style="font-size:11px; color:var(--text-muted); margin:5px 0;">تاريخ الإضافة: ${kb.date} | تصنيف: ${kb.category}</p>
+            </div>
+            
+            <div class="summary-section" style="background:rgba(212,175,55,0.05); padding:15px; border-radius:12px; border-right:4px solid var(--gold); margin-bottom:20px;">
+                <h4 style="color:var(--gold); margin-bottom:10px;">🌟 الملخص الذكي للفنيين:</h4>
+                <div style="font-size:13px; line-height:1.7;">${summaryHtml}</div>
+            </div>
+
+            <h4 style="color:var(--text-muted); font-size:12px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">النص الكامل المستخرج:</h4>
+            <div style="max-height:200px; overflow-y:auto; font-size:12px; color:var(--text-muted); background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; margin-bottom:20px;">
+                ${nl2brSafe(kb.content)}
+            </div>
+
+            <button class="btn btn-warning full-width shadow-btn" style="padding:15px; border-radius:12px; font-weight:bold;" onclick="generateAutoQuiz('${id}')">🎓 بدء الاختبار الفني والترجمة الكاملة</button>
+        `;
+    } catch(e) {
+        document.getElementById('aiModalText').innerHTML = "فشل في التواصل مع عقل المصنع. تأكد من الإنترنت.";
+    }
+}
+
+// 🧠 وظيفة البحث الذكي (NotebookLM Experience)
+async function askFactoryAI() {
+    const q = document.getElementById('kbSearchInput').value.trim();
+    if(!q) return showToast('اكتب سؤالك أولاً يا هندسة');
+    
+    const responseBox = document.getElementById('aiSearchResponse');
+    responseBox.style.display = 'block';
+    responseBox.innerHTML = 'جاري البحث في رفوف المكتبة وتحليل سؤالك... ⏳';
+    
+    const k = globalApiKeys.gemini;
+    if(!k) return showToast('مفتاح Gemini مفقود');
+
+    try {
+        // سحب كل نصوص المكتبة لتكون سياقاً (RAG)
+        let context = knowledgeBaseData.map(kb => `[الكتاب: ${kb.title}]: ${kb.content}`).join('\n\n');
+        
+        let prompt = `أنت مهندس خبير بمصنعنا. بناءً على كل المراجع المخزنة في مكتبتنا أدناه، أجب على سؤال المستخدم: "${q}".
+        إذا كانت الإجابة موجودة في أحد الكتب، اذكر اسم الكتاب. 
+        إذا لم تجد الإجابة، استنتجها من خبرتك في الـ TPM ولكن وضح أنها نصيحة عامة.
+        تحدث باللغة العربية البسيطة.
+        
+        محتوى المكتبة:
+        ${context}`;
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const j = await res.json();
+        const answer = j.candidates[0].content.parts[0].text;
+        
+        responseBox.innerHTML = `
+            <div style="color:var(--gold); font-weight:bold; margin-bottom:5px;">💡 إجابة عقل المصنع:</div>
+            ${nl2brSafe(answer)}
+            <button class="btn btn-sm btn-outline" style="margin-top:10px; width:auto; border-radius:100px;" onclick="document.getElementById('aiSearchResponse').style.display='none'">إخفاء</button>
+        `;
+    } catch(e) {
+        responseBox.innerHTML = 'عذراً، حدث خطأ في استحضار المعلومة.';
+    }
 }
 
 // 🎓 المولد الآلي للاختبارات الفنية والترجمة (Auto-Quiz & Translator)

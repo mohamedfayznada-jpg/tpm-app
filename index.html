@@ -338,17 +338,38 @@
             </div>
             <div id="tasksDeptGrid" class="grid-layout"></div>
         </div>
-        <div id="tasksDeptView" style="display:none;">
-            <button class="btn btn-outline btn-sm" style="margin-bottom:15px;" onclick="closeTasksDept()">العودة</button>
-            <h2 id="tasksDeptTitle" class="section-title">المهام</h2>
-            <div class="card btn-role-auditor">
-                <h4 style="color:var(--gold); margin-bottom:10px;">إضافة مهمة:</h4>
-                <div class="row-flex"><input type="text" id="newTaskInput" class="form-control flex-2" style="margin:0;"><button class="btn btn-primary flex-1" style="margin:0;" onclick="addManualTaskDept()">حفظ</button></div>
+ <div id="tasksDeptView" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <button class="btn btn-sm btn-outline" onclick="closeTasksDept()">⬅️ عودة للأقسام</button>
+                <h2 id="tasksDeptTitle" style="color:var(--gold); margin:0; font-size:18px;">المهام</h2>
             </div>
-            <h4 style="color:var(--gold); margin-bottom:10px; border-bottom:1px dashed var(--copper); padding-bottom:5px;">مجلدات المراجعات</h4>
+
+            <div class="card glass-card btn-role-auditor" style="padding:15px; margin-bottom:20px;">
+                <div class="row-flex">
+                    <input type="text" id="newTaskInput" class="form-control" placeholder="أضف مهمة جديدة هنا..." style="margin:0;">
+                    <button class="btn btn-primary" style="width:auto; min-width:80px;" onclick="addManualTaskDept()">➕ إضافة</button>
+                </div>
+            </div>
+
+            <div class="kanban-board">
+                <div class="kanban-col">
+                    <div class="kanban-header todo-head">🔴 معلقة <span id="count_pending" class="badge">0</span></div>
+                    <div id="kanban_pending" class="kanban-list"></div>
+                </div>
+
+                <div class="kanban-col">
+                    <div class="kanban-header progress-head">🟡 جاري <span id="count_progress" class="badge">0</span></div>
+                    <div id="kanban_progress" class="kanban-list"></div>
+                </div>
+
+                <div class="kanban-col">
+                    <div class="kanban-header done-head">🟢 مكتملة <span id="count_done" class="badge">0</span></div>
+                    <div id="kanban_done" class="kanban-list"></div>
+                </div>
+            </div>
+            
+            <h4 style="color:var(--gold); margin:20px 0 10px; border-bottom:1px solid var(--copper); padding-bottom:5px;">📂 مجلدات المراجعات (JH)</h4>
             <div id="auditFoldersContainer"></div>
-            <h4 style="color:var(--gold); margin-bottom:10px; border-bottom:1px dashed var(--copper); padding-bottom:5px;">المهام الفردية</h4>
-            <div id="tasksListContainer"></div>
         </div>
     </div>
 

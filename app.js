@@ -137,11 +137,12 @@ firebase.auth().onAuthStateChanged(async user => {
             historyData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
             renderHistory(); renderKaizenFeed(); if(currentUser.role) updateHomeDashboard();
         });
-        dbListeners.points = db.ref('tpm_system/points').on('value', snap => { userPoints = snap.val() || {}; updateUsersLeaderboard();
-dbListeners.knowledgeBase = db.ref('tpm_system/knowledgeBase').on('value', snap => { 
+       dbListeners.points = db.ref('tpm_system/points').on('value', snap => { userPoints = snap.val() || {}; updateUsersLeaderboard(); });
+        
+        dbListeners.knowledgeBase = db.ref('tpm_system/knowledgeBase').on('value', snap => { 
             knowledgeBaseData = snap.val() ? Object.values(snap.val()) : []; 
             if(document.getElementById('knowledgeScreen').classList.contains('active')) renderKnowledgeBase(); 
-         });
+        });
         
     } else {
         isInitialLoad = true; isDataLoaded = false; 

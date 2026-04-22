@@ -62,7 +62,7 @@ function clearAllListeners() {
     dbListeners = {};
 }
 
-function renderProductionDashboard() {} function renderKnowledgeBase() {} function renderMasterData() {} function renderUsersPanel() {}
+function renderProductionDashboard() {} function renderMasterData() {} function renderUsersPanel() {}
 
 firebase.auth().onAuthStateChanged(async user => {
     clearAllListeners();
@@ -137,7 +137,11 @@ firebase.auth().onAuthStateChanged(async user => {
             historyData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
             renderHistory(); renderKaizenFeed(); if(currentUser.role) updateHomeDashboard();
         });
-        dbListeners.points = db.ref('tpm_system/points').on('value', snap => { userPoints = snap.val() || {}; updateUsersLeaderboard(); });
+        dbListeners.points = db.ref('tpm_system/points').on('value', snap => { userPoints = snap.val() || {}; updateUsersLeaderboard();
+dbListeners.knowledgeBase = db.ref('tpm_system/knowledgeBase').on('value', snap => { 
+            knowledgeBaseData = snap.val() ? Object.values(snap.val()) : []; 
+            if(document.getElementById('knowledgeScreen').classList.contains('active')) renderKnowledgeBase(); 
+         });
         
     } else {
         isInitialLoad = true; isDataLoaded = false; 
@@ -1380,6 +1384,88 @@ function openPermissionsModal(uid) {
     
     container.innerHTML = html;
     document.getElementById('permissionsModal').style.display = 'flex';
+}
+
+// ------------------------------------------
+// 🧠 عقل المصنع (قراءة ملفات PDF والمراجع)
+// ------------------------------------------
+// تهيئة مكتبة قراءة الـ PDF
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function handlePDFUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const statusEl = document.getElementById('pdfExtractStatus');
+    statusEl.innerText = "جاري قراءة الكتالوج واستخراج النصوص... ⏳";
+    statusEl.style.color = "var(--warning)";
+    
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+        let fullText = "";
+        
+        // نقرأ أول 5 صفحات كحد أقصى للحفاظ على سرعة النظام
+        const maxPages = Math.min(pdf.numPages, 5);
+        for (let i = 1; i <= maxPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + "\\n";
+        }
+        
+        document.getElementById('kbContent').value = fullText.substring(0, 3000); // ناخذ أول 3000 حرف
+        statusEl.innerText = pdf.numPages > 5 ? "تم استخراج النص من أول 5 صفحات بنجاح ✅" : "تم استخراج النص بنجاح ✅";
+        statusEl.style.color = "var(--success)";
+        
+    } catch (error) {
+        statusEl.innerText = "❌ فشل قراءة ملف الـ PDF، تأكد من صلاحية الملف.";
+        statusEl.style.color = "var(--danger)";
+    }
+}
+
+function addKnowledgeBaseArticle() {
+    let title = document.getElementById('kbTitle').value.trim();
+    let content = document.getElementById('kbContent').value.trim();
+    
+    if(!title || !content) { showToast('برجاء إدخال العنوان والنص (أو رفع PDF ليستخرج النص منه)'); return; }
+    
+    let id = uniqueNumericId().toString();
+    let article = { id: id, title: title, content: content, date: new Date().toLocaleDateString('ar-EG'), author: currentUser.name };
+    
+    syncRecord('knowledgeBase/' + id, article);
+    
+    document.getElementById('kbTitle').value = ''; document.getElementById('kbContent').value = '';
+    document.getElementById('pdfExtractStatus').innerText = ''; document.getElementById('pdfInput').value = '';
+    showToast('تمت إضافة المرجع لعقل المصنع بنجاح 🧠');
+}
+
+function renderKnowledgeBase() {
+    let container = document.getElementById('knowledgeListContainer');
+    if(!container) return;
+    
+    if(!knowledgeBaseData || knowledgeBaseData.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">لا توجد كتالوجات أو مراجع مسجلة حتى الآن</div>';
+        return;
+    }
+    
+    let html = knowledgeBaseData.map(kb => {
+        let controls = hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="margin-top:10px; width:auto;" onclick="deleteRecord('knowledgeBase/${kb.id}')">🗑️ حذف المرجع</button>` : '';
+        return `
+        <div class="card glass-card" style="border-right: 4px solid var(--gold); margin-bottom:15px; padding:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <h4 style="color:var(--gold); margin:0;">${kb.title}</h4>
+                <span style="font-size:10px; color:var(--text-muted); background:rgba(0,0,0,0.3); padding:3px 8px; border-radius:5px;">${kb.date}</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-main); margin-top:10px; max-height:80px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+                ${nl2brSafe(kb.content)}
+            </div>
+            <div style="font-size:10px; color:var(--text-muted); margin-top:10px;">إضافة: ${kb.author}</div>
+            ${controls}
+        </div>`;
+    }).join('');
+    
+    container.innerHTML = html;
 }
 
 async function saveUserPermissions() {

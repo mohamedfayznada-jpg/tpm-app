@@ -435,31 +435,56 @@ function initAuditSequential() {
     renderCurrentAuditStep();
 }
 
+// ------------------------------------------
+// 📝 محرك المراجعة المطور (Scoring & Points)
+// ------------------------------------------
 function renderCurrentAuditStep() {
-    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; const sd = AUDIT_DATA[k];
+    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; 
+    const sd = AUDIT_DATA[k];
     
     currentStepSelections = (currentAudit.results[k] && currentAudit.results[k].selections) ? currentAudit.results[k].selections : {};
     currentStepImages = (currentAudit.results[k] && currentAudit.results[k].images) ? currentAudit.results[k].images : {};
 
     document.getElementById('auditStepTitle').innerText = `${k}: ${sd.name}`;
-    document.getElementById('auditProgressBar').style.width = `${((currentAudit.currentStepIndex) / 7) * 100}%`;
+    document.getElementById('stepCounter').innerText = `خطوة ${currentAudit.currentStepIndex + 1} من 7`;
+    document.getElementById('auditProgressBar').style.width = `${((currentAudit.currentStepIndex + 1) / 7) * 100}%`;
+
     document.getElementById('auditItemsContainer').innerHTML = sd.items.map(item => {
-        let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:5px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:40px; border-radius:4px; margin-left:5px; border:1px solid var(--copper);"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')">استشارة AI</button></div>` : '';
+        let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:10px; display:flex; align-items:center; gap:10px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:50px; width:50px; object-fit:cover; border-radius:8px; border:1px solid var(--gold); cursor:pointer;" onclick="window.open('${currentStepImages['img_' + item.id].data}')"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')">🧠 استشارة AI</button></div>` : '';
+        
         return `
-        <div class="audit-item"><div class="item-header"><div class="item-num">${item.id}</div><div class="item-title" style="flex:1; font-weight:bold;">${item.title}</div>
-        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 8px;" onclick="explainItem('${item.title}')">شرح المرجع</button>
-        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 8px;" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')">إضافة صورة</button>
-        </div>
-        <div id="preview_img_${item.id}">${hasImage}</div>
-        ${item.levels.map(lvl => {
-            let isSel = (currentStepSelections['item_'+item.id] && currentStepSelections['item_'+item.id].score === lvl.score) ? 'selected' : '';
-            return `<div class="level-opt ${isSel}" onclick="selectLevel(${item.id}, ${lvl.score}, ${item.maxScore}, this)"><div class="level-num">${lvl.level}</div><div style="flex:1; font-size:12px;">${lvl.desc}</div></div>`;
-        }).join('')}
+        <div class="audit-item">
+            <div class="item-header" style="display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                    <div class="item-num">${item.id}</div>
+                    <div class="item-title" style="flex:1; font-weight:bold; font-size:14px; color:var(--text-main);">${item.title}</div>
+                    <span class="item-badge-max">من ${item.maxScore} نقطة</span>
+                </div>
+                <div class="row-flex" style="justify-content:flex-end;">
+                    <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 10px;" onclick="explainItem('${item.title}')">❓ شرح البند</button>
+                    <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 10px; color:var(--gold);" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')">📷 إرفاق دليل</button>
+                </div>
+            </div>
+            
+            <div id="preview_img_${item.id}">${hasImage}</div>
+            
+            <div style="margin-top:15px;">
+                ${item.levels.map(lvl => {
+                    let isSel = (currentStepSelections['item_'+item.id] && currentStepSelections['item_'+item.id].score === lvl.score) ? 'selected' : '';
+                    return `
+                    <div class="level-opt ${isSel}" onclick="selectLevel(${item.id}, ${lvl.score}, ${item.maxScore}, this)">
+                        <div class="score-tag">${lvl.score} نقطة</div>
+                        <div style="flex:1; font-size:11px; line-height:1.4;">${lvl.desc}</div>
+                    </div>`;
+                }).join('')}
+            </div>
         </div>`;
     }).join('');
-    currentStepImprovements = []; showScreen('auditScreen'); saveAuditDraft();
+    
+    currentStepImprovements = []; 
+    showScreen('auditScreen'); 
+    saveAuditDraft();
 }
-
 function selectLevel(id, score, max, el) { 
     currentStepSelections['item_'+id] = {score, max}; 
     el.parentElement.querySelectorAll('.level-opt').forEach(o=>o.classList.remove('selected')); 
@@ -484,17 +509,52 @@ async function handleImageSelection(event) {
 }
 
 function finishCurrentStep() {
-    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; const sd = AUDIT_DATA[k];
-    if(Object.keys(currentStepSelections).length < sd.items.length) { showToast('يجب تقييم جميع البنود أولاً'); return; }
-    let s=0, m=0; currentStepImprovements=[];
-    for(let key in currentStepSelections) { s+=currentStepSelections[key].score; m+=currentStepSelections[key].max; if(currentStepSelections[key].score < currentStepSelections[key].max) { let id = key.split('_')[1]; let itm = sd.items.find(i=>i.id==id); if(itm) currentStepImprovements.push(itm.title); } }
-    currentAudit.results[k] = { skipped:false, score:s, max:m, improvements:currentStepImprovements, selections: currentStepSelections, images: currentStepImages };
+    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; 
+    const sd = AUDIT_DATA[k];
+    
+    // التحقق من أن كل البنود تم تقييمها
+    if(Object.keys(currentStepSelections).length < sd.items.length) { 
+        showToast('⚠️ يرجى تقييم جميع البنود قبل الحفظ'); 
+        return; 
+    }
+    
+    let totalScore = 0, totalMax = 0; 
+    currentStepImprovements = [];
+    
+    for(let key in currentStepSelections) { 
+        let itemData = currentStepSelections[key];
+        totalScore += itemData.score; 
+        totalMax += itemData.max; 
+        
+        // إذا كانت الدرجة أقل من النهاية العظمى، تُعتبر فرصة تحسين
+        if(itemData.score < itemData.max) { 
+            let id = key.split('_')[1]; 
+            let itm = sd.items.find(i=>i.id == id); 
+            if(itm) currentStepImprovements.push(itm.title); 
+        } 
+    }
+    
+    currentAudit.results[k] = { 
+        skipped: false, 
+        score: totalScore, 
+        max: totalMax, 
+        improvements: currentStepImprovements, 
+        selections: currentStepSelections, 
+        images: currentStepImages 
+    };
+    
     saveAuditDraft();
     
-    document.getElementById('summaryPct').innerText = Math.round((s/m)*100)+'%';
-    document.getElementById('summaryScoreStr').innerText = `${s} من ${m}`;
-    document.getElementById('opportunitiesContainer').innerHTML = currentStepImprovements.length > 0 ? currentStepImprovements.map(i=>`<div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:5px; margin-bottom:5px; border-right:3px solid var(--warning); font-size:12px; text-align:right;">- ${i}</div>`).join('') : '<div style="color:var(--success); font-weight:bold;">لا توجد ملاحظات، أداء ممتاز</div>';
-    document.getElementById('aiCapaBtn').style.display = currentStepImprovements.length>0?'inline-block':'none';
+    // عرض الملخص المرحلي
+    const pct = Math.round((totalScore/totalMax)*100);
+    document.getElementById('summaryPct').innerText = pct + '%';
+    document.getElementById('summaryPct').style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)');
+    document.getElementById('summaryScoreStr').innerText = `المجموع: ${totalScore} من ${totalMax} نقطة`;
+    
+    document.getElementById('opportunitiesContainer').innerHTML = currentStepImprovements.length > 0 
+        ? currentStepImprovements.map(i=>`<div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; margin-bottom:8px; border-right:4px solid var(--warning); font-size:12px; text-align:right; color:var(--text-main);">🔹 ${i}</div>`).join('') 
+        : '<div style="color:var(--success); font-weight:bold; text-align:center; padding:20px;">🌟 أداء مثالي، لا توجد ملاحظات</div>';
+    
     showScreen('stepSummaryScreen');
 }
 

@@ -3,33 +3,28 @@
     ".read": "auth != null",
     "tpm_system": {
       ".read": "auth != null",
-      ".write": "auth != null && root.child('tpm_system/users/' + auth.uid).val() === 'admin'",
       "history": {
-        ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid).val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'auditor')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor' || root.child('tpm_system/users/' + auth.uid).val() === 'auditor')"
       },
       "tasks": {
-        ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid).val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'auditor')"
+        ".write": "auth != null"
       },
       "tags": {
-        ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid).val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'auditor')"
+        ".write": "auth != null"
       },
       "kaizenComments": {
-        ".read": "auth != null",
         ".write": "auth != null"
       },
       "users": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid).val() === 'admin'"
+        "$uid": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'admin')"
+        }
       },
       "points": {
-        ".read": "auth != null",
         ".write": "auth != null"
       },
       "logs": {
-        ".read": "auth != null && root.child('tpm_system/users/' + auth.uid).val() === 'admin'",
         ".write": "auth != null"
       }
     }

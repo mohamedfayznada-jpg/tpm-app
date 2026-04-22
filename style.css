@@ -341,3 +341,16 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
 
 .chart-container { position: relative; margin: auto; height: 100%; width: 100%; }
 .sticky-header { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+
+/* ==========================================
+   📚 تنسيقات المكتبة التعليمية (The Library UI)
+   ========================================== */
+.library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 20px; }
+.book-card { background: var(--card-bg); border-radius: 8px 15px 15px 8px; border-left: 10px solid var(--copper); padding: 15px; position: relative; min-height: 180px; box-shadow: -5px 5px 15px rgba(0,0,0,0.5); cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; justify-content: space-between; }
+.book-card:hover { transform: translateY(-5px) rotateY(-5px); border-left-color: var(--gold); }
+.book-title { font-size: 13px; font-weight: bold; color: var(--gold); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.book-badge { position: absolute; top: 10px; left: 10px; font-size: 8px; background: var(--primary-light); padding: 2px 6px; border-radius: 4px; }
+.book-footer { font-size: 9px; color: var(--text-muted); border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px; }
+
+.cat-btn { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--copper); padding: 5px 15px; border-radius: 20px; font-size: 11px; white-space: nowrap; cursor: pointer; }
+.cat-btn.active { background: var(--gold); color: var(--bg-color); font-weight: bold; }

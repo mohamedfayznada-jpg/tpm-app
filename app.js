@@ -1169,13 +1169,30 @@ async function predictMachineFailures() {
 
 async function explainItem(t) {
     const k = globalApiKeys.gemini; if(!k) return showToast('مفتاح Gemini مفقود');
-    document.getElementById('aiModal').style.display='flex'; document.getElementById('aiModalText').innerText='جاري استشارة الذكاء الاصطناعي...';
+    document.getElementById('aiModal').style.display='flex'; 
+    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center;">جاري مراجعة عقل المصنع وتحليل البند... 🧠🔍</div>';
+    
     try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: "اشرح باختصار بند الصيانة الذاتية التالي: " + t }] }] }) });
-        const j = await res.json(); document.getElementById('aiModalText').innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
-    } catch(e) { document.getElementById('aiModalText').innerText='خطأ في الاتصال'; }
-}
+        // 🚀 سحب السياق من كل الكتب المخزنة في المكتبة
+        let factoryContext = knowledgeBaseData.map(kb => `[مرجع: ${kb.title} - تصنيف: ${kb.category}]: ${kb.content}`).join('\n\n');
+        
+        let prompt = `أنت الخبير التقني لـ Factory OS. بناءً على المراجع والكتالوجات المرفقة أدناه الخاصة بمصنعنا فقط، اشرح البند التالي للمراجع الميداني: "${t}". 
+        تحدث بصيغة تعليمية، أخبره ماذا يفحص بالظبط وكيف يتأكد من مطابقة المعايير بناءً على ما تعلمته من المراجع.
+        إذا لم تجد معلومة محددة في المراجع، استخدم خبرتك العامة في الـ TPM لتقديم نصيحة عملية. 
+        رد بتنسيق HTML أنيق.
+        
+        سياق المصنع المعتمد:
+        ${factoryContext}`;
 
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+        });
+        const j = await res.json(); 
+        document.getElementById('aiModalText').innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
+    } catch(e) { document.getElementById('aiModalText').innerText='خطأ في استحضار الذاكرة المعرفية'; }
+}
 // ------------------------------------------
 // إعدادات أخرى
 // ------------------------------------------
@@ -1482,4 +1499,72 @@ async function saveUserPermissions() {
     await db.ref(`tpm_system/users/${editingUserUid}/permissions`).set(newPerms);
     showToast('تم تحديث الأذونات بنجاح');
     document.getElementById('permissionsModal').style.display = 'none';
+}
+let currentKbFilter = 'الكل';
+
+function filterCat(cat, btn) {
+    currentKbFilter = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderKnowledgeBase();
+}
+
+function filterLibrary() { renderKnowledgeBase(); }
+
+function addKnowledgeBaseArticle() {
+    let title = document.getElementById('kbTitle').value.trim();
+    let cat = document.getElementById('kbCategory').value;
+    let content = document.getElementById('kbContent').value.trim();
+    
+    if(!title || !content) { showToast('أدخل العنوان والمحتوى'); return; }
+    
+    let id = uniqueNumericId().toString();
+    let article = { id: id, title: title, category: cat, content: content, date: new Date().toLocaleDateString('ar-EG'), author: currentUser.name };
+    
+    syncRecord('knowledgeBase/' + id, article);
+    
+    document.getElementById('kbTitle').value = ''; document.getElementById('kbContent').value = '';
+    document.getElementById('addBookModal').style.display = 'none';
+    showToast('تمت إضافة الكتاب إلى رفوف المكتبة 📚');
+}
+
+function renderKnowledgeBase() {
+    let container = document.getElementById('knowledgeListContainer');
+    let search = document.getElementById('kbSearchInput').value.toLowerCase();
+    if(!container) return;
+    
+    let filtered = knowledgeBaseData.filter(kb => {
+        let matchCat = currentKbFilter === 'الكل' || kb.category === currentKbFilter;
+        let matchSearch = kb.title.toLowerCase().includes(search) || kb.content.toLowerCase().includes(search);
+        return matchCat && matchSearch;
+    });
+
+    if(filtered.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:40px;">لا توجد مراجع تطابق البحث أو التصنيف 🧐</div>';
+        return;
+    }
+    
+    container.innerHTML = filtered.map(kb => `
+        <div class="book-card" onclick="openBookDetail('${kb.id}')">
+            <span class="book-badge">${kb.category}</span>
+            <div class="book-title">${kb.title}</div>
+            <div class="book-footer">
+                📅 ${kb.date}<br>
+                ✍️ ${kb.author}
+            </div>
+            ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="margin-top:5px; padding:2px;" onclick="event.stopPropagation(); deleteRecord('knowledgeBase/${kb.id}')">🗑️</button>` : ''}
+        </div>`).join('');
+}
+
+function openBookDetail(id) {
+    let kb = knowledgeBaseData.find(x => x.id === id);
+    if(!kb) return;
+    document.getElementById('aiModal').style.display = 'flex';
+    document.getElementById('aiModalText').innerHTML = `
+        <h2 style="color:var(--gold); border-bottom:1px solid var(--copper); padding-bottom:10px;">${kb.title}</h2>
+        <div style="font-size:10px; color:var(--text-muted); margin-bottom:15px;">الفئة: ${kb.category} | بواسطة: ${kb.author}</div>
+        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; font-size:13px; line-height:1.6; max-height:400px; overflow-y:auto;">
+            ${nl2brSafe(kb.content)}
+        </div>
+    `;
 }

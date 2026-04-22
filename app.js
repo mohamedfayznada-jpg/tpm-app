@@ -1405,57 +1405,70 @@ function openPermissionsModal(uid) {
 }
 
 // ------------------------------------------
-// 🧠 عقل المصنع (قراءة ملفات PDF والمراجع)
+// 🧠 عقل المصنع (قراءة الكتالوجات الكاملة والاختبارات)
 // ------------------------------------------
-// تهيئة مكتبة قراءة الـ PDF
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let currentUploadedPdfBase64 = null; // متغير لحفظ المستند كاملاً
 
 async function handlePDFUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     
     const statusEl = document.getElementById('pdfExtractStatus');
-    statusEl.innerText = "جاري قراءة الكتالوج واستخراج النصوص... ⏳";
+    statusEl.innerText = "جاري رفع الكتالوج ومعالجته (نصوص وصور)... ⏳";
     statusEl.style.color = "var(--warning)";
     
     try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-        let fullText = "";
-        
-        // نقرأ أول 5 صفحات كحد أقصى للحفاظ على سرعة النظام
-        const maxPages = Math.min(pdf.numPages, 5);
-        for (let i = 1; i <= maxPages; i++) {
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items.map(item => item.str).join(' ');
-            fullText += pageText + "\\n";
-        }
-        
-        document.getElementById('kbContent').value = fullText.substring(0, 3000); // ناخذ أول 3000 حرف
-        statusEl.innerText = pdf.numPages > 5 ? "تم استخراج النص من أول 5 صفحات بنجاح ✅" : "تم استخراج النص بنجاح ✅";
-        statusEl.style.color = "var(--success)";
-        
+        // 1. تحويل المستند كاملاً إلى Base64 ليرأه الذكاء الاصطناعي بصوره
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            currentUploadedPdfBase64 = e.target.result.split(',')[1];
+            
+            // 2. استخراج جزء من النص كفهرس للبحث السريع فقط
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+            let fullText = "";
+            const maxPages = Math.min(pdf.numPages, 5);
+            for (let i = 1; i <= maxPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += textContent.items.map(item => item.str).join(' ') + " ";
+            }
+            
+            document.getElementById('kbContent').value = fullText.substring(0, 2000);
+            statusEl.innerText = "تم تجهيز الكتالوج بالكامل (بصوره ورسوماته) ✅";
+            statusEl.style.color = "var(--success)";
+        };
+        reader.readAsDataURL(file);
     } catch (error) {
-        statusEl.innerText = "❌ فشل قراءة ملف الـ PDF، تأكد من صلاحية الملف.";
+        statusEl.innerText = "❌ فشل معالجة الملف.";
         statusEl.style.color = "var(--danger)";
     }
 }
 
 function addKnowledgeBaseArticle() {
     let title = document.getElementById('kbTitle').value.trim();
+    let cat = document.getElementById('kbCategory').value;
     let content = document.getElementById('kbContent').value.trim();
     
-    if(!title || !content) { showToast('برجاء إدخال العنوان والنص (أو رفع PDF ليستخرج النص منه)'); return; }
+    if(!title || (!content && !currentUploadedPdfBase64)) { showToast('أدخل العنوان وارفع ملف PDF'); return; }
     
     let id = uniqueNumericId().toString();
-    let article = { id: id, title: title, content: content, date: new Date().toLocaleDateString('ar-EG'), author: currentUser.name };
-    
+    // حفظ البيانات الأساسية في الذاكرة السريعة
+    let article = { id: id, title: title, category: cat, content: content, date: new Date().toLocaleDateString('ar-EG'), author: currentUser.name, hasPdf: !!currentUploadedPdfBase64 };
     syncRecord('knowledgeBase/' + id, article);
     
+    // 🚀 الخدعة الهندسية: حفظ الملف الضخم في مسار منفصل تماماً حتى لا يبطئ التطبيق
+    if (currentUploadedPdfBase64) {
+        db.ref('tpm_system/pdf_files/' + id).set({ base64: currentUploadedPdfBase64 });
+    }
+    
     document.getElementById('kbTitle').value = ''; document.getElementById('kbContent').value = '';
-    document.getElementById('pdfExtractStatus').innerText = ''; document.getElementById('pdfInput').value = '';
-    showToast('تمت إضافة المرجع لعقل المصنع بنجاح 🧠');
+    document.getElementById('addBookModal').style.display = 'none';
+    currentUploadedPdfBase64 = null;
+    document.getElementById('pdfExtractStatus').innerText = 'اضغط لرفع ملف PDF (كتالوج أو مرجع) 📄';
+    showToast('تمت إضافة المرجع إلى رفوف المكتبة 📚');
 }
 
 function renderKnowledgeBase() {
@@ -1560,11 +1573,81 @@ function openBookDetail(id) {
     let kb = knowledgeBaseData.find(x => x.id === id);
     if(!kb) return;
     document.getElementById('aiModal').style.display = 'flex';
+    
+    // إظهار زر الاختبار والترجمة فقط إذا كان هناك PDF مرفوع
+    let quizBtn = kb.hasPdf ? `<button class="btn btn-warning full-width shadow-btn" style="margin-top:15px; border-radius:10px; font-size:14px; font-weight:bold;" onclick="generateAutoQuiz('${id}')">🎓 ترجمة الكتالوج وإنشاء اختبار فني للفنيين</button>` : '';
+
     document.getElementById('aiModalText').innerHTML = `
         <h2 style="color:var(--gold); border-bottom:1px solid var(--copper); padding-bottom:10px;">${kb.title}</h2>
         <div style="font-size:10px; color:var(--text-muted); margin-bottom:15px;">الفئة: ${kb.category} | بواسطة: ${kb.author}</div>
-        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; font-size:13px; line-height:1.6; max-height:400px; overflow-y:auto;">
+        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; font-size:13px; line-height:1.6; max-height:300px; overflow-y:auto;">
             ${nl2brSafe(kb.content)}
+            <br><br><span style="color:var(--success); font-size:11px;">(تم إرفاق الكتالوج الكامل بنجاح)</span>
         </div>
+        ${quizBtn}
     `;
+}
+
+// 🎓 المولد الآلي للاختبارات الفنية والترجمة (Auto-Quiz & Translator)
+async function generateAutoQuiz(kbId) {
+    const k = globalApiKeys.gemini; if(!k) return showToast('مفتاح Gemini مفقود');
+    
+    let kb = knowledgeBaseData.find(x => x.id === kbId);
+    
+    document.getElementById('aiModalText').innerHTML = `<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold); margin-top:15px;">جاري قراءة الكتالوج بالكامل (نصوص وصور ومخططات)... ⏳</h3><p style="color:var(--text-muted); font-size:12px; margin-top:10px;">يقوم الذكاء الاصطناعي الآن بالترجمة للغة الفنيين وتصميم اختبار فني، قد يستغرق هذا بعض الوقت 🧠</p></div>`;
+
+    try {
+        // سحب الملف الضخم من المسار الخفي
+        let snap = await db.ref('tpm_system/pdf_files/' + kbId).once('value');
+        let pdfData = snap.val();
+
+        if(!pdfData || !pdfData.base64) {
+            document.getElementById('aiModalText').innerHTML = '<div style="color:var(--danger); text-align:center;">عذراً، لم يتم العثور على ملف PDF لهذا المرجع.</div>';
+            return;
+        }
+
+        // هندسة الأوامر (Prompt Engineering) العبقرية
+        let prompt = `أنت مهندس صيانة خبير ومدرب فني في مصنع صناعي في مصر. المرفق هو كتالوج أو مرجع فني بصيغة PDF (يحتوي على نصوص، رسومات، وجداول).
+        المطلوب منك:
+        1. اقرأ الكتالوج المرفق بالكامل وافهم محتواه.
+        2. قسم (الخلاصة الفنية): قم بكتابة "ملخص فني مبسط" لأهم النقاط، مترجماً إلى لغة عربية "بلدي" واضحة جداً للفنيين وعمال المصنع (تجنب الترجمة الحرفية المعقدة، اشرحها كأنك تقف أمام الماكينة).
+        3. قسم (الاختبار): قم بتصميم "اختبار فني (Quiz)" من 5 أسئلة اختيار من متعدد بناءً على محتوى الكتالوج لتقييم فهم الفنيين.
+        4. ضع الإجابات الصحيحة في نهاية الاختبار بشكل مقلوب أو منفصل.
+        
+        مهم جداً: أرجع الناتج بتنسيق HTML جذاب وجاهز للعرض داخل التطبيق (استخدم ألوان #d4af37 للذهب، #b87333 للنحاس، وخلفيات داكنة، لا تستخدم علامات markdown مثل \`\`\`html ، فقط الكود).`;
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inline_data: { mime_type: "application/pdf", data: pdfData.base64 } } // إرسال الـ PDF للذكاء الاصطناعي
+                    ]
+                }]
+            })
+        });
+
+        const j = await res.json();
+        if(j.error) throw new Error(j.error.message);
+
+        let aiHTML = j.candidates[0].content.parts[0].text;
+        aiHTML = aiHTML.replace(/```html/g, '').replace(/```/g, ''); // تنظيف الكود
+
+        // عرض النتيجة مع زر اعتماد النتيجة للفني
+        document.getElementById('aiModalText').innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
+                <h3 style="color:var(--success); margin:0;">ترجمة واختبار: ${kb.title}</h3>
+                <button class="btn btn-sm btn-success shadow-btn" onclick="awardPoints(30, 'اجتياز اختبار فني: ${kb.title}'); showToast('تم تسجيل نقاط الاختبار وإضافتها لرصيدك! 🏆'); document.getElementById('aiModal').style.display='none';">✅ إنهاء الاختبار</button>
+            </div>
+            <div style="background:var(--bg-color); padding:15px; border-radius:10px; font-size:14px; line-height:1.8;">
+                ${aiHTML}
+            </div>
+        `;
+
+    } catch(e) {
+        console.error(e);
+        document.getElementById('aiModalText').innerHTML = `<div style="color:var(--danger); text-align:center; padding:20px;">حدث خطأ أثناء معالجة الكتالوج. قد يكون حجم الملف كبيراً جداً، حاول استخدام ملف أصغر.</div>`;
+    }
 }

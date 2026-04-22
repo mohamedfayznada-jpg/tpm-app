@@ -1727,10 +1727,11 @@ function renderProfileAndSettings() {
 
     // 2. سحب الصورة الشخصية (إن وجدت)
     const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
-    if (uid && usersData[uid] && typeof usersData[uid] === 'object' && usersData[uid].avatar) {
+   if (uid && usersData[uid] && typeof usersData[uid] === 'object' && usersData[uid].avatar) {
         document.getElementById('profileAvatar').src = usersData[uid].avatar;
     } else {
-        document.getElementById('profileAvatar').src = 'https://i.ibb.co/6H9n83X/avatar-default.png';
+        // إنشاء صورة احترافية ديناميكية تحمل اسم المستخدم إذا لم يقم برفع صورة
+        document.getElementById('profileAvatar').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentUser.name) + '&background=1b2a47&color=d4af37';
     }
 
     // 3. تجهيز إحصائيات النشاط الخاصة بالمستخدم (Activity Tracker)

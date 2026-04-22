@@ -557,8 +557,8 @@
         <div class="card glass-card" style="text-align:center; padding:30px 15px; position:relative; overflow:visible; margin-top:30px;">
             <div style="position:absolute; top:-30px; left:50%; transform:translateX(-50%);">
                 <div style="position:relative; width:90px; height:90px;">
-                    <img id="profileAvatar" src="https://i.ibb.co/6H9n83X/avatar-default.png" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid var(--gold); background:var(--primary); box-shadow:0 5px 15px rgba(0,0,0,0.5);">
-                    <label style="position:absolute; bottom:-5px; right:-5px; background:var(--copper); padding:6px; border-radius:50%; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.5); font-size:12px; transition:0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                   <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=1b2a47&color=d4af37" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid var(--gold); background:var(--primary); box-shadow:0 5px 15px rgba(0,0,0,0.5);">
+ <label style="position:absolute; bottom:-5px; right:-5px; background:var(--copper); padding:6px; border-radius:50%; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.5); font-size:12px; transition:0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                         ✏️<input type="file" accept="image/*" style="display:none;" onchange="updateProfilePic(event)">
                     </label>
                 </div>
@@ -620,13 +620,14 @@
                 <div id="engListContainer"></div>
             </div>
 
-            <div class="card glass-card">
+         <div class="card glass-card">
                 <h3 class="card-title" style="font-size:14px;">التحكم السريع في الصلاحيات ( القديم )</h3>
                 <div class="row-flex" style="margin-bottom:15px;">
                     <input type="text" id="newUsernameRole" class="form-control flex-2" placeholder="يوزر المستخدم" style="margin:0;">
                     <select id="newRoleSelect" class="form-control flex-1" style="margin:0;"><option value="viewer">مشاهد</option><option value="operator">مشغل</option><option value="auditor">مراجع</option><option value="admin">مدير</option></select>
                     <button class="btn btn-primary flex-1" style="margin:0;" onclick="addNewUserRole()">تعيين</button>
                 </div>
+                <div id="usersListContainer"></div>
             </div>
         </div>
 

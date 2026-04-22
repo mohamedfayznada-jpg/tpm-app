@@ -216,26 +216,42 @@
             <div id="usersLeaderboardContainer" class="leaderboard-list"></div>
         </div>
     </div>
-    <div class="container screen" id="deptDashboardScreen">
-        <button class="btn btn-outline btn-sm no-print" style="margin-bottom:15px;" onclick="showScreen('homeScreen'); updateHomeDashboard();">العودة</button>
-        <div class="dept-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 id="deptDashTitle" style="color:var(--gold); margin:0;">القسم</h2>
-            <button class="btn btn-primary btn-sm no-print" onclick="startNewAuditFlow()">مراجعة جديدة</button>
+  <div class="container screen" id="deptDashboardScreen">
+        <div class="sticky-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid rgba(212,175,55,0.3);">
+            <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
+            <h2 id="deptViewTitle" style="color:var(--gold); margin:0; font-size:18px;">اسم القسم</h2>
         </div>
-        <div class="no-print filter-group row-flex" style="margin-top:15px;">
-            <input type="text" id="dashMachineFilter" class="form-control flex-2" placeholder="بحث بالماكينة" onkeyup="updateDeptDashboard()" style="margin:0;">
-            <select id="dashTimeFilter" class="form-control flex-1" onchange="updateDeptDashboard()" style="margin:0;"><option value="latest">الأحدث</option><option value="avg3">متوسط 3</option></select>
-        </div>
-        <div class="dashboard-stats" style="margin-top:15px;">
-            <div class="card stat-card"><div class="stat-label">مشاكل</div><div id="deptKpiOpenTags" class="stat-value danger-text">0</div></div>
-            <div class="card stat-card"><div class="stat-label">مهام</div><div id="deptKpiTasks" class="stat-value warning-text">0</div></div>
-            <div class="card stat-card"><div class="stat-label">إنجاز</div><div id="deptKpiComp" class="stat-value success-text">0%</div></div>
-        </div>
-        <button class="btn btn-outline btn-sm no-print full-width" style="border-style: dashed;" onclick="printDeptDashboard()">طباعة تقرير أداء القسم</button>
-        <div class="card"><h3 class="card-title">مؤشرات الركائز</h3><div class="chart-container"><canvas id="radarChart"></canvas></div></div>
-        <div class="card"><h3 class="card-title">التطور التاريخي</h3><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
-    </div>
 
+        <div class="dashboard-stats modern-stats">
+            <div class="card stat-card glass-card">
+                <div class="stat-value primary-text" id="deptAvgScore">0%</div>
+                <div class="stat-label">كفاءة JH الأخيرة</div>
+            </div>
+            <div class="card stat-card glass-card">
+                <div class="stat-value danger-text" id="deptOpenTags">0</div>
+                <div class="stat-label">أعطال نشطة</div>
+            </div>
+            <div class="card stat-card glass-card">
+                <div class="stat-value success-text" id="deptTasksCount">0</div>
+                <div class="stat-label">مهام مفتوحة</div>
+            </div>
+        </div>
+
+        <div class="row-flex" style="flex-wrap: wrap; gap: 15px; margin-top:20px;">
+            <div class="card glass-card flex-1" style="min-width:280px; padding:20px;">
+                <h4 class="card-title" style="font-size:13px; text-align:center; color:var(--gold);">🕸️ رادار توازن خطوات JH</h4>
+                <div style="height:250px; width:100%;"><canvas id="deptRadarChart"></canvas></div>
+            </div>
+
+            <div class="card glass-card flex-1" style="min-width:280px; padding:20px;">
+                <h4 class="card-title" style="font-size:13px; text-align:center; color:var(--success);">📈 منحنى تطور الأداء التاريخي</h4>
+                <div style="height:250px; width:100%;"><canvas id="deptTrendChart"></canvas></div>
+            </div>
+        </div>
+
+        <h3 class="section-title">🚨 تنبيهات الأعطال والتحسينات</h3>
+        <div id="deptActionItems" style="margin-top:10px; padding-bottom:30px;"></div>
+    </div>
     <div class="container screen" id="setupScreen">
         <div class="card">
             <h3 class="card-title">تكوين المراجعة</h3>

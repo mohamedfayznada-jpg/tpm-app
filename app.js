@@ -390,8 +390,84 @@ function updateHomeDashboard() {
 
     updateUsersLeaderboard();
 }
-function openDeptDashboard(dept) { currentViewedDept = dept; document.getElementById('deptDashTitle').innerText = dept; document.getElementById('selectDept').value = dept; showScreen('deptDashboardScreen'); updateDeptDashboard(); }
+let deptRadarInstance = null;
+let deptTrendInstance = null;
 
+function openDeptDashboard(dept) {
+    currentViewedDept = dept;
+    document.getElementById('deptViewTitle').innerText = `لوحة قيادة: ${dept}`;
+    
+    // فلترة البيانات الخاصة بالقسم
+    const deptAudits = historyData.filter(h => h.dept === dept).sort((a,b) => new Date(a.date) - new Date(b.date));
+    const deptTags = tagsData.filter(t => t.dept === dept && t.status === 'open');
+    const deptTasks = tasksData.filter(t => t.dept === dept && t.status !== 'done');
+    
+    // 1. تحديث الأرقام
+    const lastAudit = deptAudits[deptAudits.length-1];
+    document.getElementById('deptAvgScore').innerText = lastAudit ? lastAudit.totalPct + '%' : '0%';
+    document.getElementById('deptOpenTags').innerText = deptTags.length;
+    document.getElementById('deptTasksCount').innerText = deptTasks.length;
+
+    // 2. رسم رادار JH (JH Steps Radar)
+    const steps = ['JH0', 'JH1', 'JH2', 'JH3', 'JH4', 'JH5', 'JH6'];
+    const stepScores = steps.map(s => {
+        if (!lastAudit || !lastAudit.results[s]) return 0;
+        return Math.round((lastAudit.results[s].score / lastAudit.results[s].max) * 100);
+    });
+
+    const radarCtx = document.getElementById('deptRadarChart');
+    if (deptRadarInstance) deptRadarInstance.destroy();
+    deptRadarInstance = new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+            labels: ['JH0', 'JH1', 'JH2', 'JH3', 'JH4', 'JH5', 'JH6'],
+            datasets: [{
+                label: 'مستوى التنفيذ %',
+                data: stepScores,
+                backgroundColor: 'rgba(212, 175, 55, 0.2)',
+                borderColor: '#d4af37',
+                pointBackgroundColor: '#b87333',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // 3. رسم منحنى التطور (Performance Trend)
+    const trendCtx = document.getElementById('deptTrendChart');
+    if (deptTrendInstance) deptTrendInstance.destroy();
+    deptTrendInstance = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: deptAudits.slice(-5).map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]),
+            datasets: [{
+                label: 'الكفاءة %',
+                data: deptAudits.slice(-5).map(a => a.totalPct),
+                borderColor: '#2e7d32',
+                backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true, max: 100 }, x: { grid: { display: false } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // 4. عرض أهم 3 تاجات مفتوحة في القسم
+    document.getElementById('deptActionItems').innerHTML = deptTags.slice(0,3).map(t => `
+        <div class="card glass-card" style="padding:12px; border-right:4px solid ${t.color==='red'?'var(--danger)':'var(--primary-light)'}; margin-bottom:10px;">
+            <div style="font-weight:bold; font-size:12px; color:var(--text-main);">${t.desc}</div>
+            <div style="font-size:10px; color:var(--text-muted); margin-top:5px;">👤 ${t.auditor} | ⚙️ ${t.machine || 'عام'}</div>
+        </div>
+    `).join('') || '<div style="text-align:center; color:var(--success); font-size:12px; padding:20px;">لا توجد أعطال حرجة في هذا القسم 🎉</div>';
+
+    showScreen('deptDashboardScreen');
+}
 function updateDeptDashboard() {
     if(!currentViewedDept) return;
     let machineFilter = document.getElementById('dashMachineFilter').value.trim().toLowerCase();
@@ -593,13 +669,24 @@ function generateFinalReport() {
     initSignaturePad();
 }
 
-function saveFinalAudit() {
+// ✅ دالة الحفظ النهائي مع التأكيد والانتقال التلقائي
+async function saveFinalAudit() {
     if(!hasRole('auditor', 'admin')) { showToast('غير مصرح بحفظ المراجعات'); return; }
+    
+    // 1. طلب تأكيد من المستخدم قبل الحفظ
+    if(!confirm("هل أنت متأكد من اعتماد وحفظ هذه المراجعة؟ سيتم إنشاء قائمة مهام تلقائية بالتحسينات.")) return;
+
+    showToast('جاري معالجة البيانات وحفظ التقرير... ⏳');
+
+    // 2. تسجيل التوقيع الرقمي
     if(sigCanvas) currentAudit.signature = sigCanvas.toDataURL('image/jpeg', 0.8);
     
+    // 3. جمع فرص التحسين لإنشاء "مجلد مهام"
     let allImprovements = [];
     currentAudit.stepsOrder.forEach(step => {
-        if(currentAudit.results[step] && currentAudit.results[step].improvements) { allImprovements.push(...currentAudit.results[step].improvements); }
+        if(currentAudit.results[step] && currentAudit.results[step].improvements) { 
+            allImprovements.push(...currentAudit.results[step].improvements); 
+        }
     });
     
     if(allImprovements.length > 0) {
@@ -608,16 +695,22 @@ function saveFinalAudit() {
             id: fId, isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام',
             task: `تحسينات مراجعة (${currentAudit.date})`, subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })), status: 'pending'
         };
-        syncRecord('tasks/' + fId, folderTask);
+        await db.ref('tpm_system/tasks/' + fId).set(folderTask);
     }
 
-    syncRecord('history/' + currentAudit.id, currentAudit);
+    // 4. الحفظ النهائي في الأرشيف ونظام النقاط
+    await db.ref('tpm_system/history/' + currentAudit.id).set(currentAudit);
     awardPoints(50, 'إتمام مراجعة رسمية');
+    
+    // 5. تنظيف المسودة وإظهار رسالة النجاح
     clearAuditDraft();
-    showToast('تم حفظ التقرير وإنشاء المهام بنجاح');
-    showScreen('historyScreen'); 
-}
+    showToast('تم حفظ التقرير بنجاح ✅ جاري تحويلك للأرشيف...');
 
+    // 6. الانتقال التلقائي بعد ثانية واحدة (لإعطاء فرصة لقراءة الرسالة)
+    setTimeout(() => {
+        showScreen('historyScreen'); 
+    }, 1500);
+}
 // ------------------------------------------
 // 📊 أرشيف التقارير (History)
 // ------------------------------------------

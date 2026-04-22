@@ -1709,3 +1709,72 @@ async function generateAutoQuiz(kbId) {
         document.getElementById('aiModalText').innerHTML = `<div style="color:var(--danger); text-align:center; padding:20px;">حدث خطأ أثناء معالجة الكتالوج. قد يكون حجم الملف كبيراً جداً، حاول استخدام ملف أصغر.</div>`;
     }
 }
+
+// ------------------------------------------
+// 👤 محرك الملف الشخصي والإعدادات (The Profile Hub)
+// ------------------------------------------
+
+function renderProfileAndSettings() {
+    if(!currentUser || !currentUser.name) return;
+
+    // 1. تجهيز بيانات البروفايل (الاسم، الرتبة، النقاط)
+    document.getElementById('profileName').innerText = currentUser.name;
+    const roleMap = { admin: 'مدير نظام 👑', auditor: 'مراجع فني 📝', operator: 'مشغل معدة ⚙️', viewer: 'مشاهد 👁️' };
+    document.getElementById('profileRoleBadge').innerText = roleMap[currentUser.role] || currentUser.role;
+    
+    let myPoints = userPoints[currentUser.name] || 0;
+    document.getElementById('profilePoints').innerText = `🏆 الأرصدة: ${myPoints} نقطة`;
+
+    // 2. سحب الصورة الشخصية (إن وجدت)
+    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
+    if (uid && usersData[uid] && typeof usersData[uid] === 'object' && usersData[uid].avatar) {
+        document.getElementById('profileAvatar').src = usersData[uid].avatar;
+    } else {
+        document.getElementById('profileAvatar').src = 'https://i.ibb.co/6H9n83X/avatar-default.png';
+    }
+
+    // 3. تجهيز إحصائيات النشاط الخاصة بالمستخدم (Activity Tracker)
+    let myAuditsCount = historyData.filter(h => h.auditor === currentUser.name && !h.stepsOrder.includes('ManualKaizen')).length;
+    let myTagsCount = tagsData.filter(t => t.auditor === currentUser.name).length;
+    let myKaizensCount = historyData.filter(h => h.auditor === currentUser.name && h.stepsOrder.includes('ManualKaizen')).length;
+
+    document.getElementById('myAudits').innerText = myAuditsCount;
+    document.getElementById('myTags').innerText = myTagsCount;
+    document.getElementById('myKaizens').innerText = myKaizensCount;
+
+    // 4. التحكم في ظهور لوحة الإدارة 👑 + حل مشكلة الـ API Keys
+    if (currentUser.role === 'admin') {
+        document.getElementById('adminSettingsSection').style.display = 'block';
+        
+        // 🚀 هنا الحل السحري: سحب المفاتيح من الذاكرة ووضعها في الحقول لكي لا تُمسح
+        document.getElementById('imgbbKeyInput').value = globalApiKeys.imgbb || '';
+        document.getElementById('geminiKeyInput').value = globalApiKeys.gemini || '';
+        
+        // غلق الحقول كحماية حتى يضغط "تعديل"
+        document.getElementById('imgbbKeyInput').disabled = true;
+        document.getElementById('geminiKeyInput').disabled = true;
+    } else {
+        document.getElementById('adminSettingsSection').style.display = 'none';
+    }
+}
+
+// 📸 دالة رفع وتحديث الصورة الشخصية
+async function updateProfilePic(event) {
+    const file = event.target.files[0]; 
+    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
+    if(!file || !uid) return;
+    
+    showToast('جاري تحديث الصورة الشخصية... ⏳');
+    
+    processAndEnhanceImage(file, async function(dataUrl) {
+        const url = await uploadImageToStorage(dataUrl);
+        if (url) {
+            // حفظ الصورة في ملف المستخدم بقاعدة البيانات
+            await db.ref(`tpm_system/users/${uid}/avatar`).set(url);
+            document.getElementById('profileAvatar').src = url;
+            showToast('تم تحديث صورتك بنجاح 😎');
+        } else { 
+            showToast('⚠️ فشل الرفع. تأكد من إعدادات مفتاح ImgBB الخاص بالصور.'); 
+        }
+    });
+}

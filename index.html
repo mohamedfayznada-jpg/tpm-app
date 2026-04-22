@@ -552,48 +552,85 @@
         </div>
     </div>
 
-    <div class="container screen" id="settingsScreen">
-        <div class="card btn-role-admin">
-            <h3 class="card-title">مفاتيح الربط (API Keys)</h3>
-            <input type="password" id="imgbbKeyInput" class="form-control" placeholder="مفتاح ImgBB">
-            <input type="password" id="geminiKeyInput" class="form-control" placeholder="مفتاح Gemini">
-            <div class="row-flex">
-                <button class="btn btn-primary flex-2" style="margin:0;" onclick="saveApiKeys()">حفظ وإغلاق</button>
-                <button class="btn btn-outline flex-1" style="margin:0;" onclick="enableApiKeysEdit()">تعديل</button>
+   <div class="container screen" id="settingsScreen">
+        
+        <div class="card glass-card" style="text-align:center; padding:30px 15px; position:relative; overflow:visible; margin-top:30px;">
+            <div style="position:absolute; top:-30px; left:50%; transform:translateX(-50%);">
+                <div style="position:relative; width:90px; height:90px;">
+                    <img id="profileAvatar" src="https://i.ibb.co/6H9n83X/avatar-default.png" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid var(--gold); background:var(--primary); box-shadow:0 5px 15px rgba(0,0,0,0.5);">
+                    <label style="position:absolute; bottom:-5px; right:-5px; background:var(--copper); padding:6px; border-radius:50%; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.5); font-size:12px; transition:0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                        ✏️<input type="file" accept="image/*" style="display:none;" onchange="updateProfilePic(event)">
+                    </label>
+                </div>
+            </div>
+            <div style="margin-top:50px;">
+                <h2 id="profileName" style="color:var(--gold); margin:0; font-size:22px; text-shadow:0 2px 4px rgba(0,0,0,0.5);">اسم المستخدم</h2>
+                <div id="profileRoleBadge" style="display:inline-block; background:rgba(255,255,255,0.1); border:1px solid var(--copper); padding:3px 10px; border-radius:15px; font-size:11px; margin-top:5px; color:var(--text-main);">دور المستخدم</div>
+                <div id="profilePoints" style="margin-top:10px; font-size:16px; font-weight:bold; color:var(--success); text-shadow:0 0 10px rgba(46,125,50,0.5);">🏆 الرصيد: 0 نقطة</div>
             </div>
         </div>
-        <div class="card btn-role-admin">
-            <h3 class="card-title">تصدير ونسخ احتياطي</h3>
-            <button class="btn btn-success full-width" style="margin-bottom:10px;" onclick="exportToCSV()">استخراج Excel</button>
-            <div class="row-flex">
-                <button class="btn btn-primary flex-1" style="margin:0;" onclick="exportSystemBackupJSON()">تصدير JSON</button>
-                <button class="btn btn-warning flex-1" style="margin:0;" onclick="triggerBackupImport()">استرجاع JSON</button>
-                <input type="file" id="backupImportInput" accept=".json,application/json" style="display:none;" onchange="importSystemBackupJSON(event)">
+
+        <h4 class="section-title">📊 سجل نشاطي وتفاعلي</h4>
+        <div class="dashboard-stats modern-stats" style="margin-bottom:20px;">
+            <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value" id="myAudits" style="color:var(--gold);">0</div><div class="stat-label">مراجعاتي (JH)</div></div>
+            <div class="card stat-card glass-card" style="border-color:var(--danger);"><div class="stat-value" id="myTags" style="color:var(--danger);">0</div><div class="stat-label">تاجات أصدرتها</div></div>
+            <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value" id="myKaizens" style="color:var(--success);">0</div><div class="stat-label">أفكار كايزن</div></div>
+        </div>
+
+        <h4 class="section-title">⚙️ إعدادات الحساب</h4>
+        <div class="card glass-card">
+            <button class="btn btn-outline full-width" style="text-align:right; border-color:rgba(255,255,255,0.1); color:var(--text-main);" onclick="toggleDarkMode()">🌗 تفعيل / إيقاف الوضع الليلي</button>
+            <button class="btn btn-outline full-width" style="text-align:right; border-color:rgba(255,255,255,0.1); color:var(--text-main);" onclick="biometricLogin()">⚡ تجهيز الدخول السريع للجهاز</button>
+        </div>
+
+        <div id="adminSettingsSection" style="display:none;">
+            <h4 class="section-title" style="color:#ff5252; border-color:#ff5252;">👑 لوحة تحكم الإدارة العليا</h4>
+            
+            <div class="card glass-card" style="border-right:4px solid #ff5252;">
+                <h3 class="card-title" style="font-size:14px;">مفاتيح الذكاء الاصطناعي (API Keys)</h3>
+                <input type="password" id="imgbbKeyInput" class="form-control" placeholder="مفتاح ImgBB (للصور)">
+                <input type="password" id="geminiKeyInput" class="form-control" placeholder="مفتاح Gemini (للذكاء الاصطناعي)">
+                <div class="row-flex">
+                    <button class="btn btn-primary flex-2" style="margin:0;" onclick="saveApiKeys()">💾 حفظ وتأمين</button>
+                    <button class="btn btn-outline flex-1" style="margin:0;" onclick="enableApiKeysEdit()">✏️ تعديل</button>
+                </div>
+            </div>
+
+            <div class="card glass-card">
+                <h3 class="card-title" style="font-size:14px;">تصدير ونسخ احتياطي للبيانات</h3>
+                <button class="btn btn-success full-width" style="margin-bottom:10px;" onclick="exportToCSV()">📊 استخراج Excel كامل</button>
+                <div class="row-flex">
+                    <button class="btn btn-primary flex-1" style="margin:0;" onclick="exportSystemBackupJSON()">⬇️ تصدير JSON</button>
+                    <button class="btn btn-warning flex-1" style="margin:0;" onclick="triggerBackupImport()">⬆️ استرجاع JSON</button>
+                    <input type="file" id="backupImportInput" accept=".json,application/json" style="display:none;" onchange="importSystemBackupJSON(event)">
+                </div>
+            </div>
+
+            <div class="card glass-card">
+                <h3 class="card-title" style="font-size:14px;">إدارة هيكل المصنع</h3>
+                <div class="row-flex" style="margin-bottom:10px;">
+                    <input type="text" id="newDeptInput" class="form-control flex-2" placeholder="اسم القسم الجديد" style="margin:0;">
+                    <button class="btn btn-primary flex-1" style="margin:0;" onclick="addOrUpdateDept()">➕ إضافة قسم</button>
+                </div>
+                <div class="row-flex" style="margin-bottom:15px;">
+                    <input type="text" id="newEngName" class="form-control flex-2" placeholder="اسم مهندس الصيانة" style="margin:0;">
+                    <input type="tel" id="newEngPhone" class="form-control flex-2" placeholder="رقم واتساب (+20)" style="margin:0;">
+                    <button class="btn btn-warning flex-1" style="margin:0;" onclick="addEngineer()">إضافة</button>
+                </div>
+                <div id="engListContainer"></div>
+            </div>
+
+            <div class="card glass-card">
+                <h3 class="card-title" style="font-size:14px;">التحكم السريع في الصلاحيات ( القديم )</h3>
+                <div class="row-flex" style="margin-bottom:15px;">
+                    <input type="text" id="newUsernameRole" class="form-control flex-2" placeholder="يوزر المستخدم" style="margin:0;">
+                    <select id="newRoleSelect" class="form-control flex-1" style="margin:0;"><option value="viewer">مشاهد</option><option value="operator">مشغل</option><option value="auditor">مراجع</option><option value="admin">مدير</option></select>
+                    <button class="btn btn-primary flex-1" style="margin:0;" onclick="addNewUserRole()">تعيين</button>
+                </div>
             </div>
         </div>
-        <div class="card btn-role-admin">
-            <h3 class="card-title">إدارة الأقسام والمهندسين</h3>
-            <div class="row-flex" style="margin-bottom:10px;">
-                <input type="text" id="newDeptInput" class="form-control flex-2" placeholder="القسم" style="margin:0;">
-                <button class="btn btn-primary flex-1" style="margin:0;" onclick="addOrUpdateDept()">حفظ</button>
-            </div>
-            <div class="row-flex" style="margin-bottom:15px;">
-                <input type="text" id="newEngName" class="form-control flex-2" placeholder="اسم المهندس" style="margin:0;">
-                <input type="tel" id="newEngPhone" class="form-control flex-2" placeholder="رقم الهاتف" style="margin:0;">
-                <button class="btn btn-warning flex-1" style="margin:0;" onclick="addEngineer()">إضافة</button>
-            </div>
-            <div id="engListContainer"></div>
-        </div>
-        <div class="card btn-role-admin">
-            <h3 class="card-title">سجل الصلاحيات</h3>
-            <div class="row-flex" style="margin-bottom:15px;">
-                <input type="text" id="newUsernameRole" class="form-control flex-2" placeholder="المستخدم" style="margin:0;">
-                <select id="newRoleSelect" class="form-control flex-1" style="margin:0;"><option value="viewer">مشاهد</option><option value="auditor">مراجع</option><option value="admin">مدير</option></select>
-                <button class="btn btn-primary flex-1" style="margin:0;" onclick="addNewUserRole()">تعيين</button>
-            </div>
-            <div id="usersListContainer"></div>
-        </div>
-        <button class="btn btn-danger full-width" onclick="logout()">تسجيل الخروج</button>
+
+        <button class="btn btn-danger full-width shadow-btn" style="margin-top:20px; border-radius:15px; padding:15px; font-size:16px;" onclick="logout()">تسجيل الخروج من النظام 🚪</button>
     </div>
 
     <div class="nav-bar" id="bottomNav" style="display: none;">
@@ -603,7 +640,7 @@
         <div class="nav-item" onclick="showScreen('kaizenScreen'); renderKaizenFeed();"><div class="nav-text">كايزن</div></div>
         <div class="nav-item" onclick="showScreen('tagsScreen'); renderTags();"><div class="nav-text">التاجات</div></div>
         <div class="nav-item btn-role-admin" onclick="showScreen('knowledgeScreen'); renderKnowledgeBase();"><div class="nav-text">المصنع</div></div>
-        <div class="nav-item" onclick="showScreen('settingsScreen')"><div class="nav-text">إعدادات</div></div>
+       <div class="nav-item" onclick="showScreen('settingsScreen'); renderProfileAndSettings();"><div class="nav-text">حسابي</div></div>
     </div>
 
     <script src="app.js"></script>

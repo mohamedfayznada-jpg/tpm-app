@@ -408,10 +408,10 @@ function openDeptDashboard(dept) {
     document.getElementById('deptOpenTags').innerText = deptTags.length;
     document.getElementById('deptTasksCount').innerText = deptTasks.length;
 
-    // 2. رسم رادار JH (JH Steps Radar)
-    const steps = ['JH0', 'JH1', 'JH2', 'JH3', 'JH4', 'JH5', 'JH6'];
+   // 2. رسم رادار JH (JH Steps Radar) - تم تصحيح المسميات هنا
+    const steps = ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6']; // إضافة الشرطة (-)
     const stepScores = steps.map(s => {
-        if (!lastAudit || !lastAudit.results[s]) return 0;
+        if (!lastAudit || !lastAudit.results[s] || lastAudit.results[s].skipped) return 0;
         return Math.round((lastAudit.results[s].score / lastAudit.results[s].max) * 100);
     });
 

@@ -293,26 +293,73 @@
         <div id="historyListContainer"></div>
     </div>
 
-    <div class="container screen" id="detailedReportScreen">
-        <div class="card print-area" id="printableReportArea" style="border-radius:0;">
-            <div class="report-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:15px; margin-bottom:20px;">
-                <div><h2 style="color:#000; margin:0; font-size:20px;">تقرير الصيانة الذاتية</h2><p style="font-size:12px; color:#555; margin:0;">TPM Official Audit</p></div>
-                <div class="score-badge" style="background:#f0f0f0; padding:10px 20px; border-radius:8px; border:1px solid #000; text-align:center;">
-                    <h1 id="detPct" style="color:#2e7d32; font-size:28px; margin:0;"></h1>
-                    <p style="font-size:11px; color:#000; font-weight:bold; margin:0;">الكفاءة</p>
+   <div class="container screen" id="detailedReportScreen">
+        <div class="report-wrapper card print-area" id="printableReportArea">
+            <div class="report-header-main">
+                <div class="factory-logo">FACTORY<span>OS</span></div>
+                <div style="text-align:left;">
+                    <h2 style="margin:0; color:#000; font-size:18px;">تقرير التدقيق الفني (TPM)</h2>
+                    <p style="margin:0; font-size:10px; color:#666;">نسخة معتمدة للنظام الرقمي</p>
                 </div>
             </div>
-            <table class="report-table">
-                <tr><td style="width:50%;"><b>القسم:</b> <span id="detDept"></span></td><td style="width:50%;"><b>المعدة:</b> <span id="detMachine"></span></td></tr>
-                <tr><td><b>المراجع:</b> <span id="detAuditor"></span></td><td><b>التاريخ:</b> <span id="detDate"></span></td></tr>
+
+            <div class="final-summary-box">
+                <div class="summary-item">
+                    <span class="summary-label">النتيجة الإجمالية</span>
+                    <div class="summary-value" id="detPct">0%</div>
+                </div>
+                <div class="summary-item" style="border-right:1px solid #ddd;">
+                    <span class="summary-label">التقييم العام</span>
+                    <div class="summary-value" id="detGrade" style="font-size:16px;">--</div>
+                </div>
+            </div>
+
+            <table class="modern-report-table">
+                <tr>
+                    <th>القسم المستهدف:</th><td id="detDept">--</td>
+                    <th>المعدة / الماكينة:</th><td id="detMachine">--</td>
+                </tr>
+                <tr>
+                    <th>المراجع المسؤول:</th><td id="detAuditor">--</td>
+                    <th>تاريخ التدقيق:</th><td id="detDate">--</td>
+                </tr>
             </table>
-            <h3 style="color:#000; margin-bottom:15px; border-bottom:1px solid #ccc; padding-bottom:5px; font-size:16px;">تفاصيل المراجعة:</h3>
+
+            <h3 class="report-sub-title">📊 تحليل نتائج خطوات الصيانة الذاتية (JH)</h3>
+            <table class="score-breakdown-table">
+                <thead>
+                    <tr>
+                        <th>الخطوة</th>
+                        <th>الوصف</th>
+                        <th>الدرجة</th>
+                        <th>النسبة</th>
+                    </tr>
+                </thead>
+                <tbody id="detStepsTableBody"></tbody>
+            </table>
+
+            <h3 class="report-sub-title">📝 فرص التحسين والأدلة المرئية</h3>
             <div id="detStepsContainer"></div>
-            <div id="printSignature" class="print-signature" style="display:none;"></div>
+
+            <div class="report-footer-signatures">
+                <div class="sig-block">
+                    <p>توقيع المراجع</p>
+                    <div id="detSignatureImg"></div>
+                </div>
+                <div class="sig-block">
+                    <p>مدير القسم / الصيانة</p>
+                    <div class="sig-line"></div>
+                </div>
+                <div class="sig-block">
+                    <p>اعتماد مدير المصنع</p>
+                    <div class="sig-line"></div>
+                </div>
+            </div>
         </div>
-        <div class="row-flex no-print" style="margin-top: 15px;">
-            <button class="btn btn-primary flex-1" onclick="downloadProfessionalPDF()">تحميل PDF</button>
-            <button class="btn btn-success flex-1" onclick="shareWhatsApp()">واتساب</button>
+
+        <div class="row-flex no-print" style="margin-top: 20px;">
+            <button class="btn btn-primary flex-1 shadow-btn" onclick="downloadProfessionalPDF()">⬇️ تحميل PDF المطور</button>
+            <button class="btn btn-success flex-1" onclick="shareWhatsApp()">📱 واتساب</button>
         </div>
         <button class="btn btn-danger full-width no-print" style="margin-top:10px;" onclick="showScreen('historyScreen')">العودة للأرشيف</button>
     </div>

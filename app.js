@@ -643,34 +643,87 @@ function renderHistory() {
 
 function deleteReport(id) { if(confirm('تأكيد الحذف النهائي للتقرير؟')) { deleteRecord('history/' + id); showToast('تم الحذف بنجاح'); } }
 function editReport(id) { let rep = historyData.find(h => h.id === id); if(!rep) return; currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; renderCurrentAuditStep(); }
-
+// ------------------------------------------
+// 📄 محرك استخراج التقارير التفصيلية المطور
+// ------------------------------------------
 function viewDetailedReport(id) {
-    let a = historyData.find(h=>h.id===id); if(!a) return;
-    document.getElementById('detDept').innerText = a.dept; document.getElementById('detMachine').innerText = a.machine || 'عام'; 
-    document.getElementById('detAuditor').innerText = a.auditor; document.getElementById('detDate').innerText = a.date; document.getElementById('detPct').innerText = a.totalPct+'%';
-    
-    let html = a.stepsOrder.map(k=> {
-        let r=a.results[k]; 
-        if(!r||r.skipped) return `<div style="padding:10px; border:1px solid var(--copper); margin-bottom:10px; border-radius:8px; color:gray;"><b>${k}</b>: تم تخطي هذه الخطوة</div>`;
-        let p = Math.round((r.score/r.max)*100);
-        let imps = (r.improvements && r.improvements.length > 0) ? r.improvements.map(i=>`<li style="margin-bottom:5px;">- ${i}</li>`).join('') : '<span style="color:var(--success); font-weight:bold;">لا توجد فرص تحسين، أداء ممتاز.</span>';
-        let imgsHtml = ''; if(r.images) { Object.values(r.images).forEach(img => { if (img.data) imgsHtml += `<img src="${img.data}" style="height:60px; margin:5px; border:1px solid #ccc; border-radius:4px; display:inline-block;">`; }); }
+    let a = historyData.find(h => h.id === id); 
+    if(!a) return;
 
-        return `<div style="padding:15px; border:1px solid var(--copper); margin-bottom:10px; border-radius:8px; background:rgba(0,0,0,0.1);">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px dashed var(--gold); padding-bottom:5px;"><b>${k} : ${AUDIT_DATA[k] ? AUDIT_DATA[k].name : ''}</b><b style="color:var(--gold);">${p}%</b></div>
-            <div style="font-size:12px;"><b>فرص التحسين:</b><ul style="list-style:none; padding:0; margin-top:5px; color:var(--text-main);">${imps}</ul></div>
-            ${imgsHtml ? `<div style="margin-top:10px;">${imgsHtml}</div>` : ''}
-        </div>`;
-    }).join('');
-    document.getElementById('detStepsContainer').innerHTML = html;
+    // 1. ملء البيانات الأساسية
+    document.getElementById('detDept').innerText = a.dept;
+    document.getElementById('detMachine').innerText = a.machine || 'عام'; 
+    document.getElementById('detAuditor').innerText = a.auditor;
+    document.getElementById('detDate').innerText = a.date;
     
-    let sigDiv = document.getElementById('printSignature');
-    if(sigDiv) {
-        sigDiv.style.display = 'flex';
-        let sigImg = a.signature ? `<img src="${a.signature}" style="height:60px; margin-top:10px;">` : '<br><br>.......................';
-        sigDiv.innerHTML = `<div style="flex:1;">توقيع المراجع<br>${sigImg}</div><div style="flex:1;">مدير الصيانة<br><br>.......................</div><div style="flex:1;">مدير المصنع<br><br>.......................</div>`;
+    const totalPct = a.totalPct || 0;
+    document.getElementById('detPct').innerText = totalPct + '%';
+
+    // 2. التقييم الوصفي
+    let grade = "ضعيف";
+    if (totalPct >= 90) grade = "ممتاز ⭐";
+    else if (totalPct >= 80) grade = "جيد جداً";
+    else if (totalPct >= 70) grade = "جيد";
+    else if (totalPct >= 50) grade = "مقبول";
+    document.getElementById('detGrade').innerText = grade;
+    document.getElementById('detGrade').style.color = totalPct >= 80 ? '#2e7d32' : (totalPct >= 50 ? '#f57f17' : '#c62828');
+
+    // 3. ملء جدول توزيع الدرجات (Breakdown)
+    let tableHtml = '';
+    let detailsHtml = '';
+
+    a.stepsOrder.forEach(k => {
+        let r = a.results[k];
+        if (!r) return;
+
+        let p = r.skipped ? 0 : Math.round((r.score / r.max) * 100);
+        let statusText = r.skipped ? 'تخطي' : `${r.score}/${r.max}`;
+        
+        // إضافة للصف في الجدول السريع
+        tableHtml += `
+            <tr>
+                <td><b>${k}</b></td>
+                <td>${AUDIT_DATA[k] ? AUDIT_DATA[k].name : '---'}</td>
+                <td>${statusText}</td>
+                <td style="font-weight:bold; color:${p >= 80 ? '#2e7d32' : '#000'}">${p}%</td>
+            </tr>`;
+
+        // إضافة للتفاصيل (الملاحظات والصور)
+        if (!r.skipped) {
+            let imps = (r.improvements && r.improvements.length > 0) 
+                ? r.improvements.map(i => `<div style="font-size:11px; margin-bottom:3px; color:#444;">• ${i}</div>`).join('') 
+                : '<span style="color:#2e7d32; font-weight:bold;">لا توجد ملاحظات</span>';
+            
+            let imgsHtml = ''; 
+            if(r.images) { 
+                Object.values(r.images).forEach(img => { 
+                    if (img.data) imgsHtml += `<img src="${img.data}" style="height:80px; width:80px; object-fit:cover; margin:5px; border:1px solid #ddd; border-radius:4px;">`; 
+                }); 
+            }
+
+            detailsHtml += `
+                <div style="margin-bottom:15px; padding:10px; border:1px solid #eee; border-radius:8px;">
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; margin-bottom:8px; padding-bottom:5px;">
+                        <b style="font-size:12px;">${k}: ${AUDIT_DATA[k].name}</b>
+                        <b style="color:#b87333;">${p}%</b>
+                    </div>
+                    <div style="margin-bottom:10px;">${imps}</div>
+                    <div>${imgsHtml}</div>
+                </div>`;
+        }
+    });
+
+    document.getElementById('detStepsTableBody').innerHTML = tableHtml;
+    document.getElementById('detStepsContainer').innerHTML = detailsHtml;
+
+    // 4. معالجة التوقيع
+    const sigDiv = document.getElementById('detSignatureImg');
+    if (a.signature) {
+        sigDiv.innerHTML = `<img src="${a.signature}" style="height:60px; max-width:150px; border-bottom:1px solid #000;">`;
+    } else {
+        sigDiv.innerHTML = '<div style="height:60px; color:#999; font-size:10px; padding-top:40px;">لا يوجد توقيع رقمي</div>';
     }
-    window.currentReportText = `تقرير مراجعة مصنع\nالقسم: ${a.dept}\nالنتيجة: ${a.totalPct}%\nالمراجع: ${a.auditor}\nالتاريخ: ${a.date}`;
+
     showScreen('detailedReportScreen');
 }
 

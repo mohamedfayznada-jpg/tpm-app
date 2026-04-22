@@ -314,3 +314,27 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
 .level-opt.selected .score-tag { background: var(--success); color: white; border-color: white; }
 
 .item-badge-max { font-size: 10px; background: rgba(212, 175, 55, 0.1); color: var(--gold); padding: 2px 6px; border-radius: 4px; margin-right: auto; }
+
+/* تنسيقات التقرير الاحترافي للطباعة */
+.report-wrapper { background: #fff !important; color: #000 !important; padding: 30px !important; border-radius: 0 !important; border: 2px solid #333 !important; }
+.report-header-main { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 20px; }
+.factory-logo { font-size: 24px; font-weight: 900; color: #000; }
+.factory-logo span { color: #b87333; }
+
+.final-summary-box { display: flex; background: #f8f8f8; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+.summary-item { flex: 1; padding: 15px; }
+.summary-label { display: block; font-size: 11px; color: #666; margin-bottom: 5px; font-weight: bold; }
+.summary-value { font-size: 32px; font-weight: 900; color: #2e7d32; }
+
+.modern-report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+.modern-report-table th { background: #eee; text-align: right; padding: 8px; border: 1px solid #ccc; width: 20%; }
+.modern-report-table td { padding: 8px; border: 1px solid #ccc; background: #fff; }
+
+.score-breakdown-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; font-size: 11px; }
+.score-breakdown-table th { background: #333; color: #fff; padding: 10px; }
+.score-breakdown-table td { padding: 8px; border: 1px solid #ddd; }
+
+.report-sub-title { font-size: 14px; border-right: 4px solid #b87333; padding-right: 10px; margin: 20px 0 10px; color: #333; }
+.sig-block { text-align: center; flex: 1; font-size: 12px; font-weight: bold; }
+.sig-line { border-bottom: 1px dashed #000; width: 80%; margin: 40px auto 10px; }
+.report-footer-signatures { display: flex; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }

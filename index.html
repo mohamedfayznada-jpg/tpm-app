@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TPM Enterprise System</title>
+    <title>Factory OS | نظام إدارة المصنع الذكي</title>
     <meta name="theme-color" content="#0a1128">
-    <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
@@ -14,34 +13,28 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
-    <div class="header" id="mainHeader">
+   <div class="header" id="mainHeader">
         <div class="header-top">
-            <div class="status-dot"></div>
-            <div class="header-titles">
-                <h1>نظام إدارة المصنع</h1>
-              <div style="display:flex; align-items:center; gap:8px;">
-    <p>إشراف: م. محمد فايز</p>
-    <div id="adminNotification" style="display:none; width:12px; height:12px; background:var(--danger); border-radius:50%; border:2px solid white; animation: pulse 1s infinite; cursor:pointer;" onclick="showScreen('settingsScreen')"></div>
-</div>
- </div>
-            <button class="theme-toggle" onclick="toggleDarkMode()">التباين</button>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="status-dot"></div>
+                <div class="header-titles">
+                    <h1>نظام إدارة المصنع</h1>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <p>إشراف: م. محمد فايز</p>
+                        <div id="adminNotification" style="display:none; width:10px; height:10px; background:var(--danger); border-radius:50%; animation: pulse-red 1.5s infinite; cursor:pointer; border:1px solid white;" onclick="showScreen('settingsScreen')"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="icon-btn" onclick="toggleDarkMode()" title="تغيير المظهر">🌗</button>
+                <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج">🚪</button>
+            </div>
         </div>
-        <div class="search-bar-container">
-            <input type="text" id="globalSearchInput" class="form-control search-input" placeholder="بحث شامل (تاجات، مهام، مراجع)..." onkeyup="executeGlobalSearch()">
-            <button class="btn btn-primary btn-camera" onclick="document.getElementById('barcodeInput').click()">مسح</button>
-            <input type="file" id="barcodeInput" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromImage(event)">
-            <div id="searchResults" class="search-results-box"></div>
-        </div>
-        <div id="machineHealthIndicator" class="health-indicator"></div>
         <div class="cloud-status" id="cloudStatus">جاري الاتصال بالسيرفر...</div>
     </div>
-
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageSelection(event)">
-    <input type="file" id="galleryInput" accept="image/*" style="display:none;" onchange="handleImageSelection(event)">
 
     <div class="modal-overlay" id="imageSourceModal">
         <div class="modal-content">
@@ -60,110 +53,54 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="oplModal">
-        <div class="modal-content">
-            <h3 class="card-title">إنشاء درس نقطة واحدة (OPL)</h3>
-            <div class="form-group"><label>العنوان:</label><input type="text" id="oplTitle" class="form-control"></div>
-            <div class="form-group"><label>الصورة التوضيحية:</label><input type="file" class="form-control" accept="image/*" onchange="uploadOplImage(event)"><div id="oplImgPreview"></div></div>
-            <div class="form-group"><label>الشرح الهندسي:</label><textarea id="oplDesc" class="form-control" rows="4"></textarea></div>
-            <div class="row-flex">
-                <button class="btn btn-success flex-1" onclick="generateOPLPDF()">تصدير PDF</button>
-                <button class="btn btn-danger flex-1" onclick="document.getElementById('oplModal').style.display='none'">إلغاء</button>
-            </div>
+    <div class="container screen active" id="loginScreen">
+        <div class="card login-card" style="margin-top: 50px;">
+            <h2 style="color:var(--gold); margin-bottom:20px;">الدخول للنظام الصناعي</h2>
+            <input type="text" id="loginUsername" class="form-control" placeholder="اسم المستخدم">
+            <input type="password" id="loginPassword" class="form-control" placeholder="كلمة المرور">
+            <input type="text" id="displayName" class="form-control" placeholder="الاسم الكامل">
+            <button class="btn btn-primary full-width" onclick="login()">دخول آمن</button>
         </div>
     </div>
 
-    <div class="modal-overlay" id="kaizenUploadModal">
-        <div class="modal-content">
-            <h3 class="card-title">تسجيل تحسين (كايزن)</h3>
-            <div class="form-group"><label>وصف التحسين:</label><input type="text" id="newKaizenTitle" class="form-control" placeholder="ما الذي تم تحسينه؟"></div>
-            <div class="form-group"><label>القسم:</label><select id="newKaizenDept" class="form-control"></select></div>
-            <div class="row-flex">
-                <div class="upload-box flex-1 danger-border">
-                    <label style="color:var(--danger); cursor:pointer;">صورة (قبل)<input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'before')"></label>
-                    <div id="kaizenBeforePreview"></div>
-                </div>
-                <div class="upload-box flex-1 success-border">
-                    <label style="color:var(--success); cursor:pointer;">صورة (بعد)<input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'after')"></label>
-                    <div id="kaizenAfterPreview"></div>
-                </div>
+ <div class="container screen" id="homeScreen">
+        <div class="welcome-banner">
+            <div>
+                <h2 style="color:var(--gold); font-size:18px; margin:0;">لوحة القيادة</h2>
+                <p style="font-size:11px; color:var(--text-muted); margin:0;">مركز التحكم الرئيسي للمصنع</p>
             </div>
-            <div class="row-flex" style="margin-top:20px;">
-                <button class="btn btn-success flex-2" onclick="submitManualKaizen()" id="submitKaizenBtn">دمج واعتماد</button>
-                <button class="btn btn-danger flex-1" onclick="document.getElementById('kaizenUploadModal').style.display='none'">إلغاء</button>
-            </div>
+            <button class="btn-scan-huge" onclick="document.getElementById('barcodeInput').click()">
+                <span style="font-size:20px; margin-bottom:2px;">📷</span>
+                <span style="font-size:12px; font-weight:bold;">مسح باركود</span>
+            </button>
+            <input type="file" id="barcodeInput" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromImage(event)">
         </div>
-    </div>
-<div class="modal-overlay" id="permissionsModal">
-        <div class="modal-content">
-            <h3 class="card-title">تعديل أذونات المستخدم</h3>
-            <div id="permissionsContainer"></div>
-            <div class="row-flex" style="margin-top:15px;">
-                <button class="btn btn-success flex-2" onclick="saveUserPermissions()">حفظ الأذونات</button>
-                <button class="btn btn-danger flex-1" onclick="document.getElementById('permissionsModal').style.display='none'">إلغاء</button>
-            </div>
-        </div>
-    </div>
-   <div class="container screen active" id="loginScreen">
-        <div class="login-wrapper">
-            <div class="login-header">
-                <div class="logo-circle">TPM</div>
-                <h2 style="color:var(--gold);">مرحباً بك مجدداً</h2>
-                <p style="color:var(--text-muted); font-size:12px; margin-bottom:20px;">سجل دخولك للوصول إلى لوحة التحكم</p>
-            </div>
-            
-            <div class="card modern-card">
-                <div class="input-group">
-                    <input type="text" id="loginUsername" class="form-control" placeholder="اسم المستخدم (مثال: mfayez)">
-                </div>
-                <div class="input-group">
-                    <input type="password" id="loginPassword" class="form-control" placeholder="كلمة المرور">
-                </div>
-                <div class="checkbox-group" style="text-align:right; margin-bottom:15px;"><label style="font-size:12px; color:var(--text-main);"><input type="checkbox" id="rememberMe" checked> تذكر بياناتي</label></div>
-                
-                <button class="btn btn-primary full-width shadow-btn" onclick="login()">دخول آمن</button>
-                <button class="btn btn-outline full-width" style="margin-top:10px;" onclick="biometricLogin()">⚡ الدخول السريع</button>
-                
-                <div class="divider"><span>أو</span></div>
-                <button class="btn btn-outline full-width" style="border-color:var(--copper); color:var(--text-main);" onclick="showScreen('signupScreen')">مستخدم جديد؟ إنشاء حساب</button>
-            </div>
-        </div>
-    </div>
 
-    <div class="container screen" id="signupScreen">
-        <div class="login-wrapper">
-            <div class="login-header">
-                <h2 style="color:var(--gold);">إنشاء حساب جديد</h2>
-                <p style="color:var(--text-muted); font-size:12px; margin-bottom:20px;">انضم إلى فريق عمل Factory OS</p>
-            </div>
-            
-            <div class="card modern-card">
-                <input type="text" id="signupFullName" class="form-control" placeholder="الاسم الكامل (يظهر في التقارير)">
-                <input type="text" id="signupUsername" class="form-control" placeholder="اسم المستخدم الدائم (إنجليزي)">
-                <input type="password" id="signupPassword" class="form-control" placeholder="كلمة المرور (6 أحرف على الأقل)">
-                
-                <label style="display:block; margin: 15px 0 5px; font-size:12px; color:var(--gold); text-align:right;">طلب صلاحية الوصول كـ:</label>
-                <select id="signupRole" class="form-control" style="border-color:var(--gold);">
-                    <option value="operator">مشغل (إدخال بيانات وتاجات)</option>
-                    <option value="auditor">مراجع (تقييم JH وخطوات العمل)</option>
-                    <option value="admin">مدير (صلاحيات كاملة)</option>
-                </select>
-                
-                <button class="btn btn-success full-width" style="margin-top:15px;" onclick="signup()">إرسال طلب التسجيل</button>
-                <button class="btn btn-link full-width" style="margin-top:10px; background:transparent; color:var(--gold); border:none; text-decoration:underline;" onclick="showScreen('loginScreen')">لدي حساب بالفعل؟ دخول</button>
-            </div>
-        </div>
-    </div>
+        <div id="searchResults" class="search-results-box" style="position:relative; margin-bottom:15px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.3); display:none;"></div>
 
-    <div class="container screen" id="homeScreen">
-        <div class="dashboard-stats">
-            <div class="card stat-card"><div class="stat-value primary-text" id="homeAvgScore">0%</div><div class="stat-label">كفاءة المصنع</div></div>
-            <div class="card stat-card"><div class="stat-value danger-text" id="homeOpenTags">0</div><div class="stat-label">أعطال مفتوحة</div></div>
-            <div class="card stat-card"><div class="stat-value success-text" id="homeClosedTags">0</div><div class="stat-label">أعطال مغلقة</div></div>
+        <div class="dashboard-stats modern-stats">
+            <div class="card stat-card glass-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value primary-text" id="homeAvgScore">0%</div>
+                <div class="stat-label">كفاءة المصنع</div>
+            </div>
+            <div class="card stat-card glass-card">
+                <div class="stat-icon">🔴</div>
+                <div class="stat-value danger-text" id="homeOpenTags">0</div>
+                <div class="stat-label">أعطال مفتوحة</div>
+            </div>
+            <div class="card stat-card glass-card">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-value success-text" id="homeClosedTags">0</div>
+                <div class="stat-label">أعطال مغلقة</div>
+            </div>
         </div>
-        
+
         <div class="card ai-card btn-role-admin">
-            <div class="card-header"><h3 style="margin:0; color:var(--gold); font-size:16px;">المستشار التنبؤي (AI)</h3><button class="btn btn-sm btn-outline" style="width:auto; margin:0;" onclick="predictMachineFailures()">فحص الآن</button></div>
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; color:var(--gold); font-size:16px;">المستشار التنبؤي (AI)</h3>
+                <button class="btn btn-sm btn-outline" style="width:auto; margin:0;" onclick="predictMachineFailures()">فحص الآن</button>
+            </div>
             <div id="aiPredictionResult" class="ai-result"></div>
         </div>
 
@@ -176,36 +113,6 @@
             <div id="usersLeaderboardContainer" class="leaderboard-list"></div>
         </div>
     </div>
-
-    <div class="container screen" id="deptDashboardScreen">
-        <button class="btn btn-outline btn-sm no-print" style="margin-bottom:15px;" onclick="showScreen('homeScreen'); updateHomeDashboard();">العودة</button>
-        <div class="dept-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 id="deptDashTitle" style="color:var(--gold); margin:0;">القسم</h2>
-            <button class="btn btn-primary btn-sm no-print" onclick="startNewAuditFlow()">مراجعة جديدة</button>
-        </div>
-        <div class="no-print filter-group row-flex" style="margin-top:15px;">
-            <input type="text" id="dashMachineFilter" class="form-control flex-2" placeholder="بحث بالماكينة" onkeyup="updateDeptDashboard()" style="margin:0;">
-            <select id="dashTimeFilter" class="form-control flex-1" onchange="updateDeptDashboard()" style="margin:0;"><option value="latest">الأحدث</option><option value="avg3">متوسط 3</option></select>
-        </div>
-        <div class="dashboard-stats" style="margin-top:15px;">
-            <div class="card stat-card"><div class="stat-label">مشاكل</div><div id="deptKpiOpenTags" class="stat-value danger-text">0</div></div>
-            <div class="card stat-card"><div class="stat-label">مهام</div><div id="deptKpiTasks" class="stat-value warning-text">0</div></div>
-            <div class="card stat-card"><div class="stat-label">إنجاز</div><div id="deptKpiComp" class="stat-value success-text">0%</div></div>
-        </div>
-        <button class="btn btn-outline btn-sm no-print full-width" style="border-style: dashed;" onclick="printDeptDashboard()">طباعة تقرير أداء القسم</button>
-        <div class="card"><h3 class="card-title">مؤشرات الركائز</h3><div class="chart-container"><canvas id="radarChart"></canvas></div></div>
-        <div class="card"><h3 class="card-title">التطور التاريخي</h3><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
-    </div>
-
-    <div class="container screen" id="setupScreen">
-        <div class="card">
-            <h3 class="card-title">تكوين المراجعة</h3>
-            <div class="form-group"><label>القسم:</label><select class="form-control" id="selectDept"></select></div>
-            <div class="form-group"><label>الماكينة (اختياري):</label><input type="text" id="setupMachine" class="form-control" placeholder="مثال: خط التعبئة 1"></div>
-            <button class="btn btn-success full-width" onclick="initAuditSequential()">بدء الفحص</button>
-        </div>
-    </div>
-
     <div class="container screen" id="auditScreen">
         <div class="card sticky-header" style="padding:15px;">
             <h3 id="auditStepTitle" style="color:var(--gold); margin-bottom:10px; font-size:16px;"></h3>
@@ -218,197 +125,30 @@
         </div>
     </div>
 
-    <div class="container screen" id="stepSummaryScreen">
-        <div class="card text-center">
-            <h3 class="card-title" id="summaryStepTitle">الملخص</h3>
-            <div class="score-circle"><div class="pct" id="summaryPct">0%</div></div>
-            <div id="summaryScoreStr" style="color:var(--text-muted); font-size:14px; font-weight:bold; margin-bottom:20px;">0/0</div>
-            <div style="text-align:right; border-top:1px dashed var(--copper); padding-top:15px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h3 style="color:var(--gold); margin:0; font-size:14px;">فرص التحسين:</h3>
-                </div>
-                <div id="opportunitiesContainer"></div>
-            </div>
-        </div>
-        <button class="btn btn-primary full-width" onclick="goToNextStep()">المتابعة ⬅️</button>
-    </div>
-
-    <div class="container screen" id="finalReportScreen">
-        <div class="card text-center">
-            <h2 class="success-text">اكتمل التقييم</h2>
-            <h3 id="finalDeptName" class="primary-text" style="margin:10px 0;"></h3>
-            <div class="score-circle final-score"><div class="pct success-text" id="finalTotalPct">0%</div></div>
-            <h4 style="margin-top: 20px; color:var(--gold); text-align:right;">توقيع المراجع:</h4>
-            <div class="signature-box"><canvas id="signatureCanvas" width="300" height="150"></canvas></div>
-            <button class="btn btn-sm btn-outline" style="width:auto; margin:0 auto;" onclick="clearSignature()">مسح وإعادة الرسم</button>
-        </div>
-        <button class="btn btn-primary btn-role-auditor full-width" onclick="saveFinalAudit()">💾 حفظ واعتماد التقرير</button>
-    </div>
-
-    <div class="container screen" id="historyScreen">
-        <h3 class="section-title">أرشيف المراجعات</h3>
-        <div id="historyListContainer"></div>
-    </div>
-
-    <div class="container screen" id="detailedReportScreen">
-        <div class="card print-area" id="printableReportArea" style="border-radius:0;">
-            <div class="report-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:15px; margin-bottom:20px;">
-                <div><h2 style="color:#000; margin:0; font-size:20px;">تقرير الصيانة الذاتية</h2><p style="font-size:12px; color:#555; margin:0;">TPM Official Audit</p></div>
-                <div class="score-badge" style="background:#f0f0f0; padding:10px 20px; border-radius:8px; border:1px solid #000; text-align:center;">
-                    <h1 id="detPct" style="color:#2e7d32; font-size:28px; margin:0;"></h1>
-                    <p style="font-size:11px; color:#000; font-weight:bold; margin:0;">الكفاءة</p>
-                </div>
-            </div>
-            <table class="report-table">
-                <tr><td style="width:50%;"><b>القسم:</b> <span id="detDept"></span></td><td style="width:50%;"><b>المعدة:</b> <span id="detMachine"></span></td></tr>
-                <tr><td><b>المراجع:</b> <span id="detAuditor"></span></td><td><b>التاريخ:</b> <span id="detDate"></span></td></tr>
-            </table>
-            <h3 style="color:#000; margin-bottom:15px; border-bottom:1px solid #ccc; padding-bottom:5px; font-size:16px;">تفاصيل المراجعة:</h3>
-            <div id="detStepsContainer"></div>
-            <div id="printSignature" class="print-signature" style="display:none;"></div>
-        </div>
-        <div class="row-flex no-print" style="margin-top: 15px;">
-            <button class="btn btn-primary flex-1" onclick="downloadProfessionalPDF()">تحميل PDF</button>
-            <button class="btn btn-success flex-1" onclick="shareWhatsApp()">واتساب</button>
-        </div>
-        <button class="btn btn-danger full-width no-print" style="margin-top:10px;" onclick="showScreen('historyScreen')">العودة للأرشيف</button>
-    </div>
-
-    <div class="container screen" id="kaizenScreen">
-        <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
-            <h3 class="section-title" style="margin:0; border:none; padding:0;">مجتمع كايزن</h3>
-            <div>
-                <button class="btn btn-primary btn-sm" style="width:auto; margin:0;" onclick="document.getElementById('kaizenUploadModal').style.display='flex'">مشاركة</button>
-                <button class="btn btn-outline btn-sm" style="width:auto; margin:0;" onclick="document.getElementById('oplModal').style.display='flex'">OPL</button>
-            </div>
-        </div>
-        <select id="kaizenDeptSelect" class="form-control" onchange="renderKaizenFeed()"><option value="الكل">عرض جميع الأقسام</option></select>
-        <div id="kaizenFeedContainer"></div>
-    </div>
-   
-    <div class="container screen" id="tasksScreen">
-        <div id="tasksMainView">
-            <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
-                <h3 class="section-title" style="margin:0; border:none; padding:0;">إدارة المهام</h3>
-                <button class="btn btn-success btn-sm" style="width:auto; margin:0;" onclick="exportTasksToCSV()">تصدير</button>
-            </div>
-            <div class="dashboard-stats">
-                <div class="card stat-card danger-border" style="padding:10px;"><div id="kpiTasksPendingAll" class="stat-value danger-text">0</div><div class="stat-label">معلقة</div></div>
-                <div class="card stat-card warning-border" style="padding:10px;"><div id="kpiTasksProgressAll" class="stat-value warning-text">0</div><div class="stat-label">جاري</div></div>
-                <div class="card stat-card success-border" style="padding:10px;"><div id="kpiTasksDoneAll" class="stat-value success-text">0</div><div class="stat-label">مكتملة</div></div>
-            </div>
-            <div id="tasksDeptGrid" class="grid-layout"></div>
-        </div>
-        <div id="tasksDeptView" style="display:none;">
-            <button class="btn btn-outline btn-sm" style="margin-bottom:15px;" onclick="closeTasksDept()">العودة</button>
-            <h2 id="tasksDeptTitle" class="section-title">المهام</h2>
-            <div class="card btn-role-auditor">
-                <h4 style="color:var(--gold); margin-bottom:10px;">إضافة مهمة:</h4>
-                <div class="row-flex"><input type="text" id="newTaskInput" class="form-control flex-2" style="margin:0;"><button class="btn btn-primary flex-1" style="margin:0;" onclick="addManualTaskDept()">حفظ</button></div>
-            </div>
-            <h4 style="color:var(--gold); margin-bottom:10px; border-bottom:1px dashed var(--copper); padding-bottom:5px;">مجلدات المراجعات</h4>
-            <div id="auditFoldersContainer"></div>
-            <h4 style="color:var(--gold); margin-bottom:10px; border-bottom:1px dashed var(--copper); padding-bottom:5px;">المهام الفردية</h4>
-            <div id="tasksListContainer"></div>
-        </div>
-    </div>
-
     <div class="container screen" id="tagsScreen">
         <h3 class="section-title">إدارة التاجات</h3>
-        <div class="row-flex" style="margin-bottom:15px;">
-            <select id="filterTagDept" class="form-control flex-1" style="margin:0;" onchange="renderTags()"><option value="الكل">الكل</option></select>
-            <input type="text" id="filterTagMachine" class="form-control flex-1" style="margin:0;" placeholder="تصفية بالماكينة" onkeyup="renderTags()">
-        </div>
         <div class="card">
             <h4 style="color:var(--gold); margin-bottom:10px;">إصدار تاج:</h4>
-            <div class="row-flex" style="margin-bottom:10px;">
-                <select id="newTagDept" class="form-control flex-1" style="margin:0;"></select>
-                <input type="text" id="newTagMachine" class="form-control flex-1" style="margin:0;" placeholder="الماكينة">
+            <select id="newTagDept" class="form-control"></select>
+            <input type="text" id="newTagMachine" class="form-control" placeholder="الماكينة">
+            <div style="position: relative;">
+                <input type="text" id="newTagDesc" class="form-control" placeholder="وصف العطل..." style="padding-left: 35px;">
+                <span onclick="startVoiceRecognition('newTagDesc')" style="position: absolute; left: 10px; top: 10px; cursor: pointer; font-size: 18px;">🎤</span>
             </div>
-            <div class="row-flex" style="margin-bottom:10px;">
-                <input type="text" id="newTagDesc" class="form-control flex-2" style="margin:0;" placeholder="وصف العطل...">
-                <select id="newTagColor" class="form-control flex-1" style="margin:0;" onchange="document.getElementById('tagEngSelectDiv').style.display = this.value === 'red' ? 'block' : 'none';"><option value="red">أحمر (صيانة)</option><option value="blue">أزرق (إنتاج)</option></select>
-            </div>
-            <div id="tagEngSelectDiv" style="display: none; margin-bottom:10px;"><select id="newTagEngineer" class="form-control" style="margin:0; border-color:var(--danger);"></select></div>
-            <div class="upload-box" style="margin-bottom:10px; border-color:var(--primary-light);">
-                <label style="cursor:pointer; color:var(--text-main);">إرفاق صورة للتاج<input type="file" id="tagImageInput" style="display:none;" accept="image/*" onchange="handleTagImage(event)"></label>
-                <div id="tagImagePreview"></div>
-            </div>
-            <button class="btn btn-primary full-width" style="margin:0;" onclick="addNewTag()">إصدار وحفظ</button>
+            <select id="newTagColor" class="form-control">
+                <option value="red">أحمر (صيانة)</option>
+                <option value="blue">أزرق (إنتاج)</option>
+            </select>
+            <button class="btn btn-primary full-width" onclick="addNewTag()">إصدار وحفظ</button>
         </div>
         <div id="tagsListContainer"></div>
     </div>
 
-    <div class="container screen" id="knowledgeScreen">
-        <h3 class="section-title">عقل المصنع</h3>
-        <div class="card btn-role-admin">
-            <h4 style="color:var(--gold); margin-bottom:10px;">إضافة مرجع</h4>
-            <input type="text" id="kbTitle" class="form-control" placeholder="العنوان">
-            <div class="row-flex" style="margin-bottom:10px;">
-                <button class="btn btn-outline btn-sm" style="width:auto; margin:0;" onclick="document.getElementById('pdfInput').click()">رفع PDF</button>
-                <input type="file" id="pdfInput" accept="application/pdf" style="display:none;" onchange="handlePDFUpload(event)">
-            </div>
-            <textarea id="kbContent" class="form-control" rows="3" placeholder="أو اكتب النص هنا..."></textarea>
-            <div id="pdfExtractStatus" style="font-size:11px; color:var(--success); font-weight:bold; margin-bottom:5px;"></div>
-            <div id="kbImagesPreview" style="display:flex; overflow-x:auto; gap:5px; margin-bottom:10px;"></div>
-            <button class="btn btn-primary full-width" style="margin:0;" onclick="addKnowledgeBaseArticle()">حفظ المعرفة</button>
-        </div>
-        <h4 style="color:var(--gold); margin-bottom:10px;">المراجع الحالية:</h4>
-        <div id="knowledgeListContainer"></div>
-    </div>
-
-    <div class="container screen" id="settingsScreen">
-        <div class="card btn-role-admin">
-            <h3 class="card-title">مفاتيح الربط (API Keys)</h3>
-            <input type="password" id="imgbbKeyInput" class="form-control" placeholder="مفتاح ImgBB">
-            <input type="password" id="geminiKeyInput" class="form-control" placeholder="مفتاح Gemini">
-            <div class="row-flex">
-                <button class="btn btn-primary flex-2" style="margin:0;" onclick="saveApiKeys()">حفظ وإغلاق</button>
-                <button class="btn btn-outline flex-1" style="margin:0;" onclick="enableApiKeysEdit()">تعديل</button>
-            </div>
-        </div>
-        <div class="card btn-role-admin">
-            <h3 class="card-title">تصدير ونسخ احتياطي</h3>
-            <button class="btn btn-success full-width" style="margin-bottom:10px;" onclick="exportToCSV()">استخراج Excel</button>
-            <div class="row-flex">
-                <button class="btn btn-primary flex-1" style="margin:0;" onclick="exportSystemBackupJSON()">تصدير JSON</button>
-                <button class="btn btn-warning flex-1" style="margin:0;" onclick="triggerBackupImport()">استرجاع JSON</button>
-                <input type="file" id="backupImportInput" accept=".json,application/json" style="display:none;" onchange="importSystemBackupJSON(event)">
-            </div>
-        </div>
-        <div class="card btn-role-admin">
-            <h3 class="card-title">إدارة الأقسام والمهندسين</h3>
-            <div class="row-flex" style="margin-bottom:10px;">
-                <input type="text" id="newDeptInput" class="form-control flex-2" placeholder="القسم" style="margin:0;">
-                <button class="btn btn-primary flex-1" style="margin:0;" onclick="addOrUpdateDept()">حفظ</button>
-            </div>
-            <div class="row-flex" style="margin-bottom:15px;">
-                <input type="text" id="newEngName" class="form-control flex-2" placeholder="اسم المهندس" style="margin:0;">
-                <input type="tel" id="newEngPhone" class="form-control flex-2" placeholder="رقم الهاتف" style="margin:0;">
-                <button class="btn btn-warning flex-1" style="margin:0;" onclick="addEngineer()">إضافة</button>
-            </div>
-            <div id="engListContainer"></div>
-        </div>
-        <div class="card btn-role-admin">
-            <h3 class="card-title">سجل الصلاحيات</h3>
-            <div class="row-flex" style="margin-bottom:15px;">
-                <input type="text" id="newUsernameRole" class="form-control flex-2" placeholder="المستخدم" style="margin:0;">
-                <select id="newRoleSelect" class="form-control flex-1" style="margin:0;"><option value="viewer">مشاهد</option><option value="auditor">مراجع</option><option value="admin">مدير</option></select>
-                <button class="btn btn-primary flex-1" style="margin:0;" onclick="addNewUserRole()">تعيين</button>
-            </div>
-            <div id="usersListContainer"></div>
-        </div>
-        <button class="btn btn-danger full-width" onclick="logout()">تسجيل الخروج</button>
-    </div>
-
     <div class="nav-bar" id="bottomNav" style="display: none;">
-        <div class="nav-item" onclick="showScreen('homeScreen'); updateHomeDashboard();"><div class="nav-text">الرئيسية</div></div>
-        <div class="nav-item" onclick="showScreen('tasksScreen'); renderTasks();"><div class="nav-text">المهام</div></div>
-        <div class="nav-item" onclick="showScreen('historyScreen')"><div class="nav-text">التقارير</div></div>
-        <div class="nav-item" onclick="showScreen('kaizenScreen'); renderKaizenFeed();"><div class="nav-text">كايزن</div></div>
-        <div class="nav-item" onclick="showScreen('tagsScreen'); renderTags();"><div class="nav-text">التاجات</div></div>
-        <div class="nav-item btn-role-admin" onclick="showScreen('knowledgeScreen'); renderKnowledgeBase();"><div class="nav-text">المصنع</div></div>
-        <div class="nav-item" onclick="showScreen('settingsScreen')"><div class="nav-text">إعدادات</div></div>
+        <div class="nav-item" onclick="showScreen('homeScreen'); updateHomeDashboard();">🏠 الرئيسية</div>
+        <div class="nav-item" onclick="showScreen('tagsScreen'); renderTags();">🔖 التاجات</div>
+        <div class="nav-item" onclick="showScreen('historyScreen'); renderHistory();">📂 التقارير</div>
+        <div class="nav-item" onclick="showScreen('settingsScreen');">⚙️ إعدادات</div>
     </div>
 
     <script src="app.js"></script>

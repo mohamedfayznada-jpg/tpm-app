@@ -808,6 +808,9 @@ function handleTagImage(e) {
     processAndEnhanceImage(f, function(dataUrl) { currentTagImg=dataUrl; document.getElementById('tagImagePreview').innerHTML=`<span style="color:var(--success); font-size:11px; font-weight:bold;">مُجهزة للرفع</span>`; });
 }
 
+// ------------------------------------------
+// 🏷️ دالة إصدار التاج (محدثة ومضادة للأعطال)
+// ------------------------------------------
 async function addNewTag() {
     let d=document.getElementById('newTagDesc').value, c=document.getElementById('newTagColor').value, dp=document.getElementById('newTagDept').value, m=document.getElementById('newTagMachine').value, sp=document.getElementById('newTagSpareParts').value;
     if(!d) { showToast('أدخل وصف المشكلة'); return; }
@@ -816,21 +819,25 @@ async function addNewTag() {
     let uploadedUrl = null;
     
     if (currentTagImg) {
-        showToast('جاري رفع التاج...');
+        showToast('جاري رفع التاج والصورة... ⏳');
         uploadedUrl = await uploadImageToStorage(currentTagImg);
-        if(!uploadedUrl) return showToast('فشل رفع الصورة');
+        if(!uploadedUrl) {
+            // بدلاً من إيقاف الكود، سنحفظ التاج بدون صورة مع إعطاء تنبيه
+            showToast('⚠️ فشل رفع الصورة (تأكد من مفتاح ImgBB). سيتم حفظ التاج كنص فقط.');
+        }
     }
     
-    let tId = uniqueNumericId().toString();syncRecord('tags/' + tId, {id:tId, desc:fullDesc, color:c, dept:dp, machine:m, image:uploadedUrl, status:'open', auditor:currentUser.name, date:new Date().toLocaleDateString('ar-EG'), timestamp: Date.now()});
+    let tId = uniqueNumericId().toString();
+    syncRecord('tags/' + tId, {id:tId, desc:fullDesc, color:c, dept:dp, machine:m, image:uploadedUrl, status:'open', auditor:currentUser.name, date:new Date().toLocaleDateString('ar-EG'), timestamp: Date.now()});
     
     document.getElementById('newTagDesc').value=''; document.getElementById('newTagMachine').value=''; document.getElementById('newTagSpareParts').value=''; currentTagImg = null;
     let preview = document.getElementById('tagImagePreview'); if(preview) preview.innerHTML = '';
     
-    awardPoints(10, 'إصدار تاج جديد'); showToast('تم إصدار التاج بنجاح');
+    awardPoints(10, 'إصدار تاج جديد'); 
+    if(uploadedUrl || !currentTagImg) showToast('تم إصدار التاج بنجاح ✅');
     
-    if(c==='red' && document.getElementById('newTagEngineer').value) window.open(`https://wa.me/${document.getElementById('newTagEngineer').value.replace(/\D/g,'')}?text=${encodeURIComponent(`إشعار عطل (تاج أحمر)\nالقسم: ${dp}\nالماكينة: ${m||'عام'}\nالوصف: ${fullDesc}`)}`);
+    if(c==='red' && document.getElementById('newTagEngineer') && document.getElementById('newTagEngineer').value) window.open(`https://wa.me/${document.getElementById('newTagEngineer').value.replace(/\D/g,'')}?text=${encodeURIComponent(`إشعار عطل (تاج أحمر)\nالقسم: ${dp}\nالماكينة: ${m||'عام'}\nالوصف: ${fullDesc}`)}`);
 }
-
 // ------------------------------------------
 // 🏷️ التاجات والمشكلات (Ticket System)
 // ------------------------------------------

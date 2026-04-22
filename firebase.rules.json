@@ -3,30 +3,22 @@
     ".read": "auth != null",
     "tpm_system": {
       ".read": "auth != null",
+      "api_keys": { ".write": "auth != null" },
+      "departments": { ".write": "auth != null" },
+      "maintenanceEngineers": { ".write": "auth != null" },
       "history": {
         ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor' || root.child('tpm_system/users/' + auth.uid).val() === 'auditor')"
       },
-      "tasks": {
-        ".write": "auth != null"
-      },
-      "tags": {
-        ".write": "auth != null"
-      },
-      "kaizenComments": {
-        ".write": "auth != null"
-      },
+      "tasks": { ".write": "auth != null" },
+      "tags": { ".write": "auth != null" },
+      "kaizenComments": { ".write": "auth != null" },
+      "likes": { ".write": "auth != null" },
       "users": {
         ".read": "auth != null",
-        "$uid": {
-          ".write": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid).val() === 'admin')"
-        }
+        "$uid": { ".write": "auth != null" }
       },
-      "points": {
-        ".write": "auth != null"
-      },
-      "logs": {
-        ".write": "auth != null"
-      }
+      "points": { ".write": "auth != null" },
+      "logs": { ".write": "auth != null" }
     }
   }
 }

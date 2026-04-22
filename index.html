@@ -194,11 +194,24 @@
             <div id="aiPredictionResult" class="ai-result"></div>
         </div>
 
-        <h3 class="section-title">مراقبة الأقسام</h3>
+   <h3 class="section-title">مراقبة الأقسام</h3>
         <div id="homeDeptGrid" class="grid-layout"></div>
         
-        <div class="card" style="margin-top: 20px;">
-            <h3 class="card-title" style="text-align:center;">لوحة أبطال الجودة</h3>
+        <div class="row-flex" style="margin-top:20px; align-items:stretch; flex-wrap: wrap;">
+            <div class="card flex-2" style="margin-bottom:10px; min-width:250px;">
+                <h3 class="card-title" style="font-size:14px;">📊 مقارنة أداء الأقسام</h3>
+                <div class="chart-container" style="height: 220px; width:100%;">
+                    <canvas id="mainDashboardChart"></canvas>
+                </div>
+            </div>
+            <div class="card flex-1" style="margin-bottom:10px; overflow-y:auto; max-height:285px; min-width:200px;">
+                <h3 class="card-title danger-text" style="font-size:14px; border-bottom-color:var(--danger);">🚨 أعطال حرجة (تاجات حمراء)</h3>
+                <div id="criticalTagsList"></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 10px;">
+            <h3 class="card-title" style="text-align:center;">🏆 لوحة أبطال الجودة</h3>
             <div id="podiumContainer" class="podium-container"></div>
             <div id="usersLeaderboardContainer" class="leaderboard-list"></div>
         </div>

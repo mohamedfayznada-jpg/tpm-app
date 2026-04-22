@@ -384,22 +384,75 @@ function updateUsersLeaderboard() {
     lc.innerHTML = sortable.slice(3).map((item, idx) => `<div class="leaderboard-item"><span>المركز ${idx+4}: <b>${item.user}</b></span><span>${item.points} نقطة</span></div>`).join('');
 }
 
+let mainChartInstance = null; // متغير عام لحفظ الرسم البياني
+
+// 📈 محرك الشاشة الرئيسية (Executive Dashboard)
 function updateHomeDashboard() {
     let tScore = 0, aCount = 0;
+    let deptLabels = [];
+    let deptScores = [];
+    
+    // 1. تحديث كروت الأقسام وتجهيز بيانات الرسم البياني
     let grid = departments.map(d => {
         let auds = historyData.filter(h => h.dept === d && !h.stepsOrder.includes('ManualKaizen'));
         let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
         if(auds.length > 0) { tScore+=sc; aCount++; }
         let rTags = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
-        return `<div class="card" style="padding:15px; text-align:center; cursor:pointer;" onclick="openDeptDashboard('${d}')"><div style="font-size:14px; font-weight:bold; color:var(--gold); margin-bottom:10px;">${d}</div><div class="stat-value ${sc>=80?'success-text':(sc>=50?'warning-text':'danger-text')}">${sc}%</div><div style="font-size:10px; color:var(--text-muted); margin-top:5px;">تاجات مفتوحة: ${rTags}</div></div>`;
+        
+        deptLabels.push(d);
+        deptScores.push(sc);
+
+        return `<div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer;" onclick="openDeptDashboard('${d}')"><div style="font-size:14px; font-weight:bold; color:var(--gold); margin-bottom:10px;">${d}</div><div class="stat-value ${sc>=80?'success-text':(sc>=50?'warning-text':'danger-text')}">${sc}%</div><div style="font-size:10px; color:var(--text-muted); margin-top:5px;">تاجات مفتوحة: ${rTags}</div></div>`;
     }).join('');
+    
     document.getElementById('homeDeptGrid').innerHTML = grid;
     document.getElementById('homeAvgScore').innerText = aCount > 0 ? Math.round(tScore/aCount) + '%' : '0%';
     document.getElementById('homeOpenTags').innerText = tagsData.filter(t => t.status === 'open').length;
     document.getElementById('homeClosedTags').innerText = tagsData.filter(t => t.status === 'closed').length;
+    
+    // 2. رسم المخطط البياني (Live Chart)
+    const ctx = document.getElementById('mainDashboardChart');
+    if (ctx) {
+        if (mainChartInstance) mainChartInstance.destroy(); // تدمير القديم لمنع التداخل
+        mainChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: deptLabels,
+                datasets: [{
+                    label: 'كفاءة القسم %',
+                    data: deptScores,
+                    backgroundColor: deptScores.map(s => s >= 80 ? 'rgba(46, 125, 50, 0.7)' : (s >= 50 ? 'rgba(245, 127, 23, 0.7)' : 'rgba(198, 40, 40, 0.7)')),
+                    borderColor: deptScores.map(s => s >= 80 ? '#2e7d32' : (s >= 50 ? '#f57f17' : '#c62828')),
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { 
+                    y: { beginAtZero: true, max: 100, ticks: { color: '#bdae93', font: {family: 'Cairo'} } }, 
+                    x: { ticks: { color: '#d4af37', font: {family: 'Cairo', weight: 'bold'} } } 
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 3. تحديث رادار الأعطال الحرجة (أول 5 تاجات حمراء مفتوحة)
+    let criticalTags = tagsData.filter(t => t.status === 'open' && t.color === 'red').slice(0, 5);
+    let cTagsHtml = criticalTags.map(t => `
+        <div style="background:rgba(198,40,40,0.1); border-right:3px solid var(--danger); padding:8px; margin-bottom:8px; border-radius:5px; font-size:11px; cursor:pointer;" onclick="showScreen('tagsScreen'); document.getElementById('filterTagDept').value='${t.dept}'; renderTags();">
+            <b style="color:var(--text-main);">${t.desc}</b><br>
+            <span style="color:var(--danger); font-weight:bold;">${t.dept}</span> <span style="color:var(--text-muted);">- ${t.machine||'عام'}</span>
+        </div>
+    `).join('');
+    
+    const critContainer = document.getElementById('criticalTagsList');
+    if(critContainer) critContainer.innerHTML = cTagsHtml || '<div style="text-align:center; color:var(--success); font-size:12px; padding:20px 0;">لا توجد أعطال حرجة 🎉</div>';
+
     updateUsersLeaderboard();
 }
-
 function openDeptDashboard(dept) { currentViewedDept = dept; document.getElementById('deptDashTitle').innerText = dept; document.getElementById('selectDept').value = dept; showScreen('deptDashboardScreen'); updateDeptDashboard(); }
 
 function updateDeptDashboard() {

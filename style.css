@@ -282,3 +282,24 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
 
 .kanban-actions { display: flex; gap: 5px; margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px; }
 .badge { background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 20px; font-size: 10px; color: #fff; }
+
+/* ==========================================
+   🎫 تنسيقات نظام التذاكر (Ticket System) للتاجات
+   ========================================== */
+.tags-split-container { display: flex; flex-direction: column; gap: 15px; }
+@media(min-width: 768px) { .tags-split-container { flex-direction: row; } .tag-column { flex: 1; } }
+
+.tag-ticket { background: var(--card-bg); border-radius: 12px; border-right: 6px solid var(--copper); padding: 15px; margin-bottom: 12px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.4); overflow: hidden; transition: 0.3s; }
+.tag-ticket:hover { transform: translateY(-3px); border-color: var(--gold); }
+
+.ticket-red { border-right-color: #ff5252; background: linear-gradient(90deg, rgba(198, 40, 40, 0.05), var(--card-bg)); }
+.ticket-blue { border-right-color: #448aff; background: linear-gradient(90deg, rgba(68, 138, 255, 0.05), var(--card-bg)); }
+
+.ticket-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.ticket-title { font-size: 14px; font-weight: bold; color: var(--text-main); flex: 1; }
+.ticket-meta { font-size: 10px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
+.ticket-img { width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; cursor: pointer; }
+
+/* نظام التقادم (Aging System) - تحذير التاجات المتأخرة */
+.aging-warning { position: absolute; top: 15px; left: -30px; background: #ff0000; color: white; font-size: 11px; font-weight: bold; padding: 5px 30px; transform: rotate(-45deg); text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); animation: flash-danger 1.5s infinite; z-index: 2; pointer-events: none; letter-spacing: 1px; }
+@keyframes flash-danger { 0% { background-color: #ff0000; box-shadow: 0 0 10px #ff0000; } 50% { background-color: #990000; box-shadow: 0 0 0 transparent; } 100% { background-color: #ff0000; box-shadow: 0 0 10px #ff0000; } }

@@ -821,8 +821,7 @@ async function addNewTag() {
         if(!uploadedUrl) return showToast('فشل رفع الصورة');
     }
     
-    let tId = uniqueNumericId().toString();
-    syncRecord('tags/' + tId, {id:tId, desc:fullDesc, color:c, dept:dp, machine:m, image:uploadedUrl, status:'open', auditor:currentUser.name, date:new Date().toLocaleDateString('ar-EG')});
+    let tId = uniqueNumericId().toString();syncRecord('tags/' + tId, {id:tId, desc:fullDesc, color:c, dept:dp, machine:m, image:uploadedUrl, status:'open', auditor:currentUser.name, date:new Date().toLocaleDateString('ar-EG'), timestamp: Date.now()});
     
     document.getElementById('newTagDesc').value=''; document.getElementById('newTagMachine').value=''; document.getElementById('newTagSpareParts').value=''; currentTagImg = null;
     let preview = document.getElementById('tagImagePreview'); if(preview) preview.innerHTML = '';
@@ -832,31 +831,73 @@ async function addNewTag() {
     if(c==='red' && document.getElementById('newTagEngineer').value) window.open(`https://wa.me/${document.getElementById('newTagEngineer').value.replace(/\D/g,'')}?text=${encodeURIComponent(`إشعار عطل (تاج أحمر)\nالقسم: ${dp}\nالماكينة: ${m||'عام'}\nالوصف: ${fullDesc}`)}`);
 }
 
+// ------------------------------------------
+// 🏷️ التاجات والمشكلات (Ticket System)
+// ------------------------------------------
 function renderTags() {
-    let c = document.getElementById('tagsListContainer'); if(!c) return;
-    let fDept = document.getElementById('filterTagDept').value; let fMach = document.getElementById('filterTagMachine').value.trim().toLowerCase();
+    let rc = document.getElementById('redTagsContainer'); 
+    let bc = document.getElementById('blueTagsContainer');
+    if(!rc || !bc) return;
     
-    let html = tagsData.filter(t => (fDept==='الكل' || t.dept===fDept) && (fMach==='' || (t.machine && t.machine.toLowerCase().includes(fMach)))).map(t => {
+    let fDept = document.getElementById('filterTagDept').value; 
+    let fMach = document.getElementById('filterTagMachine').value.trim().toLowerCase();
+    let fStatus = document.getElementById('filterTagStatus') ? document.getElementById('filterTagStatus').value : 'active';
+    
+    let redHtml = '', blueHtml = '';
+    let currentTime = Date.now();
+    const THREE_DAYS_MS = 259200000; // 3 أيام بالملي ثانية
+
+    tagsData.forEach(t => {
+        // تطبيق الفلاتر
+        if(fDept !== 'الكل' && t.dept !== fDept) return;
+        if(fMach !== '' && (!t.machine || !t.machine.toLowerCase().includes(fMach))) return;
+        
+        let isClosed = (t.status === 'closed');
+        if(fStatus === 'active' && isClosed) return;
+        if(fStatus === 'closed' && !isClosed) return;
+
+        // حساب التقادم للتاجات غير المغلقة (إذا عدى 3 أيام)
+        let isAged = false;
+        if(!isClosed && t.timestamp && (currentTime - t.timestamp > THREE_DAYS_MS)) {
+            isAged = true;
+        }
+
         let canEdit = hasRole('admin', 'auditor') || currentUser.name === t.auditor;
         let controls = canEdit ? `
-            <select class="form-control flex-2" style="font-size:12px; padding:2px; margin:0;" onchange="updateTagState('${t.id}', this.value)">
-                <option value="open" ${t.status==='open'?'selected':''}>مفتوح</option>
-                <option value="review" ${t.status==='review'?'selected':''}>مراجعة</option>
-                <option value="progress" ${t.status==='progress'?'selected':''}>جاري</option>
-                <option value="closed" ${t.status==='closed'?'selected':''}>مغلق</option>
+            <select class="form-control flex-2" style="font-size:11px; padding:4px; margin:0;" onchange="updateTagState('${t.id}', this.value)">
+                <option value="open" ${t.status==='open'?'selected':''}>مفتوح ⏳</option>
+                <option value="progress" ${t.status==='progress'?'selected':''}>جاري 🛠️</option>
+                <option value="review" ${t.status==='review'?'selected':''}>مراجعة 👁️</option>
+                <option value="closed" ${t.status==='closed'?'selected':''}>مغلق ✅</option>
             </select>
-            <button class="btn btn-sm btn-warning flex-1" style="margin:0;" onclick="editTag('${t.id}')">تعديل</button>
-            <button class="btn btn-sm btn-danger flex-1" style="margin:0;" onclick="deleteTag('${t.id}')">حذف</button>
-        ` : `<span style="font-size:12px; font-weight:bold; color:var(--gold); padding:5px; background:rgba(0,0,0,0.2); border-radius:5px;">حالة التاج: ${t.status}</span>`;
+            <button class="btn btn-sm btn-outline flex-1" style="margin:0; padding:4px;" onclick="editTag('${t.id}')">تعديل</button>
+            <button class="btn btn-sm btn-danger" style="margin:0; padding:4px; width:auto;" onclick="deleteTag('${t.id}')">🗑️</button>
+        ` : `<span style="font-size:11px; font-weight:bold; color:var(--gold); padding:4px; background:rgba(0,0,0,0.2); border-radius:5px;">الحالة: ${t.status}</span>`;
         
-        return `<div class="audit-item" style="border-right: 5px solid ${t.color==='red'?'var(--danger)':'var(--primary-light)'}">
-            <div style="font-size:15px; font-weight:bold; margin-bottom:5px;">${t.desc}</div>
-            <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">${t.dept} | الماكينة: ${t.machine||'عام'} | التاريخ: ${t.date} | بواسطة: ${t.auditor}</div>
-            ${t.image ? `<img src="${t.image}" style="max-height:120px; border-radius:8px; border:1px solid var(--copper); margin-bottom:10px;"><br>` : ''}
-            <div class="row-flex" style="margin-top:10px; border-top:1px dashed var(--copper); padding-top:10px;">${controls}</div>
+        let ticketClass = t.color === 'red' ? 'ticket-red' : 'ticket-blue';
+        let warningBadge = isAged ? `<div class="aging-warning">متأخر حرج</div>` : '';
+
+        let cardHtml = `
+        <div class="tag-ticket ${ticketClass}">
+            ${warningBadge}
+            <div class="ticket-header">
+                <div class="ticket-title">${t.desc}</div>
+            </div>
+            <div class="ticket-meta">
+                🏭 ${t.dept} ${t.machine ? ' | ⚙️ ' + t.machine : ''}<br>
+                👤 ${t.auditor} | 📅 ${t.date}
+            </div>
+            ${t.image ? `<img src="${t.image}" class="ticket-img" title="اضغط لتكبير الصورة" onclick="window.open('${t.image}', '_blank')">` : ''}
+            <div class="row-flex" style="margin-top:10px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px;">
+                ${controls}
+            </div>
         </div>`;
-    }).join('');
-    c.innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">لا توجد تاجات مطابقة</div>';
+
+        if(t.color === 'red') redHtml += cardHtml; else blueHtml += cardHtml;
+    });
+
+    rc.innerHTML = redHtml || '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:15px;">لا توجد تاجات صيانة مطابقة</div>';
+    bc.innerHTML = blueHtml || '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:15px;">لا توجد تاجات إنتاج مطابقة</div>';
 }
 
 function updateTagState(id, st) { let t=tagsData.find(x=>x.id==id); if(t) {t.status=st; syncRecord('tags/' + id, t); if(st==='closed') awardPoints(20, 'إغلاق تاج');} }

@@ -379,24 +379,27 @@
             <select id="filterTagDept" class="form-control flex-1" style="margin:0;" onchange="renderTags()"><option value="الكل">الكل</option></select>
             <input type="text" id="filterTagMachine" class="form-control flex-1" style="margin:0;" placeholder="تصفية بالماكينة" onkeyup="renderTags()">
         </div>
-        <div class="card">
-            <h4 style="color:var(--gold); margin-bottom:10px;">إصدار تاج:</h4>
-            <div class="row-flex" style="margin-bottom:10px;">
-                <select id="newTagDept" class="form-control flex-1" style="margin:0;"></select>
-                <input type="text" id="newTagMachine" class="form-control flex-1" style="margin:0;" placeholder="الماكينة">
-            </div>
-            <div class="row-flex" style="margin-bottom:10px;">
-                <input type="text" id="newTagDesc" class="form-control flex-2" style="margin:0;" placeholder="وصف العطل...">
-                <select id="newTagColor" class="form-control flex-1" style="margin:0;" onchange="document.getElementById('tagEngSelectDiv').style.display = this.value === 'red' ? 'block' : 'none';"><option value="red">أحمر (صيانة)</option><option value="blue">أزرق (إنتاج)</option></select>
-            </div>
-            <div id="tagEngSelectDiv" style="display: none; margin-bottom:10px;"><select id="newTagEngineer" class="form-control" style="margin:0; border-color:var(--danger);"></select></div>
-            <div class="upload-box" style="margin-bottom:10px; border-color:var(--primary-light);">
-                <label style="cursor:pointer; color:var(--text-main);">إرفاق صورة للتاج<input type="file" id="tagImageInput" style="display:none;" accept="image/*" onchange="handleTagImage(event)"></label>
-                <div id="tagImagePreview"></div>
-            </div>
-            <button class="btn btn-primary full-width" style="margin:0;" onclick="addNewTag()">إصدار وحفظ</button>
+        <button class="btn btn-primary full-width shadow-btn" style="margin:0;" onclick="addNewTag()">إصدار وحفظ</button>
         </div>
-        <div id="tagsListContainer"></div>
+        
+        <div class="row-flex" style="margin-bottom:15px;">
+            <select id="filterTagStatus" class="form-control" style="margin:0; border-color:var(--gold);" onchange="renderTags()">
+                <option value="active">عرض التاجات النشطة (مفتوح/جاري)</option>
+                <option value="closed">عرض التاجات المغلقة فقط</option>
+                <option value="all">عرض جميع التاجات</option>
+            </select>
+        </div>
+
+        <div class="tags-split-container">
+            <div class="tag-column">
+                <h4 style="color:#ff5252; margin-bottom:10px; border-bottom:1px dashed #ff5252; padding-bottom:5px;">🔴 تاجات صيانة (حرجة)</h4>
+                <div id="redTagsContainer"></div>
+            </div>
+            <div class="tag-column">
+                <h4 style="color:#448aff; margin-bottom:10px; border-bottom:1px dashed #448aff; padding-bottom:5px;">🔵 تاجات إنتاج (تحسين)</h4>
+                <div id="blueTagsContainer"></div>
+            </div>
+        </div>
     </div>
 
     <div class="container screen" id="knowledgeScreen">

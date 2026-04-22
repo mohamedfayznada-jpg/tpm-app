@@ -53,161 +53,98 @@ db.ref('.info/connected').on('value', snap => {
     const el = document.getElementById('cloudStatus');
     if(el) { el.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل بالسيرفر"; el.style.color = isOnline ? "var(--success)" : "var(--danger)"; }
 });
-
 // ------------------------------------------
-// 🔄 محرك المزامنة الذكي (Granular Sync Engine) - التحديث الجديد
+// 🔄 محرك المزامنة الذكي والصاروخي
 // ------------------------------------------
 let dbListeners = {};
 function clearAllListeners() {
-    for (let path in dbListeners) {
-        db.ref('tpm_system/' + path).off('value', dbListeners[path]);
-    }
+    for (let path in dbListeners) { db.ref('tpm_system/' + path).off('value', dbListeners[path]); }
     dbListeners = {};
 }
 
-// إضافة دوال وهمية لمنع حدوث ReferenceError حتى نقوم ببرمجتها لاحقاً
-function renderProductionDashboard() { /* سيتم برمجتها لاحقاً */ }
-function renderKnowledgeBase() { /* سيتم برمجتها لاحقاً */ }
-function renderMasterData() { /* سيتم برمجتها لاحقاً */ }
-function renderUsersPanel() { /* سيتم برمجتها لاحقاً */ }
+function renderProductionDashboard() {} function renderKnowledgeBase() {} function renderMasterData() {} function renderUsersPanel() {}
 
-firebase.auth().onAuthStateChanged(user => {
-    clearAllListeners(); // تنظيف أي اتصالات قديمة
+firebase.auth().onAuthStateChanged(async user => {
+    clearAllListeners();
     
     if (user) {
         isDataLoaded = true;
 
-        // 1. جلب البيانات الثابتة أو البطيئة التغير مرة واحدة لتخفيف الحمل
-        db.ref('tpm_system').once('value').then(snapshot => {
-            const data = snapshot.val() || {};
-            departments = data.departments || ['إنتاج', 'صيانة'];
-            globalApiKeys = data.api_keys || { imgbb: "", gemini: "" };
-            usersData = data.users || {};
-            deptPhones = data.deptPhones || {};
-            maintenanceEngineers = data.maintenanceEngineers || [];
-            knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase).filter(x => x) : [];
-            machinesData = data.machinesData || {};
-            sparePartsData = data.spareParts || [];
+        // 🚀 السحب الذكي: هنسحب الأساسيات بس عشان الشاشة تفتح في ثانية
+        const dSnap = await db.ref('tpm_system/departments').once('value');
+        departments = dSnap.val() || ['إنتاج', 'صيانة'];
 
-            // إعداد المستخدم (المحرك المحسن)
-            if (isInitialLoad) {
-                isInitialLoad = false;
-                
-                // الاعتماد على الإيميل لضمان عدم فقدان الهوية
-                const userEmail = user.email ? user.email.toLowerCase() : '';
-                const isMasterAdmin = userEmail.includes('mfayez');
-                
-                const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
-                // إذا كان هو المدير، نفرض اسم المستخدم، غير ذلك نجلبه
-                const finalUsername = isMasterAdmin ? 'mfayez' : (localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
-                
-                let role = 'viewer';
-                let status = 'active';
+        const uSnap = await db.ref('tpm_system/users').once('value');
+        usersData = uSnap.val() || {};
 
-                // 👑 تحديد هوية مدير المديرين بدقة مطلقة
-                if (isMasterAdmin) {
-                    role = 'admin';
-                    currentUser = { name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
-                    localStorage.setItem('tpm_username', 'mfayez'); 
-                    
-                    // تحديث الإشعار وتفعيل لوحة الإدارة
-                    let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
-                    let notifyIcon = document.getElementById('adminNotification');
-                    if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
-                    renderUserManagement(); 
-                    
-                } else {
-                    // المستخدمين العاديين
-                    let uData = usersData[user.uid];
-                    if (typeof uData === 'string') {
-                        role = uData; // حساب قديم
-                    } else if (uData && typeof uData === 'object') {
-                        role = uData.role || 'viewer';
-                        status = uData.status || 'active';
-                    }
-                    currentUser = { name: savedName, username: finalUsername, role: role, status: status };
-                }
+        const kSnap = await db.ref('tpm_system/api_keys').once('value');
+        globalApiKeys = kSnap.val() || { imgbb: "", gemini: "" };
 
-                document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = currentUser.role === 'admin' ? 'block' : 'none');
-                document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? 'block' : 'none');
-                document.getElementById('bottomNav').style.display = 'flex';
-                
-                if(globalApiKeys.imgbb || globalApiKeys.gemini) {
-                    document.getElementById('imgbbKeyInput').value = globalApiKeys.imgbb || '';
-                    document.getElementById('geminiKeyInput').value = globalApiKeys.gemini || '';
-                }
-                
-                // توجيه المستخدم حسب حالته
-                if (currentUser.status === 'pending') {
-                    showToast("حسابك قيد المراجعة. يرجى انتظار موافقة الإدارة.");
-                    firebase.auth().signOut();
-                } else {
-                    showScreen('homeScreen');
-                }
-            }            
-            updateDeptDropdown(); 
-            renderKnowledgeBase(); 
-            renderMasterData();
-        });
+        // تحديد الهوية
+        const userEmail = user.email ? user.email.toLowerCase() : '';
+        const isMasterAdmin = userEmail.includes('mfayez');
+        const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
+        const finalUsername = isMasterAdmin ? 'mfayez' : (localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
 
- 
-// 2. مراقبة البيانات الحية والمستمرة (Realtime Listeners) منفصلة
-        
-        // 👑 تشغيل الرادار اللحظي للمدير العام فقط
-        if (currentUser.username === 'mfayez') {
+        let role = 'viewer'; let status = 'active';
+
+        if (isMasterAdmin) {
+            role = 'admin';
+            currentUser = { name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
+            localStorage.setItem('tpm_username', 'mfayez'); 
+            
+            let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
+            let notifyIcon = document.getElementById('adminNotification');
+            if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
+            renderUserManagement(); 
+            
+            // مراقبة المستخدمين الجدد
             dbListeners.users = db.ref('tpm_system/users').on('value', snap => {
                 usersData = snap.val() || {};
-                let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
-                let notifyIcon = document.getElementById('adminNotification');
-                if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
-                renderUserManagement(); // تحديث اللوحة فوراً بدون ريفريش
+                let pendingLive = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
+                let notifLive = document.getElementById('adminNotification');
+                if(notifLive) notifLive.style.display = pendingLive ? 'block' : 'none';
+                renderUserManagement(); 
             });
+        } else {
+            let uData = usersData[user.uid];
+            if (typeof uData === 'string') { role = uData; } 
+            else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
+            currentUser = { name: savedName, username: finalUsername, role: role, status: status };
         }
+
+        document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = currentUser.role === 'admin' ? 'block' : 'none');
+        document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? 'block' : 'none');
+        document.getElementById('bottomNav').style.display = 'flex';
+        
+        if (currentUser.status === 'pending') {
+            showToast("حسابك قيد المراجعة. يرجى انتظار موافقة الإدارة.");
+            firebase.auth().signOut(); return;
+        } else { showScreen('homeScreen'); }
+
+        updateDeptDropdown();
+
+        // 📡 تشغيل قنوات المراقبة الحية (البيانات ستظهر فوراً)
         dbListeners.tags = db.ref('tpm_system/tags').on('value', snap => {
             tagsData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>b.id-a.id) : [];
             renderTags(); if(currentUser.role) updateHomeDashboard();
         });
-
         dbListeners.tasks = db.ref('tpm_system/tasks').on('value', snap => {
             tasksData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
             renderTasks();
         });
-
         dbListeners.history = db.ref('tpm_system/history').on('value', snap => {
             historyData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
             renderHistory(); renderKaizenFeed(); if(currentUser.role) updateHomeDashboard();
         });
-
-        dbListeners.production = db.ref('tpm_system/production').on('value', snap => {
-            productionData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>b.id-a.id) : [];
-            renderProductionDashboard();
-        });
-
-        dbListeners.points = db.ref('tpm_system/points').on('value', snap => {
-            userPoints = snap.val() || {};
-            updateUsersLeaderboard();
-        });
-
-        dbListeners.likes = db.ref('tpm_system/likes').on('value', snap => {
-            likesData = snap.val() || {};
-        });
+        dbListeners.points = db.ref('tpm_system/points').on('value', snap => { userPoints = snap.val() || {}; updateUsersLeaderboard(); });
         
-        dbListeners.kaizenComments = db.ref('tpm_system/kaizenComments').on('value', snap => {
-            kaizenComments = snap.val() || {};
-        });
-
-        dbListeners.logs = db.ref('tpm_system/logs').limitToLast(50).on('value', snap => {
-            logsData = snap.val() ? Object.values(snap.val()).filter(x => x).sort((a,b)=>a.id-b.id) : [];
-            if(currentUser.role === 'admin') renderUsersPanel();
-        });
-
     } else {
         isInitialLoad = true; isDataLoaded = false; 
         document.getElementById('bottomNav').style.display = 'none'; 
         showScreen('loginScreen');
     }
 });
-
 // 🔐 تسجيل الدخول (للمسجلين)
 async function login() {
     const username = sanitizeInput(document.getElementById('loginUsername').value).toLowerCase();
@@ -685,36 +622,76 @@ function downloadProfessionalPDF() {
 function shareWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(window.currentReportText)}`); }
 
 // ------------------------------------------
-// 🎯 المهام (Tasks)
+// 🎯 المهام (Tasks) - نظام الكانبان
 // ------------------------------------------
 function renderTasks() {
-    let htmlFolders = '', htmlSingle = '';
+    let htmlFolders = '';
+    const cols = { pending: '', progress: '', done: '' };
+    const counts = { pending: 0, progress: 0, done: 0 };
+    
     let currentDeptTasks = tasksData.filter(t => t.dept === currentTaskDept);
 
     currentDeptTasks.forEach(t => {
         if(t.isFolder) {
-            let total = t.subTasks.length; let done = t.subTasks.filter(s=>s.status==='done').length;
-            htmlFolders += `<div class="card" style="border:1px solid var(--gold); border-top:4px solid var(--gold);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><div class="card-title" style="margin:0; border:none; padding:0;">مجلد: ${t.task}</div><span style="font-size:11px; font-weight:bold; color:var(--text-muted);">${done}/${total}</span></div>
-                ${t.subTasks.map((s,i)=>`<div style="font-size:13px; padding:5px 0; border-bottom:1px dashed rgba(255,255,255,0.1);"><label style="cursor:pointer; display:flex; gap:8px; align-items:center; ${s.status==='done'?'text-decoration:line-through; color:gray;':''}"><input type="checkbox" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask('${t.id}', ${i})"> ${s.text}</label></div>`).join('')}
-            </div>`;
+            let total = t.subTasks ? t.subTasks.length : 0; 
+            let done = t.subTasks ? t.subTasks.filter(s=>s.status==='done').length : 0;
+            htmlFolders += `
+                <div class="card glass-card" style="border-right: 4px solid var(--gold);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <b style="color:var(--gold); font-size:13px;">مجلد: ${t.task}</b>
+                        <span class="badge">${done}/${total}</span>
+                    </div>
+                    ${t.subTasks ? t.subTasks.map((s,i)=>`
+                        <div style="font-size:12px; padding:5px 0; border-bottom:1px dashed rgba(255,255,255,0.05);">
+                            <label style="cursor:pointer; display:flex; gap:8px; align-items:center; ${s.status==='done'?'text-decoration:line-through; color:var(--text-muted);':''}">
+                                <input type="checkbox" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask('${t.id}', ${i})"> ${s.text}
+                            </label>
+                        </div>`).join('') : ''}
+                </div>`;
         } else {
-            let statusSel = `<select class="form-control" style="width:auto; padding:2px; font-size:11px; margin:0;" onchange="changeTaskStatus('${t.id}', this.value)"><option value="pending" ${t.status==='pending'?'selected':''}>معلقة</option><option value="progress" ${t.status==='progress'?'selected':''}>جاري</option><option value="done" ${t.status==='done'?'selected':''}>مكتملة</option></select>`;
-            htmlSingle += `<div class="card" style="padding:10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-right:4px solid ${t.status==='done'?'var(--success)':(t.status==='progress'?'var(--warning)':'var(--danger)')};">
-                <div style="font-size:13px; font-weight:bold;">${t.task}</div>${statusSel}
-            </div>`;
+            const status = t.status || 'pending';
+            counts[status]++;
+            
+            // كارت المهمة العادية بأزرار التحكم
+            cols[status] += `
+                <div class="kanban-item">
+                    <div style="font-weight:bold; margin-bottom:8px;">${t.task}</div>
+                    <div class="kanban-actions">
+                        ${status !== 'pending' ? `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus('${t.id}', 'pending')">🔴 تعليق</button>` : ''}
+                        ${status !== 'progress' ? `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus('${t.id}', 'progress')">🟡 تنفيذ</button>` : ''}
+                        ${status !== 'done' ? `<button class="btn btn-sm btn-success flex-1" onclick="changeTaskStatus('${t.id}', 'done')">🟢 إنهاء</button>` : ''}
+                        <button class="btn btn-sm btn-danger" style="width:auto;" onclick="deleteRecord('tasks/${t.id}')">🗑️</button>
+                    </div>
+                </div>`;
         }
     });
 
-    let fC = document.getElementById('auditFoldersContainer'); if(fC) fC.innerHTML = htmlFolders || '<div style="font-size:12px; color:var(--text-muted); text-align:center;">لا توجد مجلدات تحسين</div>';
-    let sC = document.getElementById('tasksListContainer'); if(sC) sC.innerHTML = htmlSingle || '<div style="font-size:12px; color:var(--text-muted); text-align:center;">لا توجد مهام فردية</div>';
+    // توزيع الكروت على عواميد الكانبان
+    ['pending', 'progress', 'done'].forEach(s => {
+        const listEl = document.getElementById('kanban_' + s);
+        const countEl = document.getElementById('count_' + s);
+        if(listEl) listEl.innerHTML = cols[s] || '<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:10px;">لا توجد مهام</div>';
+        if(countEl) countEl.innerText = counts[s];
+    });
+
+    let fC = document.getElementById('auditFoldersContainer'); 
+    if(fC) fC.innerHTML = htmlFolders || '<div style="font-size:12px; color:var(--text-muted); text-align:center;">لا توجد مجلدات تحسين</div>';
     
-    let pendAll=0, progAll=0, doneAll=0; let deptStats = {}; departments.forEach(d => deptStats[d] = { p:0, d:0 });
+    updateTasksDeptGrid();
+}
+
+function updateTasksDeptGrid() {
+    let deptStats = {}; 
+    departments.forEach(d => deptStats[d] = { p:0 });
+    
+    let pendAll=0, progAll=0, doneAll=0;
+    
     tasksData.forEach(t => {
-        let isDone = t.isFolder ? (t.subTasks.every(s=>s.status==='done') && t.subTasks.length>0) : (t.status==='done');
-        let isProg = t.isFolder ? (t.subTasks.some(s=>s.status==='done') && !isDone) : (t.status==='progress');
+        let isDone = t.isFolder ? (t.subTasks && t.subTasks.every(s=>s.status==='done') && t.subTasks.length>0) : (t.status==='done');
+        let isProg = t.isFolder ? (t.subTasks && t.subTasks.some(s=>s.status==='done') && !isDone) : (t.status==='progress');
+        
         if(isDone) doneAll++; else if(isProg) progAll++; else pendAll++;
-        if(t.dept && deptStats[t.dept]) { if(isDone) deptStats[t.dept].d++; else deptStats[t.dept].p++; }
+        if(!isDone && t.dept && deptStats[t.dept]) deptStats[t.dept].p++;
     });
     
     let paEl = document.getElementById('kpiTasksPendingAll'); if(paEl) paEl.innerText = pendAll;
@@ -723,19 +700,19 @@ function renderTasks() {
     
     let dG = document.getElementById('tasksDeptGrid');
     if(dG) {
-        dG.innerHTML = departments.map(d => `<div class="card" style="padding:15px; text-align:center; cursor:pointer; border-right:4px solid ${deptStats[d].p>0?'var(--danger)':'var(--success)'};" onclick="openTasksDept('${d}')">
-            <h4 style="color:var(--gold); margin:0;">${d}</h4>
-            <div style="font-size:11px; margin-top:5px; color:var(--text-main);">مهام معلقة: <b style="color:var(--danger);">${deptStats[d].p}</b></div>
-        </div>`).join('');
+        dG.innerHTML = departments.map(d => `
+            <div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer; border-right:4px solid ${deptStats[d].p>0?'var(--danger)':'var(--success)'};" onclick="openTasksDept('${d}')">
+                <h4 style="color:var(--gold); margin:0;">${d}</h4>
+                <div style="font-size:11px; margin-top:5px; color:var(--text-main);">مهام نشطة: <b style="color:var(--danger);">${deptStats[d].p}</b></div>
+            </div>`).join('');
     }
 }
+
 function openTasksDept(dept) { currentTaskDept = dept; document.getElementById('tasksDeptTitle').innerText = `مهام ${dept}`; document.getElementById('tasksMainView').style.display='none'; document.getElementById('tasksDeptView').style.display='block'; renderTasks(); }
 function closeTasksDept() { currentTaskDept = null; document.getElementById('tasksDeptView').style.display='none'; document.getElementById('tasksMainView').style.display='block'; renderTasks(); }
-
 function toggleFolderSubTask(fId, sIdx) { let f = tasksData.find(x=>x.id==fId); if(f) { f.subTasks[sIdx].status = f.subTasks[sIdx].status==='done'?'pending':'done'; syncRecord('tasks/' + fId, f); } }
 function changeTaskStatus(id, st) { let t=tasksData.find(x=>x.id==id); if(t) {t.status=st; syncRecord('tasks/' + id, t);} }
 function addManualTaskDept() { let v=document.getElementById('newTaskInput').value; if(v){ let id = uniqueNumericId().toString(); syncRecord('tasks/' + id, {id:id, task:v, dept:currentTaskDept, status:'pending'}); document.getElementById('newTaskInput').value=''; showToast('تمت الإضافة'); } }
-
 // ------------------------------------------
 // 🌐 مجتمع كايزن (الدمج الاحترافي)
 // ------------------------------------------

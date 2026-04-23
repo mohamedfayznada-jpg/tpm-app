@@ -189,9 +189,15 @@
                 <div class="pillar-icon">👷‍♂️</div>
                 <div class="pillar-title">صيانة ذاتية (JH)</div>
                 <div class="pillar-desc">مراجعات وتقييم المشغلين</div>
-            </div>
+<div class="pillar-card" style="border-bottom: 4px solid #00BCD4;" onclick="showScreen('fiveSScreen')">
+                <div class="pillar-badge" style="background:var(--warning);">Soon</div>
+                <div class="pillar-icon">✨</div>
+                <div class="pillar-title">بيئة العمل (5S)</div>
+                <div class="pillar-desc">فرز، ترتيب، تلميع، تنميط</div>
+            </div>           
+ </div>
             
-            <div class="pillar-card" style="border-bottom: 4px solid #F44336;" onclick="showScreen('pmScreen')">
+          <div class="pillar-card" style="border-bottom: 4px solid #F44336;" onclick="showScreen('pmScreen'); renderPMDashboard();">
                 <div class="pillar-badge">New</div>
                 <div class="pillar-icon">🔧</div>
                 <div class="pillar-title">صيانة مخططة (PM)</div>
@@ -691,7 +697,41 @@
             <p style="color:var(--text-muted); font-size:12px;">ستشمل هذه الوحدة: تحويل التاجات إلى أوامر شغل، ومراقبة العمر الافتراضي لقطع الغيار.</p>
         </div>
     </div>
+<div class="container screen" id="pmScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ الرئيسية</button>
+            <h2 style="color:#F44336; margin:0; font-size:18px;">🔧 الصيانة المخططة (PM)</h2>
+        </div>
+        
+        <div class="dashboard-stats modern-stats">
+            <div class="card stat-card glass-card" style="border-color:#F44336; padding:10px;">
+                <div class="stat-value danger-text" id="pmPendingCount">0</div>
+                <div class="stat-label">أوامر معلقة</div>
+            </div>
+            <div class="card stat-card glass-card" style="border-color:var(--warning); padding:10px;">
+                <div class="stat-value warning-text" id="pmProgressCount">0</div>
+                <div class="stat-label">قيد التنفيذ</div>
+            </div>
+            <div class="card stat-card glass-card" style="border-color:var(--success); padding:10px;">
+                <div class="stat-value success-text" id="pmClosedCount">0</div>
+                <div class="stat-label">مغلقة (منجزة)</div>
+            </div>
+        </div>
 
+        <h3 class="section-title" style="color:#F44336; border-color:#F44336;">📥 أوامر الشغل الواردة (تذاكر الـ JH)</h3>
+        <div id="pmWorkOrdersContainer"></div>
+    </div>
+
+    <div class="container screen" id="fiveSScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ الرئيسية</button>
+            <h2 style="color:#00BCD4; margin:0; font-size:18px;">✨ تنظيم بيئة العمل (5S)</h2>
+        </div>
+        <div class="card glass-card" style="text-align:center; padding:40px; border-color:#00BCD4;">
+            <h3 style="color:var(--text-main);">جاري تأسيس ركيزة الـ 5S 🏗️</h3>
+            <p style="color:var(--text-muted); font-size:12px;">ستشمل كاميرا المطابقة بين الوضع الحالي والـ Standard.</p>
+        </div>
+    </div>
     <script src="app.js"></script>
 </body>
 </html>

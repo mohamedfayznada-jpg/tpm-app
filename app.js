@@ -1717,7 +1717,88 @@ async function generateAutoQuiz(kbId) {
         document.getElementById('aiModalText').innerHTML = `<div style="color:var(--danger); text-align:center; padding:20px;">حدث خطأ أثناء معالجة الكتالوج. قد يكون حجم الملف كبيراً جداً، حاول استخدام ملف أصغر.</div>`;
     }
 }
+// ------------------------------------------
+// 🔧 محرك الصيانة المخططة (PM Engine - Work Orders)
+// ------------------------------------------
+function renderPMDashboard() {
+    let pmContainer = document.getElementById('pmWorkOrdersContainer');
+    if(!pmContainer) return;
 
+    // استدعاء التاجات الحمراء فقط (التي تخص الصيانة)
+    let redTags = tagsData.filter(t => t.color === 'red');
+    let pending = redTags.filter(t => t.status === 'open');
+    let progress = redTags.filter(t => t.status === 'progress' || t.status === 'review');
+    let closed = redTags.filter(t => t.status === 'closed');
+
+    document.getElementById('pmPendingCount').innerText = pending.length;
+    document.getElementById('pmProgressCount').innerText = progress.length;
+    document.getElementById('pmClosedCount').innerText = closed.length;
+
+    let activeOrders = [...pending, ...progress];
+
+    if(activeOrders.length === 0) {
+        pmContainer.innerHTML = '<div style="text-align:center; padding:30px; background:rgba(46,125,50,0.1); border-radius:15px; border:1px dashed var(--success);"><div style="font-size:30px;">🎊</div><b style="color:var(--success);">لا توجد أوامر شغل معلقة. ماكينات المصنع بحالة ممتازة!</b></div>';
+        return;
+    }
+
+    pmContainer.innerHTML = activeOrders.map(t => {
+        let statusColor = t.status === 'open' ? 'var(--danger)' : 'var(--warning)';
+        let statusText = t.status === 'open' ? 'معلق ⏳' : 'جاري التنفيذ 🛠️';
+        let engOptions = maintenanceEngineers.length > 0 
+            ? maintenanceEngineers.map(e => `<option value="${e.name}" ${t.assignedEng===e.name?'selected':''}>${e.name}</option>`).join('')
+            : '<option value="">(قم بإضافة مهندسين من الإعدادات)</option>';
+
+        return `
+        <div class="card glass-card" style="border-right:5px solid ${statusColor}; margin-bottom:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                <h4 style="margin:0; color:var(--text-main); font-size:14px; flex:1;">${t.desc}</h4>
+                <span style="font-size:10px; background:${statusColor}; color:#fff; padding:3px 8px; border-radius:10px; font-weight:bold; margin-right:10px;">${statusText}</span>
+            </div>
+            
+            <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; background:rgba(0,0,0,0.2); padding:8px; border-radius:5px;">
+                🏭 القسم: <b style="color:var(--gold);">${t.dept}</b> | ⚙️ الماكينة: ${t.machine || 'عام'}<br>
+                📅 تاريخ البلاغ: ${t.date} | 👤 المشغل المُبلغ: ${t.auditor}
+            </div>
+
+            ${t.image ? `<img src="${t.image}" style="width:100%; max-height:100px; object-fit:cover; border-radius:8px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.1); cursor:pointer;" onclick="window.open('${t.image}')">` : ''}
+
+            <div class="row-flex" style="border-top:1px dashed var(--copper); padding-top:10px; margin-bottom:10px;">
+                <input type="text" id="pm_spare_${t.id}" class="form-control flex-2" placeholder="قطع الغيار المستخدمة (إن وجدت)" value="${t.spareParts || ''}" style="margin:0; font-size:11px;">
+                <select id="pm_eng_${t.id}" class="form-control flex-1" style="margin:0; font-size:11px; border-color:var(--gold);">
+                    <option value="">تعيين مهندس</option>
+                    ${engOptions}
+                </select>
+            </div>
+
+            <div class="row-flex">
+                <button class="btn btn-sm btn-outline flex-1" onclick="updatePMOrder('${t.id}', 'progress')">بدء التنفيذ</button>
+                <button class="btn btn-sm btn-success flex-1" onclick="updatePMOrder('${t.id}', 'closed')">✅ إنهاء واعتماد</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function updatePMOrder(id, newStatus) {
+    let t = tagsData.find(x => x.id == id);
+    if(!t) return;
+
+    let spareParts = document.getElementById(`pm_spare_${id}`).value.trim();
+    let assignedEng = document.getElementById(`pm_eng_${id}`).value;
+
+    t.status = newStatus;
+    if(spareParts) t.spareParts = spareParts;
+    if(assignedEng) t.assignedEng = assignedEng;
+
+    syncRecord('tags/' + id, t);
+
+    if(newStatus === 'closed') {
+        awardPoints(25, 'إنجاز أمر شغل صيانة (PM)');
+        showToast('تم إغلاق البلاغ بنجاح وأرشفته ✅');
+    } else {
+        showToast('تم تحديث حالة أمر الشغل');
+    }
+    renderPMDashboard(); // تحديث الشاشة فوراً
+}
 // ------------------------------------------
 // 👤 محرك الملف الشخصي والإعدادات (The Profile Hub)
 // ------------------------------------------

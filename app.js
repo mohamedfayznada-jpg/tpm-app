@@ -1717,6 +1717,88 @@ async function generateAutoQuiz(kbId) {
         document.getElementById('aiModalText').innerHTML = `<div style="color:var(--danger); text-align:center; padding:20px;">حدث خطأ أثناء معالجة الكتالوج. قد يكون حجم الملف كبيراً جداً، حاول استخدام ملف أصغر.</div>`;
     }
 }
+
+
+// ------------------------------------------
+// ✨ محرك الـ 5S (كاميرا المطابقة الذكية)
+// ------------------------------------------
+let images5S = { standard: null, current: null };
+
+function load5SImage(event, type) {
+    const file = event.target.files[0];
+    if(!file) return;
+    
+    showToast('جاري معالجة الصورة... ⏳');
+    
+    processAndEnhanceImage(file, function(dataUrl) {
+        images5S[type] = dataUrl;
+        
+        if(type === 'standard') document.getElementById('imgStandard').src = dataUrl;
+        if(type === 'current') {
+            let imgC = document.getElementById('imgCurrent');
+            imgC.src = dataUrl;
+            // يجب أن نعطي الصورة الحالية نفس عرض الحاوية لكي تتطابق بدقة
+            imgC.style.width = document.getElementById('sliderWrapper').offsetWidth + 'px';
+        }
+        
+        if(images5S.standard && images5S.current) {
+            document.getElementById('fiveSSliderContainer').style.display = 'block';
+            showToast('الصور جاهزة! اسحب الشريط للمطابقة ↔️');
+            init5SSlider();
+        } else {
+            showToast('تم الإرفاق بنجاح ✅ برجاء إرفاق الصورة الأخرى.');
+        }
+    });
+}
+
+function init5SSlider() {
+    const container = document.getElementById('sliderWrapper');
+    const overlay = document.getElementById('sliderOverlay');
+    const handle = document.getElementById('sliderHandle');
+    let isSliding = false;
+
+    // تحديث عرض الصورة الداخلية عند كل حركة لضمان التطابق
+    document.getElementById('imgCurrent').style.width = container.offsetWidth + 'px';
+
+    function slide(e) {
+        if (!isSliding) return;
+        let rect = container.getBoundingClientRect();
+        // الحسابات متوافقة مع الـ RTL (اليمين لليسار)
+        let x = (e.pageX || (e.touches && e.touches[0].pageX)) - rect.left;
+        if (x < 0) x = 0;
+        if (x > rect.width) x = rect.width;
+        
+        // في الـ RTL، العرض يكون من اليمين
+        let widthPercentage = ((rect.width - x) / rect.width) * 100;
+        overlay.style.width = widthPercentage + '%';
+        handle.style.left = x + 'px';
+    }
+
+    handle.onmousedown = () => isSliding = true;
+    document.onmouseup = () => isSliding = false;
+    container.onmousemove = slide;
+
+    handle.ontouchstart = (e) => { isSliding = true; e.preventDefault(); };
+    document.ontouchend = () => isSliding = false;
+    container.ontouchmove = slide;
+}
+
+function generate5STask() {
+    // فتح مهمة تلقائية بناءً على عدم المطابقة
+    if(currentViewedDept) {
+        document.getElementById('selectDept').value = currentViewedDept;
+    }
+    let taskDesc = prompt("صف المخالفة التي اكتشفتها (مثال: أدوات خارج مكانها، بقعة زيت):");
+    if(taskDesc) {
+        let tId = uniqueNumericId().toString();
+        let dp = departments[0]; // افتراضي
+        syncRecord('tags/' + tId, {
+            id: tId, desc: `[عدم مطابقة 5S] - ${taskDesc}`, color: 'blue', 
+            dept: dp, status: 'open', auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'), timestamp: Date.now()
+        });
+        showToast('تم تسجيل المهمة بنجاح 🚨 وتوجيهها للمسؤولين.');
+    }
+}
 // ------------------------------------------
 // 🔧 محرك الصيانة المخططة (PM Engine - Work Orders)
 // ------------------------------------------

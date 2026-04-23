@@ -713,14 +713,45 @@
         <div id="pmWorkOrdersContainer"></div>
     </div>
 
-    <div class="container screen" id="fiveSScreen">
+   <div class="container screen" id="fiveSScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ الرئيسية</button>
             <h2 style="color:#00BCD4; margin:0; font-size:18px;">✨ تنظيم بيئة العمل (5S)</h2>
         </div>
-        <div class="card glass-card" style="text-align:center; padding:40px; border-color:#00BCD4;">
-            <h3 style="color:var(--text-main);">جاري تأسيس ركيزة الـ 5S 🏗️</h3>
-            <p style="color:var(--text-muted); font-size:12px;">ستشمل كاميرا المطابقة بين الوضع الحالي والـ Standard.</p>
+        
+        <div class="card glass-card" style="border-color:#00BCD4;">
+            <h3 class="card-title" style="color:#00BCD4; font-size:14px; border-bottom:1px solid rgba(0, 188, 212, 0.3);">📸 كاميرا المطابقة القياسية (Standard Check)</h3>
+            <p style="font-size:11px; color:var(--text-muted); margin-bottom:15px;">ارفع صورة الوضع القياسي المثالي، ثم التقط صورة للوضع الحالي واسحب الشريط لاكتشاف الاختلافات الدقيقة.</p>
+            
+            <div class="row-flex" style="margin-bottom:20px;">
+                <div class="upload-box flex-1 success-border" style="background:rgba(46, 125, 50, 0.1);">
+                    <label style="color:var(--success); cursor:pointer; font-size:12px; font-weight:bold;">
+                        ✅ الوضع القياسي (Standard)
+                        <input type="file" style="display:none;" accept="image/*" onchange="load5SImage(event, 'standard')">
+                    </label>
+                </div>
+                <div class="upload-box flex-1 danger-border" style="background:rgba(198, 40, 40, 0.1);">
+                    <label style="color:var(--danger); cursor:pointer; font-size:12px; font-weight:bold;">
+                        📸 الوضع الحالي (Current)
+                        <input type="file" style="display:none;" accept="image/*" capture="environment" onchange="load5SImage(event, 'current')">
+                    </label>
+                </div>
+            </div>
+
+            <div id="fiveSSliderContainer" class="slider-container" style="display:none;">
+                <div class="slider-img-wrapper" id="sliderWrapper">
+                    <img id="imgStandard" src="" alt="Standard">
+                    <div class="slider-overlay" id="sliderOverlay">
+                        <img id="imgCurrent" src="" alt="Current">
+                    </div>
+                    <div class="slider-handle" id="sliderHandle">↔️</div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:10px; font-weight:bold; color:var(--text-main);">
+                    <span style="color:var(--success);">القياسي</span>
+                    <span style="color:var(--danger);">الحالي</span>
+                </div>
+                <button class="btn btn-warning full-width shadow-btn" style="margin-top:15px;" onclick="generate5STask()">🚨 تسجيل عدم مطابقة (إنشاء مهمة 5S)</button>
+            </div>
         </div>
     </div>
     <script src="app.js"></script>

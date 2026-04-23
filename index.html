@@ -29,15 +29,32 @@
                         <div id="adminNotification" style="display:none; width:10px; height:10px; background:var(--danger); border-radius:50%; animation: pulse-red 1.5s infinite; cursor:pointer; border:1px solid white;" onclick="showScreen('settingsScreen')"></div>
                     </div>
                 </div>
-            </div>
-            <div style="display:flex; gap:8px;">
+           <div style="display:flex; gap:8px;">
+                <button class="icon-btn" onclick="toggleSidebar()" title="القائمة الرئيسية">☰</button>
                 <button class="icon-btn" onclick="toggleDarkMode()" title="تغيير المظهر">🌗</button>
                 <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج">🚪</button>
             </div>
         </div>
         <div class="cloud-status" id="cloudStatus">جاري الاتصال بالسيرفر...</div>
     </div>
-
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="mainSidebar">
+        <div class="sidebar-header">
+            <div class="logo-circle" style="width:60px; height:60px; margin:0 auto 10px; font-size:16px;">TPM</div>
+            <h3 style="color:var(--gold); margin:0; font-size:14px;">Factory OS V5.0</h3>
+        </div>
+        <div class="sidebar-menu">
+            <div class="side-item" onclick="showScreen('homeScreen'); toggleSidebar();"><div class="side-icon">🏠</div>الرئيسية (Hub)</div>
+            <div class="side-item" onclick="showScreen('tasksScreen'); toggleSidebar();"><div class="side-icon">📋</div>المهام (Kanban)</div>
+            <div class="side-item" onclick="showScreen('historyScreen'); toggleSidebar();"><div class="side-icon">📊</div>تقارير الأداء</div>
+            <div class="side-item" onclick="showScreen('kaizenScreen'); toggleSidebar();"><div class="side-icon">💡</div>مجتمع كايزن</div>
+            <div class="side-item btn-role-admin" onclick="showScreen('knowledgeScreen'); toggleSidebar();"><div class="side-icon">🧠</div>عقل المصنع</div>
+            <div class="side-item" onclick="showScreen('settingsScreen'); renderProfileAndSettings(); toggleSidebar();"><div class="side-icon">👤</div>حسابي والإعدادات</div>
+        </div>
+        <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.05); text-align:center; font-size:10px; color:var(--text-muted);">
+            Enterprise Edition
+        </div>
+    </div>
     <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageSelection(event)">
     <input type="file" id="galleryInput" accept="image/*" style="display:none;" onchange="handleImageSelection(event)">
 
@@ -166,9 +183,39 @@
            <input type="file" id="barcodeInput" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromImage(event)">
         </div>
 
-        <button class="btn btn-success full-width shadow-btn btn-role-auditor" style="margin-bottom:20px; border-radius:15px; padding:15px; font-size:16px;" onclick="startNewAuditFlow()">
-            📝 إجراء مراجعة ميدانية جديدة
-        </button>
+        <h3 class="section-title">🏭 وحدات التشغيل المركزية (Pillars)</h3>
+        <div class="pillars-grid">
+            <div class="pillar-card" style="border-bottom: 4px solid #4CAF50;" onclick="startNewAuditFlow()">
+                <div class="pillar-icon">👷‍♂️</div>
+                <div class="pillar-title">صيانة ذاتية (JH)</div>
+                <div class="pillar-desc">مراجعات وتقييم المشغلين</div>
+            </div>
+            
+            <div class="pillar-card" style="border-bottom: 4px solid #F44336;" onclick="showScreen('pmScreen')">
+                <div class="pillar-badge">New</div>
+                <div class="pillar-icon">🔧</div>
+                <div class="pillar-title">صيانة مخططة (PM)</div>
+                <div class="pillar-desc">أوامر الشغل وقطع الغيار</div>
+            </div>
+
+            <div class="pillar-card" style="border-bottom: 4px solid #FFC107;" onclick="showScreen('kkScreen')">
+                <div class="pillar-badge">Soon</div>
+                <div class="pillar-icon">📉</div>
+                <div class="pillar-title">تحسين مستمر (KK)</div>
+                <div class="pillar-desc">شجرة الفواقد والـ OEE</div>
+            </div>
+
+            <div class="pillar-card" style="border-bottom: 4px solid #2196F3;" onclick="showScreen('etScreen')">
+                <div class="pillar-badge">Soon</div>
+                <div class="pillar-icon">🎓</div>
+                <div class="pillar-title">تعليم وتدريب (E&T)</div>
+                <div class="pillar-desc">مصفوفة المهارات للمشغلين</div>
+            </div>
+        </div>
+
+        <div class="row-flex" style="margin-bottom:20px;">
+            <button class="btn btn-danger flex-1 shadow-btn" onclick="showScreen('tagsScreen'); renderTags();">🚨 إدارة التذاكر والأعطال</button>
+        </div>
 
         <div id="searchResults" class="search-results-box" style="position:relative; margin-bottom:15px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.3); display:none;"></div>
         <div class="dashboard-stats modern-stats">
@@ -634,14 +681,15 @@
         <button class="btn btn-danger full-width shadow-btn" style="margin-top:20px; border-radius:15px; padding:15px; font-size:16px;" onclick="logout()">تسجيل الخروج من النظام 🚪</button>
     </div>
 
-    <div class="nav-bar" id="bottomNav" style="display: none;">
-        <div class="nav-item" onclick="showScreen('homeScreen'); updateHomeDashboard();"><div class="nav-text">الرئيسية</div></div>
-        <div class="nav-item" onclick="showScreen('tasksScreen'); renderTasks();"><div class="nav-text">المهام</div></div>
-        <div class="nav-item" onclick="showScreen('historyScreen')"><div class="nav-text">التقارير</div></div>
-        <div class="nav-item" onclick="showScreen('kaizenScreen'); renderKaizenFeed();"><div class="nav-text">كايزن</div></div>
-        <div class="nav-item" onclick="showScreen('tagsScreen'); renderTags();"><div class="nav-text">التاجات</div></div>
-        <div class="nav-item btn-role-admin" onclick="showScreen('knowledgeScreen'); renderKnowledgeBase();"><div class="nav-text">المصنع</div></div>
-       <div class="nav-item" onclick="showScreen('settingsScreen'); renderProfileAndSettings();"><div class="nav-text">حسابي</div></div>
+   <div class="container screen" id="pmScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ الرئيسية</button>
+            <h2 style="color:#F44336; margin:0; font-size:18px;">🔧 الصيانة المخططة (PM)</h2>
+        </div>
+        <div class="card glass-card" style="text-align:center; padding:40px; border-color:#F44336;">
+            <h3 style="color:var(--text-main);">جاري تأسيس ركيزة الصيانة المخططة 🏗️</h3>
+            <p style="color:var(--text-muted); font-size:12px;">ستشمل هذه الوحدة: تحويل التاجات إلى أوامر شغل، ومراقبة العمر الافتراضي لقطع الغيار.</p>
+        </div>
     </div>
 
     <script src="app.js"></script>

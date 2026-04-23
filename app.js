@@ -115,7 +115,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
         document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = currentUser.role === 'admin' ? 'block' : 'none');
         document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? 'block' : 'none');
-        document.getElementById('bottomNav').style.display = 'flex';
+        
         
         if (currentUser.status === 'pending') {
             showToast("حسابك قيد المراجعة. يرجى انتظار موافقة الإدارة.");
@@ -144,9 +144,8 @@ firebase.auth().onAuthStateChanged(async user => {
             if(document.getElementById('knowledgeScreen').classList.contains('active')) renderKnowledgeBase(); 
         });
         
-    } else {
+ } else {
         isInitialLoad = true; isDataLoaded = false; 
-        document.getElementById('bottomNav').style.display = 'none'; 
         showScreen('loginScreen');
     }
 });
@@ -298,16 +297,34 @@ function processAndEnhanceImage(file, callback) {
 }
 
 // ------------------------------------------
-// 📱 التحكم بالشاشات ومنصة التتويج
+// 📱 التحكم بالشاشات والقائمة الجانبية
 // ------------------------------------------
-function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    const map = { 'homeScreen':0, 'tasksScreen':1, 'historyScreen':2, 'detailedReportScreen':2, 'kaizenScreen':3, 'tagsScreen':4, 'knowledgeScreen':5, 'settingsScreen':6 };
-    if(map[id]!==undefined && document.querySelectorAll('.nav-item')[map[id]]) document.querySelectorAll('.nav-item')[map[id]].classList.add('active');
-    window.scrollTo(0,0);
+function toggleSidebar() {
+    const sb = document.getElementById('mainSidebar');
+    const ov = document.getElementById('sidebarOverlay');
+    if(!sb) return;
+    if(sb.classList.contains('open')) {
+        sb.classList.remove('open'); ov.style.display = 'none';
+    } else {
+        sb.classList.add('open'); ov.style.display = 'block';
+    }
 }
+
+// تعديل دالة showScreen الأصلية
+const originalShowScreen = function(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    let targetScreen = document.getElementById(id);
+    if(targetScreen) targetScreen.classList.add('active');
+    window.scrollTo(0,0);
+};
+
+showScreen = function(id) {
+    if (id === 'loginScreen' || id === 'signupScreen' || canAccess(id)) {
+        originalShowScreen(id);
+    } else {
+        showToast("عذراً، لا تملك صلاحية الدخول لهذه الصفحة. تواصل مع الإدارة.");
+    }
+};
 
 function updateUsersLeaderboard() {
     const c = document.getElementById('podiumContainer'); const lc = document.getElementById('usersLeaderboardContainer');

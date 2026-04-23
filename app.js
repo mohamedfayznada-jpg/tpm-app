@@ -1354,15 +1354,6 @@ function canAccess(screenId, action = 'view') {
     return userPerms[screenId] === 'view' || userPerms[screenId] === 'edit';
 }
 
-// تعديل دالة showScreen الأصلية لتشمل فحص الأذونات
-const originalShowScreen = showScreen;
-showScreen = function(id) {
-    if (id === 'loginScreen' || id === 'signupScreen' || canAccess(id)) {
-        originalShowScreen(id);
-    } else {
-        showToast("عذراً، لا تملك صلاحية الدخول لهذه الصفحة. تواصل مع م. محمد فايز");
-    }
-};
 
 // ✅ الموافقة على المستخدم مع الحفاظ على الأذونات المخصصة
 async function approveUser(uid) {

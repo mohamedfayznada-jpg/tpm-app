@@ -628,12 +628,17 @@ function finishCurrentStep() {
         totalScore += itemData.score; 
         totalMax += itemData.max; 
         
-        // إذا كانت الدرجة أقل من النهاية العظمى، تُعتبر فرصة تحسين
+// إذا كانت الدرجة أقل من النهاية العظمى، نكتب الإجراء المطلوب للوصول للدرجة النهائية!
         if(itemData.score < itemData.max) { 
             let id = key.split('_')[1]; 
             let itm = sd.items.find(i=>i.id == id); 
-            if(itm) currentStepImprovements.push(itm.title); 
-        } 
+            if(itm) {
+                // البحث عن الوصف الخاص بالدرجة النهائية
+                let maxLvl = itm.levels.find(l => l.score === itm.maxScore);
+                let targetAction = maxLvl ? maxLvl.desc : "الوصول للمعايير القياسية";
+                currentStepImprovements.push(`[${itm.title}] 🎯 المطلوب: ${targetAction}`); 
+            }
+        }
     }
     
     currentAudit.results[k] = { 
@@ -861,19 +866,26 @@ function renderTasks() {
     let currentDeptTasks = tasksData.filter(t => t.dept === currentTaskDept);
 
     currentDeptTasks.forEach(t => {
+        // زر الحذف يظهر للمدير فقط (سواء للمجلدات أو المهام الفردية)
+        let deleteBtnHTML = hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:2px 8px; width:auto; margin:0;" onclick="deleteTask('${t.id}')">حذف 🗑️</button>` : '';
+        
         if(t.isFolder) {
             let total = t.subTasks ? t.subTasks.length : 0; 
             let done = t.subTasks ? t.subTasks.filter(s=>s.status==='done').length : 0;
             htmlFolders += `
-                <div class="card glass-card" style="border-right: 4px solid var(--gold);">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <div class="card glass-card" style="border-right: 4px solid var(--gold); margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <b style="color:var(--gold); font-size:13px;">مجلد: ${t.task}</b>
-                        <span class="badge">${done}/${total}</span>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            <span class="badge">${done}/${total}</span>
+                            ${deleteBtnHTML}
+                        </div>
                     </div>
                     ${t.subTasks ? t.subTasks.map((s,i)=>`
                         <div style="font-size:12px; padding:5px 0; border-bottom:1px dashed rgba(255,255,255,0.05);">
-                            <label style="cursor:pointer; display:flex; gap:8px; align-items:center; ${s.status==='done'?'text-decoration:line-through; color:var(--text-muted);':''}">
-                                <input type="checkbox" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask('${t.id}', ${i})"> ${s.text}
+                            <label style="cursor:pointer; display:flex; gap:8px; align-items:flex-start; ${s.status==='done'?'text-decoration:line-through; color:var(--text-muted);':''}">
+                                <input type="checkbox" style="margin-top:4px;" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask('${t.id}', ${i})"> 
+                                <span style="flex:1; line-height:1.5;">${s.text}</span>
                             </label>
                         </div>`).join('') : ''}
                 </div>`;
@@ -895,13 +907,12 @@ function renderTasks() {
                 <div style="font-size:10px; color:var(--text-muted);">${t.dept}</div>
                 <div class="kanban-actions">
                     ${actions}
-                    <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">🗑️</button>
+                    ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">🗑️</button>` : ''}
                 </div>
             </div>`;
         }
     });
 
-    // توزيع الكروت على عواميد الكانبان
     ['pending', 'progress', 'done'].forEach(s => {
         const listEl = document.getElementById('kanban_' + s);
         const countEl = document.getElementById('count_' + s);
@@ -913,6 +924,13 @@ function renderTasks() {
     if(fC) fC.innerHTML = htmlFolders || '<div style="font-size:12px; color:var(--text-muted); text-align:center;">لا توجد مجلدات تحسين</div>';
     
     updateTasksDeptGrid();
+}
+
+function deleteTask(id) {
+    if(confirm('⚠️ هل أنت متأكد من حذف هذه المهمة / المجلد نهائياً؟')) {
+        deleteRecord('tasks/' + id);
+        showToast('تم الحذف بنجاح 🗑️');
+    }
 }
 
 function updateTasksDeptGrid() {

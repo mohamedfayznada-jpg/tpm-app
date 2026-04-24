@@ -416,14 +416,17 @@ function generateEliteCardHTML(item, idx) {
     </div>`;
 }
 
-// 👤 محرك مركز القيادة الشخصي (Command Center)
-// 👤 محرك مركز القيادة الشخصي (Command Center)
+// 👤 محرك مركز القيادة الشخصي (النسخة النهائية الذكية)
 async function openMyFullProfile() {
-    const uid = firebase.auth().currentUser.uid;
+    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
+    if(!uid || !usersData[uid]) return showToast('خطأ في جلب بيانات المستخدم');
+    
     const u = usersData[uid];
-    if(!u) return;
+    
+    // 🚀 السر هنا: الاعتماد على الاسم الفعلي اللي السيستم حفظ بيه التاجات والمراجعات
+    const activeName = currentUser.name; 
 
-    // تعبئة البيانات في الشاشة
+    // 1. تعبئة البيانات الأساسية
     document.getElementById('myBigAvatar').src = u.avatar || `https://ui-avatars.com/api/?name=${u.name}&background=1b2a47&color=d4af37`;
     document.getElementById('myDisplayName').innerText = u.name;
     document.getElementById('editName').value = u.name;
@@ -432,28 +435,30 @@ async function openMyFullProfile() {
     const pts = userPoints[uid] || 0;
     document.getElementById('myDisplayRank').innerText = `الرصيد المعرفي: ${pts} نقطة`;
     
+    // تحديث قائمة الأقسام
     let opts = departments.map(d=>`<option value="${d}" ${u.dept===d?'selected':''}>${d}</option>`).join('');
     document.getElementById('editDept').innerHTML = opts;
 
-    // 🚀 تجميع الإحصائيات (بدقة)
-    const myAudits = historyData.filter(h => h.auditor === u.name && !h.stepsOrder.includes('ManualKaizen'));
-    const myTags = tagsData.filter(t => t.auditor === u.name);
-    const myKaizens = historyData.filter(h => h.auditor === u.name && h.stepsOrder.includes('ManualKaizen'));
+    // 2. تجميع الإنجازات (Timeline) بالاعتماد على activeName
+    const myAudits = historyData.filter(h => h.auditor === activeName && !h.stepsOrder.includes('ManualKaizen'));
+    const myTags = tagsData.filter(t => t.auditor === activeName);
+    const myKaizens = historyData.filter(h => h.auditor === activeName && h.stepsOrder.includes('ManualKaizen'));
 
-    // 🚀 بناء شريط الإنجازات (Timeline) بدمج كل الأنشطة
+    // دمج كل التحركات في شريط واحد مرتب زمنياً
     let allActivity = [
-        ...myAudits.map(a => ({ type: 'audit', text: `📝 أتممت مراجعة قسم ${a.dept} (${a.totalPct}%)`, date: a.date })),
+        ...myAudits.map(a => ({ type: 'audit', text: `📝 مراجعة قسم ${a.dept} (${a.totalPct}%)`, date: a.date })),
         ...myTags.map(t => ({ type: 'tag', text: `🚨 أصدرت تاج ${t.color==='red'?'صيانة':'إنتاج'}: ${t.desc}`, date: t.date })),
         ...myKaizens.map(k => ({ type: 'kaizen', text: `💡 شاركت بفكرة كايزن في ${k.dept}`, date: k.date }))
-    ].reverse().slice(0, 10); // أحدث 10 تحركات
+    ].reverse().slice(0, 10); 
 
     let timelineHtml = allActivity.map(item => `
         <div class="item-row" style="border-right-color: ${item.type === 'tag' ? 'var(--danger)' : (item.type === 'kaizen' ? 'var(--success)' : 'var(--gold)')};">
             <span style="flex:1;">${item.text}</span>
-            <small style="color:var(--text-muted); font-size:10px; white-space:nowrap; margin-right:10px;">${item.date}</small>
+            <small style="color:var(--text-muted); font-size:10px; margin-right:10px;">${item.date}</small>
         </div>
     `).join('');
 
+    // 3. تحديث شاشة العرض
     document.getElementById('myActivityTimeline').innerHTML = `
         <div class="dashboard-stats" style="margin-bottom:20px;">
             <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value">${myAudits.length}</div><div class="stat-label">مراجعة</div></div>
@@ -461,7 +466,7 @@ async function openMyFullProfile() {
             <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value">${myKaizens.length}</div><div class="stat-label">كايزن</div></div>
         </div>
         <h4 style="color:var(--gold); border-bottom:1px solid rgba(212,175,55,0.2); padding-bottom:5px;">آخر التحركات الميدانية:</h4>
-        ${timelineHtml || '<div style="text-align:center; padding:10px; font-size:11px; color:var(--text-muted);">لم يتم تسجيل أي نشاط ميداني بعد 🚀</div>'}
+        ${timelineHtml || '<div style="text-align:center; padding:10px; font-size:11px; color:var(--text-muted);">لم يتم رصد أي نشاط ميداني لاسمك الحالي بعد 🚀</div>'}
     `;
 
     showScreen('profileDetailsScreen');

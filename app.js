@@ -853,9 +853,6 @@ function downloadProfessionalPDF() {
 }
 function shareWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(window.currentReportText)}`); }
 
-// ------------------------------------------
-// 🎯 المهام (Tasks) - نظام الكانبان
-// ------------------------------------------
 function renderTasks() {
     let htmlFolders = '';
     const cols = { pending: '', progress: '', done: '' };
@@ -884,17 +881,23 @@ function renderTasks() {
             const status = t.status || 'pending';
             counts[status]++;
             
-            // كارت المهمة العادية بأزرار التحكم
+            let actions = '';
+            if(status === 'pending') actions = `<button class="btn btn-sm btn-warning flex-1" onclick="changeTaskStatus('${t.id}', 'progress')">بدء التنفيذ</button>`;
+            else if(status === 'progress') actions = `<button class="btn btn-sm btn-success flex-1" onclick="changeTaskStatus('${t.id}', 'done')">إنجاز</button>`;
+            else if(status === 'done') actions = `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus('${t.id}', 'pending')">إعادة فتح</button>`;
+
             cols[status] += `
-                <div class="kanban-item">
-                    <div style="font-weight:bold; margin-bottom:8px;">${t.task}</div>
-                    <div class="kanban-actions">
-                        ${status !== 'pending' ? `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus('${t.id}', 'pending')">🔴 تعليق</button>` : ''}
-                        ${status !== 'progress' ? `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus('${t.id}', 'progress')">🟡 تنفيذ</button>` : ''}
-                        ${status !== 'done' ? `<button class="btn btn-sm btn-success flex-1" onclick="changeTaskStatus('${t.id}', 'done')">🟢 إنهاء</button>` : ''}
-                        <button class="btn btn-sm btn-danger" style="width:auto;" onclick="deleteRecord('tasks/${t.id}')">🗑️</button>
-                    </div>
-                </div>`;
+            <div class="kanban-item">
+                <div style="font-weight:bold; margin-bottom:5px;">${t.task}</div>
+                
+                ${t.image ? `<img src="${t.image}" style="width:100%; border-radius:8px; margin-bottom:8px; cursor:pointer; border:1px solid rgba(255,255,255,0.1);" onclick="window.open('${t.image}')">` : ''}
+                
+                <div style="font-size:10px; color:var(--text-muted);">${t.dept}</div>
+                <div class="kanban-actions">
+                    ${actions}
+                    <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">🗑️</button>
+                </div>
+            </div>`;
         }
     });
 
@@ -1862,29 +1865,38 @@ function init5SSlider() {
     container.ontouchmove = slide;
 }
 
-function generate5STask() {
+async function generate5STask() {
     let taskDesc = prompt("صف المخالفة التي اكتشفتها (مثال: أدوات خارج مكانها، بقعة زيت):");
-    if(taskDesc) {
-        // إنشاء قائمة بالأقسام ليختار منها المستخدم
-        let deptList = departments.map((d, i) => `${i+1}- ${d}`).join('\n');
-        let deptChoice = prompt(`أدخل رقم القسم المرتبط بالمخالفة:\n${deptList}`, "1");
-        
-        // تحديد القسم بناءً على اختيار المستخدم (أو القسم الأول كافتراضي)
-        let dp = departments[parseInt(deptChoice) - 1] || departments[0];
-        
-        let tId = uniqueNumericId().toString();
-        
-        // 🚀 توجيه المهمة مباشرة إلى لوحة المهام (الكانبان)
-        syncRecord('tasks/' + tId, {
-            id: tId, 
-            task: `[عدم مطابقة 5S] - ${taskDesc}`, 
-            dept: dp, 
-            status: 'pending'
-        });
-        
-        awardPoints(5, 'رصد مخالفة 5S'); // مكافأة للمشغل
-        showToast('تم تسجيل المهمة بنجاح 🚨 وتوجيهها للوحة المهام (الكانبان).');
+    if(!taskDesc) return;
+
+    let deptList = departments.map((d, i) => `${i+1}- ${d}`).join('\n');
+    let deptChoice = prompt(`أدخل رقم القسم المرتبط بالمخالفة:\n${deptList}`, "1");
+    let dp = departments[parseInt(deptChoice) - 1] || departments[0];
+
+    showToast('جاري حفظ المهمة ورفع الصورة للمعاينة... ⏳');
+
+    // 🚀 السحر هنا: رفع صورة الوضع الحالي لسيرفر الصور
+    let imageUrl = "";
+    if (images5S.current) {
+        imageUrl = await uploadImageToStorage(images5S.current);
     }
+
+    let tId = uniqueNumericId().toString();
+    
+    syncRecord('tasks/' + tId, {
+        id: tId, 
+        task: `[عدم مطابقة 5S] - ${taskDesc}`, 
+        dept: dp, 
+        status: 'pending',
+        image: imageUrl // ربط رابط الصورة بالمهمة
+    });
+    
+    awardPoints(5, 'رصد مخالفة 5S');
+    showToast('تم تسجيل المهمة بنجاح 🚨 وتوجيهها للوحة المهام.');
+    
+    // تنظيف الصور من الذاكرة استعداداً للمراجعة القادمة
+    images5S = { standard: null, current: null };
+    document.getElementById('fiveSSliderContainer').style.display = 'none';
 }
 // ------------------------------------------
 // 🔧 محرك الصيانة المخططة (PM Engine - Work Orders)

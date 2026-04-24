@@ -1863,19 +1863,27 @@ function init5SSlider() {
 }
 
 function generate5STask() {
-    // فتح مهمة تلقائية بناءً على عدم المطابقة
-    if(currentViewedDept) {
-        document.getElementById('selectDept').value = currentViewedDept;
-    }
     let taskDesc = prompt("صف المخالفة التي اكتشفتها (مثال: أدوات خارج مكانها، بقعة زيت):");
     if(taskDesc) {
+        // إنشاء قائمة بالأقسام ليختار منها المستخدم
+        let deptList = departments.map((d, i) => `${i+1}- ${d}`).join('\n');
+        let deptChoice = prompt(`أدخل رقم القسم المرتبط بالمخالفة:\n${deptList}`, "1");
+        
+        // تحديد القسم بناءً على اختيار المستخدم (أو القسم الأول كافتراضي)
+        let dp = departments[parseInt(deptChoice) - 1] || departments[0];
+        
         let tId = uniqueNumericId().toString();
-        let dp = departments[0]; // افتراضي
-        syncRecord('tags/' + tId, {
-            id: tId, desc: `[عدم مطابقة 5S] - ${taskDesc}`, color: 'blue', 
-            dept: dp, status: 'open', auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'), timestamp: Date.now()
+        
+        // 🚀 توجيه المهمة مباشرة إلى لوحة المهام (الكانبان)
+        syncRecord('tasks/' + tId, {
+            id: tId, 
+            task: `[عدم مطابقة 5S] - ${taskDesc}`, 
+            dept: dp, 
+            status: 'pending'
         });
-        showToast('تم تسجيل المهمة بنجاح 🚨 وتوجيهها للمسؤولين.');
+        
+        awardPoints(5, 'رصد مخالفة 5S'); // مكافأة للمشغل
+        showToast('تم تسجيل المهمة بنجاح 🚨 وتوجيهها للوحة المهام (الكانبان).');
     }
 }
 // ------------------------------------------

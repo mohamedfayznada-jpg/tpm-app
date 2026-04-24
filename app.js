@@ -137,6 +137,10 @@ firebase.auth().onAuthStateChanged(async user => {
             historyData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
             renderHistory(); renderKaizenFeed(); if(currentUser.role) updateHomeDashboard();
         });
+dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {
+            registeredLosses = snap.val() ? Object.values(snap.val()) : [];
+            if(document.getElementById('kkScreen').classList.contains('active')) renderKKDashboard();
+        });
        dbListeners.points = db.ref('tpm_system/points').on('value', snap => { userPoints = snap.val() || {}; updateUsersLeaderboard(); });
         
         dbListeners.knowledgeBase = db.ref('tpm_system/knowledgeBase').on('value', snap => { 
@@ -1412,6 +1416,81 @@ function openPermissionsModal(uid) {
     document.getElementById('permissionsModal').style.display = 'flex';
 }
 
+
+// ------------------------------------------
+// 📉 محرك التحسين المستمر وشجرة الفواقد (KK Engine)
+// ------------------------------------------
+
+// تصنيفات فواقد الـ TPM العالمية (اخترنا أهم 8 فواقد للمصنع)
+const tpmLosses = [
+    { id: 'L1', name: 'أعطال الماكينات (Breakdowns)', type: 'availability', icon: '🔧' },
+    { id: 'L2', name: 'الإعداد والضبط (Setup & Adj)', type: 'availability', icon: '⚙️' },
+    { id: 'L3', name: 'تغيير أدوات ومقاسات', type: 'availability', icon: '🪚' },
+    { id: 'L4', name: 'بدء التشغيل والتسخين', type: 'availability', icon: '🚀' },
+    { id: 'L5', name: 'التوقفات الصغيرة العابرة', type: 'performance', icon: '⏱️' },
+    { id: 'L6', name: 'انخفاض سرعة الماكينة', type: 'performance', icon: '🐢' },
+    { id: 'L7', name: 'العيوب وإعادة التشغيل', type: 'quality', icon: '❌' },
+    { id: 'L8', name: 'فواقد نقص الخامات', type: 'availability', icon: '📦' }
+];
+
+// مصفوفة مؤقتة لتخزين الفواقد (في التطوير القادم سنربطها بـ Firebase)
+let registeredLosses = []; 
+const COST_PER_MINUTE = 50; // افتراض: دقيقة توقف المصنع تكلف 50 جنيه
+
+function renderKKDashboard() {
+    let container = document.getElementById('kkLossTreeContainer');
+    if(!container) return;
+
+    let html = tpmLosses.map(loss => {
+        // تجميع كل الدقائق المسجلة لهذا الفقد بالذات
+        let currentLossMins = registeredLosses.filter(l => l.lossId === loss.id).reduce((sum, curr) => sum + curr.minutes, 0);
+        let currentLossCost = currentLossMins * COST_PER_MINUTE; 
+        
+        // تغيير لون الكارت بناءً على حجم الخسارة
+        let borderColor = currentLossMins > 60 ? 'var(--danger)' : (currentLossMins > 0 ? 'var(--warning)' : 'rgba(255,255,255,0.1)');
+        let shadowEffect = currentLossMins > 60 ? 'box-shadow: 0 0 15px rgba(198,40,40,0.5);' : '';
+        
+        return `
+        <div class="card glass-card" style="border-top:4px solid ${borderColor}; ${shadowEffect} text-align:center; padding:15px; cursor:pointer;" onclick="openLossRegistration('${loss.id}', '${loss.name}')">
+            <div style="font-size:24px; margin-bottom:5px; filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${loss.icon}</div>
+            <div style="font-size:11px; font-weight:bold; color:var(--text-main); margin-bottom:10px; height:30px;">${loss.name}</div>
+            <div style="background:rgba(0,0,0,0.3); padding:5px; border-radius:5px;">
+                <div style="font-size:11px; color:var(--text-muted);">⏱️ ${currentLossMins} دقيقة</div>
+                <div style="font-size:12px; font-weight:900; color:${currentLossCost > 0 ? 'var(--danger)' : 'var(--success)'}; margin-top:2px;">${currentLossCost.toLocaleString()} ج.م</div>
+            </div>
+        </div>`;
+    }).join('');
+    
+    container.innerHTML = html;
+
+    // تحديث العدادات العلوية الإجمالية
+    let totalMins = registeredLosses.reduce((sum, l) => sum + l.minutes, 0);
+    document.getElementById('kkTotalLossHours').innerText = (totalMins / 60).toFixed(1);
+    document.getElementById('kkTotalLossCost').innerText = (totalMins * COST_PER_MINUTE).toLocaleString() + ' ج';
+}
+
+function openLossRegistration(lossId, lossName) {
+    let mins = prompt(`تسجيل فقد جديد في:\n[ ${lossName} ]\n\nأدخل مدة التوقف (بالدقائق):`);
+    
+    if(mins && !isNaN(mins) && parseInt(mins) > 0) {
+        let parsedMins = parseInt(mins);
+        let lossObj = {
+            id: uniqueNumericId().toString(),
+            lossId: lossId,
+            minutes: parsedMins,
+            date: new Date().toLocaleDateString('ar-EG'),
+            user: currentUser.name
+        };
+        
+        // 🚀 إرسال الفقد فوراً لقاعدة البيانات ليراه الجميع
+        syncRecord('losses/' + lossObj.id, lossObj); 
+        
+        awardPoints(5, 'تسجيل وتحليل فقد توقف');
+        showToast(`تم تسجيل ${parsedMins} دقيقة توقف.. وجاري حساب النزيف المالي! 📉`);
+    } else if (mins) {
+        showToast('يرجى إدخال رقم صحيح للدقائق ⚠️');
+    }
+}
 // ------------------------------------------
 // 🧠 عقل المصنع (قراءة الكتالوجات الكاملة والاختبارات)
 // ------------------------------------------

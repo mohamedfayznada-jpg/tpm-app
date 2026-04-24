@@ -711,6 +711,14 @@ function finishCurrentStep() {
 function skipCurrentStep() { currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = {skipped:true, score:0, max:0, improvements:[], selections:{}, images:{}}; saveAuditDraft(); goToNextStep(); }
 function goToNextStep() { currentAudit.currentStepIndex++; if(currentAudit.currentStepIndex < 7) renderCurrentAuditStep(); else generateFinalReport(); }
 
+function switchSettingsTab(tabId) {
+    document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    
+    document.getElementById('tab-' + tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+
 // ------------------------------------------
 // ✍️ التوقيع الفائق السرعة (Hardware Accelerated)
 // ------------------------------------------
@@ -2041,52 +2049,70 @@ function updatePMOrder(id, newStatus) {
     }
     renderPMDashboard(); // تحديث الشاشة فوراً
 }
-// ------------------------------------------
-// 👤 محرك الملف الشخصي والإعدادات (The Profile Hub)
-// ------------------------------------------
-
 function renderProfileAndSettings() {
     if(!currentUser || !currentUser.name) return;
 
-    // 1. تجهيز بيانات البروفايل (الاسم، الرتبة، النقاط)
+    // 1. البيانات الأساسية
     document.getElementById('profileName').innerText = currentUser.name;
     const roleMap = { admin: 'مدير نظام 👑', auditor: 'مراجع فني 📝', operator: 'مشغل معدة ⚙️', viewer: 'مشاهد 👁️' };
     document.getElementById('profileRoleBadge').innerText = roleMap[currentUser.role] || currentUser.role;
     
-    let myPoints = userPoints[currentUser.name] || 0;
-    document.getElementById('profilePoints').innerText = `🏆 الأرصدة: ${myPoints} نقطة`;
-
-    // 2. سحب الصورة الشخصية (إن وجدت)
     const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
-   if (uid && usersData[uid] && typeof usersData[uid] === 'object' && usersData[uid].avatar) {
+    if (uid && usersData[uid] && typeof usersData[uid] === 'object' && usersData[uid].avatar) {
         document.getElementById('profileAvatar').src = usersData[uid].avatar;
-    } else {
-        // إنشاء صورة احترافية ديناميكية تحمل اسم المستخدم إذا لم يقم برفع صورة
-        document.getElementById('profileAvatar').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentUser.name) + '&background=1b2a47&color=d4af37';
     }
 
-    // 3. تجهيز إحصائيات النشاط الخاصة بالمستخدم (Activity Tracker)
-    let myAuditsCount = historyData.filter(h => h.auditor === currentUser.name && !h.stepsOrder.includes('ManualKaizen')).length;
-    let myTagsCount = tagsData.filter(t => t.auditor === currentUser.name).length;
-    let myKaizensCount = historyData.filter(h => h.auditor === currentUser.name && h.stepsOrder.includes('ManualKaizen')).length;
+    // 2. إحصائيات النشاط
+    document.getElementById('myAudits').innerText = historyData.filter(h => h.auditor === currentUser.name && !h.stepsOrder.includes('ManualKaizen')).length;
+    document.getElementById('myTags').innerText = tagsData.filter(t => t.auditor === currentUser.name).length;
+    document.getElementById('myKaizens').innerText = historyData.filter(h => h.auditor === currentUser.name && h.stepsOrder.includes('ManualKaizen')).length;
 
-    document.getElementById('myAudits').innerText = myAuditsCount;
-    document.getElementById('myTags').innerText = myTagsCount;
-    document.getElementById('myKaizens').innerText = myKaizensCount;
+    // 🚀 3. عرض قائمة الأقسام القابلة للحذف
+    const deptList = document.getElementById('managedDeptsList');
+    if(deptList) {
+        deptList.innerHTML = departments.map((d, i) => `
+            <div class="item-row">
+                <span class="name">🏭 ${d}</span>
+                <button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeDept(${i})">حذف</button>
+            </div>`).join('');
+    }
 
-    // 4. التحكم في ظهور لوحة الإدارة 👑 + حل مشكلة الـ API Keys
+    // 🚀 4. عرض قائمة المهندسين القابلة للحذف
+    const engList = document.getElementById('managedEngsList');
+    if(engList) {
+        engList.innerHTML = (maintenanceEngineers || []).map((e, i) => `
+            <div class="item-row" style="border-right-color:var(--warning);">
+                <div>
+                    <span class="name">🛠️ ${e.name}</span><br>
+                    <small style="font-size:9px; color:var(--text-muted);">${e.phone}</small>
+                </div>
+                <button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeEngineer(${i})">حذف</button>
+            </div>`).join('') || '<div style="font-size:11px; text-align:center; padding:10px;">لا يوجد مهندسون مسجلون</div>';
+    }
+
+    // 5. إدارة الصلاحيات و API
     if (currentUser.role === 'admin') {
-        document.getElementById('adminSettingsSection').style.display = 'block';
-        
-        // 🚀 هنا الحل السحري: سحب المفاتيح من الذاكرة ووضعها في الحقول لكي لا تُمسح
         document.getElementById('imgbbKeyInput').value = globalApiKeys.imgbb || '';
         document.getElementById('geminiKeyInput').value = globalApiKeys.gemini || '';
-        
-        // غلق الحقول كحماية حتى يضغط "تعديل"
-        document.getElementById('imgbbKeyInput').disabled = true;
-        document.getElementById('geminiKeyInput').disabled = true;
-    } else {
-        document.getElementById('adminSettingsSection').style.display = 'none';
+    }
+}
+
+// دوال الحذف الجديدة
+function removeDept(idx) {
+    if(confirm(`⚠️ هل تريد حذف قسم (${departments[idx]})؟ سيختفي من الخيارات ولكنه سيبقى في التقارير القديمة.`)) {
+        departments.splice(idx, 1);
+        syncRecord('departments', departments);
+        renderProfileAndSettings();
+        showToast('تم حذف القسم');
+    }
+}
+
+function removeEngineer(idx) {
+    if(confirm(`⚠️ حذف المهندس (${maintenanceEngineers[idx].name}) من النظام؟`)) {
+        maintenanceEngineers.splice(idx, 1);
+        syncRecord('maintenanceEngineers', maintenanceEngineers);
+        renderProfileAndSettings();
+        showToast('تم الحذف');
     }
 }
 

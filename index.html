@@ -615,86 +615,80 @@
         </div>
     </div>
 
-   <div class="container screen" id="settingsScreen">
-        
+ <div class="container screen" id="settingsScreen">
         <div class="card glass-card" style="text-align:center; padding:30px 15px; position:relative; overflow:visible; margin-top:30px;">
             <div style="position:absolute; top:-30px; left:50%; transform:translateX(-50%);">
                 <div style="position:relative; width:90px; height:90px;">
-                   <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=1b2a47&color=d4af37" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid var(--gold); background:var(--primary); box-shadow:0 5px 15px rgba(0,0,0,0.5);">
- <label style="position:absolute; bottom:-5px; right:-5px; background:var(--copper); padding:6px; border-radius:50%; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.5); font-size:12px; transition:0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                    <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=1b2a47&color=d4af37" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid var(--gold); background:var(--primary); box-shadow:0 5px 15px rgba(0,0,0,0.5);">
+                    <label style="position:absolute; bottom:-5px; right:-5px; background:var(--copper); padding:6px; border-radius:50%; cursor:pointer; font-size:12px;">
                         ✏️<input type="file" accept="image/*" style="display:none;" onchange="updateProfilePic(event)">
                     </label>
                 </div>
             </div>
             <div style="margin-top:50px;">
-                <h2 id="profileName" style="color:var(--gold); margin:0; font-size:22px; text-shadow:0 2px 4px rgba(0,0,0,0.5);">اسم المستخدم</h2>
-                <div id="profileRoleBadge" style="display:inline-block; background:rgba(255,255,255,0.1); border:1px solid var(--copper); padding:3px 10px; border-radius:15px; font-size:11px; margin-top:5px; color:var(--text-main);">دور المستخدم</div>
-                <div id="profilePoints" style="margin-top:10px; font-size:16px; font-weight:bold; color:var(--success); text-shadow:0 0 10px rgba(46,125,50,0.5);">🏆 الرصيد: 0 نقطة</div>
+                <h2 id="profileName" style="color:var(--gold); margin:0; font-size:22px;">اسم المستخدم</h2>
+                <div id="profileRoleBadge" style="display:inline-block; background:rgba(255,255,255,0.1); border:1px solid var(--copper); padding:3px 10px; border-radius:15px; font-size:11px; margin-top:5px;">دور المستخدم</div>
             </div>
         </div>
 
-        <h4 class="section-title">📊 سجل نشاطي وتفاعلي</h4>
-        <div class="dashboard-stats modern-stats" style="margin-bottom:20px;">
-            <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value" id="myAudits" style="color:var(--gold);">0</div><div class="stat-label">مراجعاتي (JH)</div></div>
-            <div class="card stat-card glass-card" style="border-color:var(--danger);"><div class="stat-value" id="myTags" style="color:var(--danger);">0</div><div class="stat-label">تاجات أصدرتها</div></div>
-            <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value" id="myKaizens" style="color:var(--success);">0</div><div class="stat-label">أفكار كايزن</div></div>
+        <div class="settings-tabs">
+            <button class="tab-btn active" onclick="switchSettingsTab('my-activity')">📊 نشاطي</button>
+            <button class="tab-btn btn-role-admin" onclick="switchSettingsTab('factory-manage')">🏭 الإدارة</button>
+            <button class="tab-btn btn-role-admin" onclick="switchSettingsTab('system-admin')">⚙️ السيستم</button>
         </div>
 
-        <h4 class="section-title">⚙️ إعدادات الحساب</h4>
-        <div class="card glass-card">
-            <button class="btn btn-outline full-width" style="text-align:right; border-color:rgba(255,255,255,0.1); color:var(--text-main);" onclick="toggleDarkMode()">🌗 تفعيل / إيقاف الوضع الليلي</button>
-            <button class="btn btn-outline full-width" style="text-align:right; border-color:rgba(255,255,255,0.1); color:var(--text-main);" onclick="biometricLogin()">⚡ تجهيز الدخول السريع للجهاز</button>
-        </div>
-
-        <div id="adminSettingsSection" style="display:none;">
-            <h4 class="section-title" style="color:#ff5252; border-color:#ff5252;">👑 لوحة تحكم الإدارة العليا</h4>
-            
-            <div class="card glass-card" style="border-right:4px solid #ff5252;">
-                <h3 class="card-title" style="font-size:14px;">مفاتيح الذكاء الاصطناعي (API Keys)</h3>
-                <input type="password" id="imgbbKeyInput" class="form-control" placeholder="مفتاح ImgBB (للصور)">
-                <input type="password" id="geminiKeyInput" class="form-control" placeholder="مفتاح Gemini (للذكاء الاصطناعي)">
-                <div class="row-flex">
-                    <button class="btn btn-primary flex-2" style="margin:0;" onclick="saveApiKeys()">💾 حفظ وتأمين</button>
-                    <button class="btn btn-outline flex-1" style="margin:0;" onclick="enableApiKeysEdit()">✏️ تعديل</button>
-                </div>
+        <div id="tab-my-activity" class="settings-tab-content active">
+            <h4 class="section-title">📊 سجل تفاعلي</h4>
+            <div class="dashboard-stats modern-stats">
+                <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value" id="myAudits">0</div><div class="stat-label">مراجعاتي</div></div>
+                <div class="card stat-card glass-card" style="border-color:var(--danger);"><div class="stat-value" id="myTags">0</div><div class="stat-label">تاجاتي</div></div>
+                <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value" id="myKaizens">0</div><div class="stat-label">كايزن</div></div>
             </div>
+            <button class="btn btn-outline full-width" onclick="toggleDarkMode()">🌗 وضع القراءة (ليلي/نهاري)</button>
+        </div>
 
+        <div id="tab-factory-manage" class="settings-tab-content">
+            <h4 class="section-title" style="color:var(--gold);">🏗️ هيكل الأقسام</h4>
             <div class="card glass-card">
-                <h3 class="card-title" style="font-size:14px;">تصدير ونسخ احتياطي للبيانات</h3>
-                <button class="btn btn-success full-width" style="margin-bottom:10px;" onclick="exportToCSV()">📊 استخراج Excel كامل</button>
-                <div class="row-flex">
-                    <button class="btn btn-primary flex-1" style="margin:0;" onclick="exportSystemBackupJSON()">⬇️ تصدير JSON</button>
-                    <button class="btn btn-warning flex-1" style="margin:0;" onclick="triggerBackupImport()">⬆️ استرجاع JSON</button>
-                    <input type="file" id="backupImportInput" accept=".json,application/json" style="display:none;" onchange="importSystemBackupJSON(event)">
-                </div>
-            </div>
-
-            <div class="card glass-card">
-                <h3 class="card-title" style="font-size:14px;">إدارة هيكل المصنع</h3>
-                <div class="row-flex" style="margin-bottom:10px;">
+                <div class="row-flex" style="margin-bottom:15px;">
                     <input type="text" id="newDeptInput" class="form-control flex-2" placeholder="اسم القسم الجديد" style="margin:0;">
-                    <button class="btn btn-primary flex-1" style="margin:0;" onclick="addOrUpdateDept()">➕ إضافة قسم</button>
+                    <button class="btn btn-primary flex-1" onclick="addOrUpdateDept()">➕ إضافة</button>
                 </div>
-                <div class="row-flex" style="margin-bottom:15px;">
-                    <input type="text" id="newEngName" class="form-control flex-2" placeholder="اسم مهندس الصيانة" style="margin:0;">
-                    <input type="tel" id="newEngPhone" class="form-control flex-2" placeholder="رقم واتساب (+20)" style="margin:0;">
-                    <button class="btn btn-warning flex-1" style="margin:0;" onclick="addEngineer()">إضافة</button>
-                </div>
-                <div id="engListContainer"></div>
+                <div id="managedDeptsList" style="max-height:200px; overflow-y:auto;">
+                    </div>
             </div>
 
-         <div class="card glass-card">
-                <h3 class="card-title" style="font-size:14px;">التحكم السريع في الصلاحيات ( القديم )</h3>
-                <div class="row-flex" style="margin-bottom:15px;">
-                    <input type="text" id="newUsernameRole" class="form-control flex-2" placeholder="يوزر المستخدم" style="margin:0;">
-                    <select id="newRoleSelect" class="form-control flex-1" style="margin:0;"><option value="viewer">مشاهد</option><option value="operator">مشغل</option><option value="auditor">مراجع</option><option value="admin">مدير</option></select>
-                    <button class="btn btn-primary flex-1" style="margin:0;" onclick="addNewUserRole()">تعيين</button>
+            <h4 class="section-title" style="color:var(--warning);">🛠️ فريق الصيانة</h4>
+            <div class="card glass-card">
+                <div class="row-flex" style="margin-bottom:10px;">
+                    <input type="text" id="newEngName" class="form-control flex-1" placeholder="الاسم" style="margin:0;">
+                    <input type="tel" id="newEngPhone" class="form-control flex-1" placeholder="واتساب" style="margin:0;">
+                    <button class="btn btn-warning" onclick="addEngineer()">➕</button>
                 </div>
-                <div id="usersListContainer"></div>
+                <div id="managedEngsList" style="max-height:200px; overflow-y:auto;">
+                    </div>
             </div>
         </div>
 
-        <button class="btn btn-danger full-width shadow-btn" style="margin-top:20px; border-radius:15px; padding:15px; font-size:16px;" onclick="logout()">تسجيل الخروج من النظام 🚪</button>
+        <div id="tab-system-admin" class="settings-tab-content">
+            <h4 class="section-title" style="color:var(--danger);">🔑 مفاتيح العقل الإلكتروني</h4>
+            <div class="card glass-card">
+                <input type="password" id="imgbbKeyInput" class="form-control" placeholder="مفتاح ImgBB">
+                <input type="password" id="geminiKeyInput" class="form-control" placeholder="مفتاح Gemini AI">
+                <div class="row-flex">
+                    <button class="btn btn-primary flex-2" onclick="saveApiKeys()">💾 حفظ</button>
+                    <button class="btn btn-outline flex-1" onclick="enableApiKeysEdit()">✏️ تعديل</button>
+                </div>
+            </div>
+
+            <h4 class="section-title">👥 إدارة المستخدمين</h4>
+            <div id="usersListContainer"></div>
+
+            <h4 class="section-title">📂 البيانات والنسخ</h4>
+            <button class="btn btn-success full-width" onclick="exportToCSV()">📊 تصدير Excel كامل</button>
+        </div>
+
+        <button class="btn btn-danger full-width shadow-btn" style="margin-top:30px; border-radius:15px;" onclick="logout()">تسجيل الخروج 🚪</button>
     </div>
 
    

@@ -586,12 +586,55 @@ function renderCurrentAuditStep() {
     currentStepImprovements = []; 
     showScreen('auditScreen'); 
     saveAuditDraft();
+updateCumulativeScoreUI();
 }
+
+function updateCumulativeScoreUI() {
+    let totalScoreSoFar = 0;
+    let totalMaxSoFar = 0;
+
+    // 1. جمع نقاط المراحل السابقة التي تم حفظها بالفعل
+    for (let i = 0; i < currentAudit.currentStepIndex; i++) {
+        let stepKey = currentAudit.stepsOrder[i];
+        let res = currentAudit.results[stepKey];
+        if (res && !res.skipped) {
+            totalScoreSoFar += res.score;
+            totalMaxSoFar += res.max;
+        }
+    }
+
+    // 2. جمع نقاط الاختيارات التي يضغط عليها المستخدم "الآن" في الخطوة الحالية
+    for (let key in currentStepSelections) {
+        totalScoreSoFar += currentStepSelections[key].score;
+        totalMaxSoFar += currentStepSelections[key].max;
+    }
+
+    // 3. الحساب وتحديث الواجهة
+    const pct = totalMaxSoFar === 0 ? 0 : Math.round((totalScoreSoFar / totalMaxSoFar) * 100);
+    const pctEl = document.getElementById('cumulativeScoreText');
+    const pointsEl = document.getElementById('cumulativePointsText');
+    const barEl = document.getElementById('cumulativeProgressBar');
+
+    if (pctEl) {
+        pctEl.innerText = pct + '%';
+        // إبداع بصري: تغيير لون النص بناءً على الكفاءة
+        pctEl.style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)');
+    }
+    if (pointsEl) pointsEl.innerText = `النقاط: ${totalScoreSoFar} / ${totalMaxSoFar}`;
+    if (barEl) {
+        barEl.style.width = pct + '%';
+        // تغيير لون الشريط ديناميكياً
+        barEl.style.background = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)');
+    }
+}
+
+
 function selectLevel(id, score, max, el) { 
     currentStepSelections['item_'+id] = {score, max}; 
     el.parentElement.querySelectorAll('.level-opt').forEach(o=>o.classList.remove('selected')); 
     el.classList.add('selected'); 
     saveAuditDraft();
+updateCumulativeScoreUI();
 }
 
 function openImageSourcePicker(itemId, itemTitle) { currentUploadItemId = itemId; currentUploadItemTitle = itemTitle; document.getElementById('imageSourceModal').style.display = 'flex'; }

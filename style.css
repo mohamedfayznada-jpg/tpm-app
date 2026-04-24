@@ -441,3 +441,19 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
 /* رتب المستخدمين */
 .rank-label { background: var(--copper); color: #fff; font-size: 10px; padding: 2px 12px; border-radius: 100px; font-weight: bold; margin-top: 5px; display: inline-block; }
 .edit-badge { position: absolute; bottom: 0; right: 0; background: var(--gold); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--bg-color); }
+/* ==========================================
+   ✨ تأثيرات نخب المصنع (Elite Visual FX)
+   ========================================== */
+.elite-card { position: relative; background: rgba(255,255,255,0.03); border: 1px solid rgba(184, 115, 51, 0.2); border-radius: 20px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.elite-card:hover { transform: scale(1.03) translateY(-5px); background: rgba(255,255,255,0.07); }
+
+/* توهج الأبطال الثلاثة الأوائل */
+.gold-glow { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); background: linear-gradient(135deg, rgba(212,175,55,0.1), transparent); }
+.silver-glow { border-color: #c0c0c0; box-shadow: 0 0 15px rgba(192, 192, 192, 0.2); }
+.bronze-glow { border-color: #cd7f32; box-shadow: 0 0 15px rgba(205, 127, 50, 0.2); }
+
+.elite-score .pts-val { font-size: 22px; font-weight: 900; background: linear-gradient(to bottom, #fff, var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* تنسيقات مركز القيادة الشخصي */
+.rank-label { background: linear-gradient(90deg, var(--copper), var(--gold)); color: #000; padding: 4px 15px; border-radius: 50px; font-weight: 900; font-size: 11px; margin-top: 10px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+#myActivityTimeline .item-row { background: rgba(0,0,0,0.2); border-right: 3px solid var(--gold); margin-bottom: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }

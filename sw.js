@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tpm-app-v126';
+const CACHE_NAME = 'tpm-app-v127';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

@@ -233,12 +233,7 @@ function logAction(act) {
     let logObj = {id: uniqueNumericId().toString(), user:currentUser.name, action:act, time:new Date().toLocaleTimeString('ar-EG')};
     syncRecord('logs/' + logObj.id, logObj);
 }
-function awardPoints(pts, reason) { 
-    if(!currentUser.name) return; 
-    userPoints[currentUser.name] = (userPoints[currentUser.name] || 0) + pts; 
-    syncRecord('points/' + currentUser.name, userPoints[currentUser.name]);
-    showToast(`اكتسبت ${pts} نقطة: ${reason}`); 
-}
+
 
 // ------------------------------------------
 // 🔍 دالة مسح الباركود الفعالة (النسخة الحديثة)
@@ -330,34 +325,136 @@ showScreen = function(id) {
     }
 };
 
+// 🏆 نظام النقاط والرتب المطور (Enterprise Elite)
+function awardPoints(pts, reason) {
+    const uid = firebase.auth().currentUser.uid;
+    if(!uid) return;
+    
+    // حفظ النقاط بالـ UID لضمان عدم ضياعها عند تغيير الاسم
+    let currentPts = (userPoints[uid] || 0) + pts;
+    syncRecord('points/' + uid, currentPts);
+    
+    // تسجيل الإنجاز في سجل النشاط العام (للمدير)
+    let achievementId = uniqueNumericId();
+    syncRecord('global_achievements/' + achievementId, {
+        user: currentUser.name,
+        uid: uid,
+        reason: reason,
+        points: pts,
+        date: new Date().toLocaleString('ar-EG')
+    });
+
+    showToast(`🎖️ حصلت على ${pts} نقطة إضافية: ${reason}`);
+}
+
 function updateUsersLeaderboard() {
-    const c = document.getElementById('podiumContainer'); 
     const lc = document.getElementById('usersLeaderboardContainer');
     if(!lc) return;
 
-    let sortable = []; 
-    for (let user in userPoints) { sortable.push({ user: user, points: userPoints[user] }); }
+    // 1. تجميع البيانات
+    let sortable = [];
+    for (let uid in userPoints) {
+        let uInfo = usersData[uid] || { name: "مستخدم مجهول" };
+        sortable.push({ uid: uid, name: uInfo.name, avatar: uInfo.avatar, points: userPoints[uid] });
+    }
+    
+    // 2. الترتيب التنازلي السريع
     sortable.sort((a, b) => b.points - a.points);
 
-    if(sortable.length === 0) { lc.innerHTML = '<div style="color:var(--text-muted); text-align:center;">بانتظار تسجيل أول إنجاز...</div>'; return; }
-    
-    if(c) c.style.display = 'none'; // سنلغي المنصة القديمة ونستخدم الكروت الفخمة
+    if(sortable.length === 0) { 
+        lc.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:20px;">المصنع بانتظار أول بطل... 🚀</div>'; 
+        return; 
+    }
 
-    lc.innerHTML = sortable.map((item, idx) => {
-        let rankIcon = (idx === 0) ? '👑' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : idx + 1));
-        let level = item.points > 1000 ? 'أسطورة صناعية 🎖️' : (item.points > 500 ? 'خبير TPM 💎' : 'مبادر نشط ⚡');
-        
-        return `
-        <div class="elite-card">
-            <div class="elite-rank">${rankIcon}</div>
-            <img class="elite-avatar" src="https://ui-avatars.com/api/?name=${item.user}&background=1b2a47&color=d4af37">
-            <div class="elite-info">
-                <div class="elite-name">${item.user}</div>
-                <div class="elite-level">${level}</div>
+    // 🚀 التحسين المعماري: أخذ أول 20 مستخدم فقط للرسم لتخفيف الـ DOM
+    const topLimit = 20;
+    const topUsers = sortable.slice(0, topLimit);
+
+    // 3. رسم كروت الأوائل
+    let html = topUsers.map((item, idx) => generateEliteCardHTML(item, idx)).join('');
+
+    // 🚀 التحسين الذكي: إيجاد المستخدم الحالي وإظهار ترتيبه إذا كان خارج التوب 20
+    const myUid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
+    const myRankIndex = sortable.findIndex(u => u.uid === myUid);
+
+    if (myUid && myRankIndex >= topLimit) {
+        let myData = sortable[myRankIndex];
+        html += `
+            <div style="text-align:center; color:var(--gold); margin: 15px 0 5px; font-size:10px; font-weight:bold;">
+                🔻 مركزك الحالي 🔻
             </div>
-            <div class="elite-score">${item.points} <small style="font-size:10px;">نقطة</small></div>
-        </div>`;
-    }).join('');
+        `;
+        html += generateEliteCardHTML(myData, myRankIndex); // رسم كارت المستخدم بترتيبه الحقيقي
+    }
+
+    lc.innerHTML = html;
+}
+
+// دالة مساعدة لتوليد كود الـ HTML لمنع التكرار (Clean Code)
+function generateEliteCardHTML(item, idx) {
+    let rankClass = (idx === 0) ? 'gold-glow' : (idx === 1 ? 'silver-glow' : (idx === 2 ? 'bronze-glow' : ''));
+    let rankIcon = (idx === 0) ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : idx + 1));
+    
+    let rankTitle = "مبتدئ تقني";
+    let rankColor = "var(--text-muted)";
+    if(item.points > 1500) { rankTitle = "أسطورة المصنع 🎖️"; rankColor = "var(--gold)"; }
+    else if(item.points > 800) { rankTitle = "خبير TPM سينيور 💎"; rankColor = "#00d4ff"; }
+    else if(item.points > 300) { rankTitle = "تقني محترف 🔥"; rankColor = "var(--success)"; }
+
+    return `
+    <div class="elite-card ${rankClass}" onclick="viewOtherUserProfile('${item.uid}')">
+        <div class="elite-rank">${rankIcon}</div>
+        <img class="elite-avatar" src="${item.avatar || 'https://ui-avatars.com/api/?name='+item.name+'&background=1b2a47&color=d4af37'}">
+        <div class="elite-info">
+            <div class="elite-name">${item.name}</div>
+            <div class="elite-level" style="color:${rankColor}; font-weight:900;">${rankTitle}</div>
+        </div>
+        <div class="elite-score">
+            <span class="pts-val">${item.points}</span>
+            <small>نقطة</small>
+        </div>
+    </div>`;
+}
+
+// 👤 محرك مركز القيادة الشخصي (Command Center)
+async function openMyFullProfile() {
+    const uid = firebase.auth().currentUser.uid;
+    const u = usersData[uid];
+    if(!u) return;
+
+    // تعبئة البيانات في الشاشة
+    document.getElementById('myBigAvatar').src = u.avatar || `https://ui-avatars.com/api/?name=${u.name}&background=1b2a47&color=d4af37`;
+    document.getElementById('myDisplayName').innerText = u.name;
+    document.getElementById('editName').value = u.name;
+    document.getElementById('editPhone').value = u.phone || '';
+    
+    const pts = userPoints[uid] || 0;
+    document.getElementById('myDisplayRank').innerText = `الرصيد المعرفي: ${pts} نقطة`;
+    
+    let opts = departments.map(d=>`<option value="${d}" ${u.dept===d?'selected':''}>${d}</option>`).join('');
+    document.getElementById('editDept').innerHTML = opts;
+
+    // جلب "الجدول الزمني للبطولات" (Timeline) الخاص بالمستخدم فقط
+    const myAudits = historyData.filter(h => h.auditor === u.name).length;
+    const myTags = tagsData.filter(t => t.auditor === u.name).length;
+    const myKaizens = historyData.filter(h => h.auditor === u.name && h.stepsOrder.includes('ManualKaizen')).length;
+
+    document.getElementById('myActivityTimeline').innerHTML = `
+        <div class="dashboard-stats" style="margin-bottom:20px;">
+            <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value">${myAudits}</div><div class="stat-label">مراجعة</div></div>
+            <div class="card stat-card glass-card" style="border-color:var(--danger);"><div class="stat-value">${myTags}</div><div class="stat-label">تاج</div></div>
+            <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value">${myKaizens}</div><div class="stat-label">كايزن</div></div>
+        </div>
+        <h4 style="color:var(--gold); border-bottom:1px solid rgba(212,175,55,0.2); padding-bottom:5px;">آخر التحركات الميدانية:</h4>
+        ${historyData.filter(h => h.auditor === u.name).reverse().slice(0,5).map(h => `
+            <div class="item-row">
+                <span>📝 مراجعة ${h.dept} (${h.totalPct}%)</span>
+                <small>${h.date}</small>
+            </div>
+        `).join('') || '<div style="text-align:center; padding:10px; font-size:11px;">لا يوجد سجل نشاط متاح</div>'}
+    `;
+
+    showScreen('profileDetailsScreen');
 }
 let mainChartInstance = null; // متغير عام لحفظ الرسم البياني
 

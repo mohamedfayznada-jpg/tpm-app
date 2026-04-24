@@ -616,6 +616,9 @@
     </div>
 
  <div class="container screen" id="settingsScreen">
+<button class="btn btn-primary full-width shadow-btn" style="margin-top:20px; padding:15px; border-radius:15px; display:flex; justify-content:center; align-items:center; gap:10px; background: linear-gradient(135deg, var(--gold), var(--copper)); color:#000;" onclick="openMyFullProfile()">
+            👤 عرض ملفي الشخصي وتعديل بياناتي
+        </button>
         <div class="card glass-card" style="text-align:center; padding:30px 15px; position:relative; overflow:visible; margin-top:30px;">
             <div style="position:absolute; top:-30px; left:50%; transform:translateX(-50%);">
                 <div style="position:relative; width:90px; height:90px;">
@@ -757,6 +760,40 @@
                 <button class="btn btn-warning full-width shadow-btn" style="margin-top:15px;" onclick="generate5STask()">🚨 تسجيل عدم مطابقة (إنشاء مهمة 5S)</button>
             </div>
         </div>
+    </div>
+<div class="container screen" id="profileDetailsScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <button class="btn btn-sm btn-outline" onclick="showScreen('settingsScreen')">⬅️ عودة</button>
+            <h2 style="color:var(--gold); margin:0; font-size:18px;">🆔 هويتي الرقمية</h2>
+        </div>
+
+        <div class="card glass-card" style="border-top: 5px solid var(--gold);">
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="position:relative; width:100px; height:100px; margin:0 auto 10px;">
+                    <img id="myBigAvatar" src="" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--gold);">
+                    <label class="edit-badge">📷<input type="file" style="display:none;" onchange="updateProfilePic(event)"></label>
+                </div>
+                <h3 id="myDisplayName" style="margin:0; color:var(--text-main);">--</h3>
+                <span id="myDisplayRank" class="rank-label">--</span>
+            </div>
+
+            <div class="form-group">
+                <label style="font-size:11px; color:var(--gold);">الاسم الكامل:</label>
+                <input type="text" id="editName" class="form-control">
+            </div>
+            <div class="form-group">
+                <label style="font-size:11px; color:var(--gold);">رقم الواتساب:</label>
+                <input type="tel" id="editPhone" class="form-control" placeholder="01xxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label style="font-size:11px; color:var(--gold);">القسم:</label>
+                <select id="editDept" class="form-control"></select>
+            </div>
+            <button class="btn btn-success full-width" onclick="savePersonalData()">💾 حفظ التغييرات</button>
+        </div>
+
+        <h3 class="section-title">📊 شريط الإنجازات (My Timeline)</h3>
+        <div id="myActivityTimeline" style="padding-bottom:100px;"></div>
     </div>
 <div class="container screen" id="kkScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">

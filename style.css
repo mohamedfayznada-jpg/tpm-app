@@ -424,3 +424,20 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
 
 .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 5px; border-right: 3px solid var(--gold); }
 .item-row .name { font-size: 13px; font-weight: bold; }
+
+
+/* ==========================================
+   🏆 نخبة المصنع (Elite Hall of Fame)
+   ========================================== */
+.elite-card { background: linear-gradient(135deg, rgba(27,42,71,0.8), rgba(0,0,0,0.4)); border: 1px solid var(--copper); border-radius: 20px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden; transition: 0.3s; }
+.elite-card:hover { transform: scale(1.02); border-color: var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.2); }
+.elite-rank { font-size: 24px; font-weight: 900; color: var(--gold-dim); width: 40px; text-align: center; font-style: italic; }
+.elite-avatar { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--copper); object-fit: cover; }
+.elite-info { flex: 1; }
+.elite-name { font-weight: bold; font-size: 14px; color: var(--text-main); }
+.elite-level { font-size: 10px; color: var(--gold); background: rgba(212,175,55,0.1); padding: 2px 8px; border-radius: 10px; width: fit-content; margin-top: 3px; }
+.elite-score { font-size: 18px; font-weight: 900; color: var(--success); }
+
+/* رتب المستخدمين */
+.rank-label { background: var(--copper); color: #fff; font-size: 10px; padding: 2px 12px; border-radius: 100px; font-weight: bold; margin-top: 5px; display: inline-block; }
+.edit-badge { position: absolute; bottom: 0; right: 0; background: var(--gold); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--bg-color); }

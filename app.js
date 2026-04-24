@@ -331,22 +331,34 @@ showScreen = function(id) {
 };
 
 function updateUsersLeaderboard() {
-    const c = document.getElementById('podiumContainer'); const lc = document.getElementById('usersLeaderboardContainer');
-    if(!c || !lc) return;
-    let sortable = []; for (let user in userPoints) { sortable.push({ user: user, points: userPoints[user] }); }
-    sortable.sort((a, b) => b.points - a.points);
-    if(sortable.length === 0) { c.innerHTML = ''; lc.innerHTML = '<div style="color:var(--text-muted); text-align:center;">لا توجد إحصائيات</div>'; return; }
-    
-    let htmlPodium = '';
-    // منصة التتويج: الترتيب (2 ثم 1 ثم 3) ليظهر بشكل صحيح مع RTL
-    if(sortable[1]) htmlPodium += `<div class="podium-step step-2"><div class="rank-badge">2</div><div style="font-size:12px;">${sortable[1].user}</div><div style="font-size:10px;">${sortable[1].points}</div></div>`;
-    if(sortable[0]) htmlPodium += `<div class="podium-step step-1"><div class="rank-badge" style="color:#000;">1</div><div style="font-size:13px;">${sortable[0].user}</div><div style="font-size:10px;">${sortable[0].points}</div></div>`;
-    if(sortable[2]) htmlPodium += `<div class="podium-step step-3"><div class="rank-badge">3</div><div style="font-size:11px;">${sortable[2].user}</div><div style="font-size:10px;">${sortable[2].points}</div></div>`;
-    c.innerHTML = htmlPodium;
-    
-    lc.innerHTML = sortable.slice(3).map((item, idx) => `<div class="leaderboard-item"><span>المركز ${idx+4}: <b>${item.user}</b></span><span>${item.points} نقطة</span></div>`).join('');
-}
+    const c = document.getElementById('podiumContainer'); 
+    const lc = document.getElementById('usersLeaderboardContainer');
+    if(!lc) return;
 
+    let sortable = []; 
+    for (let user in userPoints) { sortable.push({ user: user, points: userPoints[user] }); }
+    sortable.sort((a, b) => b.points - a.points);
+
+    if(sortable.length === 0) { lc.innerHTML = '<div style="color:var(--text-muted); text-align:center;">بانتظار تسجيل أول إنجاز...</div>'; return; }
+    
+    if(c) c.style.display = 'none'; // سنلغي المنصة القديمة ونستخدم الكروت الفخمة
+
+    lc.innerHTML = sortable.map((item, idx) => {
+        let rankIcon = (idx === 0) ? '👑' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : idx + 1));
+        let level = item.points > 1000 ? 'أسطورة صناعية 🎖️' : (item.points > 500 ? 'خبير TPM 💎' : 'مبادر نشط ⚡');
+        
+        return `
+        <div class="elite-card">
+            <div class="elite-rank">${rankIcon}</div>
+            <img class="elite-avatar" src="https://ui-avatars.com/api/?name=${item.user}&background=1b2a47&color=d4af37">
+            <div class="elite-info">
+                <div class="elite-name">${item.user}</div>
+                <div class="elite-level">${level}</div>
+            </div>
+            <div class="elite-score">${item.points} <small style="font-size:10px;">نقطة</small></div>
+        </div>`;
+    }).join('');
+}
 let mainChartInstance = null; // متغير عام لحفظ الرسم البياني
 
 // 📈 محرك الشاشة الرئيسية (Executive Dashboard)
@@ -719,6 +731,59 @@ function switchSettingsTab(tabId) {
     event.currentTarget.classList.add('active');
 }
 
+
+async function openMyFullProfile() {
+    const uid = firebase.auth().currentUser.uid;
+    const u = usersData[uid];
+    if(!u) return;
+
+    document.getElementById('myBigAvatar').src = u.avatar || `https://ui-avatars.com/api/?name=${u.name}&background=1b2a47&color=d4af37`;
+    document.getElementById('myDisplayName').innerText = u.name;
+    document.getElementById('editName').value = u.name;
+    document.getElementById('editPhone').value = u.phone || '';
+    
+    // رتبة مبنية على النقاط
+    const pts = userPoints[u.name] || 0;
+    document.getElementById('myDisplayRank').innerText = pts > 1000 ? 'الرتبة: أسطورة 🎖️' : 'الرتبة: تقني محترف';
+    
+    // تحديث قائمة الأقسام في التعديل
+    let opts = departments.map(d=>`<option value="${d}" ${u.dept===d?'selected':''}>${d}</option>`).join('');
+    document.getElementById('editDept').innerHTML = opts;
+
+    // جلب سجل النشاط الخاص بي
+    const myHistory = historyData.filter(h => h.auditor === u.name).reverse().slice(0, 10);
+    const myTags = tagsData.filter(t => t.auditor === u.name).reverse().slice(0, 10);
+    
+    document.getElementById('myActivityTimeline').innerHTML = [
+        ...myHistory.map(h => `<div class="item-row">📝 أجريت مراجعة لـ ${h.dept} بنسبة ${h.totalPct}% <small>${h.date}</small></div>`),
+        ...myTags.map(t => `<div class="item-row" style="border-right-color:var(--danger);">🚨 أصدرت تاجاً: ${t.desc} <small>${t.date}</small></div>`)
+    ].join('') || '<div style="text-align:center; padding:20px;">لا يوجد نشاط مسجل بعد</div>';
+
+    showScreen('profileDetailsScreen');
+}
+
+async function savePersonalData() {
+    const uid = firebase.auth().currentUser.uid;
+    const newName = document.getElementById('editName').value.trim();
+    const newPhone = document.getElementById('editPhone').value.trim();
+    const newDept = document.getElementById('editDept').value;
+
+    if(!newName) return showToast('الاسم مطلوب');
+
+    showToast('جاري تحديث هويتك... ⏳');
+    await db.ref(`tpm_system/users/${uid}`).update({
+        name: newName,
+        phone: newPhone,
+        dept: newDept
+    });
+
+    currentUser.name = newName; // تحديث الجلسة الحالية
+    localStorage.setItem('tpm_user', newName);
+    
+    showToast('تم تحديث بياناتك بنجاح ✅');
+    renderProfileAndSettings(); // تحديث شاشة الإعدادات
+    showScreen('settingsScreen');
+}
 // ------------------------------------------
 // ✍️ التوقيع الفائق السرعة (Hardware Accelerated)
 // ------------------------------------------

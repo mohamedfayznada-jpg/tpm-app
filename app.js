@@ -417,6 +417,7 @@ function generateEliteCardHTML(item, idx) {
 }
 
 // 👤 محرك مركز القيادة الشخصي (Command Center)
+// 👤 محرك مركز القيادة الشخصي (Command Center)
 async function openMyFullProfile() {
     const uid = firebase.auth().currentUser.uid;
     const u = usersData[uid];
@@ -434,24 +435,33 @@ async function openMyFullProfile() {
     let opts = departments.map(d=>`<option value="${d}" ${u.dept===d?'selected':''}>${d}</option>`).join('');
     document.getElementById('editDept').innerHTML = opts;
 
-    // جلب "الجدول الزمني للبطولات" (Timeline) الخاص بالمستخدم فقط
-    const myAudits = historyData.filter(h => h.auditor === u.name).length;
-    const myTags = tagsData.filter(t => t.auditor === u.name).length;
-    const myKaizens = historyData.filter(h => h.auditor === u.name && h.stepsOrder.includes('ManualKaizen')).length;
+    // 🚀 تجميع الإحصائيات (بدقة)
+    const myAudits = historyData.filter(h => h.auditor === u.name && !h.stepsOrder.includes('ManualKaizen'));
+    const myTags = tagsData.filter(t => t.auditor === u.name);
+    const myKaizens = historyData.filter(h => h.auditor === u.name && h.stepsOrder.includes('ManualKaizen'));
+
+    // 🚀 بناء شريط الإنجازات (Timeline) بدمج كل الأنشطة
+    let allActivity = [
+        ...myAudits.map(a => ({ type: 'audit', text: `📝 أتممت مراجعة قسم ${a.dept} (${a.totalPct}%)`, date: a.date })),
+        ...myTags.map(t => ({ type: 'tag', text: `🚨 أصدرت تاج ${t.color==='red'?'صيانة':'إنتاج'}: ${t.desc}`, date: t.date })),
+        ...myKaizens.map(k => ({ type: 'kaizen', text: `💡 شاركت بفكرة كايزن في ${k.dept}`, date: k.date }))
+    ].reverse().slice(0, 10); // أحدث 10 تحركات
+
+    let timelineHtml = allActivity.map(item => `
+        <div class="item-row" style="border-right-color: ${item.type === 'tag' ? 'var(--danger)' : (item.type === 'kaizen' ? 'var(--success)' : 'var(--gold)')};">
+            <span style="flex:1;">${item.text}</span>
+            <small style="color:var(--text-muted); font-size:10px; white-space:nowrap; margin-right:10px;">${item.date}</small>
+        </div>
+    `).join('');
 
     document.getElementById('myActivityTimeline').innerHTML = `
         <div class="dashboard-stats" style="margin-bottom:20px;">
-            <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value">${myAudits}</div><div class="stat-label">مراجعة</div></div>
-            <div class="card stat-card glass-card" style="border-color:var(--danger);"><div class="stat-value">${myTags}</div><div class="stat-label">تاج</div></div>
-            <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value">${myKaizens}</div><div class="stat-label">كايزن</div></div>
+            <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value">${myAudits.length}</div><div class="stat-label">مراجعة</div></div>
+            <div class="card stat-card glass-card" style="border-color:var(--danger);"><div class="stat-value">${myTags.length}</div><div class="stat-label">تاج</div></div>
+            <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value">${myKaizens.length}</div><div class="stat-label">كايزن</div></div>
         </div>
         <h4 style="color:var(--gold); border-bottom:1px solid rgba(212,175,55,0.2); padding-bottom:5px;">آخر التحركات الميدانية:</h4>
-        ${historyData.filter(h => h.auditor === u.name).reverse().slice(0,5).map(h => `
-            <div class="item-row">
-                <span>📝 مراجعة ${h.dept} (${h.totalPct}%)</span>
-                <small>${h.date}</small>
-            </div>
-        `).join('') || '<div style="text-align:center; padding:10px; font-size:11px;">لا يوجد سجل نشاط متاح</div>'}
+        ${timelineHtml || '<div style="text-align:center; padding:10px; font-size:11px; color:var(--text-muted);">لم يتم تسجيل أي نشاط ميداني بعد 🚀</div>'}
     `;
 
     showScreen('profileDetailsScreen');
@@ -829,35 +839,7 @@ function switchSettingsTab(tabId) {
 }
 
 
-async function openMyFullProfile() {
-    const uid = firebase.auth().currentUser.uid;
-    const u = usersData[uid];
-    if(!u) return;
 
-    document.getElementById('myBigAvatar').src = u.avatar || `https://ui-avatars.com/api/?name=${u.name}&background=1b2a47&color=d4af37`;
-    document.getElementById('myDisplayName').innerText = u.name;
-    document.getElementById('editName').value = u.name;
-    document.getElementById('editPhone').value = u.phone || '';
-    
-    // رتبة مبنية على النقاط
-    const pts = userPoints[u.name] || 0;
-    document.getElementById('myDisplayRank').innerText = pts > 1000 ? 'الرتبة: أسطورة 🎖️' : 'الرتبة: تقني محترف';
-    
-    // تحديث قائمة الأقسام في التعديل
-    let opts = departments.map(d=>`<option value="${d}" ${u.dept===d?'selected':''}>${d}</option>`).join('');
-    document.getElementById('editDept').innerHTML = opts;
-
-    // جلب سجل النشاط الخاص بي
-    const myHistory = historyData.filter(h => h.auditor === u.name).reverse().slice(0, 10);
-    const myTags = tagsData.filter(t => t.auditor === u.name).reverse().slice(0, 10);
-    
-    document.getElementById('myActivityTimeline').innerHTML = [
-        ...myHistory.map(h => `<div class="item-row">📝 أجريت مراجعة لـ ${h.dept} بنسبة ${h.totalPct}% <small>${h.date}</small></div>`),
-        ...myTags.map(t => `<div class="item-row" style="border-right-color:var(--danger);">🚨 أصدرت تاجاً: ${t.desc} <small>${t.date}</small></div>`)
-    ].join('') || '<div style="text-align:center; padding:20px;">لا يوجد نشاط مسجل بعد</div>';
-
-    showScreen('profileDetailsScreen');
-}
 
 async function savePersonalData() {
     const uid = firebase.auth().currentUser.uid;

@@ -1833,6 +1833,133 @@ function filterCat(cat, btn) {
 function filterLibrary() { renderKnowledgeBase(); }
 
 
+// ------------------------------------------
+// 👷‍♂️ محرك بوابة الصيانة الذاتية (JH Portal Engine)
+// ------------------------------------------
+let currentJHDept = null;
+let jhDocumentsData = {};
+
+function showJHPortal() {
+    currentJHDept = null;
+    document.getElementById('jhToolbox').style.display = 'none';
+    
+    let grid = departments.map(d => `
+        <div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer; border-right:4px solid var(--success);" onclick="selectJHDept('${d}')">
+            <b style="color:var(--gold); font-size:13px;">🏭 ${d}</b>
+        </div>
+    `).join('');
+    
+    document.getElementById('jhDeptGrid').innerHTML = grid;
+    showScreen('jhPortalScreen');
+}
+
+function selectJHDept(dept) {
+    currentJHDept = dept;
+    document.getElementById('selectedJHDeptTitle').innerText = `قسم: ${dept}`;
+    document.getElementById('jhToolbox').style.display = 'block';
+    window.scrollTo({ top: document.getElementById('jhToolbox').offsetTop - 20, behavior: 'smooth' });
+}
+
+function startNewAuditFlowFromPortal() {
+    currentViewedDept = currentJHDept;
+    startNewAuditFlow();
+}
+
+async function openJHDocument(type) {
+    const headerMap = { 
+        'SOC': '🧗‍♂️ حصر الأماكن صعبة الوصول (SOC)', 
+        'Safety': '⚠️ حصر الأماكن غير الآمنة (Safety Map)', 
+        'Anatomy': '⚙️ تشريح وشرح أجزاء الماكينة' 
+    };
+    
+    document.getElementById('jhDocHeader').innerText = headerMap[type];
+    renderJHDocForm(type);
+    
+    // سحب البيانات من السيرفر لهذا القسم وهذا النوع
+    showToast('جاري تحميل السجلات... ⏳');
+    const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value');
+    let records = snap.val() ? Object.values(snap.val()) : [];
+    
+    renderJHDocList(type, records);
+    showScreen('jhDocumentScreen');
+}
+
+function renderJHDocForm(type) {
+    let formHtml = '';
+    if(type === 'SOC') {
+        formHtml = `
+            <h4 style="margin:0 0 10px; color:var(--gold);">تسجيل مكان صعب جديد</h4>
+            <input type="text" id="socLocation" class="form-control" placeholder="المكان (مثال: خلف الطلمبة 1)">
+            <input type="text" id="socReason" class="form-control" placeholder="سبب الصعوبة (ضيق، حرارة..)">
+            <button class="btn btn-warning full-width" onclick="saveJHRecord('SOC')">➕ إضافة للسجل</button>
+        `;
+    } else if(type === 'Safety') {
+        formHtml = `
+            <h4 style="margin:0 0 10px; color:var(--danger);">تسجيل خطر أمان</h4>
+            <input type="text" id="safeHazard" class="form-control" placeholder="وصف الخطر (سلك مكشوف، مسمار بارز)">
+            <select id="safeLevel" class="form-control">
+                <option value="high">خطر حرج 🔴</option>
+                <option value="med">خطر متوسط 🟡</option>
+            </select>
+            <button class="btn btn-danger full-width" onclick="saveJHRecord('Safety')">➕ تسجيل الخطر</button>
+        `;
+    } else {
+        formHtml = `
+            <h4 style="margin:0 0 10px; color:var(--gold);">إضافة شرح جزء</h4>
+            <input type="text" id="partName" class="form-control" placeholder="اسم الجزء">
+            <textarea id="partDesc" class="form-control" placeholder="وظيفة الجزء وكيفية فحصه"></textarea>
+            <button class="btn btn-primary full-width" onclick="saveJHRecord('Anatomy')">💾 حفظ البيانات</button>
+        `;
+    }
+    document.getElementById('jhDocActionArea').innerHTML = formHtml;
+}
+
+async function saveJHRecord(type) {
+    let data = { id: uniqueNumericId().toString(), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
+    
+    if(type === 'SOC') {
+        data.location = document.getElementById('socLocation').value;
+        data.reason = document.getElementById('socReason').value;
+        if(!data.location) return;
+    } else if(type === 'Safety') {
+        data.hazard = document.getElementById('safeHazard').value;
+        data.level = document.getElementById('safeLevel').value;
+        if(!data.hazard) return;
+    } else {
+        data.name = document.getElementById('partName').value;
+        data.desc = document.getElementById('partDesc').value;
+        if(!data.name) return;
+    }
+
+    await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data);
+    showToast('تم تحديث السجل الفني بنجاح ✅');
+    openJHDocument(type); // تحديث القائمة
+}
+
+function renderJHDocList(type, records) {
+    let html = records.reverse().map(r => `
+        <div class="item-row" style="border-right-color:${type==='Safety'?'var(--danger)':'var(--gold)'};">
+            <div style="flex:1;">
+                <b>${r.location || r.hazard || r.name}</b><br>
+                <small style="color:var(--text-muted);">${r.reason || r.level || r.desc}</small>
+            </div>
+            <div style="text-align:left;">
+                <small style="font-size:9px;">${r.date}</small><br>
+                ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin:0;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️</button>` : ''}
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('jhDocListContainer').innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted);">لا توجد سجلات مسجلة لهذا القسم</div>';
+}
+
+async function deleteJHRecord(type, id) {
+    if(confirm('حذف هذا السجل؟')) {
+        await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).remove();
+        openJHDocument(type);
+    }
+}
+
 
 // ------------------------------------------
 // 🧠 محرك المعرفة الذكي 2.0 (NotebookLM Experience)

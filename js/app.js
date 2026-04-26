@@ -143,7 +143,26 @@ async function login() {
         document.getElementById('cloudStatus').innerHTML = "غير متصل";
     }
 }
+// كسر العزلة مؤقتاً لربط دوال الـ HTML بالـ JS
+window.login = login;
 
+// تعريض الدوال الأساسية للواجهة (Global Exposure)
+window.logout = logout;
+window.startAudit = startAudit;
+window.nextStep = nextStep;
+window.prevStep = prevStep;
+window.calculateScore = calculateScore;
+window.handleTagSelection = handleTagSelection;
+window.handleTagPhoto = handleTagPhoto;
+window.uploadImage = uploadImage;
+window.submitAudit = submitAudit;
+window.generatePDF = generatePDF;
+window.analyzeImageWithAI = analyzeImageWithAI;
+window.exportExcel = exportExcel;
+window.showHistory = showHistory;
+window.initAdminDashboard = initAdminDashboard;
+window.askGeminiExpert = askGeminiExpert;
+window.extractTextFromPDF = extractTextFromPDF;
 // 📝 إنشاء حساب جديد (بوضع الانتظار Pending)
 async function signup() {
     const fullName = sanitizeInput(document.getElementById('signupFullName').value);

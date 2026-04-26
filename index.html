@@ -18,23 +18,20 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
- <div class="main-header" id="mainHeader">
-    <div style="display:flex; gap:10px;">
+<div class="main-header" id="mainHeader">
+    <div class="header-right" style="display:flex; gap:10px;">
         <button class="icon-btn" id="globalBackBtn" onclick="goBack()">🔙</button>
         <button class="icon-btn" onclick="showScreen('homeScreen')">🏠</button>
     </div>
-    <div style="text-align:center;">
+
+    <div class="header-center" style="text-align:center;">
         <h1 style="color:var(--gold); font-size:16px; margin:0;">Factory OS</h1>
         <div id="adminNotification" class="notify-dot"></div>
     </div>
-    <div style="display:flex; gap:10px;">
-        <button class="icon-btn" onclick="toggleDarkMode()">🌗</button>
-        <button class="icon-btn danger-icon" onclick="logout()">🚪</button>
-    </div>
-</div>
-    <div class="header-left">
+
+    <div class="header-left" style="display:flex; gap:10px;">
         <button class="icon-btn" onclick="toggleSidebar()" title="القائمة الجانبية">☰</button>
-        <button class="icon-btn" onclick="toggleDarkMode()" title="تغيير المظهر">🌗</button>
+        <button class="icon-btn" onclick="toggleDarkMode()">🌗</button>
         <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج">🚪</button>
     </div>
 </div>

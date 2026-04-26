@@ -349,9 +349,12 @@ function processAndEnhanceImage(file, callback) {
 // ------------------------------------------
 // 📱 التحكم بالشاشات والقائمة الجانبية
 // ------------------------------------------
+// ☰ محرك القائمة الجانبية
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
+    if(!sidebar || !overlay) return;
+
     if(sidebar.style.right === '0px') {
         sidebar.style.right = '-280px';
         overlay.style.display = 'none';
@@ -360,7 +363,6 @@ function toggleSidebar() {
         overlay.style.display = 'block';
     }
 }
-
 // 🏆 نظام النقاط والرتب المطور (Enterprise Elite)
 function awardPoints(pts, reason) {
     const uid = firebase.auth().currentUser.uid;

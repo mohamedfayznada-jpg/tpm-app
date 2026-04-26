@@ -686,6 +686,69 @@ function initAuditSequential() {
     renderCurrentAuditStep();
 }
 
+
+// فتح وإغلاق المودال
+function openAddRiskModal() { document.getElementById('addRiskModal').style.display = 'flex'; }
+function closeRiskModal() { document.getElementById('addRiskModal').style.display = 'none'; }
+
+// حفظ مخاطرة جديدة
+function saveNewRisk() {
+    const area = document.getElementById('riskArea').value;
+    const desc = document.getElementById('riskDesc').value;
+    const plan = document.getElementById('riskPlan').value;
+
+    if(!area || !desc) return showToast('يرجى ملء البيانات الأساسية');
+
+    const newRisk = {
+        area: area,
+        description: desc,
+        plan: plan,
+        status: 'open',
+        date: new Date().toLocaleDateString('ar-EG'),
+        recordedBy: currentUser.name
+    };
+
+    const newKey = db.ref('tpm_system/safety_risks').push().key;
+    db.ref(`tpm_system/safety_risks/${newKey}`).set(newRisk);
+    
+    closeRiskModal();
+    showToast('تم تسجيل المخاطرة بنجاح 🛡️');
+}
+
+// عرض المخاطر بشكل منظم
+function renderSafetyRisks() {
+    db.ref('tpm_system/safety_risks').on('value', snap => {
+        const risks = snap.val() || {};
+        const container = document.getElementById('safetyRisksContainer');
+        let html = '';
+        let open = 0, closed = 0;
+
+        Object.keys(risks).forEach(key => {
+            const r = risks[key];
+            if(r.status === 'open') open++; else closed++;
+            
+            html += `
+                <div class="card glass-card" style="border-right: 5px solid ${r.status === 'open' ? 'var(--danger)' : 'var(--success)'}; margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <span style="font-size:10px; background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px;">${r.area}</span>
+                        <span style="font-size:10px; color:var(--text-muted);">${r.date}</span>
+                    </div>
+                    <h4 style="margin:10px 0 5px; color:var(--gold); font-size:14px;">⚠️ وصف الخطورة:</h4>
+                    <p style="font-size:12px; margin-bottom:10px;">${r.description}</p>
+                    <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+                        <h4 style="margin:0 0 5px; color:var(--success); font-size:12px;">✅ خطة الاستجابة:</h4>
+                        <p style="font-size:11px;">${r.plan || 'جاري وضع الخطة...'}</p>
+                    </div>
+                    ${r.status === 'open' ? `<button class="btn btn-sm btn-success" style="margin-top:10px; width:auto;" onclick="closeRisk('${key}')">تم التنفيذ ✔️</button>` : ''}
+                </div>
+            `;
+        });
+
+        container.innerHTML = html || '<p style="text-align:center; color:var(--text-muted);">لا توجد مخاطر مسجلة حالياً</p>';
+        document.getElementById('openRisksCount').innerText = open;
+        document.getElementById('closedRisksCount').innerText = closed;
+    });
+}
 // ------------------------------------------
 // 📝 محرك المراجعة المطور (Scoring & Points)
 // ------------------------------------------

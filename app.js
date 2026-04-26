@@ -31,6 +31,7 @@ let deptGoalsData = {};
 
 
 
+// 🚀 المحرك الموحد لفتح الشاشات (النسخة البرو)
 function showScreen(screenId) {
     // 1. إخفاء كل الشاشات
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -40,11 +41,11 @@ function showScreen(screenId) {
     if(target) {
         target.classList.add('active');
         
-        // 🚀 تحديث البيانات فوراً بناءً على نوع الشاشة
-        if(screenId === 'safetyRiskScreen') renderSafetyRisks(); // تأمين ظهور المخاطر
-        if(screenId === 'kkScreen') renderKKDashboard();         // تأمين ظهور شجرة الفواقد
-        if(screenId === 'tasksScreen') renderTasks();           // تأمين ظهور المهام
-        if(screenId === 'kaizenScreen') renderKaizenFeed();     // تأمين ظهور الكايزن
+        // 📡 تفعيل رادارات البيانات فوراً
+        if(screenId === 'safetyRiskScreen') renderSafetyRisks(); // عشان المخاطر تظهر
+        if(screenId === 'kkScreen') renderKKDashboard();         // عشان شجرة KK تنور
+        if(screenId === 'tasksScreen') renderTasks();           // عشان المهام تظهر
+        if(screenId === 'kaizenScreen') renderKaizenFeed();     // عشان الكايزن يظهر
     }
     
     // 3. إدارة زر الرجوع
@@ -53,7 +54,6 @@ function showScreen(screenId) {
 
     window.scrollTo(0,0);
 }
-
 function goBack() {
     if (screenHistory.length > 1) {
         screenHistory.pop(); // مسح الشاشة الحالية

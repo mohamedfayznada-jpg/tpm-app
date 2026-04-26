@@ -2611,3 +2611,62 @@ async function updateProfilePic(event) {
         }
     });
 }
+
+// إدارة شاشة مخاطر الأمان
+function openAddRiskModal() { document.getElementById('addRiskModal').style.display = 'flex'; }
+function closeRiskModal() { document.getElementById('addRiskModal').style.display = 'none'; }
+
+function saveNewRisk() {
+    const area = document.getElementById('riskArea').value;
+    const desc = document.getElementById('riskDesc').value;
+    const plan = document.getElementById('riskPlan').value;
+
+    if(!area || !desc) return showToast('يرجى ملء البيانات الأساسية ⚠️');
+
+    const newRisk = {
+        area: area,
+        description: desc,
+        plan: plan,
+        status: 'open',
+        date: new Date().toLocaleDateString('ar-EG'),
+        recordedBy: currentUser.name
+    };
+
+    db.ref('tpm_system/safety_risks').push(newRisk);
+    closeRiskModal();
+    showToast('تم تسجيل المخاطرة بنجاح 🛡️');
+}
+
+function renderSafetyRisks() {
+    db.ref('tpm_system/safety_risks').on('value', snap => {
+        const risks = snap.val() || {};
+        const container = document.getElementById('safetyRisksContainer');
+        let html = '', open = 0, closed = 0;
+
+        Object.keys(risks).forEach(key => {
+            const r = risks[key];
+            if(r.status === 'open') open++; else closed++;
+            
+            html += `
+                <div class="card glass-card" style="border-right: 5px solid ${r.status === 'open' ? 'var(--danger)' : 'var(--success)'}; margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; font-size:10px;">
+                        <span style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px; color:var(--gold);">${r.area}</span>
+                        <span style="color:var(--text-muted);">${r.date}</span>
+                    </div>
+                    <p style="font-size:13px; margin:10px 0;">⚠️ <b>الخطورة:</b> ${r.description}</p>
+                    <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:8px; font-size:11px;">
+                        <span style="color:var(--success);">✅ <b>الاستجابة:</b></span> ${r.plan || 'قيد الدراسة'}
+                    </div>
+                    ${r.status === 'open' ? `<button class="btn btn-sm btn-success" style="margin-top:10px;" onclick="updateRiskStatus('${key}', 'closed')">تأمين المخاطرة ✔️</button>` : ''}
+                </div>`;
+        });
+        container.innerHTML = html || '<p style="text-align:center; padding:20px; color:var(--text-muted);">لا توجد مخاطر مسجلة</p>';
+        document.getElementById('openRisksCount').innerText = open;
+        document.getElementById('closedRisksCount').innerText = closed;
+    });
+}
+
+function updateRiskStatus(key, newStatus) {
+    db.ref(`tpm_system/safety_risks/${key}/status`).set(newStatus);
+    showToast('تم تحديث موقف المخاطرة 🛡️');
+}

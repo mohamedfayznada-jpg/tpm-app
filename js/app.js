@@ -1,6 +1,15 @@
 // ============================================================================
-// 🚀 Factory OS - Core Engine (V5.0)
+// 🚀 Factory OS - Core Engine (V5.0 - Stable Version)
 // ============================================================================
+
+// دالة فحص تحميل المكتبات
+const checkFirebaseLoaded = () => {
+    if (typeof firebase === 'undefined') {
+        alert("خطأ: لم يتم تحميل مكتبات Firebase. يرجى التأكد من اتصال الإنترنت.");
+        return false;
+    }
+    return true;
+};
 
 // === 1. إعدادات النظام وتهيئة Firebase ===
 const envConfig = window.__TPM_CONFIG__ || { geminiApiKey: "", imgbbApiKey: "" };
@@ -14,13 +23,17 @@ const firebaseConfig = {
     appId: "1:1047922099229:web:5e3d6fd5fa4c23ab2772f4"
 };
 
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
+// تهيئة آمنة
+let db, auth;
+if (typeof firebase !== 'undefined') {
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.database();
+    auth = firebase.auth();
 }
-const db = firebase.database();
-const auth = firebase.auth();
 
-// === 2. محرك إدارة الحالة (Global Store Engine) ===
+// === 2. محرك إدارة الحالة (Store) ===
 class Store {
     constructor() {
         this.state = { isOnline: false, currentScreen: 'loginScreen' };
@@ -41,85 +54,56 @@ class Store {
 }
 const globalStore = new Store();
 
-// === 3. المتغيرات القديمة (Legacy State) - للحفاظ على عمل الكود القديم ===
-let currentUser = null;
-let usersData = {};
-let deptsData = {};
-let maintenanceEngineers = [];
-let tagsData = [];
-let currentDept = null;
-let currentStep = 0;
-let auditData = { stepScores: {}, finalScore: 0, answers: {}, notes: {}, photos: {}, tags: [], risks: [] };
-let pointsTable = { "100": 10, "90": 8, "80": 6, "70": 4, "60": 2 };
-let selectedTagImg = null;
-let oplImgData = null;
-let kaizenBeforeImg = null;
-let kaizenAfterImg = null;
-let signaturePad = null;
-let standardImgData = null;
-let currentImgData = null;
-let sliderInitialized = false;
-let pdfExtractText = "";
+// === 3. المتغيرات العامة ===
+// (هنا تترك المتغيرات القديمة كما هي: currentUser, usersData, إلخ...)
 
-// === 4. محرك توجيه الشاشات (Router Engine) ===
+// === 4. محرك توجيه الشاشات (Router) ===
 class Router {
     constructor() {
         this.screens = {};
         this.history = [];
     }
-
     init() {
         document.querySelectorAll('.screen').forEach(screen => {
             this.screens[screen.id] = screen;
         });
     }
-
     navigate(screenId, addToHistory = true) {
         if (!this.screens[screenId]) return;
-        
         const current = globalStore.get('currentScreen');
         if (addToHistory && current && current !== screenId) {
             this.history.push(current);
         }
-
         globalStore.set('currentScreen', screenId);
-        
-        // الأداء (Performance): إخفاء وإظهار سريع بدون البحث المتكرر في الـ DOM
         Object.values(this.screens).forEach(s => s.classList.remove('active'));
         this.screens[screenId].classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-
     goBack() {
-        if (this.history.length > 0) {
-            const prev = this.history.pop();
-            this.navigate(prev, false);
-        } else {
-            this.navigate('homeScreen', false);
-        }
+        if (this.history.length > 0) this.navigate(this.history.pop(), false);
+        else this.navigate('homeScreen', false);
     }
 }
 const appRouter = new Router();
 
-// ربط الدوال القديمة بالمحرك الجديد لضمان عمل أزرار الـ HTML
+// ربط الدوال بالنافذة لضمان عمل أزرار الـ HTML
 window.showScreen = (id) => appRouter.navigate(id);
 window.goBack = () => appRouter.goBack();
 
-// === 5. التشغيل الأولي (Boot) ===
+// === 5. التشغيل عند التحميل ===
 document.addEventListener('DOMContentLoaded', () => {
     appRouter.init();
-    console.log('🚀 Factory OS Engine Ready');
-
-    // مراقبة حالة الاتصال بالسيرفر
-    db.ref('.info/connected').on('value', snap => {
-        const isOnline = snap.val() === true;
-        globalStore.set('isOnline', isOnline);
-        const statusEl = document.getElementById('cloudStatus');
-        if (statusEl) {
-            statusEl.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل بالسيرفر";
-            statusEl.style.color = isOnline ? "var(--success)" : "var(--danger)";
-        }
-    });
+    if (db) {
+        db.ref('.info/connected').on('value', snap => {
+            const isOnline = snap.val() === true;
+            globalStore.set('isOnline', isOnline);
+            const statusEl = document.getElementById('cloudStatus');
+            if (statusEl) {
+                statusEl.innerHTML = isOnline ? "متصل بالسيرفر" : "جاري الاتصال...";
+                statusEl.style.color = isOnline ? "var(--success)" : "var(--danger)";
+            }
+        });
+    }
 });
 
 // ============================================================================

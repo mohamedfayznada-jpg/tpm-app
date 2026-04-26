@@ -571,3 +571,35 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
     padding: 15px;
     border-right: 4px solid var(--gold);
 }
+
+/* ضبط الهيدر الثابت */
+.main-header {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 70px; z-index: 9999;
+    background: linear-gradient(135deg, #1b2a47, #0a1128);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 15px; border-bottom: 2px solid var(--gold);
+}
+
+/* حماية المحتوى من الاختفاء تحت الهيدر */
+.container.screen {
+    margin-top: 80px !important;
+    padding: 10px !important;
+}
+
+/* توزيع إحصائيات الموبايل (2 في كل صف) */
+.dashboard-stats.modern-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.oee-card { grid-column: span 2; } /* كارت الـ OEE يأخذ العرض كاملاً */
+
+/* حاوية الرسم البياني - زيادة الارتفاع للوضوح */
+.chart-container {
+    height: 250px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 15px;
+    padding: 10px;
+    margin: 15px 0;
+}

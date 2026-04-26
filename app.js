@@ -24,29 +24,40 @@ let radarChartInstance = null, trendChartInstance = null, currentViewedDept = nu
 let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];
 let currentTagImg = null, currentTaskDept = null, kaizenImgs = { before: null, after: null };
 let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
-let screenHistory = ['homeScreen'];
+
 let jhMiniChartInstance = null;
 let deptGoalsData = {};
 
 
 
+let screenHistory = ['homeScreen'];
 
 function showScreen(screenId) {
-    // 1. حماية الصلاحيات أولاً
-    if (screenId !== 'loginScreen' && screenId !== 'signupScreen' && !canAccess(screenId)) {
-        return showToast("عذراً، لا تملك صلاحية الدخول لهذه الصفحة.");
-    }
-    
-    // 2. تسجيل مسار التصفح عشان زرار "الرجوع" يشتغل صح
-    if (screenHistory[screenHistory.length - 1] !== screenId) {
-        screenHistory.push(screenId);
-    }
-    
-    // 3. عرض الشاشة
+    // إخفاء كل الشاشات
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    let target = document.getElementById(screenId);
-    if(target) target.classList.add('active');
+    
+    // إظهار الشاشة المطلوبة
+    const target = document.getElementById(screenId);
+    if(target) {
+        target.classList.add('active');
+        if (screenHistory[screenHistory.length - 1] !== screenId) {
+            screenHistory.push(screenId);
+        }
+    }
+    
+    // إخفاء زرار الرجوع لو في الرئيسية
+    const backBtn = document.getElementById('globalBackBtn');
+    if(backBtn) backBtn.style.display = (screenId === 'homeScreen') ? 'none' : 'block';
+    
     window.scrollTo(0,0);
+}
+
+function goBack() {
+    if (screenHistory.length > 1) {
+        screenHistory.pop(); // حذف الشاشة الحالية
+        const prevScreen = screenHistory[screenHistory.length - 1];
+        showScreen(prevScreen);
+    }
 }
 
 function goBack() {
@@ -1877,90 +1888,92 @@ function showJHPortal() {
     document.getElementById('jhDeptGrid').innerHTML = grid;
     showScreen('jhPortalScreen');
 }
-
+// 👤 محرك اختيار القسم وتحديث الداشبورد (النسخة المؤمنة للموبايل)
 function selectJHDept(dept) {
     currentJHDept = dept;
-    document.getElementById('selectedJHDeptTitle').innerText = `داشبورد قسم: ${dept}`;
     
-    // 1. حساب آخر مراجعة (الجودة والأداء)
+    // 1. تحديث العناوين
+    const titleEl = document.getElementById('selectedJHDeptTitle');
+    if(titleEl) titleEl.innerText = `داشبورد قسم: ${dept}`;
+    
+    // 2. حساب الأرقام بدقة (الجودة، التاجات، الكايزن)
     const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen'));
-    const lastScore = deptAudits.length > 0 ? deptAudits[deptAudits.length - 1].totalPct : 0;
+    const lastScore = deptAudits.length > 0 ? Math.round(deptAudits[deptAudits.length - 1].totalPct) : 0;
     document.getElementById('deptAuditScore').innerText = lastScore + '%';
     
-    // 2. حساب التاجات المفتوحة (تأثير على المتاحية)
     const deptTags = tagsData.filter(t => t.dept === dept);
     const openTags = deptTags.filter(t => t.status !== 'done' && t.status !== 'closed').length;
     document.getElementById('deptOpenTags').innerText = openTags;
     
-    // ⚙️ 3. محرك حساب الـ OEE (معادلة ذكية تدمج المراجعات مع الأعطال)
+    // ⚙️ 3. معادلة الـ OEE الذكية (دمج الأداء مع الفواقد)
     let calculatedOEE = Math.max(0, Math.round((lastScore * 0.95) - (openTags * 1.5)));
     if (deptAudits.length === 0) calculatedOEE = 0;
     
     const oeeEl = document.getElementById('deptOEE');
-    oeeEl.innerText = calculatedOEE + '%';
-
-    // 🎯 4. نظام المستهدفات (Goals)
-    const goalEl = document.getElementById('deptGoalDisplay');
-    if (deptGoalsData[dept]) {
-        goalEl.style.display = 'block';
-        goalEl.innerHTML = `🎯 المستهدف الشهري للكفاءة: <b style="font-size:14px;">${deptGoalsData[dept]}%</b>`;
-        // تغيير لون الـ OEE لو حقق التارجت
-        oeeEl.style.color = calculatedOEE >= deptGoalsData[dept] ? 'var(--success)' : '#00BCD4';
-    } else {
-        goalEl.style.display = 'none';
-        oeeEl.style.color = '#00BCD4';
-    }
-
-    // 📈 5. رسم المخطط البياني المصغر (Mini Trend Chart)
-    const ctx = document.getElementById('jhMiniTrendChart');
-    if (ctx) {
-        if (jhMiniChartInstance) jhMiniChartInstance.destroy();
-        
-        let last5Audits = deptAudits.slice(-5);
-        let labels = last5Audits.map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]);
-        let data = last5Audits.map(a => a.totalPct);
-        
-      // داخل دالة selectJHDept - في جزء الـ Chart
-jhMiniChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: labels,
-        datasets: [{
-            data: data,
-            borderColor: '#d4af37',
-            backgroundColor: 'rgba(212, 175, 55, 0.05)',
-            borderWidth: 3,
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: '#fff'
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: { 
-                beginAtZero: true, 
-                max: 100,
-                ticks: { color: '#bdae93', font: { size: 10 } },
-                grid: { color: 'rgba(255,255,255,0.05)' }
-            },
-            x: { 
-                ticks: { color: '#bdae93', font: { size: 10 } },
-                grid: { display: false }
-            }
+    if(oeeEl) {
+        oeeEl.innerText = calculatedOEE + '%';
+        // 🎯 4. تحديث المستهدف والألوان
+        const goalEl = document.getElementById('deptGoalDisplay');
+        if (deptGoalsData[dept]) {
+            goalEl.style.display = 'block';
+            goalEl.innerHTML = `🎯 المستهدف المطلوب: <b style="font-size:14px;">${deptGoalsData[dept]}%</b>`;
+            oeeEl.style.color = calculatedOEE >= deptGoalsData[dept] ? 'var(--success)' : '#00BCD4';
+        } else {
+            if(goalEl) goalEl.style.display = 'none';
+            oeeEl.style.color = '#00BCD4';
         }
     }
-});
 
-    // 🏆 6. تحديث ترتيب الأبطال الداخلي
+    // 📈 5. رسم المخطط البياني (بشرط وجود المكتبة)
+    if (typeof Chart !== 'undefined') {
+        const ctx = document.getElementById('jhMiniTrendChart');
+        if (ctx) {
+            if (jhMiniChartInstance) jhMiniChartInstance.destroy();
+            
+            let last5Audits = deptAudits.slice(-5);
+            let labels = last5Audits.map(a => a.date.split('/')[0] + '/' + (a.date.split('/')[1] || ''));
+            let data = last5Audits.map(a => a.totalPct);
+
+            jhMiniChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.length > 0 ? labels : ['-'],
+                    datasets: [{
+                        data: data.length > 0 ? data : [0],
+                        borderColor: '#d4af37',
+                        backgroundColor: 'rgba(212, 175, 55, 0.05)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, ticks: { color: '#bdae93', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { color: '#bdae93', font: { size: 10 } }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+    }
+
+    // 🏆 6. تحديث الأبطال وعرض الأدوات
     renderInternalDeptLeaderboard(dept);
-
-    document.getElementById('jhToolbox').style.display = 'block';
-    window.scrollTo({ top: document.getElementById('jhToolbox').offsetTop - 20, behavior: 'smooth' });
+    
+    // إخفاء قائمة الأقسام وإظهار صندوق الأدوات لتوفير مساحة على الموبايل
+    const deptGrid = document.getElementById('jhDeptGrid');
+    if(deptGrid) deptGrid.style.display = 'none'; 
+    
+    const toolbox = document.getElementById('jhToolbox');
+    if(toolbox) {
+        toolbox.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // الصعود لأعلى الداشبورد
+    }
 }
-
 // 🎯 دالة ضبط وتحديث المستهدف (للمديرين)
 function setDeptGoal() {
     if(!currentJHDept) return;

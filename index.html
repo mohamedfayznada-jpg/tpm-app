@@ -901,5 +901,23 @@
     </div>
 
     <script src="app.js"></script>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar" id="sidebar">
+    <div style="padding:20px; border-bottom:1px solid rgba(212,175,55,0.2); text-align:center;">
+        <h2 style="color:var(--gold); margin:0; font-size:18px;">القائمة الرئيسية</h2>
+    </div>
+    <div style="padding:10px;">
+        <button class="menu-item" onclick="showScreen('homeScreen'); toggleSidebar();">🏠 الشاشة الرئيسية</button>
+        <button class="menu-item" onclick="showScreen('settingsScreen'); toggleSidebar();">⚙️ الإعدادات والبروفايل</button>
+        <button class="menu-item" onclick="showJHPortal(); toggleSidebar();">👷‍♂️ الصيانة الذاتية (JH)</button>
+        <button class="menu-item" onclick="showScreen('pmScreen'); toggleSidebar();">🛠️ الصيانة المخططة (PM)</button>
+        <button class="menu-item" onclick="showScreen('kkScreen'); toggleSidebar();">📉 التحسين المستمر (KK)</button>
+        <button class="menu-item" onclick="showScreen('fiveSScreen'); toggleSidebar();">✨ مراجعة 5S</button>
+    </div>
+    <div style="position:absolute; bottom:20px; width:100%; padding:0 20px;">
+        <button class="btn btn-danger full-width" onclick="logout()">🚪 تسجيل الخروج</button>
+    </div>
+</div>
 </body>
 </html>

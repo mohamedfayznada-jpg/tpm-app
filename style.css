@@ -603,3 +603,23 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
     padding: 10px;
     margin: 15px 0;
 }
+
+.sidebar {
+    position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
+    background: var(--primary); z-index: 10001; /* لازم أعلى من 9999 */
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+    border-left: 1px solid var(--gold);
+}
+
+.sidebar-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); z-index: 10000; display: none;
+    backdrop-filter: blur(4px);
+}
+
+.menu-item {
+    width: 100%; padding: 15px; background: transparent; border: none;
+    color: var(--text-main); text-align: right; font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;
+}

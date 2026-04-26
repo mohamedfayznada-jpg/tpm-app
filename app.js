@@ -350,16 +350,16 @@ function processAndEnhanceImage(file, callback) {
 // 📱 التحكم بالشاشات والقائمة الجانبية
 // ------------------------------------------
 function toggleSidebar() {
-    const sb = document.getElementById('mainSidebar');
-    const ov = document.getElementById('sidebarOverlay');
-    if(!sb) return;
-    if(sb.classList.contains('open')) {
-        sb.classList.remove('open'); ov.style.display = 'none';
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if(sidebar.style.right === '0px') {
+        sidebar.style.right = '-280px';
+        overlay.style.display = 'none';
     } else {
-        sb.classList.add('open'); ov.style.display = 'block';
+        sidebar.style.right = '0px';
+        overlay.style.display = 'block';
     }
 }
-
 
 // 🏆 نظام النقاط والرتب المطور (Enterprise Elite)
 function awardPoints(pts, reason) {
@@ -1877,15 +1877,22 @@ let jhDocumentsData = {};
 
 function showJHPortal() {
     currentJHDept = null;
-    document.getElementById('jhToolbox').style.display = 'none';
     
+    // 🚀 إعادة إظهار شبكة الأقسام وإخفاء الداشبورد
+    const deptGrid = document.getElementById('jhDeptGrid');
+    if(deptGrid) deptGrid.style.display = 'grid'; 
+    
+    const toolbox = document.getElementById('jhToolbox');
+    if(toolbox) toolbox.style.display = 'none';
+    
+    // بناء شبكة الأقسام
     let grid = departments.map(d => `
         <div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer; border-right:4px solid var(--success);" onclick="selectJHDept('${d}')">
             <b style="color:var(--gold); font-size:13px;">🏭 ${d}</b>
         </div>
     `).join('');
     
-    document.getElementById('jhDeptGrid').innerHTML = grid;
+    if(deptGrid) deptGrid.innerHTML = grid;
     showScreen('jhPortalScreen');
 }
 // 👤 محرك اختيار القسم وتحديث الداشبورد (النسخة المؤمنة للموبايل)

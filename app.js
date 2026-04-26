@@ -24,7 +24,43 @@ let radarChartInstance = null, trendChartInstance = null, currentViewedDept = nu
 let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];
 let currentTagImg = null, currentTaskDept = null, kaizenImgs = { before: null, after: null };
 let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
+let screenHistory = ['homeScreen'];
+let jhMiniChartInstance = null;
+let deptGoalsData = {};
 
+
+
+
+function showScreen(screenId) {
+    // 1. حماية الصلاحيات أولاً
+    if (screenId !== 'loginScreen' && screenId !== 'signupScreen' && !canAccess(screenId)) {
+        return showToast("عذراً، لا تملك صلاحية الدخول لهذه الصفحة.");
+    }
+    
+    // 2. تسجيل مسار التصفح عشان زرار "الرجوع" يشتغل صح
+    if (screenHistory[screenHistory.length - 1] !== screenId) {
+        screenHistory.push(screenId);
+    }
+    
+    // 3. عرض الشاشة
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    let target = document.getElementById(screenId);
+    if(target) target.classList.add('active');
+    window.scrollTo(0,0);
+}
+
+function goBack() {
+    if (screenHistory.length > 1) {
+        screenHistory.pop(); // مسح الشاشة الحالية
+        let lastScreen = screenHistory[screenHistory.length - 1];
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        let target = document.getElementById(lastScreen);
+        if(target) target.classList.add('active');
+        window.scrollTo(0,0);
+    } else {
+        showScreen('homeScreen'); // لو مفيش تاريخ، نرجع للرئيسية
+    }
+}
 // ------------------------------------------
 // 🛡️ أدوات النظام والتنبيهات (Utilities)
 // ------------------------------------------
@@ -132,6 +168,10 @@ firebase.auth().onAuthStateChanged(async user => {
         dbListeners.tasks = db.ref('tpm_system/tasks').on('value', snap => {
             tasksData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
             renderTasks();
+        });
+dbListeners.goals = db.ref('tpm_system/dept_goals').on('value', snap => { 
+            deptGoalsData = snap.val() || {}; 
+            if(currentJHDept && document.getElementById('jhPortalScreen').classList.contains('active')) selectJHDept(currentJHDept); 
         });
         dbListeners.history = db.ref('tpm_system/history').on('value', snap => {
             historyData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
@@ -309,21 +349,6 @@ function toggleSidebar() {
     }
 }
 
-// تعديل دالة showScreen الأصلية
-const originalShowScreen = function(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    let targetScreen = document.getElementById(id);
-    if(targetScreen) targetScreen.classList.add('active');
-    window.scrollTo(0,0);
-};
-
-showScreen = function(id) {
-    if (id === 'loginScreen' || id === 'signupScreen' || canAccess(id)) {
-        originalShowScreen(id);
-    } else {
-        showToast("عذراً، لا تملك صلاحية الدخول لهذه الصفحة. تواصل مع الإدارة.");
-    }
-};
 
 // 🏆 نظام النقاط والرتب المطور (Enterprise Elite)
 function awardPoints(pts, reason) {
@@ -1855,11 +1880,122 @@ function showJHPortal() {
 
 function selectJHDept(dept) {
     currentJHDept = dept;
-    document.getElementById('selectedJHDeptTitle').innerText = `قسم: ${dept}`;
+    document.getElementById('selectedJHDeptTitle').innerText = `داشبورد قسم: ${dept}`;
+    
+    // 1. حساب آخر مراجعة (الجودة والأداء)
+    const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen'));
+    const lastScore = deptAudits.length > 0 ? deptAudits[deptAudits.length - 1].totalPct : 0;
+    document.getElementById('deptAuditScore').innerText = lastScore + '%';
+    
+    // 2. حساب التاجات المفتوحة (تأثير على المتاحية)
+    const deptTags = tagsData.filter(t => t.dept === dept);
+    const openTags = deptTags.filter(t => t.status !== 'done' && t.status !== 'closed').length;
+    document.getElementById('deptOpenTags').innerText = openTags;
+    
+    // ⚙️ 3. محرك حساب الـ OEE (معادلة ذكية تدمج المراجعات مع الأعطال)
+    let calculatedOEE = Math.max(0, Math.round((lastScore * 0.95) - (openTags * 1.5)));
+    if (deptAudits.length === 0) calculatedOEE = 0;
+    
+    const oeeEl = document.getElementById('deptOEE');
+    oeeEl.innerText = calculatedOEE + '%';
+
+    // 🎯 4. نظام المستهدفات (Goals)
+    const goalEl = document.getElementById('deptGoalDisplay');
+    if (deptGoalsData[dept]) {
+        goalEl.style.display = 'block';
+        goalEl.innerHTML = `🎯 المستهدف الشهري للكفاءة: <b style="font-size:14px;">${deptGoalsData[dept]}%</b>`;
+        // تغيير لون الـ OEE لو حقق التارجت
+        oeeEl.style.color = calculatedOEE >= deptGoalsData[dept] ? 'var(--success)' : '#00BCD4';
+    } else {
+        goalEl.style.display = 'none';
+        oeeEl.style.color = '#00BCD4';
+    }
+
+    // 📈 5. رسم المخطط البياني المصغر (Mini Trend Chart)
+    const ctx = document.getElementById('jhMiniTrendChart');
+    if (ctx) {
+        if (jhMiniChartInstance) jhMiniChartInstance.destroy();
+        
+        let last5Audits = deptAudits.slice(-5);
+        let labels = last5Audits.map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]);
+        let data = last5Audits.map(a => a.totalPct);
+        
+        jhMiniChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.length > 0 ? labels : ['-'],
+                datasets: [{
+                    label: 'كفاءة JH %',
+                    data: data.length > 0 ? data : [0],
+                    borderColor: '#d4af37',
+                    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { 
+                    y: { display: false, min: 0, max: 100 }, 
+                    x: { ticks: { color: '#bdae93', font: {size: 8} }, grid: {display: false} } 
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 🏆 6. تحديث ترتيب الأبطال الداخلي
+    renderInternalDeptLeaderboard(dept);
+
     document.getElementById('jhToolbox').style.display = 'block';
     window.scrollTo({ top: document.getElementById('jhToolbox').offsetTop - 20, behavior: 'smooth' });
 }
 
+// 🎯 دالة ضبط وتحديث المستهدف (للمديرين)
+function setDeptGoal() {
+    if(!currentJHDept) return;
+    let currentGoal = deptGoalsData[currentJHDept] || 85;
+    let newGoal = prompt(`أدخل النسبة المئوية للمستهدف (Target OEE) لقسم ${currentJHDept}:\n(مثال: 85)`, currentGoal);
+    
+    if (newGoal && !isNaN(newGoal) && newGoal > 0 && newGoal <= 100) {
+        syncRecord(`dept_goals/${currentJHDept}`, parseInt(newGoal));
+        showToast('تم تحديث المستهدف بنجاح 🎯 وسينعكس فوراً للجميع.');
+    } else if (newGoal) {
+        showToast('يرجى إدخال رقم صحيح بين 1 و 100');
+    }
+}
+function renderInternalDeptLeaderboard(dept) {
+    const container = document.getElementById('deptInternalLeaderboard');
+    if(!container) return;
+
+    // تجميع نقاط مستخدمي هذا القسم فقط
+    let deptUsers = [];
+    for (let uid in usersData) {
+        if(usersData[uid].dept === dept) {
+            deptUsers.push({
+                name: usersData[uid].name,
+                points: userPoints[uid] || 0,
+                avatar: usersData[uid].avatar
+            });
+        }
+    }
+    
+    // ترتيب تنازلي
+    deptUsers.sort((a,b) => b.points - a.points);
+    
+    container.innerHTML = deptUsers.slice(0, 3).map((u, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:5px 10px; border-radius:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-weight:900; color:var(--gold); font-style:italic;">#${idx+1}</span>
+                <img src="${u.avatar || 'https://ui-avatars.com/api/?name='+u.name}" style="width:20px; height:20px; border-radius:50%;">
+                <span style="font-size:11px;">${u.name}</span>
+            </div>
+            <span style="font-size:11px; font-weight:bold; color:var(--success);">${u.points} <small>نقطة</small></span>
+        </div>
+    `).join('') || '<div style="font-size:10px; color:var(--text-muted); text-align:center;">لا يوجد أعضاء مسجلين بهذا القسم بعد</div>';
+}
 function startNewAuditFlowFromPortal() {
     currentViewedDept = currentJHDept;
     startNewAuditFlow();

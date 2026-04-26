@@ -1920,31 +1920,39 @@ function selectJHDept(dept) {
         let labels = last5Audits.map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]);
         let data = last5Audits.map(a => a.totalPct);
         
-        jhMiniChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels.length > 0 ? labels : ['-'],
-                datasets: [{
-                    label: 'كفاءة JH %',
-                    data: data.length > 0 ? data : [0],
-                    borderColor: '#d4af37',
-                    backgroundColor: 'rgba(212, 175, 55, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 2
-                }]
+      // داخل دالة selectJHDept - في جزء الـ Chart
+jhMiniChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            data: data,
+            borderColor: '#d4af37',
+            backgroundColor: 'rgba(212, 175, 55, 0.05)',
+            borderWidth: 3,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { 
+                beginAtZero: true, 
+                max: 100,
+                ticks: { color: '#bdae93', font: { size: 10 } },
+                grid: { color: 'rgba(255,255,255,0.05)' }
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    y: { display: false, min: 0, max: 100 }, 
-                    x: { ticks: { color: '#bdae93', font: {size: 8} }, grid: {display: false} } 
-                },
-                plugins: { legend: { display: false } }
+            x: { 
+                ticks: { color: '#bdae93', font: { size: 10 } },
+                grid: { display: false }
             }
-        });
+        }
     }
+});
 
     // 🏆 6. تحديث ترتيب الأبطال الداخلي
     renderInternalDeptLeaderboard(dept);

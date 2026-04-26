@@ -814,50 +814,41 @@
             </div>
 
  <div id="jhToolbox" style="display:none; animation: fadeIn 0.5s;">
-           <div id="jhDeptDashboard" class="card glass-card" style="border-top: 4px solid var(--gold); padding:15px; margin-bottom:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 id="selectedJHDeptTitle" style="color:var(--gold); margin:0;">اسم القسم</h3>
-                    <button class="btn btn-sm btn-outline btn-role-admin" style="width:auto; margin:0;" onclick="setDeptGoal()">🎯 المستهدف</button>
-                </div>
+          <div id="jhDeptDashboard" class="card glass-card" style="border:none; background:transparent; padding:0;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding:0 5px;">
+        <h3 id="selectedJHDeptTitle" style="color:var(--gold); margin:0; font-size:16px;">اسم القسم</h3>
+        <button class="btn btn-sm btn-outline btn-role-admin" style="width:auto; margin:0; font-size:10px;" onclick="setDeptGoal()">🎯 المستهدف</button>
+    </div>
 
-                <div id="deptGoalDisplay" style="background:rgba(46, 125, 50, 0.1); border:1px dashed var(--success); padding:8px; border-radius:8px; margin-bottom:15px; font-size:12px; color:var(--success); text-align:center; display:none;">
-                    المستهدف المطلوب: <b>85%</b>
-                </div>
-                
-                <div class="dashboard-stats modern-stats" style="margin-bottom:15px;">
-                    <div class="card stat-card glass-card" style="border-color:var(--gold); padding:5px;">
-                        <div class="stat-value" id="deptAuditScore" style="font-size:18px !important;">0%</div>
-                        <div class="stat-label">مراجعة JH</div>
-                    </div>
-                    <div class="card stat-card glass-card" style="border-color:#00BCD4; padding:5px; background:linear-gradient(180deg, rgba(0, 188, 212, 0.1), transparent);">
-                        <div class="stat-value" id="deptOEE" style="font-size:18px !important; color:#00BCD4;">0%</div>
-                        <div class="stat-label">مؤشر OEE</div>
-                    </div>
-                    <div class="card stat-card glass-card" style="border-color:var(--danger); padding:5px;">
-                        <div class="stat-value danger-text" id="deptOpenTags" style="font-size:18px !important;">0</div>
-                        <div class="stat-label">تاجات مفتوحة</div>
-                    </div>
-<div class="card stat-card glass-card" style="border-color:var(--success); padding:5px;">
+    <div class="dashboard-stats modern-stats">
+        <div class="card stat-card oee-card">
+            <div class="stat-value" id="deptOEE" style="font-size:28px !important;">0%</div>
+            <div class="stat-label">مؤشر كفاءة القسم (OEE)</div>
+        </div>
+        <div class="card stat-card glass-card">
+            <div class="stat-value" id="deptAuditScore">0%</div>
+            <div class="stat-label">مراجعة JH</div>
+        </div>
+        <div class="card stat-card glass-card">
+            <div class="stat-value danger-text" id="deptOpenTags">0</div>
+            <div class="stat-label">تاجات مفتوحة</div>
+        </div>
+    </div>
 
-                        <div class="stat-value" id="deptKaizens" style="font-size:18px !important;">0</div>
+    <div id="deptGoalDisplay" style="background:rgba(46, 125, 50, 0.15); border:1px solid var(--success); padding:10px; border-radius:12px; margin:15px 0; font-size:11px; color:var(--success); text-align:center; display:none;"></div>
 
-                        <div class="stat-label">كايزن منفذ</div>
+    <div class="jh-dashboard-wrapper">
+        <div class="chart-container">
+            <h4 style="font-size:10px; color:var(--text-muted); margin-bottom:10px;">📈 اتجاه كفاءة القسم</h4>
+            <div style="height:160px;"><canvas id="jhMiniTrendChart"></canvas></div>
+        </div>
 
-                    </div>
-                </div>
-
-                <div class="row-flex" style="gap:10px; align-items:stretch;">
-                    <div class="flex-2" style="background:rgba(0,0,0,0.2); border-radius:12px; padding:10px; height:140px; position:relative; border:1px solid rgba(255,255,255,0.05);">
-                        <h4 style="font-size:9px; color:var(--text-muted); margin:0 0 5px 0;">تطور الأداء (آخر 5 مراجعات)</h4>
-                        <div style="height:110px; width:100%;"><canvas id="jhMiniTrendChart"></canvas></div>
-                    </div>
-                    <div class="flex-1" style="background:rgba(0,0,0,0.2); border-radius:12px; padding:10px; overflow-y:auto; max-height:140px; border:1px solid rgba(255,255,255,0.05);">
-                        <h4 style="font-size:10px; color:var(--gold); margin-bottom:8px; text-align:center;">🏆 الأبطال</h4>
-                        <div id="deptInternalLeaderboard" style="display:flex; flex-direction:column; gap:5px;"></div>
-                    </div>
-                </div>
-            </div>
-
+        <div class="internal-leaderboard">
+            <h4 style="font-size:12px; color:var(--gold); margin-bottom:10px; display:flex; align-items:center; gap:5px;">🏆 نخبة القسم</h4>
+            <div id="deptInternalLeaderboard"></div>
+        </div>
+    </div>
+</div>
             <div class="grid-layout">
                 <div class="card glass-card text-center" onclick="startNewAuditFlowFromPortal()" style="border-top:4px solid var(--success); cursor:pointer;">
                     <div style="font-size:24px;">📝</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مراجعة JH</div>

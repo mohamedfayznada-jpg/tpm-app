@@ -624,3 +624,12 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
     color: var(--text-main); text-align: right; font-size: 14px;
     border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;
 }
+
+/* تنسيق العناصر الفرعية في القائمة الجانبية */
+.sub-item {
+    padding-right: 35px !important; /* إزاحة جهة اليمين للداخل */
+    font-size: 13px !important;
+    border-bottom: 1px solid rgba(255,255,255,0.02) !important;
+    opacity: 0.9;
+}
+.sub-item:last-child { border-bottom: none !important; }

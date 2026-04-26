@@ -898,23 +898,39 @@
     </div>
 
     <script src="app.js"></script>
-
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div class="sidebar" id="sidebar">
     <div style="padding:20px; border-bottom:1px solid rgba(212,175,55,0.2); text-align:center;">
         <h2 style="color:var(--gold); margin:0; font-size:18px;">القائمة الرئيسية</h2>
     </div>
-    <div style="padding:10px;">
+    
+    <div style="padding:10px; overflow-y: auto; height: calc(100% - 140px);">
         <button class="menu-item" onclick="showScreen('homeScreen'); toggleSidebar();">🏠 الشاشة الرئيسية</button>
         <button class="menu-item" onclick="showScreen('settingsScreen'); toggleSidebar();">⚙️ الإعدادات والبروفايل</button>
-        <button class="menu-item" onclick="showJHPortal(); toggleSidebar();">👷‍♂️ الصيانة الذاتية (JH)</button>
-        <button class="menu-item" onclick="showScreen('pmScreen'); toggleSidebar();">🛠️ الصيانة المخططة (PM)</button>
-        <button class="menu-item" onclick="showScreen('kkScreen'); toggleSidebar();">📉 التحسين المستمر (KK)</button>
-        <button class="menu-item" onclick="showScreen('fiveSScreen'); toggleSidebar();">✨ مراجعة 5S</button>
+        <button class="menu-item" onclick="showScreen('tasksDeptView'); toggleSidebar();">📋 مهام العمل</button>
+        <button class="menu-item" onclick="showScreen('kaizenSocialScreen'); toggleSidebar();">💡 ساحة الكايزن</button>
+        <button class="menu-item" onclick="showScreen('knowledgeBaseScreen'); toggleSidebar();">📚 مكتبة المعرفة</button>
+        <button class="menu-item" onclick="showScreen('historyScreen'); toggleSidebar();">📊 التقارير والإحصائيات</button>
+
+        <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
+            <button class="menu-item" onclick="toggleTPMMenu()" style="display:flex; justify-content:space-between; align-items:center; color:var(--gold);">
+                <span>🏗️ فرق الـ TPM</span>
+                <span id="tpmArrow" style="font-size:10px;">◀</span>
+            </button>
+            
+            <div id="tpmSubMenu" style="display:none; background:rgba(0,0,0,0.2); border-radius:8px; margin:0 5px; animation: fadeIn 0.3s;">
+                <button class="menu-item sub-item" onclick="showJHPortal(); toggleSidebar();">👷‍♂️ الصيانة الذاتية (JH)</button>
+                <button class="menu-item sub-item" onclick="showScreen('pmScreen'); toggleSidebar();">🛠️ الصيانة المخططة (PM)</button>
+                <button class="menu-item sub-item" onclick="showScreen('kkScreen'); toggleSidebar();">📉 التحسين المستمر (KK)</button>
+                <button class="menu-item sub-item" onclick="showScreen('fiveSScreen'); toggleSidebar();">✨ مراجعة 5S</button>
+            </div>
+        </div>
     </div>
+
     <div style="position:absolute; bottom:20px; width:100%; padding:0 20px;">
         <button class="btn btn-danger full-width" onclick="logout()">🚪 تسجيل الخروج</button>
     </div>
 </div>
+
 </body>
 </html>

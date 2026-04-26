@@ -1476,6 +1476,21 @@ async function explainItem(t) {
 // ------------------------------------------
 // إعدادات أخرى
 // ------------------------------------------
+// محرك القوائم المنسدلة في السايد بار
+function toggleTPMMenu() {
+    const subMenu = document.getElementById('tpmSubMenu');
+    const arrow = document.getElementById('tpmArrow');
+    if (subMenu.style.display === 'none' || subMenu.style.display === '') {
+        subMenu.style.display = 'block';
+        arrow.innerText = '▼';
+        arrow.style.color = 'var(--gold)';
+    } else {
+        subMenu.style.display = 'none';
+        arrow.innerText = '◀';
+        arrow.style.color = 'white';
+    }
+}
+
 function toggleDarkMode() { document.body.style.filter = document.body.style.filter === 'invert(1) hue-rotate(180deg)' ? 'none' : 'invert(1) hue-rotate(180deg)'; }
 function updateDeptDropdown() { let opts = departments.map(d=>`<option value="${d}">${d}</option>`).join(''); document.querySelectorAll('select').forEach(s => {if(s.id.includes('Dept')) s.innerHTML=opts;}); }
 function updateDeptListUI() { }

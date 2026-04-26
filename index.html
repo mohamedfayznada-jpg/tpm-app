@@ -40,8 +40,7 @@
 </div>
         <div class="cloud-status" id="cloudStatus">جاري الاتصال بالسيرفر...</div>
     </div>
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-    <div class="sidebar" id="mainSidebar">
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div><div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo-circle" style="width:60px; height:60px; margin:0 auto 10px; font-size:16px;">TPM</div>
             <h3 style="color:var(--gold); margin:0; font-size:14px;">Factory OS V5.0</h3>
@@ -960,47 +959,7 @@
         <div id="kkLossTreeContainer" class="grid-layout">
             </div>
     </div>
-<div class="container screen" id="safetyRiskScreen">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h2 style="color:var(--danger); margin:0; font-size:18px;">🛡️ سجل مخاطر الأمان</h2>
-        <button class="btn btn-sm btn-danger" onclick="openAddRiskModal()">➕ إضافة مخاطرة</button>
-    </div>
 
-    <div class="dashboard-stats modern-stats" style="margin-bottom:20px;">
-        <div class="card stat-card glass-card" style="border-color:var(--danger);">
-            <div class="stat-value danger-text" id="openRisksCount">0</div>
-            <div class="stat-label">مخاطر قائمة</div>
-        </div>
-        <div class="card stat-card glass-card" style="border-color:var(--success);">
-            <div class="stat-value success-text" id="closedRisksCount">0</div>
-            <div class="stat-label">تم تأمينها</div>
-        </div>
-    </div>
-
-    <div id="safetyRisksContainer" style="padding-bottom:100px;">
-        </div>
-</div>
-
-<div id="addRiskModal" class="modal" style="display:none; position:fixed; z-index:10002; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); align-items:center; justify-content:center;">
-    <div class="modal-content glass-card" style="width:90%; max-width:400px; padding:20px;">
-        <h3 style="color:var(--gold); margin-bottom:15px;">تسجيل مخاطرة جديدة</h3>
-        <select id="riskArea" class="form-control" style="margin-bottom:10px;">
-            <option value="">اختر المنطقة...</option>
-            <option>منطقة مدخل الحقن</option>
-            <option>منطقة مخرج الحقن</option>
-            <option>منطقة الهد</option>
-            <option>منطقة الجيكات</option>
-            <option>منطقة العربة</option>
-            <option>منطقة غرفة حقن الكابينة</option>
-        </select>
-        <textarea id="riskDesc" class="form-control" placeholder="وصف الخطورة..." style="height:80px; margin-bottom:10px;"></textarea>
-        <textarea id="riskPlan" class="form-control" placeholder="خطة الاستجابة المقترحة..." style="height:80px; margin-bottom:10px;"></textarea>
-        <div style="display:flex; gap:10px;">
-            <button class="btn btn-danger full-width" onclick="saveNewRisk()">حفظ</button>
-            <button class="btn btn-outline full-width" onclick="closeRiskModal()">إلغاء</button>
-        </div>
-    </div>
-</div>
     <script src="app.js"></script>
 </body>
 </html>

@@ -32,20 +32,25 @@ let deptGoalsData = {};
 
 
 function showScreen(screenId) {
-    // 1. حماية الصلاحيات أولاً
-    if (screenId !== 'loginScreen' && screenId !== 'signupScreen' && !canAccess(screenId)) {
-        return showToast("عذراً، لا تملك صلاحية الدخول لهذه الصفحة.");
-    }
-    
-    // 2. تسجيل مسار التصفح عشان زرار "الرجوع" يشتغل صح
-    if (screenHistory[screenHistory.length - 1] !== screenId) {
-        screenHistory.push(screenId);
-    }
-    
-    // 3. عرض الشاشة
+    // 1. إخفاء كل الشاشات
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    let target = document.getElementById(screenId);
-    if(target) target.classList.add('active');
+    
+    // 2. إظهار الشاشة المطلوبة
+    const target = document.getElementById(screenId);
+    if(target) {
+        target.classList.add('active');
+        
+        // 🚀 تحديث البيانات فوراً بناءً على نوع الشاشة
+        if(screenId === 'safetyRiskScreen') renderSafetyRisks(); // تأمين ظهور المخاطر
+        if(screenId === 'kkScreen') renderKKDashboard();         // تأمين ظهور شجرة الفواقد
+        if(screenId === 'tasksScreen') renderTasks();           // تأمين ظهور المهام
+        if(screenId === 'kaizenScreen') renderKaizenFeed();     // تأمين ظهور الكايزن
+    }
+    
+    // 3. إدارة زر الرجوع
+    const backBtn = document.getElementById('globalBackBtn');
+    if(backBtn) backBtn.style.display = (screenId === 'homeScreen') ? 'none' : 'block';
+
     window.scrollTo(0,0);
 }
 

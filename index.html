@@ -18,25 +18,26 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
-   <div class="header" id="mainHeader">
-        <div class="header-top">
-            <div style="display:flex; align-items:center; gap:10px;">
-<button class="icon-btn" onclick="goBack()" title="رجوع">🔙</button>
-                <button class="icon-btn" onclick="showScreen('homeScreen')" title="الرئيسية">🏠</button>
-                <div class="status-dot"></div>
-                <div class="header-titles">
-                    <h1>نظام إدارة المصنع</h1>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <p>إشراف: م. محمد فايز</p>
-                        <div id="adminNotification" style="display:none; width:10px; height:10px; background:var(--danger); border-radius:50%; animation: pulse-red 1.5s infinite; cursor:pointer; border:1px solid white;" onclick="showScreen('settingsScreen')"></div>
-                    </div>
-                </div>
-           <div style="display:flex; gap:8px;">
-                <button class="icon-btn" onclick="toggleSidebar()" title="القائمة الرئيسية">☰</button>
-                <button class="icon-btn" onclick="toggleDarkMode()" title="تغيير المظهر">🌗</button>
-                <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج">🚪</button>
-            </div>
+  <div class="main-header" id="mainHeader">
+    <div class="header-right">
+        <button class="icon-btn" onclick="goBack()" title="رجوع">🔙</button>
+        <button class="icon-btn" onclick="showScreen('homeScreen')" title="الرئيسية">🏠</button>
+    </div>
+
+    <div class="header-center">
+        <h1>نظام إدارة المصنع</h1>
+        <div class="supervisor-box" onclick="showScreen('settingsScreen')">
+            <p>إشراف: م. محمد فايز</p>
+            <div id="adminNotification" class="notify-dot"></div>
         </div>
+    </div>
+
+    <div class="header-left">
+        <button class="icon-btn" onclick="toggleSidebar()" title="القائمة الجانبية">☰</button>
+        <button class="icon-btn" onclick="toggleDarkMode()" title="تغيير المظهر">🌗</button>
+        <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج">🚪</button>
+    </div>
+</div>
         <div class="cloud-status" id="cloudStatus">جاري الاتصال بالسيرفر...</div>
     </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>

@@ -117,6 +117,67 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================================
 // الجزء التالي هو بقية الكود القديم الخاص بك، لا تقم بتعديله الآن
 // ============================================================================
+// ============================================================================
+// ⚙️ محرك جلب البيانات والمزامنة (Data & Auth Engine)
+// ============================================================================
+
+// 1. استرجاع المتغيرات المفقودة
+let historyData = [], tasksData = [], knowledgeBaseData = [], departments = [];
+let userPoints = {}, likesData = {}, kaizenComments = {}, deptGoalsData = {};
+window.showToast = typeof showToast !== 'undefined' ? showToast : (msg) => alert(msg);
+
+// 2. مراقب تسجيل الدخول (شريان الحياة)
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        document.getElementById('cloudStatus').innerHTML = "جاري مزامنة المصنع... ⏳";
+        
+        // جلب جميع بيانات المصنع دفعة واحدة وبشكل حي
+        db.ref('tpm_system').on('value', snap => {
+            const data = snap.val() || {};
+            
+            // تعبئة المتغيرات
+            usersData = data.users || {};
+            departments = data.departments || [];
+            historyData = data.history ? Object.values(data.history) : [];
+            tasksData = data.tasks ? Object.values(data.tasks) : [];
+            tagsData = data.tags ? Object.values(data.tags) : [];
+            maintenanceEngineers = data.maintenanceEngineers || [];
+            knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase) : [];
+            userPoints = data.points || {};
+            likesData = data.likes || {};
+            kaizenComments = data.kaizenComments || {};
+            deptGoalsData = data.dept_goals || {};
+            if (data.api_keys) globalApiKeys = data.api_keys;
+
+            // ضبط المستخدم الحالي
+            const uData = usersData[user.uid] || { name: 'مستخدم', role: 'viewer', status: 'active' };
+            currentUser = { ...uData, uid: user.uid };
+
+            if (currentUser.status === 'pending') {
+                firebase.auth().signOut();
+                alert("حسابك قيد المراجعة من إدارة المصنع.");
+                return;
+            }
+
+            document.getElementById('cloudStatus').innerHTML = "متصل 🟢";
+
+            // الانتقال للرئيسية وتحديث الشاشات
+            if (appState.currentScreen === 'loginScreen') {
+                showScreen('homeScreen');
+            }
+            
+            // تشغيل محركات الرسم (التي كانت تضرب إيرور بسبب نقص البيانات)
+            if (typeof updateHomeDashboard === 'function') updateHomeDashboard();
+            if (typeof renderProfileAndSettings === 'function') renderProfileAndSettings();
+            if (typeof renderTags === 'function') renderTags();
+        });
+    } else {
+        // لو مش مسجل دخول، ارجع لشاشة الـ Login
+        showScreen('loginScreen');
+        document.getElementById('cloudStatus').innerHTML = "غير متصل 🔴";
+    }
+});
+
 // 🔐 تسجيل الدخول (للمسجلين)
 async function login() {
     const username = sanitizeInput(document.getElementById('loginUsername').value).toLowerCase();
@@ -281,16 +342,6 @@ function processAndEnhanceImage(file, callback) {
 // ------------------------------------------
 // 📱 التحكم بالشاشات والقائمة الجانبية
 // ------------------------------------------
-function toggleSidebar() {
-    const sb = document.getElementById('mainSidebar');
-    const ov = document.getElementById('sidebarOverlay');
-    if(!sb) return;
-    if(sb.classList.contains('open')) {
-        sb.classList.remove('open'); ov.style.display = 'none';
-    } else {
-        sb.classList.add('open'); ov.style.display = 'block';
-    }
-}
 
 
 // 🏆 نظام النقاط والرتب المطور (Enterprise Elite)

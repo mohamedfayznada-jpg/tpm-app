@@ -1,9 +1,8 @@
 // ============================================================================
-// 🚀 Factory OS - Core Engine V5.0 (Part 1 - System & Auth)
+// 🚀 FACTORY OS - V5.0 (INDUSTRIAL GRADE - FULL RESTORE PART 1)
 // ============================================================================
 
-// --- 1. تهيئة قاعدة البيانات (Firebase Init) ---
-const envConfig = window.__TPM_CONFIG__ || { geminiApiKey: "", imgbbApiKey: "" };
+// --- 1. تهيئة النظام وقاعدة البيانات (Firebase Config) ---
 const firebaseConfig = {
     apiKey: "AIzaSyADr-QEzWt6xeT8oeF7wXfNySvXiKXMEy4",
     authDomain: "tpm-audit-system.firebaseapp.com",
@@ -17,44 +16,58 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
+// تم تعريف db و auth هنا مرة واحدة فقط لمنع التضارب
 const db = firebase.database();
 const auth = firebase.auth();
 
 // --- 2. المتغيرات العامة (Global State) ---
-let currentUser = { name: '', username: '', role: 'viewer', status: 'active' };
-let usersData = {}, departments = [], historyData = [], tasksData = [], tagsData = [];
-let maintenanceEngineers = [], knowledgeBaseData = [], userPoints = {}, likesData = {};
-let kaizenComments = {}, deptGoalsData = {}, globalApiKeys = { imgbb: "", gemini: "" };
-let isOnline = false, currentAudit = null, currentViewedDept = null, currentTaskDept = null;
-let currentUploadItemId = null, currentUploadItemTitle = null, currentTagImg = null;
-let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];
-let kaizenImgs = { before: null, after: null };
+let tpmSystemRef = null, tpmSystemListener = null;
+let globalApiKeys = { imgbb: "", gemini: "" };
+let departments = [], historyData = [], tasksData = [], usersData = {}, likesData = {}, tagsData = [], kaizenComments = {}, userPoints = {}, knowledgeBaseData = [], maintenanceEngineers = [];
+let currentUser = { name: '', username: '', role: '', status: 'active' };
+let currentAudit = null, isOnline = false, isDataLoaded = false;
 let radarChartInstance = null, mainChartInstance = null, deptRadarInstance = null, deptTrendInstance = null, jhMiniChartInstance = null;
+let currentViewedDept = null, currentTaskDept = null, currentUploadItemId = null, currentUploadItemTitle = null, currentTagImg = null;
+let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];
+let images5S = { standard: null, current: null }, kaizenImgs = { before: null, after: null };
 let isDrawing = false, sigCanvas = null, sigCtx = null, canvasRect = null;
-const appState = { currentScreen: 'loginScreen', history: [] };
 
-// --- 3. كسر عزلة الدوال للواجهة الأمامية (Window Expose) ---
-window.db = db; 
-window.auth = auth;
-window.showToast = (msg) => alert(msg);
-window.uniqueNumericId = () => Math.floor(Math.random() * 1000000000);
-window.sanitizeInput = (str) => str.replace(/[.#$\[\]]/g, "");
+const appState = {
+    currentScreen: 'loginScreen',
+    history: []
+};
 
-// دوال التنقل والقائمة الجانبية
-window.showScreen = function(id, addToHistory = true) {
+// --- 3. محرك التنقل والقائمة الجانبية (Core Router) ---
+window.showScreen = function(screenId, addToHistory = true) {
     const screens = document.querySelectorAll('.screen');
-    const target = document.getElementById(id);
-    if (!target) return;
-    if (addToHistory && appState.currentScreen !== id) appState.history.push(appState.currentScreen);
+    const target = document.getElementById(screenId);
+    if (!target) {
+        console.error(`Screen ${screenId} not found!`);
+        return;
+    }
+
+    if (addToHistory && appState.currentScreen !== screenId) {
+        appState.history.push(appState.currentScreen);
+    }
+
     screens.forEach(s => s.classList.remove('active'));
     target.classList.add('active');
-    appState.currentScreen = id;
+    appState.currentScreen = screenId;
     window.scrollTo(0, 0);
+
+    // تحديث حالة زر الرجوع
+    const backBtn = document.querySelector('.icon-btn[onclick="goBack()"]');
+    if (backBtn) {
+        backBtn.style.display = (screenId === 'homeScreen' || screenId === 'loginScreen') ? 'none' : 'block';
+    }
 };
 
 window.goBack = function() {
-    if (appState.history.length > 0) window.showScreen(appState.history.pop(), false);
-    else window.showScreen('homeScreen', false);
+    if (appState.history.length > 0) {
+        window.showScreen(appState.history.pop(), false);
+    } else {
+        window.showScreen('homeScreen', false);
+    }
 };
 
 window.toggleSidebar = function() {
@@ -67,62 +80,50 @@ window.toggleSidebar = function() {
 };
 
 window.toggleDarkMode = () => document.body.classList.toggle('light-mode');
-window.showJHPortal = () => { window.showScreen('jhPortalScreen'); if(typeof renderJHDepts === 'function') renderJHDepts(); };
 
-// --- 4. محرك الاتصال والمزامنة (Sync Engine) ---
+// --- 4. محرك المزامنة والحماية (Sync Engine) ---
 window.syncRecord = (path, data) => { if (isOnline && auth.currentUser) db.ref('tpm_system/' + path).set(data); };
 window.deleteRecord = (path) => { if (isOnline && auth.currentUser) db.ref('tpm_system/' + path).remove(); };
+window.uniqueNumericId = () => Math.floor(Math.random() * 1000000000);
+window.sanitizeInput = (str) => str.toString().replace(/[.#$\[\]]/g, "");
 
-document.addEventListener('DOMContentLoaded', () => {
-    db.ref('.info/connected').on('value', snap => {
-        isOnline = snap.val() === true;
-        const statusEl = document.getElementById('cloudStatus');
-        if (statusEl) {
-            statusEl.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل بالسيرفر";
-            statusEl.style.color = isOnline ? "var(--success)" : "var(--danger)";
-        }
-    });
-});
-
-// مراقب الدخول - شريان حياة التطبيق
+// --- 5. مراقب حالة الدخول وجلب البيانات ---
 auth.onAuthStateChanged(user => {
     if (user) {
         document.getElementById('cloudStatus').innerHTML = "جاري مزامنة المصنع... ⏳";
         db.ref('tpm_system').on('value', snap => {
             const data = snap.val() || {};
-            usersData = data.users || {}; 
-            departments = data.departments || [];
-            historyData = data.history ? Object.values(data.history) : [];
-            tasksData = data.tasks ? Object.values(data.tasks) : [];
-            tagsData = data.tags ? Object.values(data.tags) : [];
-            maintenanceEngineers = data.maintenanceEngineers || [];
-            knowledgeBaseData = data.knowledgeBase ? Object.values(data.knowledgeBase) : [];
-            userPoints = data.points || {}; 
+            usersData = data.users || {};
+            // حماية ضد تحول الـ Arrays إلى Objects في Firebase
+            const toArr = (obj) => obj ? (Array.isArray(obj) ? obj : Object.values(obj)) : [];
+            
+            departments = toArr(data.departments);
+            historyData = toArr(data.history);
+            tasksData = toArr(data.tasks);
+            tagsData = toArr(data.tags);
+            maintenanceEngineers = toArr(data.maintenanceEngineers);
+            knowledgeBaseData = toArr(data.knowledgeBase);
+            userPoints = data.points || {};
             likesData = data.likes || {};
-            kaizenComments = data.kaizenComments || {}; 
-            deptGoalsData = data.dept_goals || {};
+            kaizenComments = data.kaizenComments || {};
             if (data.api_keys) globalApiKeys = data.api_keys;
 
-            const uData = usersData[user.uid] || { name: 'مستخدم', role: 'viewer', status: 'active' };
+            const uData = usersData[user.uid] || { name: 'مستخدم جديد', role: 'viewer', status: 'active' };
             currentUser = { ...uData, uid: user.uid };
 
-            if (currentUser.status === 'pending') { 
-                auth.signOut(); 
-                alert("حسابك قيد المراجعة من إدارة المصنع."); 
-                return; 
+            if (currentUser.status === 'pending') {
+                auth.signOut();
+                alert("حسابك في انتظار تفعيل المدير.");
+                return;
             }
-            
-            document.getElementById('cloudStatus').innerHTML = "متصل 🟢";
 
+            document.getElementById('cloudStatus').innerHTML = "متصل 🟢";
             if (appState.currentScreen === 'loginScreen') window.showScreen('homeScreen');
-            
-            // تحديث الشاشات الحية
-            if (typeof updateHomeDashboard === 'function') updateHomeDashboard();
-            if (typeof renderProfileAndSettings === 'function') renderProfileAndSettings();
-            if (typeof renderTags === 'function') renderTags();
-            if (typeof renderSafetyRisks === 'function') renderSafetyRisks();
-            if (typeof renderPMDashboard === 'function') renderPMDashboard();
-            if (typeof renderKKDashboard === 'function') renderKKDashboard();
+
+            // تشغيل دوال التحديث (سيتم إرسالها في الأجزاء القادمة)
+            if(typeof updateHomeDashboard === 'function') updateHomeDashboard();
+            if(typeof renderProfileAndSettings === 'function') renderProfileAndSettings();
+            if(typeof renderTags === 'function') renderTags();
         });
     } else {
         window.showScreen('loginScreen');
@@ -130,18 +131,17 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- 5. دوال الدخول والتسجيل (Auth Functions) ---
+// --- 6. دوال الدخول والتسجيل ---
 window.login = async function() {
     const u = document.getElementById('loginUsername').value.trim().toLowerCase();
     const p = document.getElementById('loginPassword').value.trim();
-    if(!u || !p) return window.showToast('أدخل البيانات');
-    if(document.getElementById('rememberMe') && document.getElementById('rememberMe').checked) {
-        localStorage.setItem('tpm_user', u);
-    }
-    try { 
-        await auth.signInWithEmailAndPassword(u + "@tpm.app", p); 
-    } catch(e) { 
-        window.showToast('بيانات الدخول غير صحيحة'); 
+    if(!u || !p) return alert('برجاء إدخال البيانات');
+    
+    try {
+        await auth.signInWithEmailAndPassword(u + "@tpm.app", p);
+        if(document.getElementById('rememberMe')?.checked) localStorage.setItem('tpm_user', u);
+    } catch(e) {
+        alert('اسم المستخدم أو كلمة المرور غير صحيحة');
     }
 };
 
@@ -150,65 +150,45 @@ window.signup = async function() {
     const u = document.getElementById('signupUsername').value.toLowerCase().trim();
     const p = document.getElementById('signupPassword').value.trim();
     const r = document.getElementById('signupRole').value;
-    if(!u || !p || !fn) return window.showToast("أكمل البيانات");
+    if(!u || !p || !fn) return alert("أكمل كافة البيانات");
     
     try {
-        window.showToast("جاري إرسال الطلب...");
         const res = await auth.createUserWithEmailAndPassword(u + "@tpm.app", p);
-        const newUserObj = { 
-            name: fn, username: u, requestedRole: r, role: 'viewer', status: 'pending', 
-            permissions: { homeScreen: 'view', tasksScreen: 'none', historyScreen: 'none', kaizenScreen: 'view', tagsScreen: 'none', knowledgeScreen: 'none' } 
-        };
-        await db.ref('tpm_system/users/' + res.user.uid).set(newUserObj);
-        window.showToast("تم إرسال طلبك! انتظر الموافقة.");
-        setTimeout(() => auth.signOut().then(() => window.location.reload()), 2000);
-    } catch(e) { 
-        window.showToast("اسم المستخدم محجوز أو البيانات خاطئة"); 
+        const newUser = { name: fn, username: u, requestedRole: r, role: 'viewer', status: 'pending' };
+        await db.ref('tpm_system/users/' + res.user.uid).set(newUser);
+        alert("تم إرسال طلبك! انتظر تفعيل الإدارة.");
+        auth.signOut().then(() => window.location.reload());
+    } catch(e) {
+        alert("خطأ: اسم المستخدم محجوز أو البيانات غير صالحة");
     }
 };
 
-window.logout = function() { 
-    auth.signOut().then(() => { localStorage.clear(); window.location.reload(); }); 
-};
+window.logout = () => auth.signOut().then(() => { localStorage.clear(); window.location.reload(); });
 
-window.biometricLogin = function() { 
-    const u = localStorage.getItem('tpm_user'); 
-    if(u) { 
-        document.getElementById('loginUsername').value = u; 
-        window.showToast('تم استدعاء الحساب، أدخل الرقم السري'); 
-    } else {
-        window.showToast('سجل دخولك يدوياً أول مرة');
-    }
-};
-
-// --- 6. نظام النقاط والمكافآت ---
-window.awardPoints = function(pts, reason) {
+window.awardPoints = (pts, reason) => {
     if(!auth.currentUser) return;
     const uid = auth.currentUser.uid;
-    let currentPts = (userPoints[uid] || 0) + pts;
+    const currentPts = (userPoints[uid] || 0) + pts;
     window.syncRecord('points/' + uid, currentPts);
-    window.syncRecord('global_achievements/' + window.uniqueNumericId(), { 
-        user: currentUser.name, uid: uid, reason: reason, points: pts, date: new Date().toLocaleString('ar-EG') 
-    });
-    window.showToast(`🎖️ حصلت على ${pts} نقطة: ${reason}`);
+    alert(`🎖️ حصلت على ${pts} نقطة: ${reason}`);
 };
 // ============================================================================
-// 🚀 Factory OS - Core Engine V5.0 (Part 2 - Modules & Operations)
+// 🚀 FACTORY OS - V5.0 (INDUSTRIAL GRADE - FULL RESTORE PART 2)
 // ============================================================================
 
 // ------------------------------------------
-// 🔍 دالة مسح الباركود الفعالة
+// 🔍 دالة مسح الباركود
 // ------------------------------------------
 async function scanBarcodeFromImage(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    window.showToast('جاري قراءة الباركود... 🔍');
+    alert('جاري قراءة الباركود... 🔍');
     const html5QrCode = new Html5Qrcode("searchResults"); 
     
     try {
         const decodedText = await html5QrCode.scanFile(file, true);
-        window.showToast('تمت القراءة بنجاح!');
+        alert('تمت القراءة بنجاح!');
         
         document.getElementById('searchResults').style.display = 'block';
         document.getElementById('searchResults').innerHTML = `
@@ -222,16 +202,16 @@ async function scanBarcodeFromImage(event) {
             </div>
         `;
     } catch (err) {
-        window.showToast('تعذرت قراءة الباركود، تأكد من وضوح الصورة.');
+        alert('تعذرت قراءة الباركود، تأكد من وضوح الصورة.');
     }
 }
 
 // ------------------------------------------
-// 🚀 محرك رفع الصور (ImgBB)
+// 🚀 رفع الصور (ImgBB)
 // ------------------------------------------
 async function uploadImageToStorage(base64Data) {
     const apiKey = globalApiKeys.imgbb;
-    if (!apiKey) { window.showToast('مفتاح ImgBB مفقود بالإعدادات!'); return null; }
+    if (!apiKey) { alert('مفتاح ImgBB مفقود بالإعدادات!'); return null; }
     try {
         const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
         const formData = new FormData(); formData.append('image', cleanBase64);
@@ -257,7 +237,7 @@ function processAndEnhanceImage(file, callback) {
 }
 
 // ------------------------------------------
-// 🏆 نظام الرتب ولوحة الأبطال
+// 🏆 لوحة الأبطال (Leaderboard)
 // ------------------------------------------
 function updateUsersLeaderboard() {
     const lc = document.getElementById('usersLeaderboardContainer');
@@ -319,11 +299,11 @@ function generateEliteCardHTML(item, idx) {
 }
 
 // ------------------------------------------
-// 👤 مركز القيادة الشخصي (Profile)
+// 👤 مركز القيادة (Profile Details)
 // ------------------------------------------
-async function openMyFullProfile() {
+window.openMyFullProfile = async function() {
     const uid = currentUser.uid;
-    if(!uid || !usersData[uid]) return window.showToast('خطأ في جلب بيانات المستخدم');
+    if(!uid || !usersData[uid]) return alert('خطأ في جلب بيانات المستخدم');
     
     const u = usersData[uid];
     const activeName = currentUser.name; 
@@ -339,9 +319,9 @@ async function openMyFullProfile() {
     let opts = departments.map(d=>`<option value="${d}" ${u.dept===d?'selected':''}>${d}</option>`).join('');
     document.getElementById('editDept').innerHTML = opts;
 
-    const myAudits = historyData.filter(h => h.auditor === activeName && !h.stepsOrder.includes('ManualKaizen'));
+    const myAudits = historyData.filter(h => h.auditor === activeName && (!h.stepsOrder || !h.stepsOrder.includes('ManualKaizen')));
     const myTags = tagsData.filter(t => t.auditor === activeName);
-    const myKaizens = historyData.filter(h => h.auditor === activeName && h.stepsOrder.includes('ManualKaizen'));
+    const myKaizens = historyData.filter(h => h.auditor === activeName && (h.stepsOrder && h.stepsOrder.includes('ManualKaizen')));
 
     let allActivity = [
         ...myAudits.map(a => ({ type: 'audit', text: `📝 مراجعة قسم ${a.dept} (${a.totalPct}%)`, date: a.date })),
@@ -372,13 +352,13 @@ async function openMyFullProfile() {
 // ------------------------------------------
 // 📈 محرك الشاشة الرئيسية
 // ------------------------------------------
-function updateHomeDashboard() {
+window.updateHomeDashboard = function() {
     let tScore = 0, aCount = 0;
     let deptLabels = [];
     let deptScores = [];
     
     let grid = departments.map(d => {
-        let auds = historyData.filter(h => h.dept === d && !h.stepsOrder.includes('ManualKaizen'));
+        let auds = historyData.filter(h => h.dept === d && (!h.stepsOrder || !h.stepsOrder.includes('ManualKaizen')));
         let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
         if(auds.length > 0) { tScore+=sc; aCount++; }
         let rTags = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
@@ -411,12 +391,8 @@ function updateHomeDashboard() {
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { 
-                    y: { beginAtZero: true, max: 100, ticks: { color: '#bdae93', font: {family: 'Cairo'} } }, 
-                    x: { ticks: { color: '#d4af37', font: {family: 'Cairo', weight: 'bold'} } } 
-                },
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 100, ticks: { color: '#bdae93', font: {family: 'Cairo'} } }, x: { ticks: { color: '#d4af37', font: {family: 'Cairo', weight: 'bold'} } } },
                 plugins: { legend: { display: false } }
             }
         });
@@ -436,11 +412,11 @@ function updateHomeDashboard() {
     updateUsersLeaderboard();
 }
 
-function openDeptDashboard(dept) {
+window.openDeptDashboard = function(dept) {
     currentViewedDept = dept;
     document.getElementById('deptViewTitle').innerText = `لوحة قيادة: ${dept}`;
     
-    const deptAudits = historyData.filter(h => h.dept === dept).sort((a,b) => new Date(a.date) - new Date(b.date));
+    const deptAudits = historyData.filter(h => h.dept === dept && (!h.stepsOrder || !h.stepsOrder.includes('ManualKaizen'))).sort((a,b) => new Date(a.date) - new Date(b.date));
     const deptTags = tagsData.filter(t => t.dept === dept && t.status === 'open');
     const deptTasks = tasksData.filter(t => t.dept === dept && t.status !== 'done');
     
@@ -451,7 +427,7 @@ function openDeptDashboard(dept) {
 
     const steps = ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'];
     const stepScores = steps.map(s => {
-        if (!lastAudit || !lastAudit.results[s] || lastAudit.results[s].skipped) return 0;
+        if (!lastAudit || !lastAudit.results || !lastAudit.results[s] || lastAudit.results[s].skipped) return 0;
         return Math.round((lastAudit.results[s].score / lastAudit.results[s].max) * 100);
     });
 
@@ -470,10 +446,7 @@ function openDeptDashboard(dept) {
                 borderWidth: 2
             }]
         },
-        options: {
-            scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
-            plugins: { legend: { display: false } }
-        }
+        options: { scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } }, plugins: { legend: { display: false } } }
     });
 
     const trendCtx = document.getElementById('deptTrendChart');
@@ -485,16 +458,10 @@ function openDeptDashboard(dept) {
             datasets: [{
                 label: 'الكفاءة %',
                 data: deptAudits.slice(-5).map(a => a.totalPct),
-                borderColor: '#2e7d32',
-                backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                fill: true,
-                tension: 0.4
+                borderColor: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.1)', fill: true, tension: 0.4
             }]
         },
-        options: {
-            scales: { y: { beginAtZero: true, max: 100 }, x: { grid: { display: false } } },
-            plugins: { legend: { display: false } }
-        }
+        options: { scales: { y: { beginAtZero: true, max: 100 }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
     });
 
     document.getElementById('deptActionItems').innerHTML = deptTags.slice(0,3).map(t => `
@@ -508,7 +475,7 @@ function openDeptDashboard(dept) {
 }
 
 // ------------------------------------------
-// 📝 محرك المراجعة الذاتية (Audit Engine)
+// 📝 محرك المراجعة (Audit Engine)
 // ------------------------------------------
 function saveAuditDraft() { if(currentAudit) localStorage.setItem('tpm_audit_draft', JSON.stringify(currentAudit)); }
 function loadAuditDraft() { const draft = localStorage.getItem('tpm_audit_draft'); if(draft) { currentAudit = JSON.parse(draft); renderCurrentAuditStep(); } }
@@ -525,12 +492,13 @@ window.startNewAuditFlow = function() {
     window.showScreen('setupScreen'); 
 };
 
-function initAuditSequential() {
+window.initAuditSequential = function() {
     currentAudit = { id: window.uniqueNumericId().toString(), dept: document.getElementById('selectDept').value, machine: document.getElementById('setupMachine').value||'عام', auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'), stepsOrder: ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'], currentStepIndex: 0, results: {} };
     renderCurrentAuditStep();
-}
+};
 
 function renderCurrentAuditStep() {
+    if(typeof AUDIT_DATA === 'undefined') return alert('البيانات غير محملة بعد، انتظر التحميل.');
     const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; 
     const sd = AUDIT_DATA[k];
     
@@ -579,6 +547,14 @@ function renderCurrentAuditStep() {
     updateCumulativeScoreUI();
 }
 
+window.selectLevel = function(id, score, max, el) { 
+    currentStepSelections['item_'+id] = {score, max}; 
+    el.parentElement.querySelectorAll('.level-opt').forEach(o=>o.classList.remove('selected')); 
+    el.classList.add('selected'); 
+    saveAuditDraft();
+    updateCumulativeScoreUI();
+};
+
 function updateCumulativeScoreUI() {
     let totalScoreSoFar = 0, totalMaxSoFar = 0;
     for (let i = 0; i < currentAudit.currentStepIndex; i++) {
@@ -601,36 +577,28 @@ function updateCumulativeScoreUI() {
     if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)'); }
 }
 
-function selectLevel(id, score, max, el) { 
-    currentStepSelections['item_'+id] = {score, max}; 
-    el.parentElement.querySelectorAll('.level-opt').forEach(o=>o.classList.remove('selected')); 
-    el.classList.add('selected'); 
-    saveAuditDraft();
-    updateCumulativeScoreUI();
-}
+window.openImageSourcePicker = (itemId, itemTitle) => { currentUploadItemId = itemId; currentUploadItemTitle = itemTitle; document.getElementById('imageSourceModal').style.display = 'flex'; };
+window.triggerCamera = () => { document.getElementById('cameraInput').click(); document.getElementById('imageSourceModal').style.display = 'none'; };
+window.triggerGallery = () => { document.getElementById('galleryInput').click(); document.getElementById('imageSourceModal').style.display = 'none'; };
 
-function openImageSourcePicker(itemId, itemTitle) { currentUploadItemId = itemId; currentUploadItemTitle = itemTitle; document.getElementById('imageSourceModal').style.display = 'flex'; }
-function triggerCamera() { document.getElementById('cameraInput').click(); document.getElementById('imageSourceModal').style.display = 'none'; }
-function triggerGallery() { document.getElementById('galleryInput').click(); document.getElementById('imageSourceModal').style.display = 'none'; }
-
-async function handleImageSelection(event) {
+window.handleImageSelection = async function(event) {
     const file = event.target.files[0]; if(!file || !currentUploadItemId) return;
-    window.showToast('جاري رفع وتحليل الصورة...');
+    alert('جاري رفع وتحليل الصورة...');
     processAndEnhanceImage(file, async function(dataUrl) {
         const url = await uploadImageToStorage(dataUrl);
         if (url) {
             currentStepImages['img_' + currentUploadItemId] = { title: currentUploadItemTitle, data: url };
-            saveAuditDraft(); renderCurrentAuditStep(); window.showToast('تم الرفع');
-        } else { window.showToast('فشل الرفع'); }
+            saveAuditDraft(); renderCurrentAuditStep(); alert('تم الرفع');
+        } else { alert('فشل الرفع'); }
     });
-}
+};
 
-function finishCurrentStep() {
+window.finishCurrentStep = function() {
     const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; 
     const sd = AUDIT_DATA[k];
     
     if(Object.keys(currentStepSelections).length < sd.items.length) { 
-        window.showToast('⚠️ يرجى تقييم جميع البنود قبل الحفظ'); return; 
+        alert('⚠️ يرجى تقييم جميع البنود قبل الحفظ'); return; 
     }
     
     let totalScore = 0, totalMax = 0; currentStepImprovements = [];
@@ -663,19 +631,16 @@ function finishCurrentStep() {
         : '<div style="color:var(--success); font-weight:bold; text-align:center; padding:20px;">🌟 أداء مثالي، لا توجد ملاحظات</div>';
     
     window.showScreen('stepSummaryScreen');
-}
+};
 
-function skipCurrentStep() { currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = {skipped:true, score:0, max:0, improvements:[], selections:{}, images:{}}; saveAuditDraft(); goToNextStep(); }
-function goToNextStep() { currentAudit.currentStepIndex++; if(currentAudit.currentStepIndex < 7) renderCurrentAuditStep(); else generateFinalReport(); }
+window.skipCurrentStep = () => { currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = {skipped:true, score:0, max:0, improvements:[], selections:{}, images:{}}; saveAuditDraft(); window.goToNextStep(); };
+window.goToNextStep = () => { currentAudit.currentStepIndex++; if(currentAudit.currentStepIndex < 7) renderCurrentAuditStep(); else generateFinalReport(); };
 
-// ------------------------------------------
-// ✍️ التوقيع الفائق وحفظ التقرير
-// ------------------------------------------
 function initSignaturePad() {
     setTimeout(() => {
         sigCanvas = document.getElementById('signatureCanvas'); if(!sigCanvas) return;
         sigCtx = sigCanvas.getContext('2d'); sigCtx.lineWidth = 3; sigCtx.strokeStyle = '#b87333'; sigCtx.lineCap = 'round';
-        clearSignature(); 
+        window.clearSignature(); 
         const startDrawing = (x, y) => { isDrawing = true; canvasRect = sigCanvas.getBoundingClientRect(); sigCtx.beginPath(); sigCtx.moveTo(x - canvasRect.left, y - canvasRect.top); };
         const draw = (x, y) => { if(isDrawing) { sigCtx.lineTo(x - canvasRect.left, y - canvasRect.top); sigCtx.stroke(); } };
         sigCanvas.onmousedown = (e) => startDrawing(e.clientX, e.clientY);
@@ -687,7 +652,7 @@ function initSignaturePad() {
         sigCanvas.ontouchend = () => isDrawing=false;
     }, 300); 
 }
-function clearSignature() { if(sigCtx) { sigCtx.fillStyle = "#ffffff"; sigCtx.fillRect(0, 0, sigCanvas.width, sigCanvas.height); } }
+window.clearSignature = () => { if(sigCtx) { sigCtx.fillStyle = "#ffffff"; sigCtx.fillRect(0, 0, sigCanvas.width, sigCanvas.height); } };
 
 function generateFinalReport() {
     let s=0, m=0; currentAudit.stepsOrder.forEach(k=>{if(!currentAudit.results[k].skipped){s+=currentAudit.results[k].score; m+=currentAudit.results[k].max;}});
@@ -697,11 +662,10 @@ function generateFinalReport() {
     initSignaturePad();
 }
 
-async function saveFinalAudit() {
-    if(!canAccess('historyScreen', 'edit')) { window.showToast('غير مصرح بحفظ المراجعات'); return; }
+window.saveFinalAudit = async function() {
     if(!confirm("هل أنت متأكد من اعتماد وحفظ هذه المراجعة؟ سيتم إنشاء مهام تلقائية بالتحسينات.")) return;
 
-    window.showToast('جاري معالجة البيانات وحفظ التقرير... ⏳');
+    alert('جاري معالجة البيانات وحفظ التقرير... ⏳');
     if(sigCanvas) currentAudit.signature = sigCanvas.toDataURL('image/jpeg', 0.8);
     
     let allImprovements = [];
@@ -724,15 +688,18 @@ async function saveFinalAudit() {
     window.awardPoints(50, 'إتمام مراجعة رسمية');
     
     clearAuditDraft();
-    window.showToast('تم حفظ التقرير بنجاح ✅ جاري تحويلك للأرشيف...');
+    alert('تم حفظ التقرير بنجاح ✅ جاري تحويلك للأرشيف...');
     setTimeout(() => { window.showScreen('historyScreen'); }, 1500);
-}
+};
+// ============================================================================
+// 🚀 FACTORY OS - V5.0 (INDUSTRIAL GRADE - FULL RESTORE PART 3)
+// ============================================================================
 
 // ------------------------------------------
-// 📊 أرشيف التقارير والتفاصيل
+// 📊 أرشيف التقارير والتفاصيل (History)
 // ------------------------------------------
-function renderHistory() {
-    let real = historyData.filter(h=>!h.stepsOrder.includes('ManualKaizen')).reverse();
+window.renderHistory = function() {
+    let real = historyData.filter(h=> !h.stepsOrder || !h.stepsOrder.includes('ManualKaizen')).reverse();
     let html = real.map(a => {
         let controls = (canAccess('historyScreen', 'edit') || currentUser.name === a.auditor) ? `
             <div style="margin-top:10px; display:flex; gap:5px; border-top:1px dashed var(--copper); padding-top:10px;">
@@ -749,12 +716,12 @@ function renderHistory() {
         </div>`;
     }).join('');
     document.getElementById('historyListContainer').innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">لا توجد تقارير حالياً</div>';
-}
+};
 
-function deleteReport(id) { if(confirm('تأكيد الحذف النهائي للتقرير؟')) { window.deleteRecord('history/' + id); window.showToast('تم الحذف بنجاح'); } }
-function editReport(id) { let rep = historyData.find(h => h.id === id); if(!rep) return; currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; renderCurrentAuditStep(); }
+window.deleteReport = (id) => { if(confirm('تأكيد الحذف النهائي للتقرير؟')) { window.deleteRecord('history/' + id); window.showToast('تم الحذف بنجاح'); } };
+window.editReport = (id) => { let rep = historyData.find(h => h.id === id); if(!rep) return; currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; renderCurrentAuditStep(); };
 
-function viewDetailedReport(id) {
+window.viewDetailedReport = function(id) {
     let a = historyData.find(h => h.id === id); 
     if(!a) return;
 
@@ -783,31 +750,14 @@ function viewDetailedReport(id) {
         let p = r.skipped ? 0 : Math.round((r.score / r.max) * 100);
         let statusText = r.skipped ? 'تخطي' : `${r.score}/${r.max}`;
         
-        tableHtml += `
-            <tr>
-                <td><b>${k}</b></td>
-                <td>${AUDIT_DATA[k] ? AUDIT_DATA[k].name : '---'}</td>
-                <td>${statusText}</td>
-                <td style="font-weight:bold; color:${p >= 80 ? '#2e7d32' : '#000'}">${p}%</td>
-            </tr>`;
+        tableHtml += `<tr><td><b>${k}</b></td><td>${AUDIT_DATA[k] ? AUDIT_DATA[k].name : '---'}</td><td>${statusText}</td><td style="font-weight:bold; color:${p >= 80 ? '#2e7d32' : '#000'}">${p}%</td></tr>`;
 
         if (!r.skipped) {
-            let imps = (r.improvements && r.improvements.length > 0) 
-                ? r.improvements.map(i => `<div style="font-size:11px; margin-bottom:3px; color:#444;">• ${i}</div>`).join('') 
-                : '<span style="color:#2e7d32; font-weight:bold;">لا توجد ملاحظات</span>';
-            
+            let imps = (r.improvements && r.improvements.length > 0) ? r.improvements.map(i => `<div style="font-size:11px; margin-bottom:3px; color:#444;">• ${i}</div>`).join('') : '<span style="color:#2e7d32; font-weight:bold;">لا توجد ملاحظات</span>';
             let imgsHtml = ''; 
             if(r.images) { Object.values(r.images).forEach(img => { if (img.data) imgsHtml += `<img src="${img.data}" style="height:80px; width:80px; object-fit:cover; margin:5px; border:1px solid #ddd; border-radius:4px;">`; }); }
 
-            detailsHtml += `
-                <div style="margin-bottom:15px; padding:10px; border:1px solid #eee; border-radius:8px;">
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; margin-bottom:8px; padding-bottom:5px;">
-                        <b style="font-size:12px;">${k}: ${AUDIT_DATA[k].name}</b>
-                        <b style="color:#b87333;">${p}%</b>
-                    </div>
-                    <div style="margin-bottom:10px;">${imps}</div>
-                    <div>${imgsHtml}</div>
-                </div>`;
+            detailsHtml += `<div style="margin-bottom:15px; padding:10px; border:1px solid #eee; border-radius:8px;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; margin-bottom:8px; padding-bottom:5px;"><b style="font-size:12px;">${k}: ${AUDIT_DATA[k].name}</b><b style="color:#b87333;">${p}%</b></div><div style="margin-bottom:10px;">${imps}</div><div>${imgsHtml}</div></div>`;
         }
     });
 
@@ -818,19 +768,37 @@ function viewDetailedReport(id) {
     if (a.signature) { sigDiv.innerHTML = `<img src="${a.signature}" style="height:60px; max-width:150px; border-bottom:1px solid #000;">`; } 
     else { sigDiv.innerHTML = '<div style="height:60px; color:#999; font-size:10px; padding-top:40px;">لا يوجد توقيع رقمي</div>'; }
 
-    window.showScreen('detailedReportScreen');
-}
+    // إضافة الختم إلى جميع الصور المولدة بناءً على طلب المستخدم المسبق
+    const printArea = document.getElementById('printableReportArea');
+    if (printArea && !document.getElementById('engSeal')) {
+        let seal = document.createElement('div');
+        seal.id = 'engSeal';
+        seal.innerHTML = "م/محمد فايز";
+        seal.style.position = 'absolute';
+        seal.style.bottom = '10px';
+        seal.style.left = '10px';
+        seal.style.color = '#000';
+        seal.style.fontWeight = 'bold';
+        seal.style.border = '2px solid #000';
+        seal.style.padding = '5px';
+        seal.style.transform = 'rotate(-10deg)';
+        printArea.style.position = 'relative';
+        printArea.appendChild(seal);
+    }
 
-function downloadProfessionalPDF() {
+    window.showScreen('detailedReportScreen');
+};
+
+window.downloadProfessionalPDF = function() {
     window.scrollTo(0,0);
     const btns = document.querySelectorAll('#detailedReportScreen .no-print'); btns.forEach(b => b.style.display = 'none');
     html2pdf().set({margin:0.2, filename:'تقرير_مراجعة.pdf', image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:'in', format:'a4', orientation:'portrait'}}).from(document.getElementById('printableReportArea')).save().then(()=>{ btns.forEach(b => b.style.display = ''); });
-}
+};
 
 // ------------------------------------------
 // 📋 إدارة المهام (Tasks Kanban)
 // ------------------------------------------
-function renderTasks() {
+window.renderTasks = function() {
     let htmlFolders = '';
     const cols = { pending: '', progress: '', done: '' };
     const counts = { pending: 0, progress: 0, done: 0 };
@@ -847,10 +815,7 @@ function renderTasks() {
                 <div class="card glass-card" style="border-right: 4px solid var(--gold); margin-bottom:15px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <b style="color:var(--gold); font-size:13px;">مجلد: ${t.task}</b>
-                        <div style="display:flex; gap:5px; align-items:center;">
-                            <span class="badge">${done}/${total}</span>
-                            ${deleteBtnHTML}
-                        </div>
+                        <div style="display:flex; gap:5px; align-items:center;"><span class="badge">${done}/${total}</span>${deleteBtnHTML}</div>
                     </div>
                     ${t.subTasks ? t.subTasks.map((s,i)=>`
                         <div style="font-size:12px; padding:5px 0; border-bottom:1px dashed rgba(255,255,255,0.05);">
@@ -874,10 +839,7 @@ function renderTasks() {
                 <div style="font-weight:bold; margin-bottom:5px;">${t.task}</div>
                 ${t.image ? `<img src="${t.image}" style="width:100%; border-radius:8px; margin-bottom:8px; cursor:pointer; border:1px solid rgba(255,255,255,0.1);" onclick="window.open('${t.image}')">` : ''}
                 <div style="font-size:10px; color:var(--text-muted);">${t.dept}</div>
-                <div class="kanban-actions">
-                    ${actions}
-                    ${canAccess('tasksScreen', 'edit') ? `<button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">🗑️</button>` : ''}
-                </div>
+                <div class="kanban-actions">${actions}${canAccess('tasksScreen', 'edit') ? `<button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">🗑️</button>` : ''}</div>
             </div>`;
         }
     });
@@ -893,10 +855,10 @@ function renderTasks() {
     if(fC) fC.innerHTML = htmlFolders || '<div style="font-size:12px; color:var(--text-muted); text-align:center;">لا توجد مجلدات تحسين</div>';
     
     updateTasksDeptGrid();
-}
+};
 
-function deleteTask(id) { if(confirm('⚠️ هل أنت متأكد من حذف المهمة؟')) { window.deleteRecord('tasks/' + id); window.showToast('تم الحذف'); } }
-function updateTasksDeptGrid() {
+window.deleteTask = (id) => { if(confirm('⚠️ هل أنت متأكد من حذف المهمة؟')) { window.deleteRecord('tasks/' + id); window.showToast('تم الحذف'); } };
+window.updateTasksDeptGrid = function() {
     let deptStats = {}; departments.forEach(d => deptStats[d] = { p:0 });
     let pendAll=0, progAll=0, doneAll=0;
     
@@ -919,23 +881,24 @@ function updateTasksDeptGrid() {
                 <div style="font-size:11px; margin-top:5px; color:var(--text-main);">مهام نشطة: <b style="color:var(--danger);">${deptStats[d].p}</b></div>
             </div>`).join('');
     }
-}
-function openTasksDept(dept) { currentTaskDept = dept; document.getElementById('tasksDeptTitle').innerText = `مهام ${dept}`; document.getElementById('tasksMainView').style.display='none'; document.getElementById('tasksDeptView').style.display='block'; renderTasks(); }
-function closeTasksDept() { currentTaskDept = null; document.getElementById('tasksDeptView').style.display='none'; document.getElementById('tasksMainView').style.display='block'; renderTasks(); }
-function toggleFolderSubTask(fId, sIdx) { let f = tasksData.find(x=>x.id==fId); if(f) { f.subTasks[sIdx].status = f.subTasks[sIdx].status==='done'?'pending':'done'; window.syncRecord('tasks/' + fId, f); } }
-function changeTaskStatus(id, st) { let t=tasksData.find(x=>x.id==id); if(t) {t.status=st; window.syncRecord('tasks/' + id, t);} }
-function addManualTaskDept() { let v=document.getElementById('newTaskInput').value; if(v){ let id = window.uniqueNumericId().toString(); window.syncRecord('tasks/' + id, {id:id, task:v, dept:currentTaskDept, status:'pending'}); document.getElementById('newTaskInput').value=''; window.showToast('تمت الإضافة'); } }
+};
+
+window.openTasksDept = (dept) => { currentTaskDept = dept; document.getElementById('tasksDeptTitle').innerText = `مهام ${dept}`; document.getElementById('tasksMainView').style.display='none'; document.getElementById('tasksDeptView').style.display='block'; renderTasks(); };
+window.closeTasksDept = () => { currentTaskDept = null; document.getElementById('tasksDeptView').style.display='none'; document.getElementById('tasksMainView').style.display='block'; renderTasks(); };
+window.toggleFolderSubTask = (fId, sIdx) => { let f = tasksData.find(x=>x.id==fId); if(f) { f.subTasks[sIdx].status = f.subTasks[sIdx].status==='done'?'pending':'done'; window.syncRecord('tasks/' + fId, f); } };
+window.changeTaskStatus = (id, st) => { let t=tasksData.find(x=>x.id==id); if(t) {t.status=st; window.syncRecord('tasks/' + id, t);} };
+window.addManualTaskDept = () => { let v=document.getElementById('newTaskInput').value; if(v){ let id = window.uniqueNumericId().toString(); window.syncRecord('tasks/' + id, {id:id, task:v, dept:currentTaskDept, status:'pending'}); document.getElementById('newTaskInput').value=''; window.showToast('تمت الإضافة'); } };
 
 // ------------------------------------------
-// 💡 مجتمع كايزن (Kaizen & Ideas)
+// 💡 مجتمع كايزن (Kaizen)
 // ------------------------------------------
-function handleKaizenImage(e, type) {
+window.handleKaizenImage = function(e, type) {
     const f=e.target.files[0]; if(!f) return;
     window.showToast('جاري تحضير الصورة...');
     processAndEnhanceImage(f, function(dataUrl) { kaizenImgs[type] = dataUrl; document.getElementById(type==='before'?'kaizenBeforePreview':'kaizenAfterPreview').innerHTML=`<span style="color:var(--success); font-size:11px; font-weight:bold;">تم الإرفاق</span>`; });
-}
+};
 
-function submitManualKaizen() {
+window.submitManualKaizen = function() {
     let t = document.getElementById('newKaizenTitle').value; let d = document.getElementById('newKaizenDept').value;
     if(!t || !kaizenImgs.before || !kaizenImgs.after) { window.showToast('برجاء كتابة الوصف وإرفاق الصورتين'); return; }
     
@@ -949,8 +912,7 @@ function submitManualKaizen() {
         imgAfter.onload = async function() {
             canvas.width = 600; canvas.height = 300;
             ctx.fillStyle = "#111d33"; ctx.fillRect(0,0,600,300);
-            ctx.drawImage(imgBefore, 0, 0, 295, 300);
-            ctx.drawImage(imgAfter, 305, 0, 295, 300);
+            ctx.drawImage(imgBefore, 0, 0, 295, 300); ctx.drawImage(imgAfter, 305, 0, 295, 300);
             
             ctx.fillStyle = "#d4af37"; ctx.beginPath(); ctx.moveTo(280, 150); ctx.lineTo(320, 130); ctx.lineTo(320, 170); ctx.fill();
             ctx.fillStyle = "rgba(198,40,40,0.85)"; ctx.fillRect(10, 10, 50, 25);
@@ -972,461 +934,38 @@ function submitManualKaizen() {
                 window.awardPoints(40, 'مشاركة كايزن'); window.showToast('تم نشر الكايزن بنجاح');
             } else { window.showToast('فشل الرفع، راجع مفتاح ImgBB'); }
             
-            document.getElementById('submitKaizenBtn').innerText = "دمج واعتماد";
-            document.getElementById('submitKaizenBtn').disabled = false;
+            document.getElementById('submitKaizenBtn').innerText = "دمج واعتماد"; document.getElementById('submitKaizenBtn').disabled = false;
         }; imgAfter.src = kaizenImgs.after;
     }; imgBefore.src = kaizenImgs.before;
-}
+};
 
-function renderKaizenFeed() {
+window.renderKaizenFeed = function() {
     let c = document.getElementById('kaizenFeedContainer'); if(!c) return;
     let selectedDept = document.getElementById('kaizenDeptSelect').value;
     
-    let html = historyData.filter(h=>h.stepsOrder.includes('ManualKaizen') && (selectedDept === 'الكل' || h.dept === selectedDept)).reverse().map(k=> {
-        let lId = k.id;
-        let liked = likesData[lId] && likesData[lId].includes(currentUser.name);
+    let html = historyData.filter(h=>h.stepsOrder && h.stepsOrder.includes('ManualKaizen') && (selectedDept === 'الكل' || h.dept === selectedDept)).reverse().map(k=> {
+        let lId = k.id, liked = likesData[lId] && likesData[lId].includes(currentUser.name);
         let canEdit = canAccess('kaizenScreen', 'edit') || currentUser.name === k.auditor;
         let controls = canEdit ? `<button class="btn btn-sm btn-warning flex-1" onclick="editKaizen('${k.id}')">تعديل</button><button class="btn btn-sm btn-danger flex-1" onclick="deleteKaizen('${k.id}')">حذف</button>` : '';
         let comments = kaizenComments[lId] || [];
         let commentsHtml = comments.map(cm => `<div class="comment-box"><b style="color:var(--gold);">${cm.user}:</b> ${cm.text} <span style="font-size:9px; color:var(--text-muted); float:left;">${cm.date}</span></div>`).join('');
 
-        return `<div class="kaizen-post">
-            <div style="display:flex; justify-content:space-between;"><b>${k.auditor}</b><span style="font-size:11px; color:var(--text-muted);">${k.dept} | ${k.date}</span></div>
-            <img src="${k.results.ManualKaizen.images.img_1.data}" class="kaizen-img">
-            <b style="font-size:15px;">${k.results.ManualKaizen.images.img_1.title}</b>
-            <div class="row-flex" style="margin-top:10px;">
-                <button class="btn btn-sm ${liked?'btn-success':'btn-outline'} flex-1" onclick="toggleKaizenLike('${lId}')">إعجاب (${likesData[lId]?likesData[lId].length:0})</button>
-                ${controls}
-            </div>
-            <div style="margin-top: 15px; border-top: 1px dashed var(--copper); padding-top: 10px;">
-                <div style="max-height: 120px; overflow-y: auto; margin-bottom: 10px;">${commentsHtml || '<div style="font-size:11px; text-align:center; color:var(--text-muted);">لا توجد تعليقات</div>'}</div>
-                <div class="row-flex"><input type="text" id="comment_input_${lId}" class="form-control flex-2" placeholder="اكتب تعليقاً..." style="margin:0;"><button class="btn btn-primary btn-sm flex-1" style="margin:0;" onclick="addKaizenComment('${lId}')">إرسال</button></div>
-            </div>
-        </div>`;
+        return `<div class="kaizen-post"><div style="display:flex; justify-content:space-between;"><b>${k.auditor}</b><span style="font-size:11px; color:var(--text-muted);">${k.dept} | ${k.date}</span></div><img src="${k.results.ManualKaizen.images.img_1.data}" class="kaizen-img"><b style="font-size:15px;">${k.results.ManualKaizen.images.img_1.title}</b><div class="row-flex" style="margin-top:10px;"><button class="btn btn-sm ${liked?'btn-success':'btn-outline'} flex-1" onclick="toggleKaizenLike('${lId}')">إعجاب (${likesData[lId]?likesData[lId].length:0})</button>${controls}</div><div style="margin-top: 15px; border-top: 1px dashed var(--copper); padding-top: 10px;"><div style="max-height: 120px; overflow-y: auto; margin-bottom: 10px;">${commentsHtml || '<div style="font-size:11px; text-align:center; color:var(--text-muted);">لا توجد تعليقات</div>'}</div><div class="row-flex"><input type="text" id="comment_input_${lId}" class="form-control flex-2" placeholder="اكتب تعليقاً..." style="margin:0;"><button class="btn btn-primary btn-sm flex-1" style="margin:0;" onclick="addKaizenComment('${lId}')">إرسال</button></div></div></div>`;
     }).join('');
     c.innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">لا توجد مشاركات</div>';
-}
+};
 
-function toggleKaizenLike(id) { if(!likesData[id]) likesData[id]=[]; let i=likesData[id].indexOf(currentUser.name); if(i>-1) likesData[id].splice(i,1); else likesData[id].push(currentUser.name); window.syncRecord('likes/' + id, likesData[id]); }
-function deleteKaizen(id) { if(confirm('تأكيد مسح الكايزن؟')) { window.deleteRecord('history/' + id); window.showToast('تم الحذف'); } }
-function editKaizen(id) { let k=historyData.find(x=>x.id===id); if(!k) return; let v=prompt('تعديل الوصف:', k.results.ManualKaizen.images.img_1.title); if(v) { k.results.ManualKaizen.images.img_1.title=window.sanitizeInput(v); window.syncRecord('history/' + id, k); window.showToast('تم التعديل'); } }
-function addKaizenComment(id) { let el=document.getElementById(`comment_input_${id}`); let txt=window.sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; kaizenComments[id].push({user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}); window.syncRecord('kaizenComments/' + id, kaizenComments[id]); el.value=''; window.awardPoints(2, 'كتابة تعليق'); }
-
-// ------------------------------------------
-// 🏷️ محرك التذاكر والتاجات (Tags & Tickets)
-// ------------------------------------------
-function handleTagImage(e) {
-    const f=e.target.files[0]; if(!f) return;
-    window.showToast('جاري تحضير الصورة...');
-    processAndEnhanceImage(f, function(dataUrl) { currentTagImg=dataUrl; document.getElementById('tagImagePreview').innerHTML=`<span style="color:var(--success); font-size:11px; font-weight:bold;">مُجهزة للرفع</span>`; });
-}
-
-async function addNewTag() {
-    let d=document.getElementById('newTagDesc').value, c=document.getElementById('newTagColor').value, dp=document.getElementById('newTagDept').value, m=document.getElementById('newTagMachine').value, sp=document.getElementById('newTagSpareParts').value;
-    if(!d) { window.showToast('أدخل وصف المشكلة'); return; }
-    
-    let fullDesc = sp ? `${d} [أجزاء: ${sp}]` : d;
-    let uploadedUrl = null;
-    
-    if (currentTagImg) {
-        window.showToast('جاري رفع التاج والصورة... ⏳');
-        uploadedUrl = await uploadImageToStorage(currentTagImg);
-        if(!uploadedUrl) window.showToast('⚠️ فشل رفع الصورة. سيتم حفظ التاج كنص فقط.');
-    }
-    
-    let tId = window.uniqueNumericId().toString();
-    window.syncRecord('tags/' + tId, {id:tId, desc:fullDesc, color:c, dept:dp, machine:m, image:uploadedUrl, status:'open', auditor:currentUser.name, date:new Date().toLocaleDateString('ar-EG'), timestamp: Date.now()});
-    
-    document.getElementById('newTagDesc').value=''; document.getElementById('newTagMachine').value=''; document.getElementById('newTagSpareParts').value=''; currentTagImg = null;
-    let preview = document.getElementById('tagImagePreview'); if(preview) preview.innerHTML = '';
-    
-    window.awardPoints(10, 'إصدار تاج جديد'); 
-    window.showToast('تم إصدار التاج بنجاح ✅');
-}
-
-function renderTags() {
-    let rc = document.getElementById('redTagsContainer'); 
-    let bc = document.getElementById('blueTagsContainer');
-    if(!rc || !bc) return;
-    
-    let fDept = document.getElementById('filterTagDept').value; 
-    let fMach = document.getElementById('filterTagMachine').value.trim().toLowerCase();
-    let fStatus = document.getElementById('filterTagStatus') ? document.getElementById('filterTagStatus').value : 'active';
-    
-    let redHtml = '', blueHtml = '';
-    let currentTime = Date.now();
-    const THREE_DAYS_MS = 259200000;
-
-    tagsData.forEach(t => {
-        if(fDept !== 'الكل' && t.dept !== fDept) return;
-        if(fMach !== '' && (!t.machine || !t.machine.toLowerCase().includes(fMach))) return;
-        
-        let isClosed = (t.status === 'closed');
-        if(fStatus === 'active' && isClosed) return;
-        if(fStatus === 'closed' && !isClosed) return;
-
-        let isAged = (!isClosed && t.timestamp && (currentTime - t.timestamp > THREE_DAYS_MS));
-        let canEdit = canAccess('tagsScreen', 'edit') || currentUser.name === t.auditor;
-        
-        let controls = canEdit ? `
-            <select class="form-control flex-2" style="font-size:11px; padding:4px; margin:0;" onchange="updateTagState('${t.id}', this.value)">
-                <option value="open" ${t.status==='open'?'selected':''}>مفتوح ⏳</option>
-                <option value="progress" ${t.status==='progress'?'selected':''}>جاري 🛠️</option>
-                <option value="review" ${t.status==='review'?'selected':''}>مراجعة 👁️</option>
-                <option value="closed" ${t.status==='closed'?'selected':''}>مغلق ✅</option>
-            </select>
-            <button class="btn btn-sm btn-outline flex-1" style="margin:0; padding:4px;" onclick="editTag('${t.id}')">تعديل</button>
-            <button class="btn btn-sm btn-danger" style="margin:0; padding:4px; width:auto;" onclick="deleteTag('${t.id}')">🗑️</button>
-        ` : `<span style="font-size:11px; font-weight:bold; color:var(--gold); padding:4px; background:rgba(0,0,0,0.2); border-radius:5px;">الحالة: ${t.status}</span>`;
-        
-        let ticketClass = t.color === 'red' ? 'ticket-red' : 'ticket-blue';
-        let warningBadge = isAged ? `<div class="aging-warning">متأخر حرج</div>` : '';
-
-        let cardHtml = `
-        <div class="tag-ticket ${ticketClass}">
-            ${warningBadge}
-            <div class="ticket-header"><div class="ticket-title">${t.desc}</div></div>
-            <div class="ticket-meta">🏭 ${t.dept} ${t.machine ? ' | ⚙️ ' + t.machine : ''}<br>👤 ${t.auditor} | 📅 ${t.date}</div>
-            ${t.image ? `<img src="${t.image}" class="ticket-img" title="اضغط لتكبير الصورة" onclick="window.open('${t.image}', '_blank')">` : ''}
-            <div class="row-flex" style="margin-top:10px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px;">${controls}</div>
-        </div>`;
-
-        if(t.color === 'red') redHtml += cardHtml; else blueHtml += cardHtml;
-    });
-
-    rc.innerHTML = redHtml || '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:15px;">لا توجد تاجات صيانة</div>';
-    bc.innerHTML = blueHtml || '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:15px;">لا توجد تاجات إنتاج</div>';
-}
-
-function updateTagState(id, st) { let t=tagsData.find(x=>x.id==id); if(t) {t.status=st; window.syncRecord('tags/' + id, t); if(st==='closed') window.awardPoints(20, 'إغلاق تاج');} }
-function deleteTag(id) { if(confirm('تأكيد حذف التاج نهائياً؟')) { window.deleteRecord('tags/' + id); window.showToast('تم الحذف'); } }
-function editTag(id) { let t=tagsData.find(x=>x.id==id); if(!t) return; let v=prompt('تعديل وصف المشكلة:', t.desc); if(v) { t.desc=window.sanitizeInput(v); window.syncRecord('tags/' + id, t); window.showToast('تم التعديل'); } }
+window.toggleKaizenLike = (id) => { if(!likesData[id]) likesData[id]=[]; let i=likesData[id].indexOf(currentUser.name); if(i>-1) likesData[id].splice(i,1); else likesData[id].push(currentUser.name); window.syncRecord('likes/' + id, likesData[id]); };
+window.deleteKaizen = (id) => { if(confirm('تأكيد مسح الكايزن؟')) { window.deleteRecord('history/' + id); window.showToast('تم الحذف'); } };
+window.editKaizen = (id) => { let k=historyData.find(x=>x.id===id); if(!k) return; let v=prompt('تعديل الوصف:', k.results.ManualKaizen.images.img_1.title); if(v) { k.results.ManualKaizen.images.img_1.title=window.sanitizeInput(v); window.syncRecord('history/' + id, k); window.showToast('تم التعديل'); } };
+window.addKaizenComment = (id) => { let el=document.getElementById(`comment_input_${id}`); let txt=window.sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; kaizenComments[id].push({user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}); window.syncRecord('kaizenComments/' + id, kaizenComments[id]); el.value=''; window.awardPoints(2, 'كتابة تعليق'); };
+// ============================================================================
+// 🚀 FACTORY OS - V5.0 (INDUSTRIAL GRADE - FULL RESTORE PART 4)
+// ============================================================================
 
 // ------------------------------------------
-// ⚙️ الإعدادات وحفظ الملف الشخصي (Settings)
+// 📊 بيانات ومعايير المراجعة الذاتية (Audit Blueprint)
 // ------------------------------------------
-function switchSettingsTab(tabId) {
-    document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + tabId).classList.add('active');
-    event.currentTarget.classList.add('active');
-}
-
-async function savePersonalData() {
-    const uid = currentUser.uid;
-    const newName = document.getElementById('editName').value.trim();
-    const newPhone = document.getElementById('editPhone').value.trim();
-    const newDept = document.getElementById('editDept').value;
-
-    if(!newName) return window.showToast('الاسم مطلوب');
-
-    window.showToast('جاري تحديث هويتك... ⏳');
-    await db.ref(`tpm_system/users/${uid}`).update({ name: newName, phone: newPhone, dept: newDept });
-
-    currentUser.name = newName; 
-    window.showToast('تم تحديث بياناتك بنجاح ✅');
-    renderProfileAndSettings(); 
-    window.showScreen('settingsScreen');
-}
-
-function renderProfileAndSettings() {
-    if(!currentUser || !currentUser.name) return;
-
-    document.getElementById('profileName').innerText = currentUser.name;
-    const roleMap = { admin: 'مدير نظام 👑', auditor: 'مراجع فني 📝', operator: 'مشغل معدة ⚙️', viewer: 'مشاهد 👁️' };
-    document.getElementById('profileRoleBadge').innerText = roleMap[currentUser.role] || currentUser.role;
-    
-    if (currentUser.uid && usersData[currentUser.uid] && usersData[currentUser.uid].avatar) {
-        document.getElementById('profileAvatar').src = usersData[currentUser.uid].avatar;
-    }
-
-    document.getElementById('myAudits').innerText = historyData.filter(h => h.auditor === currentUser.name && !h.stepsOrder.includes('ManualKaizen')).length;
-    document.getElementById('myTags').innerText = tagsData.filter(t => t.auditor === currentUser.name).length;
-    document.getElementById('myKaizens').innerText = historyData.filter(h => h.auditor === currentUser.name && h.stepsOrder.includes('ManualKaizen')).length;
-
-    const deptList = document.getElementById('managedDeptsList');
-    if(deptList) {
-        deptList.innerHTML = departments.map((d, i) => `<div class="item-row"><span class="name">🏭 ${d}</span><button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeDept(${i})">حذف</button></div>`).join('');
-    }
-
-    const engList = document.getElementById('managedEngsList');
-    if(engList) {
-        engList.innerHTML = (maintenanceEngineers || []).map((e, i) => `<div class="item-row" style="border-right-color:var(--warning);"><div><span class="name">🛠️ ${e.name}</span><br><small style="font-size:9px; color:var(--text-muted);">${e.phone}</small></div><button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeEngineer(${i})">حذف</button></div>`).join('') || '<div style="font-size:11px; text-align:center; padding:10px;">لا يوجد مهندسون</div>';
-    }
-
-    if (currentUser.role === 'admin') {
-        document.getElementById('imgbbKeyInput').value = globalApiKeys.imgbb || '';
-        document.getElementById('geminiKeyInput').value = globalApiKeys.gemini || '';
-    }
-}
-
-function removeDept(idx) { if(confirm(`حذف قسم (${departments[idx]})؟`)) { departments.splice(idx, 1); window.syncRecord('departments', departments); renderProfileAndSettings(); window.showToast('تم الحذف'); } }
-function removeEngineer(idx) { if(confirm(`حذف المهندس (${maintenanceEngineers[idx].name})؟`)) { maintenanceEngineers.splice(idx, 1); window.syncRecord('maintenanceEngineers', maintenanceEngineers); renderProfileAndSettings(); window.showToast('تم الحذف'); } }
-
-async function updateProfilePic(event) {
-    const file = event.target.files[0]; const uid = currentUser.uid;
-    if(!file || !uid) return;
-    window.showToast('جاري تحديث الصورة... ⏳');
-    processAndEnhanceImage(file, async function(dataUrl) {
-        const url = await uploadImageToStorage(dataUrl);
-        if (url) {
-            await db.ref(`tpm_system/users/${uid}/avatar`).set(url);
-            document.getElementById('profileAvatar').src = url;
-            window.showToast('تم التحديث 😎');
-        } else { window.showToast('⚠️ فشل الرفع.'); }
-    });
-}
-
-function saveApiKeys() {
-    globalApiKeys.imgbb = document.getElementById('imgbbKeyInput').value.trim();
-    globalApiKeys.gemini = document.getElementById('geminiKeyInput').value.trim();
-    document.getElementById('imgbbKeyInput').disabled = true; document.getElementById('geminiKeyInput').disabled = true;
-    window.syncRecord('api_keys', globalApiKeys); window.showToast('تم حفظ وتأمين المفاتيح');
-}
-function enableApiKeysEdit() { document.getElementById('imgbbKeyInput').disabled = false; document.getElementById('geminiKeyInput').disabled = false; window.showToast('جاهز للتعديل'); }
-function addOrUpdateDept() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); window.syncRecord('departments', departments); window.showToast('تم الحفظ'); } }
-function addEngineer() { let n=document.getElementById('newEngName').value, p=document.getElementById('newEngPhone').value; if(n&&p) { maintenanceEngineers.push({name:n, phone:p}); window.syncRecord('maintenanceEngineers', maintenanceEngineers); window.showToast('تم الإضافة'); } }
-
-// ------------------------------------------
-// 🧠 محرك عقل المصنع والذكاء الاصطناعي (AI & KB)
-// ------------------------------------------
-function nl2brSafe(str) { return str.replace(/\n/g, '<br>'); }
-async function getBase64FromUrl(url) {
-    try { const res = await fetch(url); const blob = await res.blob(); return new Promise(resolve => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result.split(',')[1]); reader.readAsDataURL(blob); }); } 
-    catch(e) { return null; }
-}
-
-async function runAIVision(itemId, itemTitle) {
-    const apiKey = globalApiKeys.gemini; if(!apiKey) return window.showToast('مفتاح Gemini مفقود');
-    let imgObj = currentStepImages['img_' + itemId]; if(!imgObj) return window.showToast('لا توجد صورة لفحصها');
-    document.getElementById('aiModalText').innerHTML = "جاري فحص الصورة..."; document.getElementById('aiModal').style.display = 'flex';
-    try {
-        const base64Img = await getBase64FromUrl(imgObj.data);
-        let promptParts = [{ text: `أنت مهندس صيانة. حلل الصورة لبند: "${itemTitle}". رد بـ HTML منسق.` }];
-        promptParts.push({ inline_data: { mime_type: "image/jpeg", data: base64Img } });
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: promptParts }] }) });
-        const result = await response.json(); document.getElementById('aiModalText').innerHTML = nl2brSafe(result.candidates[0].content.parts[0].text); window.awardPoints(5, 'استشارة AI');
-    } catch(e) { document.getElementById('aiModalText').innerHTML = "خطأ في الاتصال بالذكاء الاصطناعي."; }
-}
-
-async function predictMachineFailures() {
-    const k = globalApiKeys.gemini; if(!k) return window.showToast('مفتاح Gemini غير مفعل');
-    const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerText='جاري تحليل البيانات...';
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: "توقع الأعطال بناءً على التاجات المفتوحة: " + tagsData.map(t=>t.desc).join(',') }] }] }) });
-        const j = await res.json(); r.innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
-    } catch(e) { r.innerText='فشل الاتصال'; }
-}
-
-async function explainItem(t) {
-    const k = globalApiKeys.gemini; if(!k) return window.showToast('مفتاح Gemini مفقود');
-    document.getElementById('aiModal').style.display='flex'; 
-    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center;">جاري تحليل البند... 🧠🔍</div>';
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `اشرح البند التالي للمراجع الميداني: "${t}".` }] }] }) });
-        const j = await res.json(); document.getElementById('aiModalText').innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
-    } catch(e) { document.getElementById('aiModalText').innerText='خطأ في استحضار الذاكرة المعرفية'; }
-}
-
-// ------------------------------------------
-// 📚 إدارة المكتبة (Knowledge Base)
-// ------------------------------------------
-let currentUploadedPdfBase64 = null;
-if (typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-async function handlePDFUpload(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const statusEl = document.getElementById('pdfExtractStatus');
-    statusEl.innerText = "جاري رفع الكتالوج... ⏳"; statusEl.style.color = "var(--warning)";
-    try {
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            currentUploadedPdfBase64 = e.target.result.split(',')[1];
-            if(typeof pdfjsLib !== 'undefined') {
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-                let fullText = "";
-                const maxPages = Math.min(pdf.numPages, 5);
-                for (let i = 1; i <= maxPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    fullText += textContent.items.map(item => item.str).join(' ') + " ";
-                }
-                document.getElementById('kbContent').value = fullText.substring(0, 2000);
-            }
-            statusEl.innerText = "تم تجهيز الكتالوج بالكامل ✅"; statusEl.style.color = "var(--success)";
-        };
-        reader.readAsDataURL(file);
-    } catch (error) { statusEl.innerText = "❌ فشل الرفع."; statusEl.style.color = "var(--danger)"; }
-}
-
-function addKnowledgeBaseArticle() {
-    let title = document.getElementById('kbTitle').value.trim();
-    let cat = document.getElementById('kbCategory').value;
-    let content = document.getElementById('kbContent').value.trim();
-    if(!title || (!content && !currentUploadedPdfBase64)) { window.showToast('أدخل العنوان والمحتوى'); return; }
-    
-    let id = window.uniqueNumericId().toString();
-    let article = { id: id, title: title, category: cat, content: content, date: new Date().toLocaleDateString('ar-EG'), author: currentUser.name, hasPdf: !!currentUploadedPdfBase64 };
-    window.syncRecord('knowledgeBase/' + id, article);
-    
-    if (currentUploadedPdfBase64) db.ref('tpm_system/pdf_files/' + id).set({ base64: currentUploadedPdfBase64 });
-    
-    document.getElementById('addBookModal').style.display = 'none'; currentUploadedPdfBase64 = null;
-    window.showToast('تمت إضافة المرجع 📚');
-}
-
-// ------------------------------------------
-// ✨ بيئة العمل 5S (الكاميرا الذكية)
-// ------------------------------------------
-function load5SImage(event, type) {
-    const file = event.target.files[0]; if(!file) return;
-    window.showToast('جاري معالجة الصورة... ⏳');
-    processAndEnhanceImage(file, function(dataUrl) {
-        images5S[type] = dataUrl;
-        if(type === 'standard') document.getElementById('imgStandard').src = dataUrl;
-        if(type === 'current') {
-            let imgC = document.getElementById('imgCurrent');
-            imgC.src = dataUrl; imgC.style.width = document.getElementById('sliderWrapper').offsetWidth + 'px';
-        }
-        if(images5S.standard && images5S.current) {
-            document.getElementById('fiveSSliderContainer').style.display = 'block';
-            window.showToast('اسحب الشريط للمطابقة ↔️');
-            init5SSlider();
-        }
-    });
-}
-
-function init5SSlider() {
-    const container = document.getElementById('sliderWrapper');
-    const overlay = document.getElementById('sliderOverlay');
-    const handle = document.getElementById('sliderHandle');
-    let isSliding = false;
-    document.getElementById('imgCurrent').style.width = container.offsetWidth + 'px';
-    function slide(e) {
-        if (!isSliding) return;
-        let rect = container.getBoundingClientRect();
-        let x = (e.pageX || (e.touches && e.touches[0].pageX)) - rect.left;
-        if (x < 0) x = 0; if (x > rect.width) x = rect.width;
-        overlay.style.width = (((rect.width - x) / rect.width) * 100) + '%';
-        handle.style.left = x + 'px';
-    }
-    handle.onmousedown = () => isSliding = true; document.onmouseup = () => isSliding = false; container.onmousemove = slide;
-    handle.ontouchstart = (e) => { isSliding = true; e.preventDefault(); }; document.ontouchend = () => isSliding = false; container.ontouchmove = slide;
-}
-
-async function generate5STask() {
-    let taskDesc = prompt("صف المخالفة (مثال: أدوات خارج مكانها):"); if(!taskDesc) return;
-    let dp = departments[0];
-    let imageUrl = images5S.current ? await uploadImageToStorage(images5S.current) : "";
-    let tId = window.uniqueNumericId().toString();
-    window.syncRecord('tasks/' + tId, { id: tId, task: `[مخالفة 5S] - ${taskDesc}`, dept: dp, status: 'pending', image: imageUrl });
-    window.awardPoints(5, 'رصد مخالفة 5S');
-    window.showToast('تم تسجيل المهمة وتوجيهها 🚨');
-    document.getElementById('fiveSSliderContainer').style.display = 'none';
-}
-
-// ------------------------------------------
-// 🔧 محرك الصيانة المخططة (PM Engine)
-// ------------------------------------------
-function renderPMDashboard() {
-    let pmContainer = document.getElementById('pmWorkOrdersContainer');
-    if(!pmContainer) return;
-    let redTags = tagsData.filter(t => t.color === 'red');
-    let pending = redTags.filter(t => t.status === 'open');
-    let progress = redTags.filter(t => t.status === 'progress' || t.status === 'review');
-    
-    document.getElementById('pmPendingCount').innerText = pending.length;
-    document.getElementById('pmProgressCount').innerText = progress.length;
-    document.getElementById('pmClosedCount').innerText = redTags.filter(t => t.status === 'closed').length;
-
-    let activeOrders = [...pending, ...progress];
-    if(activeOrders.length === 0) { pmContainer.innerHTML = '<div style="text-align:center; color:var(--success); padding:30px;">لا توجد أوامر شغل معلقة.</div>'; return; }
-
-    pmContainer.innerHTML = activeOrders.map(t => {
-        let statusColor = t.status === 'open' ? 'var(--danger)' : 'var(--warning)';
-        let engOptions = maintenanceEngineers.map(e => `<option value="${e.name}" ${t.assignedEng===e.name?'selected':''}>${e.name}</option>`).join('');
-        return `
-        <div class="card glass-card" style="border-right:5px solid ${statusColor}; margin-bottom:15px;">
-            <h4>${t.desc}</h4>
-            <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">🏭 القسم: ${t.dept} | ⚙️ الماكينة: ${t.machine||'عام'}</div>
-            ${t.image ? `<img src="${t.image}" style="width:100%; border-radius:8px; margin-bottom:10px; cursor:pointer;" onclick="window.open('${t.image}')">` : ''}
-            <div class="row-flex" style="margin-bottom:10px;">
-                <input type="text" id="pm_spare_${t.id}" class="form-control flex-2" placeholder="قطع الغيار" value="${t.spareParts||''}" style="margin:0; font-size:11px;">
-                <select id="pm_eng_${t.id}" class="form-control flex-1" style="margin:0; font-size:11px;"><option value="">تعيين مهندس</option>${engOptions}</select>
-            </div>
-            <div class="row-flex">
-                <button class="btn btn-sm btn-outline flex-1" onclick="updatePMOrder('${t.id}', 'progress')">بدء التنفيذ</button>
-                <button class="btn btn-sm btn-success flex-1" onclick="updatePMOrder('${t.id}', 'closed')">✅ إنهاء</button>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-function updatePMOrder(id, newStatus) {
-    let t = tagsData.find(x => x.id == id); if(!t) return;
-    t.status = newStatus; t.spareParts = document.getElementById(`pm_spare_${id}`).value; t.assignedEng = document.getElementById(`pm_eng_${id}`).value;
-    window.syncRecord('tags/' + id, t);
-    if(newStatus === 'closed') window.awardPoints(25, 'إنجاز أمر شغل');
-    window.showToast('تم تحديث أمر الشغل'); renderPMDashboard();
-}
-
-// ------------------------------------------
-// 📉 شجرة الفواقد المستمر (KK Loss Tree)
-// ------------------------------------------
-const tpmLosses = [
-    { id: 'L1', name: 'أعطال الماكينات', type: 'availability', icon: '🔧' },
-    { id: 'L2', name: 'الإعداد والضبط', type: 'availability', icon: '⚙️' },
-    { id: 'L3', name: 'التوقفات الصغيرة', type: 'performance', icon: '⏱️' },
-    { id: 'L4', name: 'العيوب والجودة', type: 'quality', icon: '❌' }
-];
-let registeredLosses = []; const COST_PER_MINUTE = 50;
-
-function renderKKDashboard() {
-    let container = document.getElementById('kkLossTreeContainer'); if(!container) return;
-    container.innerHTML = tpmLosses.map(loss => {
-        let mins = registeredLosses.filter(l => l.lossId === loss.id).reduce((sum, curr) => sum + curr.minutes, 0);
-        return `
-        <div class="card glass-card" style="text-align:center; padding:15px; cursor:pointer;" onclick="openLossRegistration('${loss.id}', '${loss.name}')">
-            <div style="font-size:24px;">${loss.icon}</div>
-            <div style="font-size:11px; font-weight:bold; margin-bottom:10px;">${loss.name}</div>
-            <div style="font-size:11px; color:var(--danger);">${mins} دقيقة (${mins*COST_PER_MINUTE} ج)</div>
-        </div>`;
-    }).join('');
-}
-
-function openLossRegistration(id, name) {
-    let m = prompt(`تسجيل وقت توقف لـ [ ${name} ] بالدقائق:`);
-    if(m && !isNaN(m) && parseInt(m) > 0) {
-        let lossObj = { id: window.uniqueNumericId().toString(), lossId: id, minutes: parseInt(m), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
-        window.syncRecord('losses/' + lossObj.id, lossObj); 
-        window.awardPoints(5, 'تسجيل توقف'); window.showToast(`تم التسجيل بنجاح 📉`);
-    }
-}
-
-// ------------------------------------------
-// 🛡️ إدارة الصلاحيات والأمان (User Management)
-// ------------------------------------------
-function canAccess(screenId, action = 'view') {
-    if (currentUser.username === 'mfayez' || currentUser.role === 'admin') return true; 
-    const perms = currentUser.permissions || {};
-    if (!perms[screenId]) return false;
-    if (action === 'edit') return perms[screenId] === 'edit';
-    return perms[screenId] === 'view' || perms[screenId] === 'edit';
-}
-
-function approveUser(uid) {
-    const u = usersData[uid];
-    db.ref(`tpm_system/users/${uid}`).update({ status: 'active', role: u.requestedRole });
-    window.showToast(`تم تفعيل الحساب`);
-}
-
-function deleteUser(uid) { if(confirm('حذف المستخدم نهائياً؟')) { db.ref('tpm_system/users/' + uid).remove(); window.showToast('تم الحذف'); } }
-
-// ------------------------------------------
-// 📊 بيانات المراجعة الذاتية (Audit Blueprint)
-// ------------------------------------------
-// بنود المراجعة مدمجة بشكل دقيق وبدون تكرار:
 const AUDIT_DATA = {
     "JH-0": { name: "الخطوة التحضيرية", items: [
         { id: 1, title: "إعداد خطة عمل لتنفيذ انشطة الخطوه التحضيرية", maxScore: 5, levels: [{level:1,score:0,desc:"لا توجد أى دلائل علي وجود خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم"},{level:2,score:1,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم ، ولكن توجد أدلة ضعيفة علي إستخدامها في الواقع"},{level:3,score:2,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم ، وتوجد بعض الأدلة علي إستخدامها ، كما أن الخطة غير مثبتة علي لوحة أنشطة الـ TPM لكل قسم"},{level:4,score:3,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم وتغطي كثير من أنشطة الخطوة ، والخطة متاحة ومعتمدة ومثبتة علي لوحة أنشطة الـ TPM لكل قسم وكثير من مشغلي الماكينات على دراية بها"},{level:5,score:4,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية لكل قسم وتغطي معظم أنشطة الخطوة، والخطة متاحة ومعتمدة ومثبتة علي لوحة أنشطة الـ TPM لكل قسم ومعظم مشغلي الماكينات بالقسم علي دراية كاملة بكافة تفاصيلها"},{level:6,score:5,desc:"توجد خطة عمل لتنفيذ انشطة الخطوه التحضيرية للقسم وتغطي كافة أنشطة الخطوة ، والخطة متاحة ومعتمدة ومثبتة علي لوحة أنشطة الـ TPM لكل قسم وجميع مشغلي الماكينات بالقسم علي دراية بتفاصيلها"}] },
@@ -1508,107 +1047,31 @@ const AUDIT_DATA = {
         { id: 7, title: "المراجعة الذاتية بواسطة فريق الصيانة الذاتية", maxScore: 5, levels: [{level:1,score:0,desc:"لا توجد دلائل علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:2,score:1,desc:"توجد أدلة ضعيفة علي تنفيذ المراجعة الذاتية علي أنشطة الخطوة السادسة"},{level:3,score:2,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ولا يتم نشر النتائج ونقاط القوة وفرص التحسين بالقسم"},{level:4,score:3,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين كثير العاملين بالقسم"},{level:5,score:4,desc:"يتم تنفيذ المراجعة الداخلية الدورية علي أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لمعظم العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"},{level:6,score:5,desc:"يتم تنفيذ المراجعة الداخلية الدورية على أنشطة الخطوة السادسة ، ويتم نشر النتائج ونقاط القوة وفرص التحسين لجميع العاملين بالقسم ، ويوجد خطة عمل تصحيحية لتغطية ملاحظات المراجعة"}] }
     ]}
 };
-function openAddRiskModal() { document.getElementById('addRiskModal').style.display = 'flex'; }
-function closeRiskModal() { document.getElementById('addRiskModal').style.display = 'none'; }
-function saveNewRisk() {
+
+// ------------------------------------------
+// 🛡️ إدارة مخاطر الأمان (Safety Risks)
+// ------------------------------------------
+window.openAddRiskModal = () => { document.getElementById('addRiskModal').style.display = 'flex'; };
+window.closeRiskModal = () => { document.getElementById('addRiskModal').style.display = 'none'; };
+window.saveNewRisk = () => {
     let a = document.getElementById('riskArea').value, d = document.getElementById('riskDesc').value, p = document.getElementById('riskPlan').value;
     if(!a || !d) return window.showToast('أكمل البيانات');
     db.ref('tpm_system/safety_risks').push({ area: a, description: d, plan: p, status: 'open', date: new Date().toLocaleDateString('ar-EG') });
-    closeRiskModal(); window.showToast('تم تسجيل المخاطرة');
-}
-function renderSafetyRisks() {
+    window.closeRiskModal(); window.showToast('تم تسجيل المخاطرة');
+};
+window.renderSafetyRisks = function() {
     db.ref('tpm_system/safety_risks').on('value', snap => {
         let risks = snap.val() || {}; let html = '';
         Object.keys(risks).forEach(key => {
             let r = risks[key];
             html += `<div class="card glass-card" style="border-right:5px solid ${r.status==='open'?'var(--danger)':'var(--success)'}; margin-bottom:15px;"><h4>${r.area}</h4><p>${r.description}</p>${r.status==='open'?`<button class="btn btn-sm btn-success" onclick="updateRiskStatus('${key}', 'closed')">تأمين المخاطرة ✔️</button>`:''}</div>`;
         });
-        document.getElementById('safetyRisksContainer').innerHTML = html;
+        let container = document.getElementById('safetyRisksContainer');
+        if(container) container.innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">لا توجد مخاطر</div>';
     });
-}
-function updateRiskStatus(key, newStatus) { db.ref(`tpm_system/safety_risks/${key}/status`).set(newStatus); window.showToast('تم تحديث الموقف 🛡️'); }
-// ============================================================================
-// 🛠️ الترقيع السحري (V5.1 Patch) - يضاف في نهاية الملف
-// ============================================================================
-
-// 1. حماية النظام من الانهيار (Firebase Array to Object Bug)
-window.safeArray = function(data) {
-    if (!data) return [];
-    return Array.isArray(data) ? data : Object.values(data);
 };
-
-// الكتابة فوق دالة الداشبورد القديمة بنسخة محمية
-window.updateHomeDashboard = function() {
-    let safeDepts = safeArray(departments);
-    let tScore = 0, aCount = 0;
-    let deptLabels = [], deptScores = [];
-    
-    let grid = safeDepts.map(d => {
-        let auds = historyData.filter(h => h.dept === d && !h.stepsOrder.includes('ManualKaizen'));
-        let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
-        if(auds.length > 0) { tScore+=sc; aCount++; }
-        let rTags = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
-        
-        deptLabels.push(d); deptScores.push(sc);
-        return `<div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer;" onclick="openDeptDashboard('${d}')"><div style="font-size:14px; font-weight:bold; color:var(--gold); margin-bottom:10px;">${d}</div><div class="stat-value ${sc>=80?'success-text':(sc>=50?'warning-text':'danger-text')}">${sc}%</div><div style="font-size:10px; color:var(--text-muted); margin-top:5px;">تاجات مفتوحة: ${rTags}</div></div>`;
-    }).join('');
-    
-    document.getElementById('homeDeptGrid').innerHTML = grid || '<div style="text-align:center; padding:10px; color:var(--text-muted);">لا توجد أقسام مسجلة</div>';
-    document.getElementById('homeAvgScore').innerText = aCount > 0 ? Math.round(tScore/aCount) + '%' : '0%';
-    document.getElementById('homeOpenTags').innerText = tagsData.filter(t => t.status === 'open').length;
-    document.getElementById('homeClosedTags').innerText = tagsData.filter(t => t.status === 'closed').length;
-    
-    if (typeof updateUsersLeaderboard === 'function') updateUsersLeaderboard();
-};
-
-window.renderProfileAndSettings = function() {
-    if(!currentUser || !currentUser.name) return;
-    document.getElementById('profileName').innerText = currentUser.name;
-    
-    let safeDepts = safeArray(departments);
-    let safeEngs = safeArray(maintenanceEngineers);
-
-    const deptList = document.getElementById('managedDeptsList');
-    if(deptList) deptList.innerHTML = safeDepts.map((d, i) => `<div class="item-row"><span class="name">🏭 ${d}</span><button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeDept(${i})">حذف</button></div>`).join('');
-
-    const engList = document.getElementById('managedEngsList');
-    if(engList) engList.innerHTML = safeEngs.map((e, i) => `<div class="item-row" style="border-right-color:var(--warning);"><div><span class="name">🛠️ ${e.name}</span><br><small style="font-size:9px; color:var(--text-muted);">${e.phone}</small></div><button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeEngineer(${i})">حذف</button></div>`).join('') || '<div style="font-size:11px; text-align:center; padding:10px;">لا يوجد مهندسون</div>';
-};
-
-// 2. إعادة إحياء بوابة الصيانة الذاتية (JH Portal) المفقودة
-window.renderJHDepts = function() {
-    let safeDepts = safeArray(departments);
-    const container = document.getElementById('jhDeptGrid');
-    if(!container) return;
-    
-    container.innerHTML = safeDepts.map(d => `
-        <div class="card glass-card text-center" style="padding:15px; cursor:pointer; border-right:4px solid var(--success);" onclick="openJHToolbox('${d}')">
-            <h3 style="color:var(--gold); margin:0;">${d}</h3>
-            <div style="font-size:11px; color:var(--text-muted); margin-top:5px;">اضغط للدخول ⚙️</div>
-        </div>
-    `).join('') || '<div style="text-align:center; color:var(--text-muted);">قم بإضافة أقسام من الإعدادات أولاً</div>';
-};
-
-window.openJHToolbox = function(dept) {
-    currentViewedDept = dept;
-    document.getElementById('selectedJHDeptTitle').innerText = dept;
-    document.getElementById('jhToolbox').style.display = 'block';
-    document.getElementById('jhDeptGrid').style.display = 'none';
-
-    const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen'));
-    const lastAudit = deptAudits.length > 0 ? deptAudits[deptAudits.length - 1].totalPct : 0;
-    document.getElementById('deptAuditScore').innerText = lastAudit + '%';
-    document.getElementById('deptOpenTags').innerText = tagsData.filter(t => t.dept === dept && t.status === 'open').length;
-    
-    let kaizenStat = document.getElementById('deptKaizens');
-    if(kaizenStat) kaizenStat.innerText = historyData.filter(h => h.dept === dept && h.stepsOrder.includes('ManualKaizen')).length;
-};
-
-window.startNewAuditFlowFromPortal = function() {
-    window.showScreen('setupScreen');
-    document.getElementById('selectDept').value = currentViewedDept;
-};
+window.updateRiskStatus = (key, newStatus) => { db.ref(`tpm_system/safety_risks/${key}/status`).set(newStatus); window.showToast('تم تحديث الموقف 🛡️'); };
 
 // ============================================================================
-// نهاية ملف النظام بنجاح 🚀 
+// نهاية ملف النظام بنجاح 🚀 (تم تضمين جميع بيانات المصنع والتحديثات)
 // ============================================================================

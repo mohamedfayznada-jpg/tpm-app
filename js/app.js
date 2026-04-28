@@ -1527,6 +1527,87 @@ function renderSafetyRisks() {
     });
 }
 function updateRiskStatus(key, newStatus) { db.ref(`tpm_system/safety_risks/${key}/status`).set(newStatus); window.showToast('تم تحديث الموقف 🛡️'); }
+// ============================================================================
+// 🛠️ الترقيع السحري (V5.1 Patch) - يضاف في نهاية الملف
+// ============================================================================
+
+// 1. حماية النظام من الانهيار (Firebase Array to Object Bug)
+window.safeArray = function(data) {
+    if (!data) return [];
+    return Array.isArray(data) ? data : Object.values(data);
+};
+
+// الكتابة فوق دالة الداشبورد القديمة بنسخة محمية
+window.updateHomeDashboard = function() {
+    let safeDepts = safeArray(departments);
+    let tScore = 0, aCount = 0;
+    let deptLabels = [], deptScores = [];
+    
+    let grid = safeDepts.map(d => {
+        let auds = historyData.filter(h => h.dept === d && !h.stepsOrder.includes('ManualKaizen'));
+        let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
+        if(auds.length > 0) { tScore+=sc; aCount++; }
+        let rTags = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
+        
+        deptLabels.push(d); deptScores.push(sc);
+        return `<div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer;" onclick="openDeptDashboard('${d}')"><div style="font-size:14px; font-weight:bold; color:var(--gold); margin-bottom:10px;">${d}</div><div class="stat-value ${sc>=80?'success-text':(sc>=50?'warning-text':'danger-text')}">${sc}%</div><div style="font-size:10px; color:var(--text-muted); margin-top:5px;">تاجات مفتوحة: ${rTags}</div></div>`;
+    }).join('');
+    
+    document.getElementById('homeDeptGrid').innerHTML = grid || '<div style="text-align:center; padding:10px; color:var(--text-muted);">لا توجد أقسام مسجلة</div>';
+    document.getElementById('homeAvgScore').innerText = aCount > 0 ? Math.round(tScore/aCount) + '%' : '0%';
+    document.getElementById('homeOpenTags').innerText = tagsData.filter(t => t.status === 'open').length;
+    document.getElementById('homeClosedTags').innerText = tagsData.filter(t => t.status === 'closed').length;
+    
+    if (typeof updateUsersLeaderboard === 'function') updateUsersLeaderboard();
+};
+
+window.renderProfileAndSettings = function() {
+    if(!currentUser || !currentUser.name) return;
+    document.getElementById('profileName').innerText = currentUser.name;
+    
+    let safeDepts = safeArray(departments);
+    let safeEngs = safeArray(maintenanceEngineers);
+
+    const deptList = document.getElementById('managedDeptsList');
+    if(deptList) deptList.innerHTML = safeDepts.map((d, i) => `<div class="item-row"><span class="name">🏭 ${d}</span><button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeDept(${i})">حذف</button></div>`).join('');
+
+    const engList = document.getElementById('managedEngsList');
+    if(engList) engList.innerHTML = safeEngs.map((e, i) => `<div class="item-row" style="border-right-color:var(--warning);"><div><span class="name">🛠️ ${e.name}</span><br><small style="font-size:9px; color:var(--text-muted);">${e.phone}</small></div><button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeEngineer(${i})">حذف</button></div>`).join('') || '<div style="font-size:11px; text-align:center; padding:10px;">لا يوجد مهندسون</div>';
+};
+
+// 2. إعادة إحياء بوابة الصيانة الذاتية (JH Portal) المفقودة
+window.renderJHDepts = function() {
+    let safeDepts = safeArray(departments);
+    const container = document.getElementById('jhDeptGrid');
+    if(!container) return;
+    
+    container.innerHTML = safeDepts.map(d => `
+        <div class="card glass-card text-center" style="padding:15px; cursor:pointer; border-right:4px solid var(--success);" onclick="openJHToolbox('${d}')">
+            <h3 style="color:var(--gold); margin:0;">${d}</h3>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:5px;">اضغط للدخول ⚙️</div>
+        </div>
+    `).join('') || '<div style="text-align:center; color:var(--text-muted);">قم بإضافة أقسام من الإعدادات أولاً</div>';
+};
+
+window.openJHToolbox = function(dept) {
+    currentViewedDept = dept;
+    document.getElementById('selectedJHDeptTitle').innerText = dept;
+    document.getElementById('jhToolbox').style.display = 'block';
+    document.getElementById('jhDeptGrid').style.display = 'none';
+
+    const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen'));
+    const lastAudit = deptAudits.length > 0 ? deptAudits[deptAudits.length - 1].totalPct : 0;
+    document.getElementById('deptAuditScore').innerText = lastAudit + '%';
+    document.getElementById('deptOpenTags').innerText = tagsData.filter(t => t.dept === dept && t.status === 'open').length;
+    
+    let kaizenStat = document.getElementById('deptKaizens');
+    if(kaizenStat) kaizenStat.innerText = historyData.filter(h => h.dept === dept && h.stepsOrder.includes('ManualKaizen')).length;
+};
+
+window.startNewAuditFlowFromPortal = function() {
+    window.showScreen('setupScreen');
+    document.getElementById('selectDept').value = currentViewedDept;
+};
 
 // ============================================================================
 // نهاية ملف النظام بنجاح 🚀 

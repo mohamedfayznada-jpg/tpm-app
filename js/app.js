@@ -76,12 +76,21 @@ window.login = login;
 window.signup = signup;
 window.logout = logout;
 window.biometricLogin = typeof biometricLogin !== 'undefined' ? biometricLogin : () => alert('جاري تطوير البصمة');
-window.toggleSidebar = typeof toggleSidebar !== 'undefined' ? toggleSidebar : () => {
-    document.getElementById('sidebar').classList.toggle('active');
-    document.getElementById('sidebarOverlay').classList.toggle('active');
+// 🛠️ إصلاح القائمة الجانبية (Sidebar) والمظهر (Dark Mode)
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    } else {
+        console.error("عناصر القائمة الجانبية غير موجودة في الـ HTML");
+    }
 };
-window.toggleDarkMode = typeof toggleDarkMode !== 'undefined' ? toggleDarkMode : () => { document.body.classList.toggle('light-mode'); };
 
+window.toggleDarkMode = function() {
+    document.body.classList.toggle('light-mode');
+};
 // ربط دوال الـ TPM
 window.showJHPortal = typeof showJHPortal !== 'undefined' ? showJHPortal : () => window.showScreen('jhPortalScreen');
 window.startNewAuditFlow = typeof startNewAuditFlow !== 'undefined' ? startNewAuditFlow : () => alert('اختر القسم أولاً');

@@ -1,17 +1,8 @@
 // ============================================================================
-// 🚀 Factory OS - Core Engine (V5.0 - Stable Version)
+// 🚀 Factory OS - Core Engine V5.0 (Strict TPM Edition)
 // ============================================================================
 
-// دالة فحص تحميل المكتبات
-const checkFirebaseLoaded = () => {
-    if (typeof firebase === 'undefined') {
-        alert("خطأ: لم يتم تحميل مكتبات Firebase. يرجى التأكد من اتصال الإنترنت.");
-        return false;
-    }
-    return true;
-};
-
-// === 1. إعدادات النظام وتهيئة Firebase ===
+// --- 1. تهيئة قاعدة البيانات والأمان ---
 const envConfig = window.__TPM_CONFIG__ || { geminiApiKey: "", imgbbApiKey: "" };
 const firebaseConfig = {
     apiKey: "AIzaSyADr-QEzWt6xeT8oeF7wXfNySvXiKXMEy4",
@@ -23,89 +14,97 @@ const firebaseConfig = {
     appId: "1:1047922099229:web:5e3d6fd5fa4c23ab2772f4"
 };
 
-// تهيئة آمنة
-let db, auth;
-if (typeof firebase !== 'undefined') {
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    db = firebase.database();
-    auth = firebase.auth();
+// تهيئة وحيدة تمنع انهيار المتصفح
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
 }
+const db = firebase.database();
+const auth = firebase.auth();
 
-// === 2. محرك إدارة الحالة (Store) ===
-class Store {
-    constructor() {
-        this.state = { isOnline: false, currentScreen: 'loginScreen' };
-        this.listeners = {};
-    }
-    get(key) { return this.state[key]; }
-    set(key, value) { 
-        this.state[key] = value; 
-        this.notify(key, value); 
-    }
-    subscribe(key, callback) {
-        if (!this.listeners[key]) this.listeners[key] = [];
-        this.listeners[key].push(callback);
-    }
-    notify(key, value) {
-        if (this.listeners[key]) this.listeners[key].forEach(cb => cb(value));
-    }
-}
-const globalStore = new Store();
+// --- 2. تعريف المتغيرات القديمة لضمان عمل باقي الكود ---
+let currentUser = null;
+let usersData = {};
+let deptsData = {};
+let maintenanceEngineers = [];
+let tagsData = [];
+let currentDept = null;
+let currentStep = 0;
+let auditData = { stepScores: {}, finalScore: 0, answers: {}, notes: {}, photos: {}, tags: [], risks: [] };
+let pointsTable = { "100": 10, "90": 8, "80": 6, "70": 4, "60": 2 };
+let selectedTagImg = null;
+let oplImgData = null;
+let kaizenBeforeImg = null;
+let kaizenAfterImg = null;
+let signaturePad = null;
+let standardImgData = null;
+let currentImgData = null;
+let sliderInitialized = false;
+let pdfExtractText = "";
 
-// === 3. المتغيرات العامة ===
-// (هنا تترك المتغيرات القديمة كما هي: currentUser, usersData, إلخ...)
+// --- 3. محرك التنقل بين الشاشات ---
+const appState = {
+    currentScreen: 'loginScreen',
+    history: []
+};
 
-// === 4. محرك توجيه الشاشات (Router) ===
-class Router {
-    constructor() {
-        this.screens = {};
-        this.history = [];
+// --- 4. فك عزلة الدوال (Global Window Bindings) ---
+// هذه الأسطر تجعل الـ HTML يقرأ الدوال بدون أخطاء "is not defined"
+window.db = db;
+window.auth = auth;
+window.showScreen = function(id, addToHistory = true) {
+    const screens = document.querySelectorAll('.screen');
+    const target = document.getElementById(id);
+    if (!target) return;
+    if (addToHistory && appState.currentScreen !== id) {
+        appState.history.push(appState.currentScreen);
     }
-    init() {
-        document.querySelectorAll('.screen').forEach(screen => {
-            this.screens[screen.id] = screen;
-        });
-    }
-    navigate(screenId, addToHistory = true) {
-        if (!this.screens[screenId]) return;
-        const current = globalStore.get('currentScreen');
-        if (addToHistory && current && current !== screenId) {
-            this.history.push(current);
-        }
-        globalStore.set('currentScreen', screenId);
-        Object.values(this.screens).forEach(s => s.classList.remove('active'));
-        this.screens[screenId].classList.add('active');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    goBack() {
-        if (this.history.length > 0) this.navigate(this.history.pop(), false);
-        else this.navigate('homeScreen', false);
-    }
-}
-const appRouter = new Router();
+    screens.forEach(s => s.classList.remove('active'));
+    target.classList.add('active');
+    appState.currentScreen = id;
+    window.scrollTo(0, 0);
+};
 
-// ربط الدوال بالنافذة لضمان عمل أزرار الـ HTML
-window.showScreen = (id) => appRouter.navigate(id);
-window.goBack = () => appRouter.goBack();
+window.goBack = function() {
+    if (appState.history.length > 0) {
+        window.showScreen(appState.history.pop(), false);
+    } else {
+        window.showScreen('homeScreen', false);
+    }
+};
 
-// === 5. التشغيل عند التحميل ===
+window.login = login;
+window.signup = signup;
+window.logout = logout;
+window.biometricLogin = typeof biometricLogin !== 'undefined' ? biometricLogin : () => alert('جاري تطوير البصمة');
+window.toggleSidebar = typeof toggleSidebar !== 'undefined' ? toggleSidebar : () => {
+    document.getElementById('sidebar').classList.toggle('active');
+    document.getElementById('sidebarOverlay').classList.toggle('active');
+};
+window.toggleDarkMode = typeof toggleDarkMode !== 'undefined' ? toggleDarkMode : () => { document.body.classList.toggle('light-mode'); };
+
+// ربط دوال الـ TPM
+window.showJHPortal = typeof showJHPortal !== 'undefined' ? showJHPortal : () => window.showScreen('jhPortalScreen');
+window.startNewAuditFlow = typeof startNewAuditFlow !== 'undefined' ? startNewAuditFlow : () => alert('اختر القسم أولاً');
+window.renderProfileAndSettings = typeof renderProfileAndSettings !== 'undefined' ? renderProfileAndSettings : () => {};
+window.renderSafetyRisks = typeof renderSafetyRisks !== 'undefined' ? renderSafetyRisks : () => {};
+window.renderPMDashboard = typeof renderPMDashboard !== 'undefined' ? renderPMDashboard : () => {};
+window.renderKKDashboard = typeof renderKKDashboard !== 'undefined' ? renderKKDashboard : () => {};
+
+// --- 5. الاتصال ومراقبة السيرفر ---
 document.addEventListener('DOMContentLoaded', () => {
-    appRouter.init();
-    if (db) {
-        db.ref('.info/connected').on('value', snap => {
-            const isOnline = snap.val() === true;
-            globalStore.set('isOnline', isOnline);
-            const statusEl = document.getElementById('cloudStatus');
-            if (statusEl) {
-                statusEl.innerHTML = isOnline ? "متصل بالسيرفر" : "جاري الاتصال...";
-                statusEl.style.color = isOnline ? "var(--success)" : "var(--danger)";
-            }
-        });
-    }
+    db.ref('.info/connected').on('value', snap => {
+        const isOnline = snap.val() === true;
+        const statusEl = document.getElementById('cloudStatus');
+        if (statusEl) {
+            statusEl.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل بالسيرفر";
+            statusEl.style.color = isOnline ? "var(--success)" : "var(--danger)";
+        }
+    });
 });
 
+// ============================================================================
+// دالة الـ Login الخاصة بك تبدأ من هنا وتكمل للآخر (اترك الباقي كما هو)
+// ============================================================================
 // ============================================================================
 // الجزء التالي هو بقية الكود القديم الخاص بك، لا تقم بتعديله الآن
 // ============================================================================

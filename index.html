@@ -7,7 +7,8 @@
     <meta name="theme-color" content="#0a1128">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    
+    <link rel="stylesheet" href="css/style.css">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -17,29 +18,29 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="main-header" id="mainHeader">
-        <div class="header-right">
-            <button class="icon-btn" onclick="goBack()" title="رجوع">🔙</button>
-            <button class="icon-btn" onclick="showScreen('homeScreen')" title="الرئيسية">🏠</button>
-        </div>
-        <div class="header-center">
-            <h1>نظام إدارة المصنع</h1>
-            <div class="supervisor-box" onclick="showScreen('settingsScreen')">
-                <p>إشراف: م. محمد فايز</p>
-                <div id="adminNotification" class="notify-dot"></div>
-            </div>
-        </div>
-        <div class="header-left">
-            <button class="icon-btn" onclick="toggleSidebar()" title="القائمة الجانبية">☰</button>
-            <button class="icon-btn" onclick="toggleDarkMode()" title="تغيير المظهر">🌗</button>
-            <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج">🚪</button>
+  <div class="main-header" id="mainHeader">
+    <div class="header-right">
+        <button class="icon-btn" onclick="goBack()" title="رجوع">🔙</button>
+        <button class="icon-btn" onclick="showScreen('homeScreen')" title="الرئيسية">🏠</button>
+    </div>
+
+    <div class="header-center">
+        <h1>نظام إدارة المصنع</h1>
+        <div class="supervisor-box" onclick="showScreen('settingsScreen')">
+            <p>إشراف: م. محمد فايز</p>
+            <div id="adminNotification" class="notify-dot"></div>
         </div>
     </div>
-    
-    <div class="cloud-status" id="cloudStatus">جاري الاتصال بالسيرفر...</div>
 
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-    <div class="sidebar" id="sidebar">
+    <div class="header-left">
+        <button class="icon-btn" onclick="toggleSidebar()" title="القائمة الجانبية">☰</button>
+        <button class="icon-btn" onclick="toggleDarkMode()" title="تغيير المظهر">🌗</button>
+        <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج">🚪</button>
+    </div>
+  </div>
+        <div class="cloud-status" id="cloudStatus">جاري الاتصال بالسيرفر...</div>
+    </div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div><div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo-circle" style="width:60px; height:60px; margin:0 auto 10px; font-size:16px;">TPM</div>
             <h3 style="color:var(--gold); margin:0; font-size:14px;">Factory OS V5.0</h3>
@@ -52,18 +53,17 @@
             <div class="side-item btn-role-admin" onclick="showScreen('knowledgeScreen'); toggleSidebar();"><div class="side-icon">🧠</div>عقل المصنع</div>
             <div class="side-item" onclick="showScreen('settingsScreen'); renderProfileAndSettings(); toggleSidebar();"><div class="side-icon">👤</div>حسابي والإعدادات</div>
         </div>
-        <div id="tpmSubMenu" style="display:none; background:rgba(0,0,0,0.2); border-radius:8px; margin:0 5px;">
-            <button class="menu-item sub-item" onclick="showJHPortal(); toggleSidebar();">👷‍♂️ الصيانة الذاتية (JH)</button>
-            <button class="menu-item sub-item" onclick="showScreen('safetyRiskScreen'); renderSafetyRisks(); toggleSidebar();">🛡️ مخاطر الأمان</button>
-            <button class="menu-item sub-item" onclick="showScreen('pmScreen'); toggleSidebar();">🛠️ الصيانة المخططة (PM)</button>
-            <button class="menu-item sub-item" onclick="showScreen('kkScreen'); toggleSidebar();">📉 التحسين المستمر (KK)</button>
-            <button class="menu-item sub-item" onclick="showScreen('fiveSScreen'); toggleSidebar();">✨ مراجعة 5S</button>
-        </div>
+<div id="tpmSubMenu" style="display:none; background:rgba(0,0,0,0.2); border-radius:8px; margin:0 5px;">
+    <button class="menu-item sub-item" onclick="showJHPortal(); toggleSidebar();">👷‍♂️ الصيانة الذاتية (JH)</button>
+    <button class="menu-item sub-item" onclick="showScreen('safetyRiskScreen'); renderSafetyRisks(); toggleSidebar();">🛡️ مخاطر الأمان</button>
+    <button class="menu-item sub-item" onclick="showScreen('pmScreen'); toggleSidebar();">🛠️ الصيانة المخططة (PM)</button>
+    <button class="menu-item sub-item" onclick="showScreen('kkScreen'); toggleSidebar();">📉 التحسين المستمر (KK)</button>
+    <button class="menu-item sub-item" onclick="showScreen('fiveSScreen'); toggleSidebar();">✨ مراجعة 5S</button>
+</div>
         <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.05); text-align:center; font-size:10px; color:var(--text-muted);">
             Enterprise Edition
         </div>
     </div>
-
     <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageSelection(event)">
     <input type="file" id="galleryInput" accept="image/*" style="display:none;" onchange="handleImageSelection(event)">
 
@@ -118,8 +118,7 @@
             </div>
         </div>
     </div>
-
-    <div class="modal-overlay" id="permissionsModal">
+<div class="modal-overlay" id="permissionsModal">
         <div class="modal-content">
             <h3 class="card-title">تعديل أذونات المستخدم</h3>
             <div id="permissionsContainer"></div>
@@ -129,14 +128,14 @@
             </div>
         </div>
     </div>
-
-    <div class="container screen active" id="loginScreen">
+   <div class="container screen active" id="loginScreen">
         <div class="login-wrapper">
             <div class="login-header">
                 <div class="logo-circle">TPM</div>
                 <h2 style="color:var(--gold);">مرحباً بك مجدداً</h2>
                 <p style="color:var(--text-muted); font-size:12px; margin-bottom:20px;">سجل دخولك للوصول إلى لوحة التحكم</p>
             </div>
+            
             <div class="card modern-card">
                 <div class="input-group">
                     <input type="text" id="loginUsername" class="form-control" placeholder="اسم المستخدم (مثال: mfayez)">
@@ -145,8 +144,10 @@
                     <input type="password" id="loginPassword" class="form-control" placeholder="كلمة المرور">
                 </div>
                 <div class="checkbox-group" style="text-align:right; margin-bottom:15px;"><label style="font-size:12px; color:var(--text-main);"><input type="checkbox" id="rememberMe" checked> تذكر بياناتي</label></div>
+                
                 <button class="btn btn-primary full-width shadow-btn" onclick="login()">دخول آمن</button>
                 <button class="btn btn-outline full-width" style="margin-top:10px;" onclick="biometricLogin()">⚡ الدخول السريع</button>
+                
                 <div class="divider"><span>أو</span></div>
                 <button class="btn btn-outline full-width" style="border-color:var(--copper); color:var(--text-main);" onclick="showScreen('signupScreen')">مستخدم جديد؟ إنشاء حساب</button>
             </div>
@@ -159,20 +160,804 @@
                 <h2 style="color:var(--gold);">إنشاء حساب جديد</h2>
                 <p style="color:var(--text-muted); font-size:12px; margin-bottom:20px;">انضم إلى فريق عمل Factory OS</p>
             </div>
+            
             <div class="card modern-card">
                 <input type="text" id="signupFullName" class="form-control" placeholder="الاسم الكامل (يظهر في التقارير)">
                 <input type="text" id="signupUsername" class="form-control" placeholder="اسم المستخدم الدائم (إنجليزي)">
                 <input type="password" id="signupPassword" class="form-control" placeholder="كلمة المرور (6 أحرف على الأقل)">
+                
                 <label style="display:block; margin: 15px 0 5px; font-size:12px; color:var(--gold); text-align:right;">طلب صلاحية الوصول كـ:</label>
                 <select id="signupRole" class="form-control" style="border-color:var(--gold);">
                     <option value="operator">مشغل (إدخال بيانات وتاجات)</option>
                     <option value="auditor">مراجع (تقييم JH وخطوات العمل)</option>
                     <option value="admin">مدير (صلاحيات كاملة)</option>
                 </select>
+                
                 <button class="btn btn-success full-width" style="margin-top:15px;" onclick="signup()">إرسال طلب التسجيل</button>
                 <button class="btn btn-link full-width" style="margin-top:10px; background:transparent; color:var(--gold); border:none; text-decoration:underline;" onclick="showScreen('loginScreen')">لدي حساب بالفعل؟ دخول</button>
             </div>
         </div>
+    </div>
+
+   <div class="container screen" id="homeScreen">
+        <div class="welcome-banner">
+            <div>
+                <h2 style="color:var(--gold); font-size:18px; margin:0;">لوحة القيادة</h2>
+                <p style="font-size:11px; color:var(--text-muted); margin:0;">مركز التحكم الرئيسي للمصنع</p>
+            </div>
+            <button class="btn-scan-huge" onclick="document.getElementById('barcodeInput').click()">
+                <span style="font-size:20px; margin-bottom:2px;">📷</span>
+                <span style="font-size:12px; font-weight:bold;">مسح باركود</span>
+            </button>
+           <input type="file" id="barcodeInput" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromImage(event)">
+        </div>
+<h3 class="section-title">🏭 وحدات التشغيل المركزية (Pillars)</h3>
+        <div class="pillars-grid">
+           <div class="pillar-card" style="border-bottom: 4px solid #4CAF50;" onclick="showJHPortal()">
+                <div class="pillar-icon">👷‍♂️</div>
+                <div class="pillar-title">صيانة ذاتية (JH)</div>
+                <div class="pillar-desc">بوابة الأقسام والسجلات الفنية</div>
+            </div>
+            
+            <div class="pillar-card" style="border-bottom: 4px solid #00BCD4;" onclick="showScreen('fiveSScreen')">
+                <div class="pillar-badge" style="background:var(--warning);">Soon</div>
+                <div class="pillar-icon">✨</div>
+                <div class="pillar-title">بيئة العمل (5S)</div>
+                <div class="pillar-desc">فرز، ترتيب، تلميع، تنميط</div>
+            </div>           
+            
+            <div class="pillar-card" style="border-bottom: 4px solid #F44336;" onclick="showScreen('pmScreen'); renderPMDashboard();">
+                <div class="pillar-badge">New</div>
+                <div class="pillar-icon">🔧</div>
+                <div class="pillar-title">صيانة مخططة (PM)</div>
+                <div class="pillar-desc">أوامر الشغل وقطع الغيار</div>
+            </div>
+
+            <div class="pillar-card" style="border-bottom: 4px solid #FFC107;" onclick="showScreen('kkScreen'); renderKKDashboard();">
+                <div class="pillar-badge">New</div>
+                <div class="pillar-icon">📉</div>
+                <div class="pillar-title">تحسين مستمر (KK)</div>
+                <div class="pillar-desc">شجرة الفواقد والـ OEE</div>
+            </div>
+
+            <div class="pillar-card" style="border-bottom: 4px solid #2196F3;" onclick="showScreen('etScreen')">
+                <div class="pillar-badge">Soon</div>
+                <div class="pillar-icon">🎓</div>
+                <div class="pillar-title">تعليم وتدريب (E&T)</div>
+                <div class="pillar-desc">مصفوفة المهارات للمشغلين</div>
+            </div>
+        </div>
+        <div class="row-flex" style="margin-bottom:20px;">
+            <button class="btn btn-danger flex-1 shadow-btn" onclick="showScreen('tagsScreen'); renderTags();">🚨 إدارة التذاكر والأعطال</button>
+        </div>
+
+        <div id="searchResults" class="search-results-box" style="position:relative; margin-bottom:15px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.3); display:none;"></div>
+        <div class="dashboard-stats modern-stats">
+            <div class="card stat-card glass-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value primary-text" id="homeAvgScore">0%</div>
+                <div class="stat-label">كفاءة المصنع</div>
+            </div>
+            <div class="card stat-card glass-card">
+                <div class="stat-icon">🔴</div>
+                <div class="stat-value danger-text" id="homeOpenTags">0</div>
+                <div class="stat-label">أعطال مفتوحة</div>
+            </div>
+            <div class="card stat-card glass-card">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-value success-text" id="homeClosedTags">0</div>
+                <div class="stat-label">أعطال مغلقة</div>
+            </div>
+        </div>
+
+        <div class="card ai-card btn-role-admin">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; color:var(--gold); font-size:16px;">المستشار التنبؤي (AI)</h3>
+                <button class="btn btn-sm btn-outline" style="width:auto; margin:0;" onclick="predictMachineFailures()">فحص الآن</button>
+            </div>
+            <div id="aiPredictionResult" class="ai-result"></div>
+        </div>
+
+   <h3 class="section-title">مراقبة الأقسام</h3>
+        <div id="homeDeptGrid" class="grid-layout"></div>
+        
+        <div class="row-flex" style="margin-top:20px; align-items:stretch; flex-wrap: wrap;">
+            <div class="card flex-2" style="margin-bottom:10px; min-width:250px;">
+                <h3 class="card-title" style="font-size:14px;">📊 مقارنة أداء الأقسام</h3>
+                <div class="chart-container" style="height: 220px; width:100%;">
+                    <canvas id="mainDashboardChart"></canvas>
+                </div>
+            </div>
+            <div class="card flex-1" style="margin-bottom:10px; overflow-y:auto; max-height:285px; min-width:200px;">
+                <h3 class="card-title danger-text" style="font-size:14px; border-bottom-color:var(--danger);">🚨 أعطال حرجة (تاجات حمراء)</h3>
+                <div id="criticalTagsList"></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 10px;">
+            <h3 class="card-title" style="text-align:center;">🏆 لوحة أبطال الجودة</h3>
+            <div id="podiumContainer" class="podium-container"></div>
+            <div id="usersLeaderboardContainer" class="leaderboard-list"></div>
+        </div>
+    </div>
+ <div class="container screen" id="deptDashboardScreen">
+        <div class="sticky-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid rgba(212,175,55,0.3);">
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
+                <button class="btn btn-sm btn-success btn-role-auditor" onclick="startNewAuditFlow()">📝 مراجعة القسم</button>
+            </div>
+            <h2 id="deptViewTitle" style="color:var(--gold); margin:0; font-size:16px;">اسم القسم</h2>
+        </div>
+        <div class="dashboard-stats modern-stats">
+            <div class="card stat-card glass-card">
+                <div class="stat-value primary-text" id="deptAvgScore">0%</div>
+                <div class="stat-label">كفاءة JH الأخيرة</div>
+            </div>
+            <div class="card stat-card glass-card">
+                <div class="stat-value danger-text" id="deptOpenTags">0</div>
+                <div class="stat-label">أعطال نشطة</div>
+            </div>
+            <div class="card stat-card glass-card">
+                <div class="stat-value success-text" id="deptTasksCount">0</div>
+                <div class="stat-label">مهام مفتوحة</div>
+            </div>
+        </div>
+
+        <div class="row-flex" style="flex-wrap: wrap; gap: 15px; margin-top:20px;">
+            <div class="card glass-card flex-1" style="min-width:280px; padding:20px;">
+                <h4 class="card-title" style="font-size:13px; text-align:center; color:var(--gold);">🕸️ رادار توازن خطوات JH</h4>
+                <div style="height:250px; width:100%;"><canvas id="deptRadarChart"></canvas></div>
+            </div>
+
+            <div class="card glass-card flex-1" style="min-width:280px; padding:20px;">
+                <h4 class="card-title" style="font-size:13px; text-align:center; color:var(--success);">📈 منحنى تطور الأداء التاريخي</h4>
+                <div style="height:250px; width:100%;"><canvas id="deptTrendChart"></canvas></div>
+            </div>
+        </div>
+
+        <h3 class="section-title">🚨 تنبيهات الأعطال والتحسينات</h3>
+        <div id="deptActionItems" style="margin-top:10px; padding-bottom:30px;"></div>
+    </div>
+    <div class="container screen" id="setupScreen">
+        <div class="card">
+            <h3 class="card-title">تكوين المراجعة</h3>
+            <div class="form-group"><label>القسم:</label><select class="form-control" id="selectDept"></select></div>
+            <div class="form-group"><label>الماكينة (اختياري):</label><input type="text" id="setupMachine" class="form-control" placeholder="مثال: خط التعبئة 1"></div>
+            <button class="btn btn-success full-width" onclick="initAuditSequential()">بدء الفحص</button>
+        </div>
+    </div>
+
+<div class="container screen" id="auditScreen">
+        <div class="card sticky-header" style="padding:15px; background: linear-gradient(135deg, var(--primary), var(--bg-color)); border-radius: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <h3 id="auditStepTitle" style="color:var(--gold); font-size:16px; margin:0;"></h3>
+                <div id="stepCounter" style="font-size:11px; color:var(--text-muted); font-weight:bold;"></div>
+            </div>
+            
+            <div class="progress-track" style="height:6px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden;">
+                <div class="progress-fill" id="auditProgressBar" style="height:100%; background:linear-gradient(90deg, var(--copper), var(--gold)); transition:0.5s; width:0%;"></div>
+            </div>
+
+            <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:10px; color:var(--gold); font-weight:900;">📈 الكفاءة اللحظية: <b id="cumulativeScoreText" style="font-size:14px; margin-right:5px;">0%</b></span>
+                <span id="cumulativePointsText" style="font-size:10px; color:var(--text-muted);">النقاط: 0 / 0</span>
+            </div>
+            <div class="progress-track" style="height:8px; background:rgba(0,0,0,0.3); border-radius:10px; overflow:hidden; margin-top:5px; border:1px solid rgba(255,255,255,0.05);">
+                <div class="progress-fill" id="cumulativeProgressBar" style="height:100%; background:linear-gradient(90deg, var(--success), #8bc34a); transition:0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); width:0%;"></div>
+            </div>
+        </div>
+        
+        <div id="auditItemsContainer"></div>
+        
+        <div class="row-flex" style="margin-top:15px; position: sticky; bottom: 85px; z-index: 100;">
+            <button class="btn btn-success flex-2 shadow-btn" onclick="finishCurrentStep()">💾 حفظ المرحلة</button>
+            <button class="btn btn-danger flex-1" onclick="skipCurrentStep()">تخطي</button>
+        </div>
+    </div>
+    <div class="container screen" id="stepSummaryScreen">
+        <div class="card text-center">
+            <h3 class="card-title" id="summaryStepTitle">الملخص</h3>
+            <div class="score-circle"><div class="pct" id="summaryPct">0%</div></div>
+            <div id="summaryScoreStr" style="color:var(--text-muted); font-size:14px; font-weight:bold; margin-bottom:20px;">0/0</div>
+            <div style="text-align:right; border-top:1px dashed var(--copper); padding-top:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3 style="color:var(--gold); margin:0; font-size:14px;">فرص التحسين:</h3>
+                </div>
+                <div id="opportunitiesContainer"></div>
+            </div>
+        </div>
+        <button class="btn btn-primary full-width" onclick="goToNextStep()">المتابعة ⬅️</button>
+    </div>
+
+    <div class="container screen" id="finalReportScreen">
+        <div class="card text-center">
+            <h2 class="success-text">اكتمل التقييم</h2>
+            <h3 id="finalDeptName" class="primary-text" style="margin:10px 0;"></h3>
+            <div class="score-circle final-score"><div class="pct success-text" id="finalTotalPct">0%</div></div>
+            <h4 style="margin-top: 20px; color:var(--gold); text-align:right;">توقيع المراجع:</h4>
+            <div class="signature-box"><canvas id="signatureCanvas" width="300" height="150"></canvas></div>
+            <button class="btn btn-sm btn-outline" style="width:auto; margin:0 auto;" onclick="clearSignature()">مسح وإعادة الرسم</button>
+        </div>
+        <button class="btn btn-primary btn-role-auditor full-width" onclick="saveFinalAudit()">💾 حفظ واعتماد التقرير</button>
+    </div>
+
+    <div class="container screen" id="historyScreen">
+        <h3 class="section-title">أرشيف المراجعات</h3>
+        <div id="historyListContainer"></div>
+    </div>
+
+   <div class="container screen" id="detailedReportScreen">
+        <div class="report-wrapper card print-area" id="printableReportArea">
+            <div class="report-header-main">
+                <div class="factory-logo">FACTORY<span>OS</span></div>
+                <div style="text-align:left;">
+                    <h2 style="margin:0; color:#000; font-size:18px;">تقرير التدقيق الفني (TPM)</h2>
+                    <p style="margin:0; font-size:10px; color:#666;">نسخة معتمدة للنظام الرقمي</p>
+                </div>
+            </div>
+
+            <div class="final-summary-box">
+                <div class="summary-item">
+                    <span class="summary-label">النتيجة الإجمالية</span>
+                    <div class="summary-value" id="detPct">0%</div>
+                </div>
+                <div class="summary-item" style="border-right:1px solid #ddd;">
+                    <span class="summary-label">التقييم العام</span>
+                    <div class="summary-value" id="detGrade" style="font-size:16px;">--</div>
+                </div>
+            </div>
+
+            <table class="modern-report-table">
+                <tr>
+                    <th>القسم المستهدف:</th><td id="detDept">--</td>
+                    <th>المعدة / الماكينة:</th><td id="detMachine">--</td>
+                </tr>
+                <tr>
+                    <th>المراجع المسؤول:</th><td id="detAuditor">--</td>
+                    <th>تاريخ التدقيق:</th><td id="detDate">--</td>
+                </tr>
+            </table>
+
+            <h3 class="report-sub-title">📊 تحليل نتائج خطوات الصيانة الذاتية (JH)</h3>
+            <table class="score-breakdown-table">
+                <thead>
+                    <tr>
+                        <th>الخطوة</th>
+                        <th>الوصف</th>
+                        <th>الدرجة</th>
+                        <th>النسبة</th>
+                    </tr>
+                </thead>
+                <tbody id="detStepsTableBody"></tbody>
+            </table>
+
+            <h3 class="report-sub-title">📝 فرص التحسين والأدلة المرئية</h3>
+            <div id="detStepsContainer"></div>
+
+            <div class="report-footer-signatures">
+                <div class="sig-block">
+                    <p>توقيع المراجع</p>
+                    <div id="detSignatureImg"></div>
+                </div>
+                <div class="sig-block">
+                    <p>مدير القسم / الصيانة</p>
+                    <div class="sig-line"></div>
+                </div>
+                <div class="sig-block">
+                    <p>اعتماد مدير المصنع</p>
+                    <div class="sig-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row-flex no-print" style="margin-top: 20px;">
+            <button class="btn btn-primary flex-1 shadow-btn" onclick="downloadProfessionalPDF()">⬇️ تحميل PDF المطور</button>
+            <button class="btn btn-success flex-1" onclick="shareWhatsApp()">📱 واتساب</button>
+        </div>
+        <button class="btn btn-danger full-width no-print" style="margin-top:10px;" onclick="showScreen('historyScreen')">العودة للأرشيف</button>
+    </div>
+
+    <div class="container screen" id="kaizenScreen">
+        <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
+            <h3 class="section-title" style="margin:0; border:none; padding:0;">مجتمع كايزن</h3>
+            <div>
+                <button class="btn btn-primary btn-sm" style="width:auto; margin:0;" onclick="document.getElementById('kaizenUploadModal').style.display='flex'">مشاركة</button>
+                <button class="btn btn-outline btn-sm" style="width:auto; margin:0;" onclick="document.getElementById('oplModal').style.display='flex'">OPL</button>
+            </div>
+        </div>
+        <select id="kaizenDeptSelect" class="form-control" onchange="renderKaizenFeed()"><option value="الكل">عرض جميع الأقسام</option></select>
+        <div id="kaizenFeedContainer"></div>
+    </div>
+   
+    <div class="container screen" id="tasksScreen">
+        <div id="tasksMainView">
+            <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
+                <h3 class="section-title" style="margin:0; border:none; padding:0;">إدارة المهام</h3>
+                <button class="btn btn-success btn-sm" style="width:auto; margin:0;" onclick="exportTasksToCSV()">تصدير</button>
+            </div>
+            <div class="dashboard-stats">
+                <div class="card stat-card danger-border" style="padding:10px;"><div id="kpiTasksPendingAll" class="stat-value danger-text">0</div><div class="stat-label">معلقة</div></div>
+                <div class="card stat-card warning-border" style="padding:10px;"><div id="kpiTasksProgressAll" class="stat-value warning-text">0</div><div class="stat-label">جاري</div></div>
+                <div class="card stat-card success-border" style="padding:10px;"><div id="kpiTasksDoneAll" class="stat-value success-text">0</div><div class="stat-label">مكتملة</div></div>
+            </div>
+            <div id="tasksDeptGrid" class="grid-layout"></div>
+        </div>
+ <div id="tasksDeptView" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <button class="btn btn-sm btn-outline" onclick="closeTasksDept()">⬅️ عودة للأقسام</button>
+                <h2 id="tasksDeptTitle" style="color:var(--gold); margin:0; font-size:18px;">المهام</h2>
+            </div>
+
+            <div class="card glass-card btn-role-auditor" style="padding:15px; margin-bottom:20px;">
+                <div class="row-flex">
+                    <input type="text" id="newTaskInput" class="form-control" placeholder="أضف مهمة جديدة هنا..." style="margin:0;">
+                    <button class="btn btn-primary" style="width:auto; min-width:80px;" onclick="addManualTaskDept()">➕ إضافة</button>
+                </div>
+            </div>
+
+            <div class="kanban-board">
+                <div class="kanban-col">
+                    <div class="kanban-header todo-head">🔴 معلقة <span id="count_pending" class="badge">0</span></div>
+                    <div id="kanban_pending" class="kanban-list"></div>
+                </div>
+
+                <div class="kanban-col">
+                    <div class="kanban-header progress-head">🟡 جاري <span id="count_progress" class="badge">0</span></div>
+                    <div id="kanban_progress" class="kanban-list"></div>
+                </div>
+
+                <div class="kanban-col">
+                    <div class="kanban-header done-head">🟢 مكتملة <span id="count_done" class="badge">0</span></div>
+                    <div id="kanban_done" class="kanban-list"></div>
+                </div>
+            </div>
+            
+            <h4 style="color:var(--gold); margin:20px 0 10px; border-bottom:1px solid var(--copper); padding-bottom:5px;">📂 مجلدات المراجعات (JH)</h4>
+            <div id="auditFoldersContainer"></div>
+        </div>
+    </div>
+
+   <div class="container screen" id="tagsScreen">
+        <h3 class="section-title">إدارة التاجات</h3>
+        
+        <div class="card glass-card btn-role-operator">
+            <h4 style="color:var(--gold); margin-bottom:10px;">إصدار تاج جديد</h4>
+            <textarea id="newTagDesc" class="form-control" rows="2" placeholder="وصف المشكلة بدقة (مثال: تسريب زيت من طلمبة الرفع)..."></textarea>
+            
+            <div class="row-flex">
+                <select id="newTagColor" class="form-control flex-1">
+                    <option value="red">صيانة (أحمر) 🔴</option>
+                    <option value="blue">إنتاج (أزرق) 🔵</option>
+                </select>
+                <select id="newTagDept" class="form-control flex-1"></select>
+            </div>
+            
+            <div class="row-flex">
+                <input type="text" id="newTagMachine" class="form-control flex-1" placeholder="الماكينة (اختياري)">
+                <input type="text" id="newTagSpareParts" class="form-control flex-1" placeholder="قطع غيار مطلوبة (اختياري)">
+            </div>
+
+            <div class="row-flex" style="margin-bottom:10px;">
+                <select id="newTagEngineer" class="form-control flex-2">
+                    <option value="">إبلاغ مهندس الصيانة (اختياري)</option>
+                    </select>
+                <div class="upload-box flex-1" style="margin:0; padding:8px;">
+                    <label style="cursor:pointer; color:var(--gold); font-size:12px;">📸 إرفاق صورة
+                        <input type="file" style="display:none;" accept="image/*" onchange="handleTagImage(event)">
+                    </label>
+                </div>
+            </div>
+            <div id="tagImagePreview" style="text-align:center; margin-bottom:10px;"></div>
+            
+            <button class="btn btn-primary full-width shadow-btn" onclick="addNewTag()">إصدار وحفظ التاج</button>
+        </div>
+
+        <h4 style="color:var(--gold); margin:20px 0 10px; border-bottom:1px solid var(--copper); padding-bottom:5px;">سجل التذاكر والتاجات</h4>
+
+        <div class="row-flex" style="margin-bottom:10px;">
+            <select id="filterTagDept" class="form-control flex-1" style="margin:0;" onchange="renderTags()"><option value="الكل">كل الأقسام</option></select>
+            <input type="text" id="filterTagMachine" class="form-control flex-1" style="margin:0;" placeholder="تصفية بالماكينة" onkeyup="renderTags()">
+        </div>
+        <div class="row-flex" style="margin-bottom:15px;">
+            <select id="filterTagStatus" class="form-control" style="margin:0; border-color:var(--gold);" onchange="renderTags()">
+                <option value="active">عرض التاجات النشطة (مفتوح/جاري)</option>
+                <option value="closed">عرض التاجات المغلقة فقط</option>
+                <option value="all">عرض جميع التاجات</option>
+            </select>
+        </div>
+
+        <div class="tags-split-container">
+            <div class="tag-column">
+                <h4 style="color:#ff5252; margin-bottom:10px; border-bottom:1px dashed #ff5252; padding-bottom:5px;">🔴 تاجات صيانة (حرجة)</h4>
+                <div id="redTagsContainer"></div>
+            </div>
+            <div class="tag-column">
+                <h4 style="color:#448aff; margin-bottom:10px; border-bottom:1px dashed #448aff; padding-bottom:5px;">🔵 تاجات إنتاج (تحسين)</h4>
+                <div id="blueTagsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+  <div class="container screen" id="knowledgeScreen">
+        <div class="library-header-main">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="lib-icon-circle">📚</div>
+                <div>
+                    <h3 style="color:var(--gold); margin:0; font-size:18px;">المكتبة الهندسية</h3>
+                    <p style="color:var(--text-muted); font-size:10px; margin:0;">مدعومة بالذكاء الاصطناعي (Factory AI)</p>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-primary btn-role-admin" style="width:auto; border-radius:12px;" onclick="document.getElementById('addBookModal').style.display='flex'">➕ إضافة مرجع</button>
+        </div>
+
+        <div class="ai-search-container">
+            <div class="search-input-wrapper">
+                <input type="text" id="kbSearchInput" class="form-control" placeholder="اسأل عقل المصنع عن أي معلومة فنية (مثال: كيف يتم فحص طلمبة الحقن؟)...">
+                <button class="btn-ai-ask" onclick="askFactoryAI()">🧠 اسأل AI</button>
+            </div>
+            <div id="aiSearchResponse" class="ai-response-bubble" style="display:none;"></div>
+        </div>
+
+       <h4 class="section-title">رفوف الكتب</h4>
+        <div id="knowledgeListContainer" class="library-shelves-grid"></div>
+    </div>
+
+    <div class="modal-overlay" id="addBookModal">
+        <div class="modal-content">
+            <h3 class="card-title" style="color:var(--gold);">إضافة مرجع أو كتالوج فني</h3>
+            <input type="text" id="kbTitle" class="form-control" placeholder="عنوان الكتالوج / المرجع">
+            <select id="kbCategory" class="form-control">
+                <option value="صيانة">تصنيف: صيانة 🛠️</option>
+                <option value="تشغيل">تصنيف: تشغيل ⚙️</option>
+                <option value="أمان">تصنيف: أمان 🛡️</option>
+                <option value="TPM">تصنيف: TPM 🏆</option>
+            </select>
+            <div class="upload-box" onclick="document.getElementById('pdfInput').click()">
+                <div id="pdfExtractStatus">اضغط لرفع ملف PDF (كتالوج كامل) 📄</div>
+                <input type="file" id="pdfInput" accept="application/pdf" style="display:none;" onchange="handlePDFUpload(event)">
+            </div>
+            <textarea id="kbContent" class="form-control" rows="4" placeholder="سيظهر جزء من النص هنا للمعاينة تلقائياً..."></textarea>
+            <div class="row-flex">
+                <button class="btn btn-success flex-2 shadow-btn" onclick="addKnowledgeBaseArticle()">حفظ في المكتبة</button>
+                <button class="btn btn-danger flex-1" onclick="document.getElementById('addBookModal').style.display='none'">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+ <div class="container screen" id="settingsScreen">
+<div style="margin-top:20px; padding:0 10px;">
+            <button class="btn btn-primary full-width shadow-btn" style="background: linear-gradient(135deg, var(--gold), #8a6d3b); color:#000; padding:18px; border-radius:15px; font-size:16px; display:flex; align-items:center; justify-content:center; gap:12px; border:none;" onclick="openMyFullProfile()">
+                <span style="font-size:24px;">🛡️</span>
+                <b>دخول مركز القيادة الشخصي</b>
+            </button>
+        </div>
+
+        <div class="card glass-card" style="text-align:center; padding:30px 15px; position:relative; overflow:visible; margin-top:30px;">
+            <div style="position:absolute; top:-30px; left:50%; transform:translateX(-50%);">
+                <div style="position:relative; width:90px; height:90px;">
+                    <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=1b2a47&color=d4af37" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid var(--gold); background:var(--primary); box-shadow:0 5px 15px rgba(0,0,0,0.5);">
+                    <label style="position:absolute; bottom:-5px; right:-5px; background:var(--copper); padding:6px; border-radius:50%; cursor:pointer; font-size:12px;">
+                        ✏️<input type="file" accept="image/*" style="display:none;" onchange="updateProfilePic(event)">
+                    </label>
+                </div>
+            </div>
+            <div style="margin-top:50px;">
+                <h2 id="profileName" style="color:var(--gold); margin:0; font-size:22px;">اسم المستخدم</h2>
+                <div id="profileRoleBadge" style="display:inline-block; background:rgba(255,255,255,0.1); border:1px solid var(--copper); padding:3px 10px; border-radius:15px; font-size:11px; margin-top:5px;">دور المستخدم</div>
+            </div>
+        </div>
+
+        <div class="settings-tabs">
+            <button class="tab-btn active" onclick="switchSettingsTab('my-activity')">📊 نشاطي</button>
+            <button class="tab-btn btn-role-admin" onclick="switchSettingsTab('factory-manage')">🏭 الإدارة</button>
+            <button class="tab-btn btn-role-admin" onclick="switchSettingsTab('system-admin')">⚙️ السيستم</button>
+        </div>
+
+        <div id="tab-my-activity" class="settings-tab-content active">
+            <h4 class="section-title">📊 سجل تفاعلي</h4>
+            <div class="dashboard-stats modern-stats">
+                <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value" id="myAudits">0</div><div class="stat-label">مراجعاتي</div></div>
+                <div class="card stat-card glass-card" style="border-color:var(--danger);"><div class="stat-value" id="myTags">0</div><div class="stat-label">تاجاتي</div></div>
+                <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value" id="myKaizens">0</div><div class="stat-label">كايزن</div></div>
+            </div>
+            <button class="btn btn-outline full-width" onclick="toggleDarkMode()">🌗 وضع القراءة (ليلي/نهاري)</button>
+        </div>
+
+        <div id="tab-factory-manage" class="settings-tab-content">
+            <h4 class="section-title" style="color:var(--gold);">🏗️ هيكل الأقسام</h4>
+            <div class="card glass-card">
+                <div class="row-flex" style="margin-bottom:15px;">
+                    <input type="text" id="newDeptInput" class="form-control flex-2" placeholder="اسم القسم الجديد" style="margin:0;">
+                    <button class="btn btn-primary flex-1" onclick="addOrUpdateDept()">➕ إضافة</button>
+                </div>
+                <div id="managedDeptsList" style="max-height:200px; overflow-y:auto;">
+                    </div>
+            </div>
+
+            <h4 class="section-title" style="color:var(--warning);">🛠️ فريق الصيانة</h4>
+            <div class="card glass-card">
+                <div class="row-flex" style="margin-bottom:10px;">
+                    <input type="text" id="newEngName" class="form-control flex-1" placeholder="الاسم" style="margin:0;">
+                    <input type="tel" id="newEngPhone" class="form-control flex-1" placeholder="واتساب" style="margin:0;">
+                    <button class="btn btn-warning" onclick="addEngineer()">➕</button>
+                </div>
+                <div id="managedEngsList" style="max-height:200px; overflow-y:auto;">
+                    </div>
+            </div>
+        </div>
+
+        <div id="tab-system-admin" class="settings-tab-content">
+            <h4 class="section-title" style="color:var(--danger);">🔑 مفاتيح العقل الإلكتروني</h4>
+            <div class="card glass-card">
+                <input type="password" id="imgbbKeyInput" class="form-control" placeholder="مفتاح ImgBB">
+                <input type="password" id="geminiKeyInput" class="form-control" placeholder="مفتاح Gemini AI">
+                <div class="row-flex">
+                    <button class="btn btn-primary flex-2" onclick="saveApiKeys()">💾 حفظ</button>
+                    <button class="btn btn-outline flex-1" onclick="enableApiKeysEdit()">✏️ تعديل</button>
+                </div>
+            </div>
+
+            <h4 class="section-title">👥 إدارة المستخدمين</h4>
+            <div id="usersListContainer"></div>
+
+            <h4 class="section-title">📂 البيانات والنسخ</h4>
+            <button class="btn btn-success full-width" onclick="exportToCSV()">📊 تصدير Excel كامل</button>
+        </div>
+
+        <button class="btn btn-danger full-width shadow-btn" style="margin-top:30px; border-radius:15px;" onclick="logout()">تسجيل الخروج 🚪</button>
+    </div>
+
+   
+<div class="container screen" id="pmScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          
+            <h2 style="color:#F44336; margin:0; font-size:18px;">🔧 الصيانة المخططة (PM)</h2>
+        </div>
+        
+        <div class="dashboard-stats modern-stats">
+            <div class="card stat-card glass-card" style="border-color:#F44336; padding:10px;">
+                <div class="stat-value danger-text" id="pmPendingCount">0</div>
+                <div class="stat-label">أوامر معلقة</div>
+            </div>
+            <div class="card stat-card glass-card" style="border-color:var(--warning); padding:10px;">
+                <div class="stat-value warning-text" id="pmProgressCount">0</div>
+                <div class="stat-label">قيد التنفيذ</div>
+            </div>
+            <div class="card stat-card glass-card" style="border-color:var(--success); padding:10px;">
+                <div class="stat-value success-text" id="pmClosedCount">0</div>
+                <div class="stat-label">مغلقة (منجزة)</div>
+            </div>
+        </div>
+
+        <h3 class="section-title" style="color:#F44336; border-color:#F44336;">📥 أوامر الشغل الواردة (تذاكر الـ JH)</h3>
+        <div id="pmWorkOrdersContainer"></div>
+    </div>
+
+   <div class="container screen" id="fiveSScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        
+            <h2 style="color:#00BCD4; margin:0; font-size:18px;">✨ تنظيم بيئة العمل (5S)</h2>
+        </div>
+        
+        <div class="card glass-card" style="border-color:#00BCD4;">
+            <h3 class="card-title" style="color:#00BCD4; font-size:14px; border-bottom:1px solid rgba(0, 188, 212, 0.3);">📸 كاميرا المطابقة القياسية (Standard Check)</h3>
+            <p style="font-size:11px; color:var(--text-muted); margin-bottom:15px;">ارفع صورة الوضع القياسي المثالي، ثم التقط صورة للوضع الحالي واسحب الشريط لاكتشاف الاختلافات الدقيقة.</p>
+            
+            <div class="row-flex" style="margin-bottom:20px;">
+                <div class="upload-box flex-1 success-border" style="background:rgba(46, 125, 50, 0.1);">
+                    <label style="color:var(--success); cursor:pointer; font-size:12px; font-weight:bold;">
+                        ✅ الوضع القياسي (Standard)
+                        <input type="file" style="display:none;" accept="image/*" onchange="load5SImage(event, 'standard')">
+                    </label>
+                </div>
+                <div class="upload-box flex-1 danger-border" style="background:rgba(198, 40, 40, 0.1);">
+                    <label style="color:var(--danger); cursor:pointer; font-size:12px; font-weight:bold;">
+                        📸 الوضع الحالي (Current)
+                        <input type="file" style="display:none;" accept="image/*" capture="environment" onchange="load5SImage(event, 'current')">
+                    </label>
+                </div>
+            </div>
+
+            <div id="fiveSSliderContainer" class="slider-container" style="display:none;">
+                <div class="slider-img-wrapper" id="sliderWrapper">
+                    <img id="imgStandard" src="" alt="Standard">
+                    <div class="slider-overlay" id="sliderOverlay">
+                        <img id="imgCurrent" src="" alt="Current">
+                    </div>
+                    <div class="slider-handle" id="sliderHandle">↔️</div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:10px; font-weight:bold; color:var(--text-main);">
+                    <span style="color:var(--success);">القياسي</span>
+                    <span style="color:var(--danger);">الحالي</span>
+                </div>
+                <button class="btn btn-warning full-width shadow-btn" style="margin-top:15px;" onclick="generate5STask()">🚨 تسجيل عدم مطابقة (إنشاء مهمة 5S)</button>
+            </div>
+        </div>
+    </div>
+<div class="container screen" id="profileDetailsScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <button class="btn btn-sm btn-outline" onclick="showScreen('settingsScreen')">⬅️ عودة</button>
+            <h2 style="color:var(--gold); margin:0; font-size:18px;">🆔 هويتي الرقمية</h2>
+        </div>
+
+        <div class="card glass-card" style="border-top: 5px solid var(--gold);">
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="position:relative; width:100px; height:100px; margin:0 auto 10px;">
+                    <img id="myBigAvatar" src="" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--gold);">
+                    <label class="edit-badge">📷<input type="file" style="display:none;" onchange="updateProfilePic(event)"></label>
+                </div>
+                <h3 id="myDisplayName" style="margin:0; color:var(--text-main);">--</h3>
+                <span id="myDisplayRank" class="rank-label">--</span>
+            </div>
+
+            <div class="form-group">
+                <label style="font-size:11px; color:var(--gold);">الاسم الكامل:</label>
+                <input type="text" id="editName" class="form-control">
+            </div>
+            <div class="form-group">
+                <label style="font-size:11px; color:var(--gold);">رقم الواتساب:</label>
+                <input type="tel" id="editPhone" class="form-control" placeholder="01xxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label style="font-size:11px; color:var(--gold);">القسم:</label>
+                <select id="editDept" class="form-control"></select>
+            </div>
+            <button class="btn btn-success full-width" onclick="savePersonalData()">💾 حفظ التغييرات</button>
+        </div>
+
+        <h3 class="section-title">📊 شريط الإنجازات (My Timeline)</h3>
+        <div id="myActivityTimeline" style="padding-bottom:100px;"></div>
+    </div>
+
+<div class="container screen" id="jhPortalScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          
+            <h2 style="color:#4CAF50; margin:0; font-size:18px;">👷‍♂️ بوابة الصيانة الذاتية</h2>
+        </div>
+
+        <h3 class="section-title">📂 اختر القسم للمتابعة</h3>
+        <div id="jhDeptGrid" class="grid-layout" style="margin-bottom:30px;">
+            </div>
+
+ <div id="jhToolbox" style="display:none; animation: fadeIn 0.5s;">
+           <div id="jhDeptDashboard" class="card glass-card" style="border-top: 4px solid var(--gold); padding:15px; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 id="selectedJHDeptTitle" style="color:var(--gold); margin:0;">اسم القسم</h3>
+                    <button class="btn btn-sm btn-outline btn-role-admin" style="width:auto; margin:0;" onclick="setDeptGoal()">🎯 المستهدف</button>
+                </div>
+
+                <div id="deptGoalDisplay" style="background:rgba(46, 125, 50, 0.1); border:1px dashed var(--success); padding:8px; border-radius:8px; margin-bottom:15px; font-size:12px; color:var(--success); text-align:center; display:none;">
+                    المستهدف المطلوب: <b>85%</b>
+                </div>
+                
+                <div class="dashboard-stats modern-stats" style="margin-bottom:15px;">
+                    <div class="card stat-card glass-card" style="border-color:var(--gold); padding:5px;">
+                        <div class="stat-value" id="deptAuditScore" style="font-size:18px !important;">0%</div>
+                        <div class="stat-label">مراجعة JH</div>
+                    </div>
+                    <div class="card stat-card glass-card" style="border-color:#00BCD4; padding:5px; background:linear-gradient(180deg, rgba(0, 188, 212, 0.1), transparent);">
+                        <div class="stat-value" id="deptOEE" style="font-size:18px !important; color:#00BCD4;">0%</div>
+                        <div class="stat-label">مؤشر OEE</div>
+                    </div>
+                    <div class="card stat-card glass-card" style="border-color:var(--danger); padding:5px;">
+                        <div class="stat-value danger-text" id="deptOpenTags" style="font-size:18px !important;">0</div>
+                        <div class="stat-label">تاجات مفتوحة</div>
+                    </div>
+<div class="card stat-card glass-card" style="border-color:var(--success); padding:5px;">
+
+                        <div class="stat-value" id="deptKaizens" style="font-size:18px !important;">0</div>
+
+                        <div class="stat-label">كايزن منفذ</div>
+
+                    </div>
+                </div>
+
+           <div style="display:flex; flex-direction:column; gap:15px;">
+                    
+                    <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:15px; height:220px; position:relative; border:1px solid rgba(255,255,255,0.05); width:100%;">
+                        <h4 style="font-size:10px; color:var(--text-muted); margin:0 0 10px 0;">📈 تطور أداء القسم (آخر 5 مراجعات)</h4>
+                        <div style="height:170px; width:100%;"><canvas id="jhMiniTrendChart"></canvas></div>
+                    </div>
+                    
+                    <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:15px; border:1px solid rgba(255,255,255,0.05); width:100%;">
+                        <h4 style="font-size:12px; color:var(--gold); margin-bottom:12px; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px;">
+                            🏆 أبطال القسم
+                        </h4>
+                        <div id="deptInternalLeaderboard" style="display:flex; flex-direction:column; gap:8px;">
+                            </div>
+                    </div>
+
+                </div>
+
+            <div class="grid-layout">
+                <div class="card glass-card text-center" onclick="startNewAuditFlowFromPortal()" style="border-top:4px solid var(--success); cursor:pointer;">
+                    <div style="font-size:24px;">📝</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مراجعة JH</div>
+                </div>
+                <div class="card glass-card text-center" onclick="openJHDocument('SOC')" style="border-top:4px solid var(--warning); cursor:pointer;">
+                    <div style="font-size:24px;">🧗‍♂️</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">خريطة SOC</div>
+                </div>
+                <div class="card glass-card text-center" onclick="openJHDocument('Safety')" style="border-top:4px solid var(--danger); cursor:pointer;">
+                    <div style="font-size:24px;">⚠️</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مخاطر الأمان</div>
+                </div>
+                <div class="card glass-card text-center" onclick="openJHDocument('Anatomy')" style="border-top:4px solid var(--gold); cursor:pointer;">
+                    <div style="font-size:24px;">⚙️</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">تشريح المعدة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+<div class="container screen" id="safetyRiskScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="color:var(--danger); margin:0; font-size:18px;">🛡️ سجل مخاطر الأمان</h2>
+            <button class="btn btn-sm btn-danger" onclick="openAddRiskModal()">➕ إضافة مخاطرة</button>
+        </div>
+
+        <div class="dashboard-stats modern-stats" style="margin-bottom:20px;">
+            <div class="card stat-card glass-card" style="border-color:var(--danger);">
+                <div class="stat-value danger-text" id="openRisksCount">0</div>
+                <div class="stat-label">مخاطر قائمة</div>
+            </div>
+            <div class="card stat-card glass-card" style="border-color:var(--success);">
+                <div class="stat-value success-text" id="closedRisksCount">0</div>
+                <div class="stat-label">تم تأمينها</div>
+            </div>
+        </div>
+
+        <div id="safetyRisksContainer" style="padding-bottom:100px;">
+            </div>
+    </div>
+
+    <div id="addRiskModal" class="modal" style="display:none;">
+        <div class="modal-content glass-card">
+            <h3>تسجيل مخاطرة جديدة</h3>
+            <select id="riskArea" class="form-control" style="margin-bottom:10px;">
+                <option value="">اختر المنطقة...</option>
+                <option>منطقة مدخل الحقن</option>
+                <option>منطقة مخرج الحقن</option>
+                <option>منطقة الهد</option>
+                <option>منطقة الجيكات</option>
+                <option>منطقة العربة</option>
+                <option>منطقة غرفة حقن الكابينة</option>
+            </select>
+            <textarea id="riskDesc" class="form-control" placeholder="وصف الخطورة..." style="height:80px; margin-bottom:10px;"></textarea>
+            <textarea id="riskPlan" class="form-control" placeholder="خطة الاستجابة المقترحة..." style="height:80px; margin-bottom:10px;"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-danger full-width" onclick="saveNewRisk()">حفظ المخاطرة</button>
+                <button class="btn btn-outline full-width" onclick="closeRiskModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+    <div class="container screen" id="jhDocumentScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">⬅️ عودة</button>
+            <h2 id="jhDocHeader" style="color:var(--gold); margin:0; font-size:18px;">السجل الهندي</h2>
+        </div>
+        <div id="jhDocActionArea" class="card glass-card btn-role-auditor">
+            </div>
+        <div id="jhDocListContainer"></div>
+    </div>
+
+<div class="container screen" id="kkScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+         
+            <h2 style="color:#FFC107; margin:0; font-size:18px;">📉 التحسين المستمر (KK)</h2>
+        </div>
+        
+        <div class="dashboard-stats modern-stats">
+            <div class="card stat-card glass-card" style="border-color:#FFC107; padding:10px;">
+                <div class="stat-value warning-text" id="kkTotalLossHours">0</div>
+                <div class="stat-label">ساعات التوقف (الشهر)</div>
+            </div>
+            <div class="card stat-card glass-card" style="border-color:var(--danger); padding:10px;">
+                <div class="stat-value danger-text" id="kkTotalLossCost">0 ج</div>
+                <div class="stat-label">نزيف الأموال التقديري</div>
+            </div>
+        </div>
+
+        <h3 class="section-title" style="color:#FFC107; border-color:#FFC107;">🌳 شجرة فواقد المصنع (Loss Tree)</h3>
+        <p style="font-size:11px; color:var(--text-muted); margin-bottom:15px;">اضغط على أي تصنيف لتسجيل وقت التوقف الخاص به وتحويله لخسارة مالية.</p>
+        
+        <div id="kkLossTreeContainer" class="grid-layout">
+            </div>
     </div>
 
     <script src="js/app.js"></script>

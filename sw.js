@@ -1,9 +1,9 @@
-const CACHE_NAME = 'tpm-app-v-final-160';
+const CACHE_NAME = 'tpm-app-v-final-161';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './style.css',
-  './app.js',
+  './js/app.js',
   './config.js',
   './manifest.json',
   './icon.png'

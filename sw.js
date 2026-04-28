@@ -1,35 +1,36 @@
-const CACHE_NAME = 'tpm-app-v155';
+const CACHE_NAME = 'tpm-app-v-final-156';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './style.css',     // ⚠️ مهم جداً
-  './app.js',        // ⚠️ الكود الأساسي
-  './config.js',     // ⚠️ الإعدادات
+  './style.css',
+  './app.js',
+  './config.js',
   './manifest.json',
   './icon.png'
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE))
-  );
+  self.skipWaiting(); // إجبار تفعيل النسخة الجديدة فوراً
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE)));
 });
 
-// مسح الكاش القديم عشان التحديثات تظهر للعمال فوراً
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cache => {
-          if (cache !== CACHE_NAME) return caches.delete(cache);
-        })
-      );
-    })
+    caches.keys().then(keys => Promise.all(
+      keys.map(key => { if (key !== CACHE_NAME) return caches.delete(key); })
+    )).then(() => self.clients.claim())
   );
 });
 
+// استراتيجية (الشبكة أولاً) لضمان وصول التحديثات
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    fetch(event.request)
+      .then(response => {
+        const resClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, resClone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

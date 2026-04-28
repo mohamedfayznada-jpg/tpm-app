@@ -7,40 +7,42 @@
     <meta name="theme-color" content="#0a1128">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="main-header" id="mainHeader">
-    <div class="header-right">
-        <button class="icon-btn" onclick="goBack()" title="رجوع">🔙</button>
-        <button class="icon-btn" onclick="showScreen('homeScreen')" title="الرئيسية">🏠</button>
-    </div>
+    <div class="main-header" id="mainHeader">
+        <div class="header-right">
+            <button class="icon-btn" onclick="goBack()" title="رجوع">🔙</button>
+            <button class="icon-btn" onclick="showScreen('homeScreen')" title="الرئيسية">🏠</button>
+        </div>
 
-    <div class="header-center">
-        <h1>نظام إدارة المصنع</h1>
-        <div class="supervisor-box" onclick="showScreen('settingsScreen')">
-            <p>إشراف: م. محمد فايز</p>
-            <div id="adminNotification" class="notify-dot"></div>
+        <div class="header-center">
+            <h1>نظام إدارة المصنع</h1>
+            <div class="supervisor-box" onclick="showScreen('settingsScreen')">
+                <p>إشراف: م. محمد فايز</p>
+                <div id="adminNotification" class="notify-dot"></div>
+            </div>
+        </div>
+
+        <div class="header-left">
+            <button class="icon-btn" onclick="toggleSidebar()" title="القائمة الجانبية">☰</button>
+            <button class="icon-btn" onclick="toggleDarkMode()" title="تغيير المظهر">🌗</button>
+            <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج">🚪</button>
         </div>
     </div>
+    
+    <div class="cloud-status" id="cloudStatus">جاري الاتصال بالسيرفر...</div>
 
-    <div class="header-left">
-        <button class="icon-btn" onclick="toggleSidebar()" title="القائمة الجانبية">☰</button>
-        <button class="icon-btn" onclick="toggleDarkMode()" title="تغيير المظهر">🌗</button>
-        <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج">🚪</button>
-    </div>
-  </div>
-        <div class="cloud-status" id="cloudStatus">جاري الاتصال بالسيرفر...</div>
-    </div>
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div><div class="sidebar" id="sidebar">
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo-circle" style="width:60px; height:60px; margin:0 auto 10px; font-size:16px;">TPM</div>
             <h3 style="color:var(--gold); margin:0; font-size:14px;">Factory OS V5.0</h3>
@@ -53,17 +55,18 @@
             <div class="side-item btn-role-admin" onclick="showScreen('knowledgeScreen'); toggleSidebar();"><div class="side-icon">🧠</div>عقل المصنع</div>
             <div class="side-item" onclick="showScreen('settingsScreen'); renderProfileAndSettings(); toggleSidebar();"><div class="side-icon">👤</div>حسابي والإعدادات</div>
         </div>
-<div id="tpmSubMenu" style="display:none; background:rgba(0,0,0,0.2); border-radius:8px; margin:0 5px;">
-    <button class="menu-item sub-item" onclick="showJHPortal(); toggleSidebar();">👷‍♂️ الصيانة الذاتية (JH)</button>
-    <button class="menu-item sub-item" onclick="showScreen('safetyRiskScreen'); renderSafetyRisks(); toggleSidebar();">🛡️ مخاطر الأمان</button>
-    <button class="menu-item sub-item" onclick="showScreen('pmScreen'); toggleSidebar();">🛠️ الصيانة المخططة (PM)</button>
-    <button class="menu-item sub-item" onclick="showScreen('kkScreen'); toggleSidebar();">📉 التحسين المستمر (KK)</button>
-    <button class="menu-item sub-item" onclick="showScreen('fiveSScreen'); toggleSidebar();">✨ مراجعة 5S</button>
-</div>
+        <div id="tpmSubMenu" style="display:none; background:rgba(0,0,0,0.2); border-radius:8px; margin:0 5px;">
+            <button class="menu-item sub-item" onclick="showJHPortal(); toggleSidebar();">👷‍♂️ الصيانة الذاتية (JH)</button>
+            <button class="menu-item sub-item" onclick="showScreen('safetyRiskScreen'); renderSafetyRisks(); toggleSidebar();">🛡️ مخاطر الأمان</button>
+            <button class="menu-item sub-item" onclick="showScreen('pmScreen'); toggleSidebar();">🛠️ الصيانة المخططة (PM)</button>
+            <button class="menu-item sub-item" onclick="showScreen('kkScreen'); toggleSidebar();">📉 التحسين المستمر (KK)</button>
+            <button class="menu-item sub-item" onclick="showScreen('fiveSScreen'); toggleSidebar();">✨ مراجعة 5S</button>
+        </div>
         <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.05); text-align:center; font-size:10px; color:var(--text-muted);">
             Enterprise Edition
         </div>
     </div>
+    
     <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageSelection(event)">
     <input type="file" id="galleryInput" accept="image/*" style="display:none;" onchange="handleImageSelection(event)">
 
@@ -118,7 +121,8 @@
             </div>
         </div>
     </div>
-<div class="modal-overlay" id="permissionsModal">
+    
+    <div class="modal-overlay" id="permissionsModal">
         <div class="modal-content">
             <h3 class="card-title">تعديل أذونات المستخدم</h3>
             <div id="permissionsContainer"></div>
@@ -128,7 +132,8 @@
             </div>
         </div>
     </div>
-   <div class="container screen active" id="loginScreen">
+
+    <div class="container screen active" id="loginScreen">
         <div class="login-wrapper">
             <div class="login-header">
                 <div class="logo-circle">TPM</div>
@@ -179,7 +184,7 @@
         </div>
     </div>
 
-   <div class="container screen" id="homeScreen">
+    <div class="container screen" id="homeScreen">
         <div class="welcome-banner">
             <div>
                 <h2 style="color:var(--gold); font-size:18px; margin:0;">لوحة القيادة</h2>
@@ -191,7 +196,7 @@
             </button>
            <input type="file" id="barcodeInput" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromImage(event)">
         </div>
-<h3 class="section-title">🏭 وحدات التشغيل المركزية (Pillars)</h3>
+        <h3 class="section-title">🏭 وحدات التشغيل المركزية (Pillars)</h3>
         <div class="pillars-grid">
            <div class="pillar-card" style="border-bottom: 4px solid #4CAF50;" onclick="showJHPortal()">
                 <div class="pillar-icon">👷‍♂️</div>
@@ -258,7 +263,7 @@
             <div id="aiPredictionResult" class="ai-result"></div>
         </div>
 
-   <h3 class="section-title">مراقبة الأقسام</h3>
+        <h3 class="section-title">مراقبة الأقسام</h3>
         <div id="homeDeptGrid" class="grid-layout"></div>
         
         <div class="row-flex" style="margin-top:20px; align-items:stretch; flex-wrap: wrap;">
@@ -280,7 +285,7 @@
             <div id="usersLeaderboardContainer" class="leaderboard-list"></div>
         </div>
     </div>
- <div class="container screen" id="deptDashboardScreen">
+    <div class="container screen" id="deptDashboardScreen">
         <div class="sticky-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid rgba(212,175,55,0.3);">
             <div style="display:flex; gap:10px;">
                 <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
@@ -327,7 +332,7 @@
         </div>
     </div>
 
-<div class="container screen" id="auditScreen">
+    <div class="container screen" id="auditScreen">
         <div class="card sticky-header" style="padding:15px; background: linear-gradient(135deg, var(--primary), var(--bg-color)); border-radius: 20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <h3 id="auditStepTitle" style="color:var(--gold); font-size:16px; margin:0;"></h3>
@@ -386,7 +391,7 @@
         <div id="historyListContainer"></div>
     </div>
 
-   <div class="container screen" id="detailedReportScreen">
+    <div class="container screen" id="detailedReportScreen">
         <div class="report-wrapper card print-area" id="printableReportArea">
             <div class="report-header-main">
                 <div class="factory-logo">FACTORY<span>OS</span></div>
@@ -482,7 +487,7 @@
             </div>
             <div id="tasksDeptGrid" class="grid-layout"></div>
         </div>
- <div id="tasksDeptView" style="display:none;">
+        <div id="tasksDeptView" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <button class="btn btn-sm btn-outline" onclick="closeTasksDept()">⬅️ عودة للأقسام</button>
                 <h2 id="tasksDeptTitle" style="color:var(--gold); margin:0; font-size:18px;">المهام</h2>
@@ -517,7 +522,7 @@
         </div>
     </div>
 
-   <div class="container screen" id="tagsScreen">
+    <div class="container screen" id="tagsScreen">
         <h3 class="section-title">إدارة التاجات</h3>
         
         <div class="card glass-card btn-role-operator">
@@ -578,7 +583,7 @@
         </div>
     </div>
 
-  <div class="container screen" id="knowledgeScreen">
+    <div class="container screen" id="knowledgeScreen">
         <div class="library-header-main">
             <div style="display:flex; align-items:center; gap:12px;">
                 <div class="lib-icon-circle">📚</div>
@@ -624,8 +629,8 @@
         </div>
     </div>
 
- <div class="container screen" id="settingsScreen">
-<div style="margin-top:20px; padding:0 10px;">
+    <div class="container screen" id="settingsScreen">
+        <div style="margin-top:20px; padding:0 10px;">
             <button class="btn btn-primary full-width shadow-btn" style="background: linear-gradient(135deg, var(--gold), #8a6d3b); color:#000; padding:18px; border-radius:15px; font-size:16px; display:flex; align-items:center; justify-content:center; gap:12px; border:none;" onclick="openMyFullProfile()">
                 <span style="font-size:24px;">🛡️</span>
                 <b>دخول مركز القيادة الشخصي</b>
@@ -707,8 +712,7 @@
         <button class="btn btn-danger full-width shadow-btn" style="margin-top:30px; border-radius:15px;" onclick="logout()">تسجيل الخروج 🚪</button>
     </div>
 
-   
-<div class="container screen" id="pmScreen">
+    <div class="container screen" id="pmScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
           
             <h2 style="color:#F44336; margin:0; font-size:18px;">🔧 الصيانة المخططة (PM)</h2>
@@ -733,7 +737,7 @@
         <div id="pmWorkOrdersContainer"></div>
     </div>
 
-   <div class="container screen" id="fiveSScreen">
+    <div class="container screen" id="fiveSScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         
             <h2 style="color:#00BCD4; margin:0; font-size:18px;">✨ تنظيم بيئة العمل (5S)</h2>
@@ -774,7 +778,8 @@
             </div>
         </div>
     </div>
-<div class="container screen" id="profileDetailsScreen">
+    
+    <div class="container screen" id="profileDetailsScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <button class="btn btn-sm btn-outline" onclick="showScreen('settingsScreen')">⬅️ عودة</button>
             <h2 style="color:var(--gold); margin:0; font-size:18px;">🆔 هويتي الرقمية</h2>
@@ -809,7 +814,7 @@
         <div id="myActivityTimeline" style="padding-bottom:100px;"></div>
     </div>
 
-<div class="container screen" id="jhPortalScreen">
+    <div class="container screen" id="jhPortalScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
           
             <h2 style="color:#4CAF50; margin:0; font-size:18px;">👷‍♂️ بوابة الصيانة الذاتية</h2>
@@ -819,7 +824,7 @@
         <div id="jhDeptGrid" class="grid-layout" style="margin-bottom:30px;">
             </div>
 
- <div id="jhToolbox" style="display:none; animation: fadeIn 0.5s;">
+        <div id="jhToolbox" style="display:none; animation: fadeIn 0.5s;">
            <div id="jhDeptDashboard" class="card glass-card" style="border-top: 4px solid var(--gold); padding:15px; margin-bottom:20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h3 id="selectedJHDeptTitle" style="color:var(--gold); margin:0;">اسم القسم</h3>
@@ -843,17 +848,13 @@
                         <div class="stat-value danger-text" id="deptOpenTags" style="font-size:18px !important;">0</div>
                         <div class="stat-label">تاجات مفتوحة</div>
                     </div>
-<div class="card stat-card glass-card" style="border-color:var(--success); padding:5px;">
-
+                    <div class="card stat-card glass-card" style="border-color:var(--success); padding:5px;">
                         <div class="stat-value" id="deptKaizens" style="font-size:18px !important;">0</div>
-
                         <div class="stat-label">كايزن منفذ</div>
-
                     </div>
                 </div>
 
-           <div style="display:flex; flex-direction:column; gap:15px;">
-                    
+                <div style="display:flex; flex-direction:column; gap:15px;">
                     <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:15px; height:220px; position:relative; border:1px solid rgba(255,255,255,0.05); width:100%;">
                         <h4 style="font-size:10px; color:var(--text-muted); margin:0 0 10px 0;">📈 تطور أداء القسم (آخر 5 مراجعات)</h4>
                         <div style="height:170px; width:100%;"><canvas id="jhMiniTrendChart"></canvas></div>
@@ -866,7 +867,6 @@
                         <div id="deptInternalLeaderboard" style="display:flex; flex-direction:column; gap:8px;">
                             </div>
                     </div>
-
                 </div>
 
             <div class="grid-layout">
@@ -885,7 +885,8 @@
             </div>
         </div>
     </div>
-<div class="container screen" id="safetyRiskScreen">
+    
+    <div class="container screen" id="safetyRiskScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h2 style="color:var(--danger); margin:0; font-size:18px;">🛡️ سجل مخاطر الأمان</h2>
             <button class="btn btn-sm btn-danger" onclick="openAddRiskModal()">➕ إضافة مخاطرة</button>
@@ -926,6 +927,7 @@
             </div>
         </div>
     </div>
+    
     <div class="container screen" id="jhDocumentScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">⬅️ عودة</button>
@@ -936,7 +938,7 @@
         <div id="jhDocListContainer"></div>
     </div>
 
-<div class="container screen" id="kkScreen">
+    <div class="container screen" id="kkScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
          
             <h2 style="color:#FFC107; margin:0; font-size:18px;">📉 التحسين المستمر (KK)</h2>
@@ -960,6 +962,6 @@
             </div>
     </div>
 
-    <script src="js/app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

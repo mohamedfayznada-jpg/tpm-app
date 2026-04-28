@@ -514,14 +514,9 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
     animation: pulse-red 1.5s infinite;
 }
 
-/* حماية المحتوى من الهيدر الثابت */
+/* 🚀 أهم جزء: دفع محتوى الصفحات لتحت الشريط عشان ميتداراش */
 .container.screen {
     padding-top: 85px !important; 
-    min-height: 100vh;
-    display: none; /* مخفي افتراضياً */
-}
-.container.screen.active {
-    display: block !important; /* يظهر فقط عند التفعيل */
 }
 
 /* تأثير النبض للإشعارات */
@@ -535,15 +530,11 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
    📱 تصميم الموبايل الاحترافي (Mobile-First)
    ========================================== */
 
-/* حماية المحتوى من الهيدر الثابت */
+/* 1. ضبط الحاوية الرئيسية */
 .container.screen {
-    padding-top: 85px !important; 
-    min-height: 100vh;
-    display: none; /* مخفي افتراضياً */
+    padding: 85px 12px 30px !important; /* مسافة أمان تحت الهيدر */
 }
-.container.screen.active {
-    display: block !important; /* يظهر فقط عند التفعيل */
-}
+
 /* 2. تحويل الإحصائيات لشبكة مرنة (2 في كل صف) */
 .dashboard-stats.modern-stats {
     display: grid;
@@ -590,15 +581,12 @@ body { background-color: var(--bg-color); color: var(--text-main); line-height: 
     padding: 0 15px; border-bottom: 2px solid var(--gold);
 }
 
-/* حماية المحتوى من الهيدر الثابت */
+/* حماية المحتوى من الاختفاء تحت الهيدر */
 .container.screen {
-    padding-top: 85px !important; 
-    min-height: 100vh;
-    display: none; /* مخفي افتراضياً */
+    margin-top: 80px !important;
+    padding: 10px !important;
 }
-.container.screen.active {
-    display: block !important; /* يظهر فقط عند التفعيل */
-}
+
 /* توزيع إحصائيات الموبايل (2 في كل صف) */
 .dashboard-stats.modern-stats {
     display: grid;

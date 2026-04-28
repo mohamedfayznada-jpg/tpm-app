@@ -31,29 +31,24 @@ let deptGoalsData = {};
 
 
 
-// 🚀 المحرك الموحد لفتح الشاشات (النسخة البرو)
 function showScreen(screenId) {
-    // 1. إخفاء كل الشاشات
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    
-    // 2. إظهار الشاشة المطلوبة
-    const target = document.getElementById(screenId);
-    if(target) {
-        target.classList.add('active');
-        
-        // 📡 تفعيل رادارات البيانات فوراً
-        if(screenId === 'safetyRiskScreen') renderSafetyRisks(); // عشان المخاطر تظهر
-        if(screenId === 'kkScreen') renderKKDashboard();         // عشان شجرة KK تنور
-        if(screenId === 'tasksScreen') renderTasks();           // عشان المهام تظهر
-        if(screenId === 'kaizenScreen') renderKaizenFeed();     // عشان الكايزن يظهر
+    // 1. حماية الصلاحيات أولاً
+    if (screenId !== 'loginScreen' && screenId !== 'signupScreen' && !canAccess(screenId)) {
+        return showToast("عذراً، لا تملك صلاحية الدخول لهذه الصفحة.");
     }
     
-    // 3. إدارة زر الرجوع
-    const backBtn = document.getElementById('globalBackBtn');
-    if(backBtn) backBtn.style.display = (screenId === 'homeScreen') ? 'none' : 'block';
-
+    // 2. تسجيل مسار التصفح عشان زرار "الرجوع" يشتغل صح
+    if (screenHistory[screenHistory.length - 1] !== screenId) {
+        screenHistory.push(screenId);
+    }
+    
+    // 3. عرض الشاشة
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    let target = document.getElementById(screenId);
+    if(target) target.classList.add('active');
     window.scrollTo(0,0);
 }
+
 function goBack() {
     if (screenHistory.length > 1) {
         screenHistory.pop(); // مسح الشاشة الحالية
@@ -691,69 +686,6 @@ function initAuditSequential() {
     renderCurrentAuditStep();
 }
 
-
-// فتح وإغلاق المودال
-function openAddRiskModal() { document.getElementById('addRiskModal').style.display = 'flex'; }
-function closeRiskModal() { document.getElementById('addRiskModal').style.display = 'none'; }
-
-// حفظ مخاطرة جديدة
-function saveNewRisk() {
-    const area = document.getElementById('riskArea').value;
-    const desc = document.getElementById('riskDesc').value;
-    const plan = document.getElementById('riskPlan').value;
-
-    if(!area || !desc) return showToast('يرجى ملء البيانات الأساسية');
-
-    const newRisk = {
-        area: area,
-        description: desc,
-        plan: plan,
-        status: 'open',
-        date: new Date().toLocaleDateString('ar-EG'),
-        recordedBy: currentUser.name
-    };
-
-    const newKey = db.ref('tpm_system/safety_risks').push().key;
-    db.ref(`tpm_system/safety_risks/${newKey}`).set(newRisk);
-    
-    closeRiskModal();
-    showToast('تم تسجيل المخاطرة بنجاح 🛡️');
-}
-
-// عرض المخاطر بشكل منظم
-function renderSafetyRisks() {
-    db.ref('tpm_system/safety_risks').on('value', snap => {
-        const risks = snap.val() || {};
-        const container = document.getElementById('safetyRisksContainer');
-        let html = '';
-        let open = 0, closed = 0;
-
-        Object.keys(risks).forEach(key => {
-            const r = risks[key];
-            if(r.status === 'open') open++; else closed++;
-            
-            html += `
-                <div class="card glass-card" style="border-right: 5px solid ${r.status === 'open' ? 'var(--danger)' : 'var(--success)'}; margin-bottom:15px;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <span style="font-size:10px; background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px;">${r.area}</span>
-                        <span style="font-size:10px; color:var(--text-muted);">${r.date}</span>
-                    </div>
-                    <h4 style="margin:10px 0 5px; color:var(--gold); font-size:14px;">⚠️ وصف الخطورة:</h4>
-                    <p style="font-size:12px; margin-bottom:10px;">${r.description}</p>
-                    <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
-                        <h4 style="margin:0 0 5px; color:var(--success); font-size:12px;">✅ خطة الاستجابة:</h4>
-                        <p style="font-size:11px;">${r.plan || 'جاري وضع الخطة...'}</p>
-                    </div>
-                    ${r.status === 'open' ? `<button class="btn btn-sm btn-success" style="margin-top:10px; width:auto;" onclick="closeRisk('${key}')">تم التنفيذ ✔️</button>` : ''}
-                </div>
-            `;
-        });
-
-        container.innerHTML = html || '<p style="text-align:center; color:var(--text-muted);">لا توجد مخاطر مسجلة حالياً</p>';
-        document.getElementById('openRisksCount').innerText = open;
-        document.getElementById('closedRisksCount').innerText = closed;
-    });
-}
 // ------------------------------------------
 // 📝 محرك المراجعة المطور (Scoring & Points)
 // ------------------------------------------
@@ -2615,63 +2547,4 @@ async function updateProfilePic(event) {
             showToast('⚠️ فشل الرفع. تأكد من إعدادات مفتاح ImgBB الخاص بالصور.'); 
         }
     });
-}
-
-// إدارة شاشة مخاطر الأمان
-function openAddRiskModal() { document.getElementById('addRiskModal').style.display = 'flex'; }
-function closeRiskModal() { document.getElementById('addRiskModal').style.display = 'none'; }
-
-function saveNewRisk() {
-    const area = document.getElementById('riskArea').value;
-    const desc = document.getElementById('riskDesc').value;
-    const plan = document.getElementById('riskPlan').value;
-
-    if(!area || !desc) return showToast('يرجى ملء البيانات الأساسية ⚠️');
-
-    const newRisk = {
-        area: area,
-        description: desc,
-        plan: plan,
-        status: 'open',
-        date: new Date().toLocaleDateString('ar-EG'),
-        recordedBy: currentUser.name
-    };
-
-    db.ref('tpm_system/safety_risks').push(newRisk);
-    closeRiskModal();
-    showToast('تم تسجيل المخاطرة بنجاح 🛡️');
-}
-
-function renderSafetyRisks() {
-    db.ref('tpm_system/safety_risks').on('value', snap => {
-        const risks = snap.val() || {};
-        const container = document.getElementById('safetyRisksContainer');
-        let html = '', open = 0, closed = 0;
-
-        Object.keys(risks).forEach(key => {
-            const r = risks[key];
-            if(r.status === 'open') open++; else closed++;
-            
-            html += `
-                <div class="card glass-card" style="border-right: 5px solid ${r.status === 'open' ? 'var(--danger)' : 'var(--success)'}; margin-bottom:15px;">
-                    <div style="display:flex; justify-content:space-between; font-size:10px;">
-                        <span style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px; color:var(--gold);">${r.area}</span>
-                        <span style="color:var(--text-muted);">${r.date}</span>
-                    </div>
-                    <p style="font-size:13px; margin:10px 0;">⚠️ <b>الخطورة:</b> ${r.description}</p>
-                    <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:8px; font-size:11px;">
-                        <span style="color:var(--success);">✅ <b>الاستجابة:</b></span> ${r.plan || 'قيد الدراسة'}
-                    </div>
-                    ${r.status === 'open' ? `<button class="btn btn-sm btn-success" style="margin-top:10px;" onclick="updateRiskStatus('${key}', 'closed')">تأمين المخاطرة ✔️</button>` : ''}
-                </div>`;
-        });
-        container.innerHTML = html || '<p style="text-align:center; padding:20px; color:var(--text-muted);">لا توجد مخاطر مسجلة</p>';
-        document.getElementById('openRisksCount').innerText = open;
-        document.getElementById('closedRisksCount').innerText = closed;
-    });
-}
-
-function updateRiskStatus(key, newStatus) {
-    db.ref(`tpm_system/safety_risks/${key}/status`).set(newStatus);
-    showToast('تم تحديث موقف المخاطرة 🛡️');
 }

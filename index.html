@@ -846,18 +846,24 @@
                     </div>
                 </div>
 
-                <div class="row-flex" style="gap:10px; align-items:stretch;">
-                    <div class="flex-2" style="background:rgba(0,0,0,0.2); border-radius:12px; padding:10px; height:140px; position:relative; border:1px solid rgba(255,255,255,0.05);">
-                        <h4 style="font-size:9px; color:var(--text-muted); margin:0 0 5px 0;">تطور الأداء (آخر 5 مراجعات)</h4>
-                        <div style="height:110px; width:100%;"><canvas id="jhMiniTrendChart"></canvas></div>
-                    </div>
-                    <div class="flex-1" style="background:rgba(0,0,0,0.2); border-radius:12px; padding:10px; overflow-y:auto; max-height:140px; border:1px solid rgba(255,255,255,0.05);">
-                        <h4 style="font-size:10px; color:var(--gold); margin-bottom:8px; text-align:center;">🏆 الأبطال</h4>
-                        <div id="deptInternalLeaderboard" style="display:flex; flex-direction:column; gap:5px;"></div>
-                    </div>
-                </div>
+              <div style="display:flex; flex-direction:column; gap:25px; margin-top:15px; margin-bottom:20px;">
+    
+    <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.05); width:100%;">
+        <h4 style="font-size:13px; color:var(--text-muted); margin:0 0 15px 0; text-align:center;">📈 تطور أداء القسم (آخر 5 مراجعات)</h4>
+        <div style="position: relative; height: 200px; width: 100%;">
+            <canvas id="jhMiniTrendChart"></canvas>
+        </div>
+    </div>
+    
+    <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.05); width:100%;">
+        <h4 style="font-size:14px; color:var(--gold); margin:0 0 15px 0; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px;">
+            🏆 أبطال القسم
+        </h4>
+        <div id="deptInternalLeaderboard" style="display:flex; flex-direction:column; gap:10px;">
             </div>
+    </div>
 
+</div>
             <div class="grid-layout">
                 <div class="card glass-card text-center" onclick="startNewAuditFlowFromPortal()" style="border-top:4px solid var(--success); cursor:pointer;">
                     <div style="font-size:24px;">📝</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مراجعة JH</div>

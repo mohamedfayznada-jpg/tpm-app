@@ -15,7 +15,7 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 // Architected by م.مُحَمَّد فَايِز - Init Services
 const db = firebase.database();
-const storage = firebase.storage();
+
 
 let tpmSystemRef = null, tpmSystemListener = null;
 let globalApiKeys = { imgbb: "", gemini: "" };
@@ -348,28 +348,38 @@ function forceAcceptBarcode(decodedText) {
     processValidBarcode(decodedText);
 }
 
-// ------------------------------------------
-// 🚀 محرك رفع الصور (ImgBB - No Base64 in DB)
-// ------------------------------------------
-// Architected by م.مُحَمَّد فَايِز - Zero-Cost Compressed Storage
-async function uploadImageToStorage(file) {
-    if (!file) return null;
-    
+// ==========================================
+// Architected by م.مُحَمَّد فَايِز - 100% Free ImgBB Engine
+// ==========================================
+async function uploadImageToStorage(fileOrDataUrl) {
+    const apiKey = globalApiKeys.imgbb;
+    if (!apiKey) {
+        showToast('⚠️ لا يوجد مفتاح ImgBB. يرجى إضافته من الإعدادات.');
+        return null;
+    }
     try {
-        // 1. مرحلة الضغط (Client-Side Compression)
-        const compressedBlob = await compressImageProcess(file);
-
-        // 2. مرحلة الرفع
-        const fileName = `factory_images/${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
-        const storageRef = storage.ref().child(fileName);
+        let base64Data = fileOrDataUrl;
+        if (typeof fileOrDataUrl !== 'string') {
+            const reader = new FileReader();
+            base64Data = await new Promise((resolve) => {
+                reader.readAsDataURL(fileOrDataUrl);
+                reader.onload = () => resolve(reader.result);
+            });
+        }
+        const b64 = base64Data.split(',')[1];
+        const formData = new FormData();
+        formData.append('image', b64);
         
-        const snapshot = await storageRef.put(compressedBlob);
-        const downloadURL = await snapshot.ref.getDownloadURL();
-        return downloadURL;
-        
-    } catch (error) {
-        console.error("Storage Error:", error);
-        showToast('⚠️ فشل معالجة الصورة، تأكد من اتصالك بالإنترنت');
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if(data.success) return data.data.url;
+        return null;
+    } catch(e) {
+        console.error("ImgBB Error:", e);
+        showToast('⚠️ فشل الرفع على ImgBB');
         return null;
     }
 }
@@ -1851,72 +1861,7 @@ function openLossRegistration(lossId, lossName) {
         showToast('يرجى إدخال رقم صحيح للدقائق ⚠️');
     }
 }
-// ------------------------------------------
-// 🧠 عقل المصنع (قراءة الكتالوجات الكاملة والاختبارات)
-// ------------------------------------------
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-let currentUploadedPdfBase64 = null; // متغير لحفظ المستند كاملاً
-
-async function handlePDFUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const statusEl = document.getElementById('pdfExtractStatus');
-    statusEl.innerText = "جاري رفع الكتالوج ومعالجته (نصوص وصور)... ⏳";
-    statusEl.style.color = "var(--warning)";
-    
-    try {
-        // 1. تحويل المستند كاملاً إلى Base64 ليرأه الذكاء الاصطناعي بصوره
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            currentUploadedPdfBase64 = e.target.result.split(',')[1];
-            
-            // 2. استخراج جزء من النص كفهرس للبحث السريع فقط
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-            let fullText = "";
-            const maxPages = Math.min(pdf.numPages, 5);
-            for (let i = 1; i <= maxPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                fullText += textContent.items.map(item => item.str).join(' ') + " ";
-            }
-            
-            document.getElementById('kbContent').value = fullText.substring(0, 2000);
-            statusEl.innerText = "تم تجهيز الكتالوج بالكامل (بصوره ورسوماته) ✅";
-            statusEl.style.color = "var(--success)";
-        };
-        reader.readAsDataURL(file);
-    } catch (error) {
-        statusEl.innerText = "❌ فشل معالجة الملف.";
-        statusEl.style.color = "var(--danger)";
-    }
-}
-
-function addKnowledgeBaseArticle() {
-    let title = document.getElementById('kbTitle').value.trim();
-    let cat = document.getElementById('kbCategory').value;
-    let content = document.getElementById('kbContent').value.trim();
-    
-    if(!title || (!content && !currentUploadedPdfBase64)) { showToast('أدخل العنوان وارفع ملف PDF'); return; }
-    
-    let id = uniqueNumericId().toString();
-    // حفظ البيانات الأساسية في الذاكرة السريعة
-    let article = { id: id, title: title, category: cat, content: content, date: new Date().toLocaleDateString('ar-EG'), author: currentUser.name, hasPdf: !!currentUploadedPdfBase64 };
-    syncRecord('knowledgeBase/' + id, article);
-    
-    // 🚀 الخدعة الهندسية: حفظ الملف الضخم في مسار منفصل تماماً حتى لا يبطئ التطبيق
-    if (currentUploadedPdfBase64) {
-        db.ref('tpm_system/pdf_files/' + id).set({ base64: currentUploadedPdfBase64 });
-    }
-    
-    document.getElementById('kbTitle').value = ''; document.getElementById('kbContent').value = '';
-    document.getElementById('addBookModal').style.display = 'none';
-    currentUploadedPdfBase64 = null;
-    document.getElementById('pdfExtractStatus').innerText = 'اضغط لرفع ملف PDF (كتالوج أو مرجع) 📄';
-    showToast('تمت إضافة المرجع إلى رفوف المكتبة 📚');
-}
+handlePDFUpload
 
 function renderKnowledgeBase() {
     let container = document.getElementById('knowledgeListContainer');

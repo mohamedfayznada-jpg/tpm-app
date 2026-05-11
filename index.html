@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -609,7 +609,7 @@
             </select>
             <div class="upload-box" onclick="document.getElementById('pdfInput').click()">
                 <div id="pdfExtractStatus">اضغط لرفع ملف PDF (كتالوج كامل) 📄</div>
-                <input type="file" id="pdfInput" accept="application/pdf" style="display:none;" onchange="handlePDFUpload(event)">
+              <input type="file" id="kbPdfFile" accept=".pdf, video/mp4, video/*, image/*" onchange="handleMaterialUpload(event)" style="display:none;">
             </div>
             <textarea id="kbContent" class="form-control" rows="4" placeholder="سيظهر جزء من النص هنا للمعاينة تلقائياً..."></textarea>
             <div class="row-flex">

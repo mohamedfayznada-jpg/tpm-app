@@ -13,7 +13,9 @@ const firebaseConfig = {
 };
 
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+// Architected by م.مُحَمَّد فَايِز - Init Services
 const db = firebase.database();
+const storage = firebase.storage();
 
 let tpmSystemRef = null, tpmSystemListener = null;
 let globalApiKeys = { imgbb: "", gemini: "" };
@@ -118,8 +120,9 @@ firebase.auth().onAuthStateChanged(async user => {
 
         // تحديد الهوية
         const userEmail = user.email ? user.email.toLowerCase() : '';
-        const isMasterAdmin = userEmail.includes('mfayez');
-        const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
+     // Architected by م.مُحَمَّد فَايِز - Strict Admin Authentication
+const isMasterAdmin = userEmail === 'mfayez@tpm.app';
+   const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
         const finalUsername = isMasterAdmin ? 'mfayez' : (localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
 
         let role = 'viewer'; let status = 'active';
@@ -159,24 +162,31 @@ firebase.auth().onAuthStateChanged(async user => {
         } else { showScreen('homeScreen'); }
 
         updateDeptDropdown();
-
-        // 📡 تشغيل قنوات المراقبة الحية (البيانات ستظهر فوراً)
-        dbListeners.tags = db.ref('tpm_system/tags').on('value', snap => {
-            tagsData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>b.id-a.id) : [];
+// 📡 تشغيل قنوات المراقبة الحية (نسخة الأداء الفائق - بتسحب آخر 100 سجل فقط)
+        // Architected by م.مُحَمَّد فَايِز
+        dbListeners.tags = db.ref('tpm_system/tags').orderByChild('id').limitToLast(100).on('value', snap => {
+            let data = snap.val() || {};
+            tagsData = Object.values(data).filter(x => x && x.id).sort((a,b)=>b.id-a.id);
             renderTags(); if(currentUser.role) updateHomeDashboard();
         });
-        dbListeners.tasks = db.ref('tpm_system/tasks').on('value', snap => {
-            tasksData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
+
+        dbListeners.tasks = db.ref('tpm_system/tasks').orderByChild('id').limitToLast(100).on('value', snap => {
+            let data = snap.val() || {};
+            tasksData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id);
             renderTasks();
         });
+
+        dbListeners.history = db.ref('tpm_system/history').orderByChild('id').limitToLast(100).on('value', snap => {
+            let data = snap.val() || {};
+            historyData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id);
+            renderHistory(); renderKaizenFeed(); if(currentUser.role) updateHomeDashboard();
+        });
+    
 dbListeners.goals = db.ref('tpm_system/dept_goals').on('value', snap => { 
             deptGoalsData = snap.val() || {}; 
             if(currentJHDept && document.getElementById('jhPortalScreen').classList.contains('active')) selectJHDept(currentJHDept); 
         });
-        dbListeners.history = db.ref('tpm_system/history').on('value', snap => {
-            historyData = snap.val() ? Object.values(snap.val()).filter(x => x && x.id).sort((a,b)=>a.id-b.id) : [];
-            renderHistory(); renderKaizenFeed(); if(currentUser.role) updateHomeDashboard();
-        });
+      
 dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {
             registeredLosses = snap.val() ? Object.values(snap.val()) : [];
             if(document.getElementById('kkScreen').classList.contains('active')) renderKKDashboard();
@@ -275,49 +285,135 @@ function logAction(act) {
 }
 
 
-// ------------------------------------------
-// 🔍 دالة مسح الباركود الفعالة (النسخة الحديثة)
-// ------------------------------------------
+// Architected by م.مُحَمَّد فَايِز - Duplicate Scan Rejection Logic
+let sessionScannedBarcodes = new Set(); // ذاكرة مؤقتة للباركودات الممسوحة
+
 async function scanBarcodeFromImage(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     showToast('جاري قراءة الباركود... 🔍');
     const html5QrCode = new Html5Qrcode("searchResults"); 
     
     try {
         const decodedText = await html5QrCode.scanFile(file, true);
-        showToast('تمت القراءة بنجاح!');
         
-        document.getElementById('searchResults').style.display = 'block';
-        document.getElementById('searchResults').innerHTML = `
-            <div style="padding:20px; background:rgba(46,125,50,0.1); border:1px solid var(--success); border-radius:15px; text-align:center;">
-                <div style="font-size:30px; margin-bottom:10px;">✅</div>
-                <b class="success-text" style="font-size:16px;">تم التعرف على البيانات:</b><br>
-                <div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; color:var(--text-main); word-break: break-all; font-family:monospace;">
-                    ${decodedText}
+        // التحقق من التكرار (الرفض الافتراضي)
+        if (sessionScannedBarcodes.has(decodedText)) {
+            showToast('⚠️ تحذير: تم مسح هذا الباركود مسبقاً!');
+            document.getElementById('searchResults').style.display = 'block';
+            document.getElementById('searchResults').innerHTML = `
+                <div style="padding:20px; background:rgba(198,40,40,0.1); border:1px solid var(--danger); border-radius:15px; text-align:center;">
+                    <div style="font-size:30px; margin-bottom:10px;">🛑</div>
+                    <b class="danger-text" style="font-size:16px;">باركود مكرر (مرفوض)</b><br>
+                    <div style="margin-top:10px; font-size:12px; color:var(--text-muted);">
+                        البيانات: ${decodedText}
+                    </div>
+                    <div class="row-flex" style="margin-top:15px; justify-content:center;">
+                        <button class="btn btn-sm btn-danger flex-1" onclick="document.getElementById('searchResults').style.display='none'">إلغاء</button>
+                        <button class="btn btn-sm btn-warning flex-1" onclick="forceAcceptBarcode('${decodedText.replace(/'/g, "\\'")}')">تخطي وتسجيل</button>
+                    </div>
                 </div>
-                <button class="btn btn-sm btn-outline" style="margin-top:15px; width:auto;" onclick="document.getElementById('searchResults').style.display='none'">إغلاق</button>
-            </div>
-        `;
+            `;
+            return; // نوقف التنفيذ هنا وميتمش التسجيل
+        }
+
+        // لو الباركود جديد، نقبله ونحفظه
+        processValidBarcode(decodedText);
+
     } catch (err) {
         showToast('تعذرت قراءة الباركود، تأكد من وضوح الصورة.');
     }
 }
 
+function processValidBarcode(decodedText) {
+    sessionScannedBarcodes.add(decodedText);
+    showToast('تمت القراءة بنجاح!');
+    
+    document.getElementById('searchResults').style.display = 'block';
+    document.getElementById('searchResults').innerHTML = `
+        <div style="padding:20px; background:rgba(46,125,50,0.1); border:1px solid var(--success); border-radius:15px; text-align:center;">
+            <div style="font-size:30px; margin-bottom:10px;">✅</div>
+            <b class="success-text" style="font-size:16px;">تم تسجيل البيانات:</b><br>
+            <div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; color:var(--text-main); word-break: break-all; font-family:monospace;">
+                ${decodedText}
+            </div>
+            <button class="btn btn-sm btn-outline" style="margin-top:15px; width:auto;" onclick="document.getElementById('searchResults').style.display='none'">إغلاق</button>
+        </div>
+    `;
+}
+
+function forceAcceptBarcode(decodedText) {
+    showToast('تم تخطي الحماية وتأكيد التسجيل يدوياً ⚠️');
+    processValidBarcode(decodedText);
+}
+
 // ------------------------------------------
 // 🚀 محرك رفع الصور (ImgBB - No Base64 in DB)
 // ------------------------------------------
-async function uploadImageToStorage(base64Data) {
-    const apiKey = globalApiKeys.imgbb;
-    if (!apiKey) { showToast('مفتاح ImgBB مفقود باللإعدادات!'); return null; }
+// Architected by م.مُحَمَّد فَايِز - Zero-Cost Compressed Storage
+async function uploadImageToStorage(file) {
+    if (!file) return null;
+    
     try {
-        const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
-        const formData = new FormData(); formData.append('image', cleanBase64);
-        const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: 'POST', body: formData });
-        const result = await response.json();
-        return result.success ? result.data.url : null;
-    } catch (e) { return null; }
+        // 1. مرحلة الضغط (Client-Side Compression)
+        const compressedBlob = await compressImageProcess(file);
+
+        // 2. مرحلة الرفع
+        const fileName = `factory_images/${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
+        const storageRef = storage.ref().child(fileName);
+        
+        const snapshot = await storageRef.put(compressedBlob);
+        const downloadURL = await snapshot.ref.getDownloadURL();
+        return downloadURL;
+        
+    } catch (error) {
+        console.error("Storage Error:", error);
+        showToast('⚠️ فشل معالجة الصورة، تأكد من اتصالك بالإنترنت');
+        return null;
+    }
+}
+
+// محرك ضغط الصور لتوفير المساحة المجانية 100%
+function compressImageProcess(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800; // أقصى عرض للصورة
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                // حساب الأبعاد الجديدة مع الحفاظ على نسبة العرض للطول
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // تحويل الصورة إلى Blob بجودة 60% (حجم صغير جداً مع وضوح ممتاز للعين)
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', 0.6);
+            };
+        };
+    });
 }
 
 function processAndEnhanceImage(file, callback) {
@@ -1463,7 +1559,25 @@ async function explainItem(t) {
 // ------------------------------------------
 // إعدادات أخرى
 // ------------------------------------------
-function toggleDarkMode() { document.body.style.filter = document.body.style.filter === 'invert(1) hue-rotate(180deg)' ? 'none' : 'invert(1) hue-rotate(180deg)'; }
+// Architected by م.مُحَمَّد فَايِز - Native Theme Switcher
+function toggleDarkMode() {
+    const body = document.body;
+    body.classList.toggle('light-theme');
+    
+    // حفظ اختيار المستخدم
+    const isLight = body.classList.contains('light-theme');
+    localStorage.setItem('tpm_theme', isLight ? 'light' : 'dark');
+    
+    // تغيير شكل الزرار (اختياري) وإظهار رسالة
+    showToast(isLight ? 'تم تفعيل وضع النهار ☀️' : 'تم تفعيل وضع الليل 🌙');
+}
+
+// تطبيق الثيم المحفوظ تلقائياً عند فتح التطبيق
+window.addEventListener('DOMContentLoaded', () => {
+    if(localStorage.getItem('tpm_theme') === 'light') {
+        document.body.classList.add('light-theme');
+    }
+});
 function updateDeptDropdown() { let opts = departments.map(d=>`<option value="${d}">${d}</option>`).join(''); document.querySelectorAll('select').forEach(s => {if(s.id.includes('Dept')) s.innerHTML=opts;}); }
 function updateDeptListUI() { }
 function addOrUpdateDept() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); syncRecord('departments', departments); updateDeptDropdown(); showToast('تم الحفظ'); } }
@@ -2548,3 +2662,29 @@ async function updateProfilePic(event) {
         }
     });
 }
+
+// ==========================================
+// Architected by م.مُحَمَّد فَايِز - PWA & Offline Engine
+// ==========================================
+
+// 1. تسجيل خادم المهام الخلفية (لفتح التطبيق بدون إنترنت)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('⚙️ Factory OS: Offline Mode Ready (Service Worker Registered)'))
+            .catch(err => console.error('PWA Error:', err));
+    });
+}
+
+// 2. مستشعرات الاتصال بشبكة المصنع (Network Sensors)
+window.addEventListener('online', () => {
+    showToast('🟢 عاد الاتصال بالإنترنت، جاري المزامنة...');
+    document.body.style.borderTop = 'none';
+    document.body.classList.remove('offline-mode');
+});
+
+window.addEventListener('offline', () => {
+    showToast('🔴 انقطع الاتصال بالخادم! التطبيق يعمل الآن من الذاكرة المحلية.');
+    document.body.style.borderTop = '4px solid var(--danger)';
+    document.body.classList.add('offline-mode');
+});

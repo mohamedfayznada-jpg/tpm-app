@@ -1863,33 +1863,6 @@ function openLossRegistration(lossId, lossName) {
 }
 handlePDFUpload
 
-function renderKnowledgeBase() {
-    let container = document.getElementById('knowledgeListContainer');
-    if(!container) return;
-    
-    if(!knowledgeBaseData || knowledgeBaseData.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">لا توجد كتالوجات أو مراجع مسجلة حتى الآن</div>';
-        return;
-    }
-    
-    let html = knowledgeBaseData.map(kb => {
-        let controls = hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="margin-top:10px; width:auto;" onclick="deleteRecord('knowledgeBase/${kb.id}')">🗑️ حذف المرجع</button>` : '';
-        return `
-        <div class="card glass-card" style="border-right: 4px solid var(--gold); margin-bottom:15px; padding:15px;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <h4 style="color:var(--gold); margin:0;">${kb.title}</h4>
-                <span style="font-size:10px; color:var(--text-muted); background:rgba(0,0,0,0.3); padding:3px 8px; border-radius:5px;">${kb.date}</span>
-            </div>
-            <div style="font-size:12px; color:var(--text-main); margin-top:10px; max-height:80px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
-                ${nl2brSafe(kb.content)}
-            </div>
-            <div style="font-size:10px; color:var(--text-muted); margin-top:10px;">إضافة: ${kb.author}</div>
-            ${controls}
-        </div>`;
-    }).join('');
-    
-    container.innerHTML = html;
-}
 
 async function saveUserPermissions() {
     if (!editingUserUid) return;

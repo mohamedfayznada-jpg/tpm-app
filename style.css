@@ -55,38 +55,39 @@ img, canvas, video { filter: none !important; }
    🌟 2. الشريط العلوي (Premium Smart Header)
    ========================================== */
 .main-header {
-    position: fixed; top: 0; left: 0; right: 0; height: 75px;
-    background: #0f172a; /* كحلي داكن فخم يكسر رتابة الأبيض ويمنع زغللة العين */
+    position: fixed; top: 0; left: 0; right: 0; height: 85px;
+    background: #0f172a; 
     display: flex; justify-content: space-between; align-items: center;
-    padding: 0 20px; z-index: 9999;
+    padding: 0 25px; z-index: 9999;
     border-bottom: 3px solid var(--primary);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 .header-center { text-align: center; }
-.header-center h1 { font-size: 19px; color: #ffffff; font-weight: 900; margin: 0; letter-spacing: 0.5px; }
+.tpm-title { font-size: 20px; color: #ffffff; font-weight: 900; margin: 0; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.tpm-en { color: var(--gold); font-family: Arial, sans-serif; font-weight: 900; margin-right: 6px; letter-spacing: 1px; }
 
 .supervisor-box { 
     margin-top: 4px; 
     background: rgba(255, 255, 255, 0.06); 
-    padding: 4px 14px; border-radius: 50px; 
+    padding: 8px 16px; border-radius: 50px; 
     border: 1px solid rgba(255, 255, 255, 0.15); 
-    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; 
+    cursor: pointer; display: inline-flex; align-items: center; gap: 8px; 
 }
-.supervisor-box p { font-size: 11px; color: var(--gold); font-weight: 700; margin: 0; }
+.supervisor-box p { font-size: 12px; color: var(--gold); font-weight: 700; margin: 0; }
 
 .icon-btn {
     background: rgba(255, 255, 255, 0.04); color: #94a3b8;
-    border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
-    width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;
+    width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
     cursor: pointer; transition: all 0.2s ease;
 }
-.icon-btn:hover { background: var(--primary); color: #ffffff; border-color: var(--primary); transform: translateY(-2px); }
-
+.icon-btn:hover { background: var(--primary); color: #ffffff; border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
 /* ==========================================
    🚪 3. القائمة الجانبية (شكل اللوجو ومنع التكسير)
    ========================================== */
 .sidebar { 
-    position: fixed; top: 0; right: -300px; width: 280px; height: 100vh; 
+    position: fixed; top: 0; right: -360px; width: 340px; height: 100vh; 
     background: var(--card-bg); z-index: 10001; 
     transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
     box-shadow: -5px 0 20px rgba(0,0,0,0.1); 

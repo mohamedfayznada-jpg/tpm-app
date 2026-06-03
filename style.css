@@ -249,6 +249,63 @@ img, canvas, video { filter: none !important; }
 .toast-msg { background: var(--primary); color: white; border: 1px solid var(--primary-light); padding: 12px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: popIn 0.3s ease-out forwards; }
 @keyframes popIn { 0% { opacity: 0; transform: translateY(20px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 
+
+
+/* ==========================================
+   ⚙️ 12. الإعدادات والملف الشخصي (Profile & Settings)
+   ========================================== */
+.settings-tabs { 
+    display: flex; gap: 8px; margin: 25px 0; 
+    background: #e2e8f0; padding: 6px; 
+    border-radius: 16px; border: 1px solid var(--card-border); 
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+.tab-btn { 
+    flex: 1; padding: 12px 5px; border: none; background: transparent; 
+    color: var(--text-muted); font-size: 13px; font-weight: 900; 
+    border-radius: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+.tab-btn:hover { color: var(--primary); }
+.tab-btn.active { 
+    background: #ffffff; color: var(--primary); 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); transform: scale(1.02); 
+}
+.settings-tab-content { display: none; animation: fadeUp 0.4s ease-out forwards; }
+.settings-tab-content.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+/* تحسين شكل بطاقة الملف الشخصي */
+#settingsScreen .glass-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+}
+.edit-badge {
+    position:absolute; bottom:-5px; right:-5px; 
+    background: var(--primary); color: white; padding: 8px; 
+    border-radius: 50%; cursor: pointer; font-size: 12px;
+    box-shadow: 0 4px 10px rgba(30, 58, 138, 0.3); transition: 0.3s;
+    border: 2px solid #fff;
+}
+.edit-badge:hover { transform: scale(1.1) rotate(10deg); background: var(--gold); }
+.rank-label {
+    background: var(--primary-light); color: var(--primary);
+    padding: 6px 20px; border-radius: 50px; font-weight: 900; font-size: 13px; 
+    display: inline-block; margin-top: 10px; border: 1px solid #bfdbfe;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* قوائم الإدارة والسيستم */
+.item-row {
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 15px 20px; background: #ffffff; border-radius: 14px; 
+    margin-bottom: 12px; border: 1px solid var(--card-border); 
+    border-right: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    transition: 0.3s;
+}
+.item-row:hover { transform: translateX(-4px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); border-color: var(--primary-light); }
+
+
 /* الميزات المحددة لكل صفحة (الطابع الخاص) */
 #homeScreen .card { border-top: 4px solid var(--primary); }
 #jhPortalScreen .card { border-top: 4px solid var(--success); }

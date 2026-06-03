@@ -264,3 +264,54 @@ img, canvas, video { filter: none !important; }
     .dashboard-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .pillars-grid { gap: 10px; }
 }
+/* ==========================================
+   📱 ضبط شاشات الموبايل للشريط العلوي (Mobile Header Fix)
+   ========================================== */
+@media (max-width: 768px) {
+    .main-header {
+        padding: 0 8px !important;
+        height: 70px !important;
+    }
+    
+    /* إجبار المسافات على الصغر وتجاوز أكواد الـ HTML */
+    .header-right, .header-left {
+        gap: 5px !important;
+    }
+
+    /* تصغير الأزرار الدائرية لتوفير المساحة */
+    .icon-btn {
+        width: 35px !important;
+        height: 35px !important;
+        font-size: 15px !important;
+        border-radius: 10px !important;
+    }
+
+    /* ترتيب صندوق المشرف ليكون مضغوط ومنع النزول لسطرين */
+    .supervisor-box {
+        padding: 4px 8px !important;
+    }
+    .supervisor-box p {
+        font-size: 9px !important;
+        white-space: nowrap !important;
+    }
+
+    /* تظبيط العنوان المركزي ليناسب الشاشة */
+    .tpm-title {
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+    }
+    .tpm-en {
+        font-size: 15px !important;
+        margin-right: 0 !important;
+    }
+
+    /* 🚀 توفير المساحة: إخفاء الأزرار المكررة (متاحين بالفعل في القائمة الجانبية) */
+    button[title="الرئيسية"],
+    button[title="تغيير المظهر"] {
+        display: none !important;
+    }
+}

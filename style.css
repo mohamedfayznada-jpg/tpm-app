@@ -232,3 +232,35 @@ img, canvas, video { filter: none !important; }
 
 .score-tag { background: var(--primary-light); color: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; border: 1px solid var(--primary); min-width: 45px; text-align: center; }
 .item-badge-max { font-size: 10px; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 4px; margin-right: auto; font-weight: bold;}
+/* ==========================================
+   📱 ضبط شاشات الموبايل (Mobile Responsiveness)
+   ========================================== */
+@media (max-width: 768px) {
+    /* 1. تحجيم الهيدر والمسافات */
+    .main-header { height: 70px; padding: 0 10px; }
+    .header-right, .header-left { gap: 5px !important; }
+    .container.screen { padding-top: 85px !important; }
+    
+    /* 2. تصغير الأيقونات لتناسب شاشة الموبايل */
+    .icon-btn { width: 36px; height: 36px; font-size: 16px; border-radius: 10px; }
+    
+    /* 3. ضغط العنوان (إخفاء النص الطويل وإبقاء TPM فقط للتميز) */
+    .tpm-title { font-size: 0; }
+    .tpm-title .tpm-en { font-size: 20px; margin: 0; }
+    
+    /* 4. ضغط صندوق المشرف (إخفاء الاسم وعرض أيقونة فقط) */
+    .supervisor-box { padding: 0; width: 36px; height: 36px; justify-content: center; }
+    .supervisor-box p { display: none; }
+    .supervisor-box::before { content: '👤'; font-size: 16px; }
+    
+    /* 5. إخفاء الأزرار المكررة (الموجودة في القائمة الجانبية) لتوفير مساحة */
+    .header-left button[title="الرئيسية"],
+    .header-left button[title="تغيير المظهر"] { display: none; }
+    
+    /* 6. تحجيم القائمة الجانبية لتناسب عرض الموبايل */
+    .sidebar { width: 280px; right: -300px; padding: 15px; }
+    
+    /* 7. تظبيط الإحصائيات والكروت لعمودين بدلاً من التكدس */
+    .dashboard-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pillars-grid { gap: 10px; }
+}

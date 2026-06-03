@@ -2623,7 +2623,7 @@ window.addEventListener('offline', () => {
     document.body.classList.add('offline-mode');
 });
 // ==========================================
-// 🧠 ثورة عقل TPM النابض (إصدار الإجابات المختصرة والآمنة)
+// 🧠 ثورة عقل TPM النابض (إصدار الإجابات القصيرة جداً)
 // ==========================================
 
 async function callGeminiTPMExpert(promptText, pdfBase64 = null) {
@@ -2635,12 +2635,10 @@ async function callGeminiTPMExpert(promptText, pdfBase64 = null) {
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
-    // برومبت عسكري يمنع الهلوسة ويجبره على الاختصار
-    let systemPrompt = `أنت مهندس صيانة محترف.
-قواعد الإجابة الصارمة:
-1. أجب باختصار شديد جداً ومباشر (لا تتجاوز 4 أسطر أو 4 نقاط).
-2. يُمنع منعاً باتاً كتابة أي أكواد برمجية أو علامات HTML.
-3. استخدم النص العادي فقط.
+    // برومبت عسكري
+    let systemPrompt = `أنت مهندس صيانة. 
+يُمنع استخدام علامات HTML أو جداول.
+أجب باختصار في سطرين أو 3 سطور كحد أقصى.
 السؤال: ${promptText}`;
 
     let contents = [{ parts: [{ text: systemPrompt }] }];
@@ -2650,41 +2648,47 @@ async function callGeminiTPMExpert(promptText, pdfBase64 = null) {
         contents[0].parts.push({ inline_data: { mime_type: "application/pdf", data: b64Data } });
     }
 
+    // هنا السر: إجبار الـ AI على الاختصار وعدم الهلوسة برمجياً
+    const requestBody = {
+        contents: contents,
+        generationConfig: {
+            maxOutputTokens: 150, // يقطع الإجابة لو طالت
+            temperature: 0.1      // يمنع التأليف والهلوسة
+        }
+    };
+
     try {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: contents })
+            body: JSON.stringify(requestBody)
         });
-        
-        if (!response.ok) return "⚠️ حدث خطأ في الاتصال. تأكد من صحة المفتاح.";
-
+        if (!response.ok) return "⚠️ خطأ في مفتاح الـ API.";
         const data = await response.json();
         return data.candidates[0].content.parts[0].text;
     } catch (error) {
-        return "⚠️ فشل الاتصال بالشبكة.";
+        return "⚠️ فشل الاتصال.";
     }
 }
 
 // ------------------------------------------
-// 📚 إدارة رفوف المكتبة (رفع، فتح، حذف)
+// 📚 وظائف المكتبة
 // ------------------------------------------
 let tempBase64Pdf = null;
 
-window.handleMaterialUpload = function(event) {
+function handleMaterialUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
     document.getElementById('pdfExtractStatus').innerText = "جاري التجهيز... ⏳";
     const reader = new FileReader();
     reader.onload = function(e) {
         tempBase64Pdf = e.target.result;
-        document.getElementById('pdfExtractStatus').innerHTML = `✅ تم رفع: <br><span style="font-size:11px; color:#1E3A8A;">${file.name}</span>`;
+        document.getElementById('pdfExtractStatus').innerHTML = `✅ تم اختيار: ${file.name}`;
     };
     reader.readAsDataURL(file);
-};
+}
 
-window.saveNewBook = function() {
+function saveNewBook() {
     const title = document.getElementById('kbTitle').value;
     const cat = document.getElementById('kbCategory').value;
     const link = document.getElementById('kbExternalLink').value;
@@ -2700,61 +2704,57 @@ window.saveNewBook = function() {
     tempBase64Pdf = null;
     
     showToast("✅ تم إضافة المرجع!");
-    if(window.renderKnowledgeShelves) renderKnowledgeShelves();
-};
+    if(typeof renderKnowledgeShelves === 'function') renderKnowledgeShelves();
+}
 
-window.deleteBook = function(id) {
+function deleteBook(id) {
     if(confirm("⚠️ متأكد من الحذف؟")) {
         knowledgeBaseData = knowledgeBaseData.filter(b => b.id !== id);
         renderKnowledgeShelves();
     }
-};
+}
 
-window.openBook = function(id) {
+function openBook(id) {
     const book = knowledgeBaseData.find(b => b.id === id);
     if (!book) return;
-
     if (book.link) window.open(book.link, '_blank');
     else if (book.pdfData) {
         let pdfWindow = window.open("");
-        if(pdfWindow) pdfWindow.document.write(`<iframe width='100%' height='100%' style='border:none; margin:0;' src='${book.pdfData}'></iframe>`);
+        if(pdfWindow) pdfWindow.document.write(`<iframe width='100%' height='100%' style='border:none;' src='${book.pdfData}'></iframe>`);
     } else showToast("⚠️ لا يوجد محتوى.");
-};
+}
 
 // ------------------------------------------
-// 🧠 وظائف الذكاء الاصطناعي (مختصرة وسريعة)
+// 🧠 أزرار الذكاء الاصطناعي الأساسية
 // ------------------------------------------
 
-window.askFactoryAI = async function() {
+async function askFactoryAI() {
     const question = document.getElementById('kbSearchInput').value;
     if (!question) return showToast("اكتب سؤالك أولاً!");
 
     const responseBox = document.getElementById('aiSearchResponse');
     const responseText = document.getElementById('aiResponseText');
-    const oplBtn = document.getElementById('oplBtnContainer'); // إظهار زر الـ OPL
+    const oplBtn = document.getElementById('oplBtnContainer');
     
     responseBox.style.display = 'block';
-    oplBtn.style.display = 'none'; // نخفيه أثناء التحميل
+    if(oplBtn) oplBtn.style.display = 'none';
     responseText.innerHTML = "<i>جاري البحث والإجابة باختصار... ⏳</i>";
 
-    // نأمره بالاختصار هنا كمان
-    const aiAnswer = await callGeminiTPMExpert(question + " (أجب باختصار في 3 نقاط فقط وبدون أكواد HTML)");
-    
-    responseText.innerHTML = aiAnswer.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--primary);">$1</b>');
+    const aiAnswer = await callGeminiTPMExpert(question);
+    responseText.innerHTML = aiAnswer.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
     window.lastAIAnswer = aiAnswer;
-    oplBtn.style.display = 'block'; // إظهار الزر بعد الإجابة
-};
+    if(oplBtn) oplBtn.style.display = 'block';
+}
 
-window.convertAIToOPL = function() {
+function convertAIToOPL() {
     if (!window.lastAIAnswer) return showToast("لا توجد إجابة!");
     document.getElementById('oplModal').style.display = 'flex';
-    document.getElementById('oplTitle').value = document.getElementById('kbSearchInput').value.substring(0, 40);
+    document.getElementById('oplTitle').value = "درس نقطة واحدة عن: " + document.getElementById('kbSearchInput').value.substring(0, 20);
     document.getElementById('oplDesc').value = window.lastAIAnswer.replace(/\*/g, '');
-    showToast("✨ تم تجهيز الـ OPL!");
-};
+}
 
-window.generateTPMQuiz = async function() {
-    const topic = prompt("أدخل موضوع الامتحان (مثال: الـ 5S، تشحيم الماكينات):");
+async function generateTPMQuiz() {
+    const topic = prompt("أدخل موضوع الامتحان (مثال: قواعد 5S):");
     if (!topic) return;
 
     const responseBox = document.getElementById('aiSearchResponse');
@@ -2762,21 +2762,17 @@ window.generateTPMQuiz = async function() {
     const oplBtn = document.getElementById('oplBtnContainer');
     
     responseBox.style.display = 'block';
-    oplBtn.style.display = 'none'; // نخفي زر الـ OPL في الامتحان
+    if(oplBtn) oplBtn.style.display = 'none';
     responseText.innerHTML = `<i>جاري تصميم امتحان عن ${topic}... ⏳</i>`;
 
-    const promptText = `صمم اختبار قصير من 3 أسئلة اختيارات عن: ${topic}. أجب كنص عادي فقط وبدون أكواد.`;
-    const quizText = await callGeminiTPMExpert(promptText);
-    responseText.innerHTML = quizText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--danger);">$1</b>');
-};
+    const quizText = await callGeminiTPMExpert(`ضع 3 أسئلة اختيارات بسيطة عن: ${topic}`);
+    responseText.innerHTML = quizText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+}
 
-window.askAIAuditHelp = async function(itemName) {
+async function askAIAuditHelp(itemName) {
     document.getElementById('aiModal').style.display = 'flex';
     document.getElementById('aiModalText').innerHTML = "<i>جاري التلخيص... ⏳</i>";
     
-    const promptText = `اشرح باختصار شديد جدا (نص عادي فقط بدون أكواد HTML) كيفية مراجعة البند التالي في المصنع: "${itemName}".
-اذكر الغرض، طريقة الفحص، وعلامات الخطر في 3 سطور فقط.`;
-
-    const helpText = await callGeminiTPMExpert(promptText);
+    const helpText = await callGeminiTPMExpert(`اشرح باختصار شديد جدا (بدون أكواد أو جداول) كيف أفحص هذا البند: "${itemName}"`);
     document.getElementById('aiModalText').innerHTML = helpText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--success);">$1</b>');
-};
+}

@@ -595,23 +595,32 @@
     </div>
 
   <div class="container screen" id="knowledgeScreen">
-        <div class="library-header-main">
+      <div class="library-header-main">
             <div style="display:flex; align-items:center; gap:12px;">
                 <div class="lib-icon-circle">📚</div>
                 <div>
-                    <h3 style="color:var(--gold); margin:0; font-size:18px;">المكتبة الهندسية</h3>
-                    <p style="color:var(--text-muted); font-size:10px; margin:0;">مدعومة بالذكاء الاصطناعي (Factory AI)</p>
+                    <h3 style="color:#1E3A8A; margin:0; font-size:18px; font-weight:900;">عقل <span style="color:#D97706; font-family:Arial;">TPM</span> النابض</h3>
+                    <p style="color:var(--text-muted); font-size:11px; margin:0; font-weight:bold;">مدعوم بـ Gemini 1.5 Pro</p>
                 </div>
             </div>
-            <button class="btn btn-sm btn-primary btn-role-admin" style="width:auto; border-radius:12px;" onclick="document.getElementById('addBookModal').style.display='flex'">➕ إضافة مرجع</button>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-sm btn-warning" style="width:auto; border-radius:10px; font-weight:900;" onclick="generateTPMQuiz()">📝 توليد امتحان</button>
+                <button class="btn btn-sm btn-primary btn-role-admin" style="width:auto; border-radius:10px;" onclick="document.getElementById('addBookModal').style.display='flex'">➕ إضافة مرجع</button>
+            </div>
         </div>
 
-        <div class="ai-search-container">
-            <div class="search-input-wrapper">
-                <input type="text" id="kbSearchInput" class="form-control" placeholder="اسأل عقل المصنع عن أي معلومة فنية (مثال: كيف يتم فحص طلمبة الحقن؟)...">
-                <button class="btn-ai-ask" onclick="askFactoryAI()">🧠 اسأل AI</button>
+        <div class="ai-search-container" style="border: 2px solid #DBEAFE; background: linear-gradient(180deg, #ffffff, #F8FAFC);">
+            <div class="search-input-wrapper" style="box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <input type="text" id="kbSearchInput" class="form-control" placeholder="اسأل خبير الـ TPM عن أي معلومة (أعطال، خطوات، تحسينات)..." style="font-size:15px;">
+                <button class="btn-ai-ask" onclick="askFactoryAI()">🧠 اسأل الخبير</button>
             </div>
-            <div id="aiSearchResponse" class="ai-response-bubble" style="display:none;"></div>
+            
+            <div id="aiSearchResponse" class="ai-response-bubble" style="display:none; padding: 25px;">
+                <div id="aiResponseText" style="font-size:15px; color:#111827; line-height:1.8; margin-bottom:15px;"></div>
+                <div style="border-top:1px dashed #10B981; padding-top:15px; text-align:left;">
+                    <button class="btn btn-sm btn-success" style="border-radius:8px; font-weight:bold; box-shadow:0 4px 10px rgba(16,185,129,0.2);" onclick="convertAIToOPL()">✨ تحويل إلى OPL</button>
+                </div>
+            </div>
         </div>
 
        <h4 class="section-title">رفوف الكتب</h4>

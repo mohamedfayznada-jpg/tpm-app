@@ -173,15 +173,30 @@ img, canvas, video { filter: none !important; }
 .flex-1 { flex: 1; } .flex-2 { flex: 2; }
 
 /* ==========================================
-   📊 6. لوحات البيانات والإحصائيات
+   📊 6. لوحات البيانات والإحصائيات (Smart KPIs)
    ========================================== */
-.dashboard-stats { display: flex; gap: 10px; margin-bottom: 15px; }
-.stat-card { text-align: center; padding: 10px; border-radius: 10px; flex: 1; background: var(--bg-color); border: 1px solid var(--card-border); }
-.stat-value { font-size: 22px; font-weight: bold; color: var(--text-main); }
-.stat-label { font-size: 11px; color: var(--text-muted); font-weight: 700;}
-.chart-container { height: 250px; background: rgba(0,0,0,0.02); border-radius: 15px; padding: 10px; margin: 15px 0; border: 1px solid var(--card-border); }
+.dashboard-stats { display: flex; gap: 15px; margin-bottom: 25px; }
+.stat-card { 
+    text-align: center; padding: 20px 10px; border-radius: 16px; flex: 1; 
+    background: var(--card-bg); border: 1px solid var(--card-border); 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative; overflow: hidden;
+}
 
-.dashboard-stats.modern-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* تأثير خط ملون ذكي لكل كارت حسب حالته */
+.stat-card:nth-child(1) { border-right: 4px solid var(--primary); }
+.stat-card:nth-child(2) { border-right: 4px solid var(--danger); }
+.stat-card:nth-child(3) { border-right: 4px solid var(--success); }
+
+.stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); border-color: var(--primary-light); }
+.stat-icon { font-size: 28px; margin-bottom: 8px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); transition: 0.3s; }
+.stat-card:hover .stat-icon { transform: scale(1.1); }
+.stat-value { font-size: 28px; font-weight: 900; color: var(--text-main); margin-bottom: 2px; }
+.stat-label { font-size: 12px; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;}
+
+.chart-container { height: 280px; background: var(--card-bg); border-radius: 20px; padding: 20px; margin: 20px 0; border: 1px solid var(--card-border); box-shadow: 0 4px 10px rgba(0,0,0,0.03); width: 100%; }
+
+.dashboard-stats.modern-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .oee-card { grid-column: span 2; }
 
 /* ==========================================
@@ -315,3 +330,35 @@ img, canvas, video { filter: none !important; }
         display: none !important;
     }
 }
+/* ==========================================
+   🔐 شاشة تسجيل الدخول (Enterprise Portal)
+   ========================================== */
+#loginScreen.active, #signupScreen.active {
+    display: flex !important; flex-direction: column; justify-content: center; align-items: center;
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, var(--primary) 100%);
+    z-index: 9999999; /* عزل تام يغطي القوائم والهيدر */
+}
+.login-wrapper { width: 100%; max-width: 420px; text-align: center; padding: 20px; }
+.login-header h2 { color: #ffffff; text-shadow: 0 2px 5px rgba(0,0,0,0.3); font-size: 24px; margin-bottom: 5px; }
+.login-header p { color: #94a3b8; font-size: 13px; margin-bottom: 25px; }
+
+.logo-circle { 
+    width: 85px; height: 85px; background: #ffffff; color: var(--primary); 
+    border-radius: 22px; display: flex; align-items: center; justify-content: center; 
+    margin: 0 auto 20px; font-weight: 900; font-size: 26px; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3); transform: rotate(-5deg); transition: 0.3s;
+}
+.login-wrapper:hover .logo-circle { transform: rotate(0deg) scale(1.05); }
+
+.modern-card { 
+    background: rgba(255, 255, 255, 0.95) !important; backdrop-filter: blur(10px);
+    border: 4px solid rgba(255, 255, 255, 0.2) !important; 
+    padding: 35px 25px !important; border-radius: 24px !important; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important; 
+}
+.modern-card .form-control { background: #f8fafc; border: 1px solid #cbd5e1; }
+.modern-card .form-control:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.2); }
+
+.divider { margin: 25px 0 15px; position: relative; border-top: 1px solid #e2e8f0; }
+.divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #ffffff; padding: 0 15px; font-size: 12px; color: var(--text-muted); border-radius: 10px; font-weight: bold; border: 1px solid #e2e8f0; }

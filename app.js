@@ -1074,26 +1074,40 @@ async function saveFinalAudit() {
     }, 1500);
 }
 // ------------------------------------------
-// 📊 أرشيف التقارير (History)
+// 📊 أرشيف التقارير (History) المطور
 // ------------------------------------------
 function renderHistory() {
     let real = historyData.filter(h=>!h.stepsOrder.includes('ManualKaizen')).reverse();
     let html = real.map(a => {
         let controls = (hasRole('admin') || currentUser.name === a.auditor) ? `
-            <div style="margin-top:10px; display:flex; gap:5px; border-top:1px dashed var(--copper); padding-top:10px;">
-                <button class="btn btn-sm btn-warning flex-1" onclick="event.stopPropagation(); editReport('${a.id}')">تعديل</button>
-                <button class="btn btn-sm btn-danger flex-1" onclick="event.stopPropagation(); deleteReport('${a.id}')">حذف</button>
+            <div style="margin-top:12px; display:flex; gap:10px; border-top:1px dashed #cbd5e1; padding-top:12px;">
+                <button class="btn btn-sm btn-outline flex-1" style="border-radius:8px; color:var(--primary); border-color:var(--primary);" onclick="event.stopPropagation(); editReport('${a.id}')">✏️ تعديل</button>
+                <button class="btn btn-sm btn-outline flex-1" style="border-radius:8px; color:var(--danger); border-color:var(--danger);" onclick="event.stopPropagation(); deleteReport('${a.id}')">🗑️ حذف</button>
             </div>
         ` : '';
-        return `<div class="card" style="cursor:pointer;" onclick="viewDetailedReport('${a.id}')">
+        
+        // تغيير لون الكارت بناءً على التقييم
+        let color = a.totalPct >= 80 ? 'var(--success)' : (a.totalPct >= 50 ? 'var(--warning)' : 'var(--danger)');
+        
+        return `
+        <div class="card glass-card" style="cursor:pointer; padding: 20px; border-right: 5px solid ${color}; transition: 0.3s;" onclick="viewDetailedReport('${a.id}')" onmouseover="this.style.transform='translateX(-5px)'" onmouseout="this.style.transform='translateX(0)'">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div><h3 style="color:var(--gold); margin:0;">${a.dept}</h3><span style="font-size:11px; color:var(--text-muted);">${a.date} | الماكينة: ${a.machine}</span></div>
-                <div style="font-size:22px; font-weight:bold; color:var(--success);">${a.totalPct}%</div>
+                <div>
+                    <h3 style="color:var(--text-main); font-weight:900; margin:0 0 5px; font-size:16px;">🏭 ${a.dept}</h3>
+                    <div style="font-size:11px; color:var(--text-muted); font-weight:bold;">
+                        <span style="display:inline-block; margin-left:10px;">👤 ${a.auditor}</span>
+                        <span style="display:inline-block; margin-left:10px;">📅 ${a.date}</span>
+                        <span style="display:inline-block;">⚙️ ${a.machine || 'عام'}</span>
+                    </div>
+                </div>
+                <div style="font-size:26px; font-weight:900; color:${color}; background:rgba(0,0,0,0.03); padding:5px 15px; border-radius:12px;">
+                    ${a.totalPct}%
+                </div>
             </div>
             ${controls}
         </div>`;
     }).join('');
-    document.getElementById('historyListContainer').innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">لا توجد تقارير حالياً</div>';
+    document.getElementById('historyListContainer').innerHTML = html || '<div style="text-align:center; padding:30px; color:var(--text-muted); font-weight:bold;">لا توجد تقارير في الأرشيف حالياً 📭</div>';
 }
 
 function deleteReport(id) { if(confirm('تأكيد الحذف النهائي للتقرير؟')) { deleteRecord('history/' + id); showToast('تم الحذف بنجاح'); } }

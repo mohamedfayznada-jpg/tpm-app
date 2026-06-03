@@ -1,32 +1,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 
 /* =========================================================
-   🏭 FACTORY OS - ENTERPRISE LIGHT EDITION V8.0
+   🏭 FACTORY OS - STABLE DAYLIGHT EDITION V9.0 (Fixed Layout)
    ========================================================= */
 
 :root {
-    /* باليتة المؤسسات والأنظمة الصناعية الكبرى (Clean & Corporate) */
-    --bg-color: #F3F4F6;        /* خلفية رمادية فاتحة جداً تريح العين */
+    /* باليتة نهارية نقية للمصانع الذكية */
+    --bg-color: #F0F4F8;        /* خلفية رمادي مائل للأزرق الفاتح جداً */
     --card-bg: #FFFFFF;         /* كروت بيضاء نقية */
-    --card-border: #E5E7EB;     /* حدود ناعمة تفصل العناصر بدقة */
+    --card-border: #E2E8F0;     /* حدود ناعمة */
     
-    --primary: #1E3A8A;         /* أزرق مؤسسي عميق (Deep Trust Blue) */
-    --primary-light: #DBEAFE;   /* أزرق فاتح جداً لتمييز العناصر النشطة */
+    --primary: #0F4C81;         /* أزرق مؤسسي (El Araby Theme) */
+    --primary-light: #E1EFFE;   
     
-    --gold: #D97706;            /* ذهبي احترافي غير مزعج */
-    --gold-dim: #FEF3C7;        /* خلفية ذهبية باهتة */
+    --gold: #D97706;            
+    --success: #059669;         
+    --danger: #DC2626;          
+    --warning: #EA580C;         
     
-    --success: #059669;         /* أخضر مريح للعين (نجاح / أمان) */
-    --danger: #DC2626;          /* أحمر تحذيري قوي */
-    --warning: #EA580C;         /* برتقالي تنبيهي */
+    --text-main: #1E293B;       /* نصوص داكنة مريحة للعين */
+    --text-muted: #64748B;      
     
-    --text-main: #111827;       /* كحلي مائل للأسود (تباين عالي للقراءة) */
-    --text-muted: #6B7280;      /* رمادي أنيق للنصوص الفرعية */
-    
-    /* ظلال احترافية (Shadows) لإعطاء عمق بدون تسييح */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
@@ -39,198 +35,195 @@ body {
 img, canvas, video { filter: none !important; }
 
 /* ==========================================
-   🏛️ الهيكل الأساسي والقوائم (محمية من التداخل)
+   🏛️ 1. الهيكل الأساسي والسنترة (حجر الأساس)
+   ========================================== */
+.container { 
+    width: 100%; 
+    max-width: 900px; /* توسيع الشاشة قليلاً للمقاسات الكبيرة */
+    margin: 0 auto;   /* السنترة في منتصف الشاشة */
+    padding: 100px 15px 40px 15px !important; /* مسافة أمان من الهيدر */
+}
+
+/* ==========================================
+   🛑 2. التحكم في الشاشات (حل مشكلة التسييح)
+   ========================================== */
+.screen { display: none !important; }
+.screen.active { display: block !important; animation: fadeIn 0.4s ease; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================
+   🚪 3. القائمة الجانبية (Sidebar Fix)
    ========================================== */
 .sidebar {
-    position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
-    background: var(--card-bg); z-index: 10001;
-    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: -5px 0 25px rgba(0,0,0,0.1);
+    position: fixed; top: 0; right: -300px; /* مخفية تماماً خارج الشاشة */
+    width: 280px; height: 100%;
+    background: var(--card-bg); z-index: 100000;
+    transition: 0.3s ease-in-out;
+    box-shadow: -5px 0 20px rgba(0,0,0,0.1);
     border-left: 1px solid var(--card-border);
+    padding: 20px; overflow-y: auto;
 }
-.sidebar.active { right: 0; }
+.sidebar.active { right: 0; /* تظهر فقط عند التفعيل */ }
 
 .sidebar-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(17, 24, 39, 0.4); z-index: 10000;
+    background: rgba(0, 0, 0, 0.4); z-index: 99999;
     display: none; backdrop-filter: blur(2px);
 }
 .sidebar-overlay.active { display: block; }
 
-.sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--card-border); text-align: center; }
-.sidebar-menu { list-style: none; padding: 20px; }
+.sidebar-menu { list-style: none; margin-top: 20px; }
 .sidebar-menu li {
-    padding: 14px 15px; margin-bottom: 8px; border-radius: 10px;
+    padding: 12px 15px; margin-bottom: 8px; border-radius: 10px;
     cursor: pointer; transition: 0.2s; font-weight: 700; color: var(--text-main);
-    display: flex; align-items: center; gap: 10px; border: 1px solid transparent;
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid transparent; background: var(--bg-color);
 }
-.sidebar-menu li:hover { background-color: var(--primary-light); color: var(--primary); border-color: #BFDBFE; transform: translateX(-4px); }
+.sidebar-menu li:hover { background-color: var(--primary-light); color: var(--primary); border-color: var(--primary); }
 
 /* ==========================================
-   🌟 الهيدر (Header)
+   🌟 4. الهيدر الثابت (Header)
    ========================================== */
 .main-header {
     position: fixed; top: 0; left: 0; right: 0; height: 75px;
-    background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    background: var(--card-bg);
     display: flex; justify-content: space-between; align-items: center;
     padding: 0 20px; z-index: 9999;
     border-bottom: 1px solid var(--card-border);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-soft);
 }
 .header-center { text-align: center; }
-.header-center h1 { font-size: 20px; color: var(--primary); font-weight: 900; margin:0; letter-spacing: -0.5px; }
-.supervisor-box { margin-top: 2px; }
-.supervisor-box p { font-size: 11px; color: var(--text-muted); font-weight: 600; margin:0; }
+.header-center h1 { font-size: 20px; color: var(--primary); font-weight: 900; margin: 0; }
+.supervisor-box { margin-top: 2px; background: var(--primary-light); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(15,76,129,0.2); }
+.supervisor-box p { font-size: 11px; color: var(--primary); font-weight: 700; margin: 0; }
 
 .icon-btn {
     background: var(--bg-color); color: var(--text-muted);
     border: 1px solid var(--card-border); border-radius: 12px;
     width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: 0.2s; box-shadow: var(--shadow-sm);
+    cursor: pointer; transition: 0.2s;
 }
-.icon-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.icon-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
 
 /* ==========================================
-   🖥️ الشاشات والحاويات
-   ========================================== */
-.container { width: 100%; max-width: 800px; margin: 0 auto; padding-top: 100px; padding-bottom: 40px; padding-left: 15px; padding-right: 15px; }
-.screen { display: none !important; }
-.screen.active { display: block !important; animation: fadeIn 0.4s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
-/* ==========================================
-   💳 الكروت (Cards) - نظيفة ومنفصلة
+   💳 5. الكروت والوحدات (Cards & Pillars)
    ========================================== */
 .card, .glass-card {
-    background: var(--card-bg);
-    border-radius: 16px; padding: 25px; margin-bottom: 20px;
-    border: 1px solid var(--card-border);
-    box-shadow: var(--shadow-sm);
-    transition: 0.3s;
+    background: var(--card-bg); border-radius: 16px; padding: 25px; 
+    margin-bottom: 20px; border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-soft); transition: 0.3s;
 }
-.card:hover, .glass-card:hover { box-shadow: var(--shadow-md); border-color: #BFDBFE; }
+.card:hover, .glass-card:hover { box-shadow: var(--shadow-hover); border-color: #CBD5E1; }
 
-/* ==========================================
-   🎛️ وحدات التشغيل (Pillars Grid)
-   ========================================== */
-.pillars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-top: 20px; }
+.pillars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
 .pillar-card {
     background: var(--card-bg); border: 1px solid var(--card-border);
     border-radius: 16px; padding: 25px 15px; text-align: center; cursor: pointer;
-    box-shadow: var(--shadow-sm); transition: 0.3s; position: relative; overflow: hidden;
+    box-shadow: var(--shadow-soft); transition: 0.3s; position: relative; overflow: hidden;
 }
-.pillar-card::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: var(--primary); transform: scaleX(0); transition: 0.3s; }
-.pillar-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--primary); }
-.pillar-card:hover::after { transform: scaleX(1); }
-
-.pillar-icon { font-size: 34px; margin-bottom: 15px; transition: 0.3s; display: inline-block; }
-.pillar-card:hover .pillar-icon { transform: scale(1.1) translateY(-3px); }
-.pillar-title { font-size: 14px; font-weight: 900; color: var(--text-main); margin-bottom: 5px; }
+.pillar-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: var(--primary); }
+.pillar-icon { font-size: 34px; margin-bottom: 12px; display: inline-block; transition: 0.3s; }
+.pillar-card:hover .pillar-icon { transform: scale(1.1); }
+.pillar-title { font-size: 15px; font-weight: 900; color: var(--text-main); margin-bottom: 5px; }
 .pillar-desc { font-size: 11px; color: var(--text-muted); font-weight: 600; }
-.pillar-badge { position: absolute; top: 12px; left: -25px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 25px; transform: rotate(-45deg); box-shadow: var(--shadow-sm); }
+.pillar-badge { position: absolute; top: 12px; left: -25px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 25px; transform: rotate(-45deg); }
 
 /* ==========================================
-   🔘 الأزرار والمدخلات (Forms & Buttons)
+   🎛️ 6. الأزرار والمدخلات (Forms)
    ========================================== */
+.form-group { margin-bottom: 15px; width: 100%; }
 .form-group label { display: block; font-size: 13px; color: var(--text-main); font-weight: 700; margin-bottom: 8px; }
 .form-control {
-    width: 100%; padding: 14px 18px; border-radius: 12px;
-    border: 1px solid var(--card-border); background: var(--bg-color);
-    color: var(--text-main); font-size: 14px; font-weight: 600; transition: 0.3s; margin-bottom: 15px;
+    width: 100%; padding: 12px 15px; border-radius: 10px;
+    border: 1px solid var(--card-border); background: #F8FAFC;
+    color: var(--text-main); font-size: 14px; font-weight: 600; transition: 0.3s;
 }
-.form-control:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px var(--primary-light); background: #fff; }
+.form-control:focus { border-color: var(--primary); outline: none; background: #fff; box-shadow: 0 0 0 3px var(--primary-light); }
 
 .btn {
-    border-radius: 10px; padding: 12px 22px; font-weight: 800; font-size: 14px;
+    border-radius: 10px; padding: 12px 20px; font-weight: 800; font-size: 14px;
     border: none; cursor: pointer; text-align: center; transition: 0.2s;
     display: inline-flex; justify-content: center; align-items: center; gap: 8px;
 }
 .btn:active { transform: scale(0.96); }
-.btn-primary { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
-.btn-primary:hover { background: #152C69; box-shadow: var(--shadow-md); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #0B3A60; }
 .btn-success { background: var(--success); color: #fff; }
-.btn-success:hover { background: #047857; }
 .btn-danger { background: var(--danger); color: #fff; }
-.btn-warning { background: var(--gold); color: #fff; }
+.btn-warning { background: var(--warning); color: #fff; }
 .btn-outline { background: #fff; color: var(--text-main); border: 1px solid var(--card-border); }
-.btn-outline:hover { background: var(--bg-color); border-color: var(--text-muted); }
-.btn-sm { padding: 8px 14px; font-size: 12px; border-radius: 8px; }
+.btn-outline:hover { background: var(--bg-color); }
+.btn-sm { padding: 8px 12px; font-size: 12px; border-radius: 8px; }
 .full-width { width: 100%; }
 
 /* ==========================================
-   📊 الإحصائيات والشارت (Stats & Charts)
+   📊 7. الإحصائيات (Stats & Charts)
    ========================================== */
 .dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 20px;}
 .stat-card {
     background: var(--card-bg); border: 1px solid var(--card-border);
-    border-radius: 14px; padding: 18px 10px; text-align: center; box-shadow: var(--shadow-sm);
+    border-radius: 14px; padding: 15px 10px; text-align: center; box-shadow: var(--shadow-soft);
 }
-.stat-value { font-size: 26px; font-weight: 900; margin-bottom: 5px; color: var(--text-main); }
+.stat-value { font-size: 24px; font-weight: 900; margin-bottom: 5px; color: var(--text-main); }
 .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
+.chart-container { height: 260px; background: var(--card-bg); border-radius: 16px; padding: 20px; margin: 20px 0; border: 1px solid var(--card-border); box-shadow: var(--shadow-soft); }
 
-.chart-container {
-    height: 260px; background: var(--card-bg); border-radius: 16px;
-    padding: 20px; margin: 20px 0; border: 1px solid var(--card-border);
-    box-shadow: var(--shadow-sm);
+/* ==========================================
+   🪟 8. النوافذ المنبثقة (Modals)
+   ========================================== */
+.modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 100000;
+    justify-content: center; align-items: center; backdrop-filter: blur(3px);
+}
+.modal-content {
+    background: var(--card-bg); padding: 25px; border-radius: 16px;
+    width: 95%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+    border: 1px solid var(--card-border);
 }
 
 /* ==========================================
-   🎫 التذاكر والكانبان (Tickets & Kanban)
+   🎫 9. التذاكر والكانبان (Tickets & Kanban)
    ========================================== */
-.kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
-.kanban-col { background: var(--bg-color); border-radius: 16px; padding: 16px; border: 1px solid var(--card-border); }
-.kanban-header { font-weight: 900; font-size: 14px; margin-bottom: 15px; display: flex; justify-content: space-between; color: var(--text-main); }
-.kanban-item { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border); padding: 15px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
-.kanban-item:hover { box-shadow: var(--shadow-md); border-color: #BFDBFE; }
+.kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
+.kanban-col { background: var(--bg-color); border-radius: 12px; padding: 15px; border: 1px solid var(--card-border); }
+.kanban-item { background: var(--card-bg); border-radius: 10px; border: 1px solid var(--card-border); padding: 15px; margin-bottom: 10px; box-shadow: var(--shadow-soft); }
 
-.tag-ticket { background: var(--card-bg); border-radius: 14px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--card-border); border-right: 6px solid var(--primary); box-shadow: var(--shadow-sm); transition: 0.3s; }
-.tag-ticket:hover { transform: translateX(-4px); box-shadow: var(--shadow-md); }
-.ticket-red { border-right-color: var(--danger); background: linear-gradient(90deg, #fff, #FEF2F2); }
-.ticket-blue { border-right-color: var(--primary); background: linear-gradient(90deg, #fff, #EFF6FF); }
+.tag-ticket { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--card-border); border-right: 5px solid var(--primary); box-shadow: var(--shadow-soft); }
+.ticket-red { border-right-color: var(--danger); background: #FEF2F2; } 
+.ticket-blue { border-right-color: var(--primary); background: #EFF6FF; }
 
 /* ==========================================
-   🏆 لوحة الأبطال (Leaderboard)
+   🌐 10. أدوات التنسيق (Utilities - لمنع التداخل)
    ========================================== */
-.elite-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
-.elite-card.gold-glow { background: var(--gold-dim); border-color: var(--gold); border-width: 2px; }
-.elite-avatar { width: 45px; height: 45px; border-radius: 10px; border: 2px solid var(--bg-color); }
-.elite-info { flex: 1; margin-right: 15px; }
-.elite-name { font-weight: 900; font-size: 14px; color: var(--text-main); }
-.elite-level { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-.pts-val { font-size: 20px; font-weight: 900; color: var(--primary); }
-
-/* ==========================================
-   ✨ نوافذ وأدوات (Modals & Utilities)
-   ========================================== */
-.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17,24,39,0.5); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-.modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); border: 1px solid var(--card-border); animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-@keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-.progress-track { height: 10px; background: var(--bg-color); border: 1px solid var(--card-border); border-radius: 10px; margin: 15px 0; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--primary); border-radius: 10px; transition: width 0.6s ease; }
-
-#toast-container { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 350px; }
-.toast-msg { background: var(--text-main); color: #fff; padding: 14px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; box-shadow: var(--shadow-md); text-align: center; border-bottom: 3px solid var(--primary); }
-
-/* كلاسات المساعدة (Utilities) لمنع التداخل */
-.row-flex { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.row-flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%; }
 .flex-1 { flex: 1; min-width: 120px; } 
 .flex-2 { flex: 2; min-width: 200px; }
 .text-center { text-align: center; }
 .mt-10 { margin-top: 10px; }
-h2, h3, h4 { color: var(--text-main); font-weight: 900; margin-bottom: 12px; }
+
+h2, h3, h4 { color: var(--text-main); font-weight: 900; margin-bottom: 10px; }
 p { font-size: 13px; color: var(--text-muted); font-weight: 600; }
 
 .danger-text { color: var(--danger); font-weight: bold; } 
 .success-text { color: var(--success); font-weight: bold; } 
 .warning-text { color: var(--warning); font-weight: bold; } 
-.primary-text { color: var(--primary); font-weight: bold; }
 
-/* سكرول بار مودرن */
+/* Progress Bar */
+.progress-track { height: 8px; background: var(--card-border); border-radius: 10px; margin: 15px 0; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--primary); border-radius: 10px; transition: width 0.4s ease; }
+
+/* Toast */
+#toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 350px; }
+.toast-msg { background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; box-shadow: var(--shadow-md); text-align: center; }
+
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-color); }
 ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-/* شاشة تسجيل الدخول بالتحديد */
-.login-box { max-width: 400px; margin: 40px auto; padding: 30px !important; }
+/* شاشة تسجيل الدخول */
+.login-box { max-width: 400px; margin: 40px auto; padding: 30px; background: var(--card-bg); border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid var(--card-border); }

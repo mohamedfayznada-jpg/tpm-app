@@ -1,275 +1,197 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 
-/* =========================================================
-   🏭 FACTORY OS - V11.0 (DYNAMIC THEME & STRICT LAYOUT)
-   ========================================================= */
-
 :root {
-    /* الألوان الأساسية العالمية */
-    --bg-main: #F4F7FE;
-    --card-bg: #FFFFFF;
-    --card-border: #E2E8F0;
+    /* 🌞 الثورة اللونية - Enterprise Daylight Mode */
+    --bg-color: #F0F4F8;       /* خلفية رمادي مزرق فاتح جداً تريح العين */
+    --card-bg: #FFFFFF;        /* كروت بيضاء ناصعة للتباين */
+    --card-border: #CBD5E1;    /* حدود رمادية أنيقة تفصل العناصر */
     
-    --primary: #1E3A8A;       /* أزرق مؤسسي */
-    --primary-light: #DBEAFE;
+    --primary: #0F4C81;        /* أزرق كحلي مؤسسي عالي التباين */
+    --primary-light: #E0F2FE;  /* أزرق سماوي فاتح للخلفيات والتحديد */
     
-    --success: #059669;       /* أخضر */
-    --success-light: #D1FAE5;
+    --gold: #D97706;           /* برتقالي/ذهبي دافئ */
+    --gold-dim: #FDE68A;       /* خلفية ذهبية فاتحة */
+    --copper: #0284C7;         /* تم استبدال النحاسي بأزرق زاهي للتباين */
     
-    --warning: #D97706;       /* ذهبي */
-    --warning-light: #FEF3C7;
+    --success: #059669;        /* أخضر واضح */
+    --danger: #DC2626;         /* أحمر تحذيري */
+    --warning: #EA580C;        
     
-    --danger: #DC2626;        /* أحمر */
-    --danger-light: #FEE2E2;
-    
-    --purple: #6D28D9;        /* بنفسجي */
-    --purple-light: #EDE9FE;
-    
-    --text-main: #0F172A;
-    --text-muted: #64748B;
-    
-    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-    --shadow-md: 0 10px 20px rgba(0,0,0,0.08);
+    --text-main: #1E293B;      /* نصوص كحلي داكن (أريح من الأسود الصريح) */
+    --text-muted: #64748B;     /* رمادي للنصوص الفرعية */
+}
+
+body.light-theme {
+    /* تم توحيد الثيم ليكون نهارياً بشكل افتراضي */
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
 
-body { 
-    background-color: var(--bg-main); 
-    color: var(--text-main); 
-    line-height: 1.6; direction: rtl; overflow-x: hidden; 
-}
+body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; direction: rtl; overflow-x: hidden; transition: background-color 0.3s ease; }
 img, canvas, video { filter: none !important; }
 
 /* ==========================================
-   🧱 1. الحماية الصارمة للهيكل (Strict Layout)
+   🏛️ الهيكل المؤسسي الأصلي (بدون تسييح)
    ========================================== */
-.container { 
-    width: 100%; max-width: 900px; 
-    margin: 0 auto; padding: 90px 15px 50px 15px; 
-}
+.sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2999; display: none; backdrop-filter: blur(3px); }
+.sidebar { position: fixed; top: 0; right: -300px; width: 260px; height: 100vh; background: var(--card-bg); border-left: 2px solid var(--primary); z-index: 3000; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: -5px 0 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+.sidebar.open { right: 0; }
+.sidebar-header { padding: 20px; border-bottom: 1px solid var(--card-border); text-align: center; }
+.sidebar-menu { flex: 1; overflow-y: auto; padding: 15px 0; }
+.side-item { padding: 12px 20px; color: var(--text-main); font-weight: bold; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.3s; border-right: 4px solid transparent; }
+.side-item:hover { background: var(--primary-light); border-right-color: var(--primary); color: var(--primary); }
+.side-icon { width: 30px; height: 30px; background: var(--primary-light); color: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid var(--primary); }
 
-/* إخفاء الشاشات بقوة الفولاذ لمنع أي تداخل */
+.pillars-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
+.pillar-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 20px 10px; text-align: center; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.pillar-card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 10px 20px rgba(15, 76, 129, 0.15); }
+.pillar-icon { font-size: 35px; margin-bottom: 10px; transition: 0.3s; display: inline-block;}
+.pillar-card:hover .pillar-icon { transform: scale(1.1); }
+.pillar-title { font-weight: 900; color: var(--text-main); font-size: 14px; margin-bottom: 5px; }
+.pillar-desc { font-size: 10px; color: var(--text-muted); font-weight: 700;}
+.pillar-badge { position: absolute; top: 10px; left: -25px; background: var(--danger); color: white; font-size: 9px; font-weight: bold; padding: 2px 25px; transform: rotate(-45deg); }
+
+.container { width: 100%; max-width: 600px; margin: 0 auto; padding: 15px; }
 .screen { display: none !important; }
-.screen.active { display: block !important; animation: fadeUp 0.4s ease-out forwards; }
+.screen.active { display: block !important; animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+/* Header & Typography */
+.header { background: var(--card-bg); border-bottom: 2px solid var(--primary); padding: 15px; position: sticky; top: 0; z-index: 1000; border-radius: 0 0 15px 15px; }
+.header-top { display: flex; justify-content: space-between; align-items: center; }
+.status-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; }
+.header-titles h1 { color: var(--primary); font-weight: 900; font-size: 18px; margin: 0; }
+.header-titles p { color: var(--text-muted); font-size: 11px; margin: 0; font-weight: 700;}
+.theme-toggle { background: var(--bg-color); border: 1px solid var(--card-border); color: var(--text-muted); border-radius: 5px; padding: 5px; cursor: pointer; }
+.section-title { color: var(--text-main); margin-bottom: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; font-weight: 900; }
 
-/* ==========================================
-   ✨ 2. نظام الطابع الخاص لكل صفحة (Theming Engine)
-   ========================================== */
+/* Search & Status */
+.search-bar-container { display: flex; gap: 5px; margin-top: 10px; position: relative; }
+.search-results-box { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--primary); z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.1);}
+.health-indicator { font-size: 12px; margin-top: 10px; text-align: center; color: var(--primary); font-weight: bold;}
+.cloud-status { text-align: center; font-size: 11px; font-weight: bold; color: var(--text-muted); margin-top: 5px;}
 
-/* 🔵 شاشة الرئيسية (Home) - الطابع المؤسسي الأزرق */
-#homeScreen .card { border-top: 4px solid var(--primary); box-shadow: var(--shadow-md); }
-#homeScreen .pillar-card:hover { border-color: var(--primary); background: var(--primary-light); }
-
-/* 🟢 شاشة الصيانة الذاتية (JH Portal) - طابع الأمان والاستقرار */
-#jhPortalScreen .card { border-top: 4px solid var(--success); background: linear-gradient(180deg, #ffffff, #F0FDF4); }
-#jhPortalScreen h2, #jhPortalScreen .section-title { color: var(--success) !important; }
-
-/* 🟡 شاشة التحسين المستمر (KK) - طابع ذهبي للتميز والذكاء */
-#kkScreen .card { border-top: 4px solid var(--warning); background: linear-gradient(180deg, #ffffff, #FFFBEB); }
-#kkScreen h2 { color: var(--warning) !important; }
-
-/* 🔴 شاشة التاجات والمهام (Tags) - طابع تحذيري أكشن */
-#tagsScreen .card { border-top: 4px solid var(--danger); background: linear-gradient(180deg, #ffffff, #FEF2F2); }
-
-/* 🟣 شاشة الإعدادات والملف الشخصي - طابع شخصي فخم */
-#settingsScreen .card, #profileDetailsScreen .card { border-top: 4px solid var(--purple); background: linear-gradient(180deg, #ffffff, #F5F3FF); }
-#settingsScreen .form-control:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
-
-/* 🌌 شاشة الدخول (Login) - عزل تام وشكل سايبر-تكنولوجي */
-#loginScreen.active {
-    display: flex !important; flex-direction: column; justify-content: center; align-items: center;
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
-    z-index: 9999999; /* يغطي الهيدر والقوائم تماماً */
-    padding: 20px; overflow-y: auto;
-}
-#loginScreen .login-box {
-    background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 30px;
-    padding: 40px 30px; width: 100%; max-width: 420px;
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); color: white; text-align: center;
-}
-#loginScreen h2, #loginScreen label { color: #ffffff; text-align: right; }
-#loginScreen .form-control { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; }
-#loginScreen .form-control:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3); }
-
-/* ==========================================
-   🚪 3. القائمة الجانبية المحدثة (Sidebar)
-   ========================================== */
-.sidebar {
-    position: fixed; top: 0; right: -350px; width: 300px; height: 100vh;
-    background: #0F172A; /* كحلي ليلي */
-    color: white; z-index: 1000000;
-    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: -10px 0 40px rgba(0,0,0,0.3);
-    padding: 30px 20px; overflow-y: auto;
-    border-left: 1px solid rgba(255,255,255,0.1);
-}
-.sidebar.active { right: 0; }
-
-.sidebar-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.6); z-index: 999999;
-    display: none; backdrop-filter: blur(3px);
-}
-.sidebar-overlay.active { display: block; }
-
-.sidebar-header { text-align: center; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 20px; margin-bottom: 20px; }
-.sidebar-header h2 { color: #60A5FA; font-weight: 900; letter-spacing: 1px; }
-
-.sidebar-menu { list-style: none; }
-.side-item {
-    padding: 15px 20px; margin-bottom: 10px; border-radius: 14px;
-    cursor: pointer; transition: 0.3s; font-weight: 700; color: #CBD5E1;
-    display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.05);
-}
-.side-item:hover { background: #1E3A8A; color: white; transform: translateX(-8px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-
-/* ==========================================
-   🌟 4. الهيدر الزجاجي (Header)
-   ========================================== */
-.main-header {
-    position: fixed; top: 15px; left: 15px; right: 15px; height: 70px;
-    background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0 20px; z-index: 9990;
-    border-radius: 20px; border: 1px solid var(--card-border);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
-.header-center h1 { font-size: 20px; color: var(--primary); font-weight: 900; margin: 0; }
-.supervisor-box { background: var(--primary-light); padding: 5px 15px; border-radius: 15px; border: 1px solid #BFDBFE; cursor: pointer; display: flex; align-items: center; justify-content: center;}
-.supervisor-box p { font-size: 12px; color: var(--primary); font-weight: 800; margin: 0; }
-
-.icon-btn {
-    background: white; color: var(--text-muted); border: 1px solid var(--card-border);
-    border-radius: 14px; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: 0.3s; box-shadow: var(--shadow-sm);
-}
-.icon-btn:hover { background: var(--primary); color: white; transform: scale(1.05) rotate(5deg); border-color: transparent; }
-
-/* ==========================================
-   💳 5. الكروت ووحدات التشغيل (Cards)
-   ========================================== */
-.card, .glass-card {
-    background: var(--card-bg); border-radius: 20px; padding: 25px; 
-    margin-bottom: 25px; border: 1px solid var(--card-border);
-    box-shadow: var(--shadow-md); transition: 0.3s;
-}
-.card:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
-
-.pillars-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px; margin-bottom: 25px; }
-.pillar-card {
-    background: var(--card-bg); border: 1px solid var(--card-border);
-    border-radius: 20px; padding: 25px 15px; text-align: center; cursor: pointer;
-    box-shadow: var(--shadow-sm); transition: 0.3s;
-}
-.pillar-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); }
-.pillar-icon { font-size: 38px; margin-bottom: 15px; display: inline-block; transition: 0.3s; }
-.pillar-card:hover .pillar-icon { transform: scale(1.15); }
-.pillar-title { font-size: 15px; font-weight: 900; color: var(--text-main); margin-bottom: 5px; }
-
-/* ==========================================
-   🎛️ 6. الأزرار والنماذج (Forms)
-   ========================================== */
-.form-group { margin-bottom: 18px; width: 100%; }
-.form-group label { display: block; font-size: 13px; font-weight: 800; margin-bottom: 8px; color: var(--text-main); }
-.form-control {
-    width: 100%; padding: 14px 18px; border-radius: 14px;
-    border: 2px solid var(--card-border); background: #F8FAFC;
-    font-size: 14px; font-weight: 700; transition: 0.3s;
-}
-.form-control:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 4px var(--primary-light); }
-
-.btn {
-    border-radius: 12px; padding: 14px 24px; font-weight: 800; font-size: 14px;
-    border: none; cursor: pointer; text-align: center; transition: 0.2s;
-    display: inline-flex; justify-content: center; align-items: center; gap: 8px;
-}
+/* Cards & Buttons */
+.card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 30px 30px 10px 10px; padding: 20px; margin-bottom: 15px; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.card-title { color: var(--primary); font-size: 16px; font-weight: bold; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; margin-bottom: 15px; }
+.btn { border-radius: 8px; padding: 10px 15px; font-weight: bold; border: 1px solid var(--card-border); cursor: pointer; text-align: center; display: inline-block; font-family: 'Cairo'; transition: 0.2s; }
 .btn:active { transform: scale(0.95); }
-.btn-primary { background: linear-gradient(135deg, #1E3A8A, #3B82F6); color: #fff; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
-.btn-primary:hover { box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5); transform: translateY(-2px); }
-.btn-success { background: linear-gradient(135deg, #059669, #10B981); color: #fff; }
-.btn-danger { background: linear-gradient(135deg, #DC2626, #EF4444); color: #fff; }
-.btn-warning { background: linear-gradient(135deg, #D97706, #F59E0B); color: #fff; }
-.btn-outline { background: #fff; color: var(--text-main); border: 2px solid var(--card-border); }
-.btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
-.btn-sm { padding: 8px 16px; font-size: 12px; border-radius: 10px; }
+.btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+.btn-success { background: var(--success); color: white; border-color: var(--success); }
+.btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
+.btn-warning { background: var(--warning); color: white; border-color: var(--warning); }
+.btn-outline { background: #fff; color: var(--text-main); border-color: var(--card-border); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.full-width { width: 100%; display: block; margin-bottom: 10px; }
 
-/* ==========================================
-   📊 7. الإحصائيات (Stats)
-   ========================================== */
-.dashboard-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-bottom: 25px;}
-.stat-card {
-    background: #fff; border: 1px solid var(--card-border);
-    border-radius: 18px; padding: 20px 10px; text-align: center; box-shadow: var(--shadow-sm);
+/* Forms & Inputs */
+.form-control { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border); background: #F8FAFC; color: var(--text-main); margin-bottom: 10px; font-family: 'Cairo'; font-weight: 700;}
+.form-group { margin-bottom: 15px; }
+.row-flex { display: flex; gap: 5px; align-items: center; }
+.flex-1 { flex: 1; } .flex-2 { flex: 2; }
+
+/* Dashboard & Stats */
+.dashboard-stats { display: flex; gap: 10px; margin-bottom: 15px; }
+.stat-card { text-align: center; padding: 10px; border-radius: 10px; flex: 1; background: var(--bg-color); border: 1px solid var(--card-border); }
+.stat-value { font-size: 22px; font-weight: bold; color: var(--text-main); }
+.stat-label { font-size: 11px; color: var(--text-muted); font-weight: 700;}
+.primary-text { color: var(--primary); } .danger-text { color: var(--danger); } .success-text { color: var(--success); } .warning-text { color: var(--warning); }
+.danger-border { border-color: var(--danger); } .success-border { border-color: var(--success); } .warning-border { border-color: var(--warning); }
+.grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+
+/* Navigation */
+.nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); border-top: 2px solid var(--card-border); display: flex; justify-content: space-around; padding: 10px 0; z-index: 2000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+.nav-item { color: var(--text-muted); text-align: center; cursor: pointer; font-size: 12px; font-weight: bold; flex: 1; transition: 0.2s; padding: 5px 0;}
+.nav-item.active { color: var(--primary); border-bottom: 2px solid var(--primary); background: var(--primary-light); }
+
+/* Modals */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(3px); }
+.modal-content { background: var(--card-bg); border: 2px solid var(--primary); border-radius: 15px; padding: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.upload-box { border: 1px dashed var(--primary); padding: 10px; text-align: center; margin-bottom: 10px; border-radius: 5px; cursor: pointer; background: var(--bg-color); font-weight: bold;}
+
+/* UI Elements */
+.chart-container { height: 200px; background: var(--card-bg); }
+.score-circle { width: 100px; height: 100px; border-radius: 50%; border: 5px solid var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 10px auto; background: var(--card-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.score-circle .pct { font-size: 24px; font-weight: bold; color: var(--primary); }
+.audit-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
+.item-header { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+.item-num { background: var(--primary); color: white; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-weight: bold; flex-shrink: 0; }
+.level-opt { background: var(--bg-color); border: 1px solid var(--card-border); padding: 10px; border-radius: 5px; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; color: var(--text-main); font-weight: 600;}
+.level-opt.selected { border-color: var(--success); background: #D1FAE5; }
+
+/* Print & Report */
+.signature-box { border: 1px dashed var(--primary); background: white; border-radius: 5px; margin: 10px auto; width: 100%; max-width: 300px; height: 150px; touch-action: none; }
+.report-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; color: black; }
+.report-table td { border: 1px solid #ccc; padding: 8px; background: #fff; font-size: 13px;}
+.print-area { background: #fff; color: #000; padding: 15px; border-radius: 0; }
+.print-area h2, .print-area h3 { color: #000; border-color: #000; }
+.print-signature { display: flex; justify-content: space-between; margin-top: 30px; text-align: center; color: #000; font-weight: bold; }
+
+/* Podium */
+.podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin: 20px 0; height: 160px; }
+.podium-step { background: var(--primary-light); border: 2px solid var(--primary); border-bottom: none; text-align: center; color: var(--primary); border-top-left-radius: 15px; border-top-right-radius: 15px; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 10px; font-weight: bold; box-shadow: 0 -5px 10px rgba(15, 76, 129, 0.1); }
+.step-1 { height: 140px; width: 32%; background: linear-gradient(to top, #FEF3C7, var(--card-bg)); border-color: #F59E0B; color: #F59E0B;}
+.step-2 { height: 110px; width: 28%; border-color: #94A3B8; color: #94A3B8;}
+.step-3 { height: 80px; width: 28%; border-color: #B45309; color: #B45309;}
+.rank-badge { background: var(--card-bg); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px auto; font-size: 12px; border: 1px solid currentColor; }
+.leaderboard-list { border-top: 1px solid var(--card-border); padding-top: 10px; margin-top: 10px;}
+.leaderboard-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px dashed var(--card-border); font-size: 13px; background: var(--bg-color); border-radius: 5px; margin-bottom: 5px; color: var(--text-main); font-weight: bold;}
+
+/* Kaizen Posts */
+.kaizen-post { background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.kaizen-img { width: 100%; max-height: 250px; object-fit: contain; margin: 10px 0; border: 1px solid var(--card-border); border-radius: 5px; background: #fff;}
+.comment-box { background: var(--bg-color); padding: 10px; margin-top: 10px; border-radius: 5px; border-right: 3px solid var(--primary); font-size: 12px; color: var(--text-main); font-weight: bold;}
+
+/* Toasts */
+#toast-container { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 100000; display: flex; flex-direction: column; gap: 10px; align-items: center; pointer-events: none; width: 90%; max-width: 400px; }
+.toast-msg { background: var(--primary); color: white; border: 1px solid var(--primary-light); padding: 12px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: popIn 0.3s ease-out forwards; }
+@keyframes popIn { 0% { opacity: 0; transform: translateY(20px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+
+/* Login */
+.login-wrapper { padding: 30px 10px; text-align: center; background: var(--bg-color); min-height: 100vh;}
+.logo-circle { width: 70px; height: 70px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-weight: 900; font-size: 20px; box-shadow: 0 4px 15px rgba(15, 76, 129, 0.3); }
+.modern-card { background: var(--card-bg) !important; border: 1px solid var(--primary-light) !important; padding: 25px !important; border-radius: 20px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important; }
+.divider { margin: 25px 0 15px; position: relative; border-top: 1px solid var(--card-border); }
+.divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-color); padding: 0 15px; font-size: 11px; color: var(--text-muted); border-radius: 10px; font-weight: bold; }
+
+.permission-select { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--card-border); font-size: 11px; padding: 2px; border-radius: 4px; font-weight: bold;}
+
+/* Header Adjustments */
+.main-header {
+    position: fixed; top: 0; left: 0; right: 0; height: 70px;
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 2px solid var(--primary);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 15px; z-index: 9999; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
-.stat-value { font-size: 28px; font-weight: 900; margin-bottom: 5px; color: var(--text-main); }
-.stat-label { font-size: 12px; color: var(--text-muted); font-weight: 800; }
-.chart-container { height: 280px; background: #fff; border-radius: 20px; padding: 20px; border: 1px solid var(--card-border); box-shadow: var(--shadow-sm); width: 100%; margin-bottom:20px; }
+.container.screen { padding-top: 85px !important; }
 
-/* ==========================================
-   🎫 8. لوحة الأبطال والتاجات (Leaderboard)
-   ========================================== */
-.elite-card { 
-    background: #fff; border: 1px solid var(--card-border); border-radius: 16px; 
-    padding: 15px; display: flex; align-items: center; margin-bottom: 12px; transition: 0.3s; 
+/* Dashboard Adjustments */
+.dashboard-stats.modern-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.jh-dashboard-wrapper { display: flex; flex-direction: column; gap: 15px; }
+.chart-container { background: var(--card-bg); border-radius: 20px; padding: 15px; border: 1px solid var(--card-border); height: 220px; width: 100%; }
+.internal-leaderboard { background: var(--card-bg); border-radius: 20px; padding: 15px; border-right: 4px solid var(--primary); border: 1px solid var(--card-border);}
+
+/* Sidebar Mobile Overrides */
+@media (max-width: 768px) {
+    .sidebar { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--card-bg); z-index: 10001; transition: 0.3s; border-left: 1px solid var(--card-border); }
+    .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: none; }
 }
-.elite-card:hover { transform: translateX(-5px); border-color: var(--primary); box-shadow: var(--shadow-md); }
-.elite-card.gold-glow { background: var(--warning-light); border-color: var(--warning); border-width: 2px; }
-.elite-avatar { width: 50px; height: 50px; border-radius: 14px; object-fit: cover; }
-.elite-info { flex: 1; margin-right: 15px; }
-.elite-name { font-weight: 900; font-size: 15px; color: var(--text-main); }
-.pts-val { font-size: 22px; font-weight: 900; color: var(--primary); }
 
-.tag-ticket { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid var(--card-border); border-right: 6px solid var(--primary); box-shadow: var(--shadow-sm); transition: 0.3s; }
-.ticket-red { border-right-color: var(--danger); background: var(--danger-light); } 
+.sub-item { padding-right: 35px !important; font-size: 13px !important; opacity: 0.9; }
 
 /* ==========================================
-   🌐 9. الحماية المساعدة (Utilities)
+   ✨ لمسة "طابع خاص لكل صفحة" (آمنة تماماً)
    ========================================== */
-.row-flex { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; width: 100%; }
-.flex-1 { flex: 1 1 min(100%, 120px); } 
-.flex-2 { flex: 2 1 min(100%, 200px); }
-.text-center { text-align: center; }
+#homeScreen .card { border-top: 4px solid var(--primary); }
+#jhPortalScreen .card { border-top: 4px solid var(--success); }
+#kkScreen .card { border-top: 4px solid var(--warning); }
+#tagsScreen .card { border-top: 4px solid var(--danger); }
+#settingsScreen .card { border-top: 4px solid #6D28D9; }
 
-h2, h3, h4 { color: var(--text-main); font-weight: 900; margin-bottom: 15px; }
-p { font-size: 13px; color: var(--text-muted); font-weight: 700; }
-
-.danger-text { color: var(--danger); font-weight: 900; } 
-.success-text { color: var(--success); font-weight: 900; } 
-.warning-text { color: var(--warning); font-weight: 900; } 
-.primary-text { color: var(--primary); font-weight: 900; }
-
-/* Toast Notification */
-#toast-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 380px; }
-.toast-msg { background: #0F172A; color: #fff; padding: 15px 25px; border-radius: 16px; font-size: 14px; font-weight: 800; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; border-bottom: 4px solid var(--primary); }
-
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-main); }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-
-/* النوافذ المنبثقة (Modals) */
-.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-.modal-content { background: #fff; padding: 30px; border-radius: 24px; width: 95%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.2); border: 1px solid var(--card-border); }
-
-/* Progress Bar */
-.progress-track { height: 10px; background: var(--card-border); border-radius: 10px; margin: 15px 0; overflow: hidden; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #3B82F6); border-radius: 10px; transition: width 0.4s ease; }
-
-/* باقي التنسيقات الداخلية الدقيقة جداً لحماية شاشات التفاصيل */
-.grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
-.settings-tabs { display: flex; gap: 10px; margin: 20px 0; background: var(--bg-main); padding: 8px; border-radius: 16px; border: 1px solid var(--card-border); }
-.tab-btn { flex: 1; padding: 12px 5px; border: none; background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 900; border-radius: 12px; cursor: pointer; transition: 0.3s; }
-.tab-btn.active { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
-.settings-tab-content { display: none; animation: fadeUp 0.4s ease-out; }
-.settings-tab-content.active { display: block; }
-.item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #fff; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--card-border); }
-.rank-label { background: var(--primary-light); color: var(--primary); padding: 5px 20px; border-radius: 50px; font-weight: 900; font-size: 12px; display: inline-block; }
-.cloud-status { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 10px; font-weight: bold;}
+.score-tag { background: var(--primary-light); color: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; border: 1px solid var(--primary); min-width: 45px; text-align: center; }
+.item-badge-max { font-size: 10px; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 4px; margin-right: auto; font-weight: bold;}

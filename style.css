@@ -1,312 +1,282 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 
 /* =========================================================
-   🏭 FACTORY OS - ENTERPRISE LIGHT EDITION V8.0 (Stable Layout)
+   🏭 FACTORY OS - REVOLUTIONARY AURORA EDITION V10.0
    ========================================================= */
 
 :root {
-    /* باليتة المؤسسات النهارية النقية (Clean & Corporate) */
-    --bg-color: #F3F4F6;        /* خلفية رمادية فاتحة جداً تريح العين */
-    --card-bg: #FFFFFF;         /* كروت بيضاء نقية */
-    --card-border: #E5E7EB;     /* حدود ناعمة تفصل العناصر بدقة */
+    /* 🌈 تباين ثوري (Aurora Daylight) */
+    --bg-gradient: linear-gradient(135deg, #f0f4f8 0%, #dbeafe 50%, #f3e8ff 100%);
     
-    --primary: #1E3A8A;         /* أزرق مؤسسي عميق (Deep Trust Blue) */
-    --primary-light: #DBEAFE;   /* أزرق فاتح جداً لتمييز العناصر النشطة */
+    /* 🌌 الصدفة العميقة للقوائم (Deep Shell) */
+    --sidebar-bg: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%);
+    --sidebar-hover: rgba(255, 255, 255, 0.15);
     
-    --gold: #D97706;            /* عنبري / برتقالي للتنبيه والتمييز */
-    --gold-dim: #FEF3C7;        /* خلفية عنبرية باهتة */
+    /* 🪟 زجاج الكروت (Glass Cards) */
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --card-border: rgba(255, 255, 255, 0.6);
     
-    --success: #059669;         /* أخضر مريح للعين */
-    --danger: #DC2626;          /* أحمر تحذيري قوي */
-    --warning: #EA580C;         
+    /* 🎨 ألوان نابضة بالحياة (Vibrant Accents) */
+    --primary: #2563eb;         
+    --primary-gradient: linear-gradient(135deg, #2563eb, #4f46e5);
+    --gold-gradient: linear-gradient(135deg, #f59e0b, #ea580c);
+    --success-gradient: linear-gradient(135deg, #10b981, #059669);
+    --danger-gradient: linear-gradient(135deg, #ef4444, #be123c);
     
-    --text-main: #111827;       /* نصوص داكنة بتباين عالي للقراءة */
-    --text-muted: #6B7280;      /* رمادي أنيق للنصوص الفرعية */
+    --text-main: #0f172a;       
+    --text-muted: #64748b;      
+    --text-light: #ffffff;
     
-    /* ظلال احترافية لإعطاء عمق بدون تسييح */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    /* 💨 ظلال ديناميكية */
+    --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    --shadow-float: 0 15px 35px -5px rgba(37, 99, 235, 0.2);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
 
 body { 
-    background-color: var(--bg-color); 
+    background: var(--bg-gradient); 
+    background-attachment: fixed;
     color: var(--text-main); 
     line-height: 1.6; direction: rtl; overflow-x: hidden; 
 }
 img, canvas, video { filter: none !important; }
 
 /* ==========================================
-   🏛️ 1. الهيكل الأساسي والسنترة (حماية من التداخل)
+   🏛️ 1. الهيكل الأساسي (محمي 100% من التداخل)
    ========================================== */
 .container { 
-    width: 100%; 
-    max-width: 800px; 
-    margin: 0 auto;   /* السنترة في منتصف الشاشة */
+    width: 100%; max-width: 900px; 
+    margin: 0 auto;   
     padding: 100px 15px 40px 15px !important; 
 }
 
-/* ==========================================
-   🛑 2. التحكم في الشاشات 
-   ========================================== */
 .screen { display: none !important; }
-.screen.active { display: block !important; animation: fadeIn 0.4s ease; }
+.screen.active { display: block !important; animation: scaleUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes scaleUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* ==========================================
-   🚪 3. القائمة الجانبية (Sidebar)
+   🌌 2. القائمة الجانبية (Deep Shell Sidebar)
    ========================================== */
 .sidebar {
-    position: fixed; top: 0; right: -300px; /* مخفية تماماً خارج الشاشة */
-    width: 280px; height: 100%;
-    background: var(--card-bg); z-index: 100000;
-    transition: 0.3s ease-in-out;
-    box-shadow: -5px 0 20px rgba(0,0,0,0.1);
-    border-left: 1px solid var(--card-border);
-    padding: 20px; overflow-y: auto;
+    position: fixed; top: 0; right: -320px; width: 300px; height: 100%;
+    background: var(--sidebar-bg); z-index: 100000;
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -10px 0 40px rgba(0,0,0,0.2);
+    border-left: 1px solid rgba(255,255,255,0.1);
+    padding: 30px 20px; overflow-y: auto;
 }
-.sidebar.active, .sidebar.open { right: 0; } /* تظهر فقط عند التفعيل */
+.sidebar.active, .sidebar.open { right: 0; }
 
 .sidebar-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.4); z-index: 99999;
-    display: none; backdrop-filter: blur(2px);
+    background: rgba(15, 23, 42, 0.4); z-index: 99999;
+    display: none; backdrop-filter: blur(4px);
 }
 .sidebar-overlay.active { display: block; }
 
-.sidebar-header { padding: 10px 0 20px 0; border-bottom: 1px solid var(--card-border); text-align: center; }
-.sidebar-menu { list-style: none; margin-top: 20px; }
-.side-item {
-    padding: 12px 15px; margin-bottom: 8px; border-radius: 10px;
-    cursor: pointer; transition: 0.2s; font-weight: 700; color: var(--text-main);
-    display: flex; align-items: center; gap: 10px;
-    border: 1px solid transparent; background: var(--bg-color);
-}
-.side-item:hover { background-color: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+.sidebar-header { padding-bottom: 25px; border-bottom: 1px dashed rgba(255,255,255,0.2); text-align: center; }
+.sidebar-header h2 { color: var(--text-light); font-weight: 900; letter-spacing: 1px; text-shadow: 0 2px 10px rgba(255,255,255,0.3); }
 
-.side-icon { width: 30px; height: 30px; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid var(--card-border); }
+/* أيقونات القائمة الجديدة (Pill Design) */
+.sidebar-menu { list-style: none; margin-top: 25px; }
+.side-item {
+    padding: 14px 18px; margin-bottom: 12px; border-radius: 16px;
+    cursor: pointer; transition: all 0.3s ease; font-weight: 700; color: #cbd5e1;
+    display: flex; align-items: center; gap: 15px;
+    background: rgba(0,0,0,0.2); border: 1px solid transparent;
+}
+.side-item:hover { 
+    background: var(--sidebar-hover); color: var(--text-light); 
+    border-color: rgba(255,255,255,0.3); transform: translateX(-8px); 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.side-icon { 
+    width: 35px; height: 35px; border-radius: 10px; 
+    background: var(--primary-gradient); color: white; 
+    display: flex; align-items: center; justify-content: center; font-size: 16px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
 
 /* ==========================================
-   🌟 4. الهيدر الثابت (Header)
+   ✨ 3. الهيدر الزجاجي (Floating Glass Header)
    ========================================== */
 .main-header {
-    position: fixed; top: 0; left: 0; right: 0; height: 75px;
-    background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);
+    position: fixed; top: 15px; left: 15px; right: 15px; height: 75px;
+    background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     display: flex; justify-content: space-between; align-items: center;
-    padding: 0 20px; z-index: 9999;
-    border-bottom: 1px solid var(--card-border);
-    box-shadow: var(--shadow-sm);
+    padding: 0 25px; z-index: 9999;
+    border: 1px solid var(--card-border); border-radius: 20px;
+    box-shadow: var(--shadow-glass);
 }
-.header-center { text-align: center; }
-.header-center h1 { font-size: 20px; color: var(--primary); font-weight: 900; margin: 0; letter-spacing: -0.5px; }
-.supervisor-box { margin-top: 2px; background: var(--primary-light); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(30, 58, 138, 0.1); cursor: pointer; display: inline-flex; align-items: center; gap: 5px;}
-.supervisor-box p { font-size: 11px; color: var(--primary); font-weight: 700; margin: 0; }
+.header-center h1 { font-size: 22px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; margin: 0; }
+.supervisor-box { 
+    margin-top: 2px; background: #fff; padding: 6px 15px; border-radius: 20px; 
+    border: 1px solid #e2e8f0; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: 0.3s;
+}
+.supervisor-box:hover { transform: translateY(-2px); box-shadow: var(--shadow-float); }
+.supervisor-box p { font-size: 12px; color: var(--text-main); font-weight: 800; margin: 0; }
 
 .icon-btn {
-    background: var(--bg-color); color: var(--text-muted);
-    border: 1px solid var(--card-border); border-radius: 12px;
-    width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: 0.2s; box-shadow: var(--shadow-sm);
+    background: #fff; color: var(--text-muted);
+    border: 1px solid #e2e8f0; border-radius: 14px;
+    width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
 }
-.icon-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+.icon-btn:hover { background: var(--primary-gradient); color: #fff; border-color: transparent; transform: rotate(5deg) scale(1.05); box-shadow: var(--shadow-float); }
 
 /* ==========================================
-   💳 5. الكروت والوحدات (Cards & Pillars)
+   🪟 4. الكروت الزجاجية (Glassmorphism Cards)
    ========================================== */
 .card, .glass-card {
-    background: var(--card-bg); border-radius: 16px; padding: 25px; 
-    margin-bottom: 20px; border: 1px solid var(--card-border);
-    box-shadow: var(--shadow-sm); transition: 0.3s;
+    background: var(--card-bg); border-radius: 20px; padding: 25px; 
+    margin-bottom: 25px; border: 1px solid var(--card-border);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-glass); transition: 0.4s;
 }
-.card:hover, .glass-card:hover { box-shadow: var(--shadow-md); border-color: #BFDBFE; }
+.card:hover, .glass-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-float); border-color: #bfdbfe; }
 
-.pillars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
+/* ==========================================
+   🎛️ 5. وحدات التشغيل (Vibrant Pillars) - دمج ذكي
+   ========================================== */
+.pillars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 20px; margin-bottom: 25px; }
 .pillar-card {
     background: var(--card-bg); border: 1px solid var(--card-border);
-    border-radius: 16px; padding: 25px 15px; text-align: center; cursor: pointer;
-    box-shadow: var(--shadow-sm); transition: 0.3s; position: relative; overflow: hidden;
+    border-radius: 24px; padding: 35px 20px; text-align: center; cursor: pointer;
+    box-shadow: var(--shadow-glass); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative; overflow: hidden; backdrop-filter: blur(10px);
 }
-.pillar-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary); }
-.pillar-icon { font-size: 34px; margin-bottom: 12px; display: inline-block; transition: 0.3s; }
-.pillar-card:hover .pillar-icon { transform: scale(1.1); }
-.pillar-title { font-size: 15px; font-weight: 900; color: var(--text-main); margin-bottom: 5px; }
-.pillar-desc { font-size: 11px; color: var(--text-muted); font-weight: 600; }
-.pillar-badge { position: absolute; top: 12px; left: -25px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 25px; transform: rotate(-45deg); }
+.pillar-card::before { 
+    content: ''; position: absolute; top: -50px; left: -50px; width: 100px; height: 100px; 
+    background: var(--primary-gradient); opacity: 0.1; border-radius: 50%; filter: blur(20px); transition: 0.4s;
+}
+.pillar-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-float); border-color: #93c5fd; }
+.pillar-card:hover::before { transform: scale(2); opacity: 0.2; }
+
+.pillar-icon { 
+    font-size: 38px; margin: 0 auto 15px; width: 75px; height: 75px; 
+    background: var(--primary-gradient); color: white;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 20px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3); transition: 0.4s;
+}
+.pillar-card:hover .pillar-icon { transform: scale(1.1) rotate(10deg); border-radius: 25px; }
+.pillar-title { font-size: 16px; font-weight: 900; color: var(--text-main); margin-bottom: 5px; }
+.pillar-desc { font-size: 11px; color: var(--text-muted); font-weight: 700; }
 
 /* ==========================================
-   🎛️ 6. الأزرار والمدخلات (Forms)
+   🔘 6. الأزرار العائمة (Floating Gradient Buttons)
    ========================================== */
-.form-group { margin-bottom: 15px; width: 100%; }
-.form-group label { display: block; font-size: 13px; color: var(--text-main); font-weight: 700; margin-bottom: 8px; }
+.form-group label { display: block; font-size: 13px; color: var(--text-main); font-weight: 800; margin-bottom: 8px; }
 .form-control {
-    width: 100%; padding: 12px 15px; border-radius: 10px;
-    border: 1px solid var(--card-border); background: var(--bg-color);
-    color: var(--text-main); font-size: 14px; font-weight: 600; transition: 0.3s; margin-bottom: 15px;
+    width: 100%; padding: 15px 20px; border-radius: 14px;
+    border: 2px solid #e2e8f0; background: rgba(255,255,255,0.5);
+    color: var(--text-main); font-size: 14px; font-weight: 700; transition: 0.3s; margin-bottom: 15px;
 }
-.form-control:focus { border-color: var(--primary); outline: none; background: #fff; box-shadow: 0 0 0 3px var(--primary-light); }
+.form-control:focus { border-color: #3b82f6; outline: none; background: #fff; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
 
 .btn {
-    border-radius: 10px; padding: 12px 20px; font-weight: 800; font-size: 14px;
-    border: none; cursor: pointer; text-align: center; transition: 0.2s;
+    border-radius: 14px; padding: 14px 24px; font-weight: 900; font-size: 14px;
+    border: none; cursor: pointer; text-align: center; transition: all 0.3s ease;
     display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
-.btn:active { transform: scale(0.96); }
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { background: #152C69; }
-.btn-success { background: var(--success); color: #fff; }
-.btn-danger { background: var(--danger); color: #fff; }
-.btn-warning { background: var(--gold); color: #fff; }
-.btn-outline { background: #fff; color: var(--text-main); border: 1px solid var(--card-border); }
-.btn-outline:hover { background: var(--bg-color); }
-.btn-sm { padding: 8px 12px; font-size: 12px; border-radius: 8px; }
-.full-width { width: 100%; }
+.btn:active { transform: scale(0.95); }
+.btn-primary { background: var(--primary-gradient); color: #fff; box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3); }
+.btn-primary:hover { box-shadow: 0 12px 25px rgba(37, 99, 235, 0.4); transform: translateY(-2px); }
+.btn-success { background: var(--success-gradient); color: #fff; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3); }
+.btn-danger { background: var(--danger-gradient); color: #fff; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3); }
+.btn-warning { background: var(--gold-gradient); color: #fff; box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3); }
+.btn-outline { background: #fff; color: var(--text-main); border: 2px solid #e2e8f0; text-shadow: none; }
+.btn-outline:hover { border-color: #3b82f6; color: #2563eb; background: #eff6ff; }
+.btn-sm { padding: 10px 16px; font-size: 12px; border-radius: 10px; }
 
 /* ==========================================
-   📊 7. الإحصائيات (Stats & Charts)
+   📊 7. الإحصائيات المدمجة
    ========================================== */
-.dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; margin-bottom: 20px;}
+.dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 15px; margin-bottom: 25px;}
 .stat-card {
-    background: var(--card-bg); border: 1px solid var(--card-border);
-    border-radius: 14px; padding: 15px 10px; text-align: center; box-shadow: var(--shadow-sm);
+    background: #fff; border: 1px solid #f1f5f9;
+    border-radius: 20px; padding: 20px 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    position: relative; overflow: hidden;
 }
-.stat-value { font-size: 24px; font-weight: 900; margin-bottom: 5px; color: var(--text-main); }
-.stat-label { font-size: 11px; color: var(--text-muted); font-weight: 700; }
-.chart-container { height: 260px; background: var(--card-bg); border-radius: 16px; padding: 20px; margin: 20px 0; border: 1px solid var(--card-border); box-shadow: var(--shadow-sm); width: 100%;}
+.stat-card::before { content: ''; position: absolute; left: 0; top: 0; width: 5px; height: 100%; background: var(--primary-gradient); }
+.stat-value { font-size: 28px; font-weight: 900; margin-bottom: 5px; color: var(--text-main); }
+.stat-label { font-size: 12px; color: var(--text-muted); font-weight: 800; }
+.chart-container { height: 280px; background: #fff; border-radius: 20px; padding: 20px; margin: 20px 0; border: 1px solid #e2e8f0; box-shadow: var(--shadow-glass); width: 100%;}
 
 /* ==========================================
-   🪟 8. النوافذ المنبثقة (Modals)
+   🎫 8. التذاكر الملونة والمهام
    ========================================== */
-.modal-overlay {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 100000;
-    justify-content: center; align-items: center; backdrop-filter: blur(3px);
+.kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+.kanban-col { background: rgba(255,255,255,0.5); border-radius: 20px; padding: 20px; border: 1px solid var(--card-border); backdrop-filter: blur(5px); }
+.kanban-item { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+
+.tag-ticket { 
+    background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; 
+    border: 1px solid #e2e8f0; box-shadow: 0 5px 15px rgba(0,0,0,0.04); transition: 0.3s; 
+    position: relative; overflow: hidden;
 }
-.modal-content {
-    background: var(--card-bg); padding: 25px; border-radius: 16px;
-    width: 95%; max-width: 500px; max-height: 90vh; overflow-y: auto;
-    border: 1px solid var(--card-border); box-shadow: var(--shadow-lg);
-}
+.tag-ticket:hover { transform: translateY(-3px) scale(1.01); box-shadow: var(--shadow-float); }
+.ticket-red { border-right: 8px solid #ef4444; } 
+.ticket-blue { border-right: 8px solid #3b82f6; }
 
 /* ==========================================
-   🎫 9. التذاكر والكانبان (Tickets & Kanban)
+   🏆 9. لوحة الأبطال الاحترافية
    ========================================== */
-.kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
-.kanban-col { background: var(--bg-color); border-radius: 12px; padding: 15px; border: 1px solid var(--card-border); }
-.kanban-item { background: var(--card-bg); border-radius: 10px; border: 1px solid var(--card-border); padding: 15px; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
-
-.tag-ticket { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--card-border); border-right: 5px solid var(--primary); box-shadow: var(--shadow-sm); transition: 0.3s; }
-.tag-ticket:hover { transform: translateX(-4px); box-shadow: var(--shadow-md); }
-.ticket-red { border-right-color: var(--danger); background: #FEF2F2; } 
-.ticket-blue { border-right-color: var(--primary); background: #EFF6FF; }
+.elite-card { 
+    background: #fff; border-radius: 16px; padding: 15px 20px; 
+    display: flex; align-items: center; margin-bottom: 12px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; transition: 0.3s;
+}
+.elite-card:hover { transform: translateX(-5px); border-color: #93c5fd; }
+.elite-card.gold-glow { background: linear-gradient(90deg, #fff, #fef3c7); border: 1px solid #f59e0b; }
+.elite-avatar { width: 50px; height: 50px; border-radius: 14px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.elite-info { flex: 1; margin-right: 15px; }
+.elite-name { font-weight: 900; font-size: 15px; color: var(--text-main); }
+.elite-level { font-size: 11px; color: #2563eb; font-weight: 800; background: #eff6ff; padding: 3px 10px; border-radius: 8px; display: inline-block; margin-top: 5px; }
+.pts-val { font-size: 22px; font-weight: 900; color: #f59e0b; text-shadow: 0 2px 4px rgba(245, 158, 11, 0.2); }
 
 /* ==========================================
-   🌐 10. أدوات التنسيق (Utilities)
+   🌐 10. أدوات التنسيق والحماية (يجب بقاؤها)
    ========================================== */
-.row-flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%; }
+.row-flex { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%; }
 .flex-1 { flex: 1; min-width: 120px; } 
 .flex-2 { flex: 2; min-width: 200px; }
 .text-center { text-align: center; }
 .mt-10 { margin-top: 10px; }
 
-h2, h3, h4 { color: var(--text-main); font-weight: 900; margin-bottom: 10px; }
-p { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+h2, h3, h4 { color: var(--text-main); font-weight: 900; margin-bottom: 10px; letter-spacing: -0.3px; }
+p { font-size: 13px; color: var(--text-muted); font-weight: 700; }
 
-.danger-text { color: var(--danger); font-weight: bold; } 
-.success-text { color: var(--success); font-weight: bold; } 
-.warning-text { color: var(--warning); font-weight: bold; } 
-.primary-text { color: var(--primary); font-weight: bold; }
+.danger-text { color: #ef4444; font-weight: 900; } 
+.success-text { color: #10b981; font-weight: 900; } 
+.warning-text { color: #f59e0b; font-weight: 900; } 
+.primary-text { color: #2563eb; font-weight: 900; }
 
-/* Progress Bar */
-.progress-track { height: 8px; background: var(--card-border); border-radius: 10px; margin: 15px 0; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--primary); border-radius: 10px; transition: width 0.4s ease; }
+.progress-track { height: 12px; background: #e2e8f0; border-radius: 20px; margin: 15px 0; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+.progress-fill { height: 100%; background: var(--primary-gradient); border-radius: 20px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
 
 /* Toast */
-#toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 350px; }
-.toast-msg { background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; box-shadow: var(--shadow-md); text-align: center; }
+#toast-container { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 100000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 380px; }
+.toast-msg { background: var(--sidebar-bg); color: #fff; padding: 15px 20px; border-radius: 14px; font-size: 13px; font-weight: 800; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; animation: slideUp 0.3s ease; }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-color); }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+/* سكرول بار */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f0f4f8; }
 
-/* شاشة تسجيل الدخول */
-.login-box { max-width: 400px; margin: 40px auto; padding: 30px; background: var(--card-bg); border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid var(--card-border); }
-.login-header { text-align: center; margin-bottom: 20px; }
-.logo-circle { width: 70px; height: 70px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-weight: 900; font-size: 20px; box-shadow: 0 4px 15px rgba(30, 58, 138, 0.2); }
+/* شاشة تسجيل الدخول المدمجة */
+.login-box { max-width: 420px; margin: 50px auto; padding: 40px !important; background: rgba(255,255,255,0.85); border-radius: 24px; backdrop-filter: blur(20px); box-shadow: var(--shadow-float); border: 1px solid rgba(255,255,255,0.6); }
+.logo-circle { width: 80px; height: 80px; background: var(--primary-gradient); color: white; border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-weight: 900; font-size: 24px; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3); transform: rotate(-5deg); transition: 0.3s; }
+.login-box:hover .logo-circle { transform: rotate(0deg) scale(1.05); }
 
-/* باقي التنسيقات التفصيلية كما هي في الأصل لضمان عمل الأقسام بدقة */
-.grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-.settings-tabs { display: flex; gap: 5px; margin-top: 20px; margin-bottom: 20px; background: var(--bg-color); padding: 5px; border-radius: 15px; border: 1px solid var(--card-border); }
-.tab-btn { flex: 1; padding: 10px 5px; border: none; background: transparent; color: var(--text-muted); font-size: 11px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.3s; }
-.tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-.settings-tab-content { display: none; animation: fadeIn 0.4s ease-out; }
-.settings-tab-content.active { display: block; }
-.item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-color); border-radius: 8px; margin-bottom: 5px; border-right: 3px solid var(--primary); border: 1px solid var(--card-border); }
-.rank-label { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); padding: 4px 15px; border-radius: 50px; font-weight: 900; font-size: 11px; margin-top: 10px; display: inline-block; }
-.cloud-status { text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 5px;}
-.search-results-box { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--card-border); z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: var(--shadow-md); }
-.podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin: 20px 0; height: 160px; }
-.leaderboard-list { border-top: 1px solid var(--card-border); padding-top: 10px; margin-top: 10px;}
-.status-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; }
-.slider-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; background: var(--bg-color); padding: 10px; border-radius: 15px; border: 1px solid var(--card-border); box-shadow: var(--shadow-sm); }
-.slider-img-wrapper { position: relative; width: 100%; height: 250px; overflow: hidden; border-radius: 10px; touch-action: none; border: 1px solid var(--card-border);}
-.slider-img-wrapper img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; pointer-events: none; }
-.slider-overlay { position: absolute; top: 0; right: 0; bottom: 0; width: 50%; overflow: hidden; border-left: 3px solid #fff; box-shadow: -2px 0 10px rgba(0,0,0,0.2); z-index: 2; direction: ltr; }
-.slider-overlay img { right: 0; left: auto; } 
-.slider-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 36px; height: 36px; background: #fff; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; cursor: ew-resize; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); user-select: none; border: 2px solid var(--primary); }
-.search-input-wrapper { display: flex; gap: 8px; background: var(--card-bg); padding: 5px; border-radius: 15px; border: 1px solid var(--card-border); box-shadow: var(--shadow-sm); }
-.btn-ai-ask { background: var(--primary); color: #fff; border: none; border-radius: 10px; padding: 0 20px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-
-.library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 20px; }
-.book-cover { background: var(--card-bg); border-radius: 5px 15px 15px 5px; border-left: 12px solid var(--primary); height: 200px; display: flex; flex-direction: column; justify-content: space-between; padding: 15px; position: relative; box-shadow: -4px 4px 10px rgba(0,0,0,0.05); transition: 0.4s; cursor: pointer; border: 1px solid var(--card-border); border-left: none; }
-.book-cover:hover { transform: rotateY(-15px) translateX(5px); border-left-width: 15px; }
-.book-tag { font-size: 8px; background: var(--bg-color); padding: 2px 6px; border-radius: 4px; color: var(--primary); width: fit-content; border: 1px solid var(--card-border); }
-.book-title-main { font-size: 12px; font-weight: bold; color: var(--text-main); line-height: 1.4; margin-top: 10px; }
-.lib-icon-circle { width: 45px; height: 45px; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 24px; }
-.ai-response-bubble { background: var(--primary-light); border: 1px solid var(--primary); color: var(--text-main); border-radius: 15px; padding: 20px; margin-top: 15px; font-size: 13px; line-height: 1.8; animation: fadeIn 0.4s ease-out; position: relative; }
-
-.elite-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 15px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-.elite-rank { font-size: 24px; font-weight: 900; color: var(--text-muted); width: 40px; text-align: center; font-style: italic; }
-.elite-avatar { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; }
-.elite-info { flex: 1; }
-.elite-name { font-weight: bold; font-size: 14px; color: var(--text-main); }
-.elite-level { font-size: 10px; color: var(--primary); background: var(--primary-light); padding: 2px 8px; border-radius: 10px; width: fit-content; margin-top: 3px; }
-.elite-score { font-size: 18px; font-weight: 900; color: var(--success); }
-
-.report-wrapper { background: #fff !important; color: #000 !important; padding: 30px !important; border-radius: 0 !important; border: 2px solid #333 !important; }
-.report-header-main { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 20px; }
-.factory-logo { font-size: 24px; font-weight: 900; color: #000; }
-.factory-logo span { color: var(--primary); }
-.final-summary-box { display: flex; background: #f8f8f8; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 20px; text-align: center; }
-.summary-item { flex: 1; padding: 15px; }
-.summary-label { display: block; font-size: 11px; color: #666; margin-bottom: 5px; font-weight: bold; }
-.summary-value { font-size: 32px; font-weight: 900; color: #2e7d32; }
-.modern-report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
-.modern-report-table th { background: #eee; text-align: right; padding: 8px; border: 1px solid #ccc; width: 20%; color: #000;}
-.modern-report-table td { padding: 8px; border: 1px solid #ccc; background: #fff; color: #000;}
-.score-breakdown-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; font-size: 11px; }
-.score-breakdown-table th { background: #333; color: #fff; padding: 10px; }
-.score-breakdown-table td { padding: 8px; border: 1px solid #ddd; color: #000;}
-.report-sub-title { font-size: 14px; border-right: 4px solid var(--primary); padding-right: 10px; margin: 20px 0 10px; color: #333; }
-.sig-block { text-align: center; flex: 1; font-size: 12px; font-weight: bold; color:#000;}
-.sig-line { border-bottom: 1px dashed #000; width: 80%; margin: 40px auto 10px; }
-.report-footer-signatures { display: flex; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
-.print-area { background: #fff; color: #000; padding: 15px; border-radius: 0; }
-.signature-box { border: 1px dashed var(--primary); background: white; border-radius: 5px; margin: 10px auto; width: 100%; max-width: 300px; height: 150px; touch-action: none; }
-.audit-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 15px; margin-bottom: 10px; }
-.item-num { background: var(--primary); color: #fff; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-weight: bold; flex-shrink: 0; }
-.level-opt { background: var(--bg-color); border: 1px solid var(--card-border); padding: 10px; border-radius: 5px; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
-.level-opt.selected { border-color: var(--success); background: #ecfdf5; }
-.score-tag { background: var(--primary-light); color: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; border: 1px solid var(--primary); min-width: 45px; text-align: center; }
-.level-opt.selected .score-tag { background: var(--success); color: white; border-color: white; }
-.item-badge-max { font-size: 10px; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 4px; margin-right: auto; }
-.score-circle { width: 100px; height: 100px; border-radius: 50%; border: 5px solid var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 10px auto; background: var(--card-bg); }
-.score-circle .pct { font-size: 24px; font-weight: bold; color: var(--primary); }
-.kaizen-post { background: var(--bg-color); border: 1px solid var(--card-border); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-.kaizen-img { width: 100%; max-height: 250px; object-fit: contain; margin: 10px 0; border: 1px solid var(--card-border); border-radius: 5px; background: #fff;}
-.comment-box { background: var(--card-bg); padding: 10px; margin-top: 10px; border-radius: 5px; border-right: 3px solid var(--primary); font-size: 12px; border: 1px solid var(--card-border);}
+/* النوافذ المنبثقة */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 100000; justify-content: center; align-items: center; backdrop-filter: blur(6px); }
+.modal-content { background: #fff; padding: 30px; border-radius: 24px; width: 95%; max-width: 500px; max-height: 90vh; overflow-y: auto; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }

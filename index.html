@@ -595,7 +595,7 @@
     </div>
 
   <div class="container screen" id="knowledgeScreen">
-      <div class="library-header-main">
+    <div class="library-header-main">
             <div style="display:flex; align-items:center; gap:12px;">
                 <div class="lib-icon-circle">📚</div>
                 <div>
@@ -604,52 +604,48 @@
                 </div>
             </div>
             <div style="display:flex; gap:8px;">
-                <button class="btn btn-sm btn-warning" style="width:auto; border-radius:10px; font-weight:900;" onclick="generateTPMQuiz()">📝 توليد امتحان</button>
-                <button class="btn btn-sm btn-primary btn-role-admin" style="width:auto; border-radius:10px;" onclick="document.getElementById('addBookModal').style.display='flex'">➕ إضافة مرجع</button>
+                <button class="btn btn-sm btn-warning" style="width:auto; border-radius:10px; font-weight:900;" onclick="window.generateTPMQuiz()">📝 امتحان</button>
+                <button class="btn btn-sm btn-primary btn-role-admin" style="width:auto; border-radius:10px;" onclick="document.getElementById('addBookModal').style.display='flex'">➕ مرجع</button>
             </div>
         </div>
 
         <div class="ai-search-container" style="border: 2px solid #DBEAFE; background: linear-gradient(180deg, #ffffff, #F8FAFC);">
             <div class="search-input-wrapper" style="box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                <input type="text" id="kbSearchInput" class="form-control" placeholder="اسأل خبير الـ TPM عن أي معلومة (أعطال، خطوات، تحسينات)..." style="font-size:15px;">
-                <button class="btn-ai-ask" onclick="askFactoryAI()">🧠 اسأل الخبير</button>
+                <input type="text" id="kbSearchInput" class="form-control" placeholder="اسأل الخبير (أعطال، خطوات، تحسينات)..." style="font-size:14px;">
+                <button class="btn-ai-ask" onclick="window.askFactoryAI()">🧠 اسأل الخبير</button>
             </div>
             
             <div id="aiSearchResponse" class="ai-response-bubble" style="display:none; padding: 25px;">
-                <div id="aiResponseText" style="font-size:15px; color:#111827; line-height:1.8; margin-bottom:15px;"></div>
-                <div style="border-top:1px dashed #10B981; padding-top:15px; text-align:left;">
-                    <button class="btn btn-sm btn-success" style="border-radius:8px; font-weight:bold; box-shadow:0 4px 10px rgba(16,185,129,0.2);" onclick="convertAIToOPL()">✨ تحويل إلى OPL</button>
+                <div id="aiResponseText" style="font-size:14px; color:#111827; line-height:1.8; margin-bottom:15px; font-weight:bold;"></div>
+                <div id="oplBtnContainer" style="border-top:1px dashed #10B981; padding-top:15px; text-align:left; display:none;">
+                    <button class="btn btn-sm btn-success shadow-btn" style="border-radius:8px; font-weight:bold;" onclick="window.convertAIToOPL()">✨ تحويل لـ OPL</button>
                 </div>
             </div>
         </div>
 
-       <h4 class="section-title">رفوف الكتب</h4>
-        <div id="knowledgeListContainer" class="library-shelves-grid"></div>
-    </div>
-
-  <div class="modal-overlay" id="addBookModal">
+    <div class="modal-overlay" id="addBookModal">
         <div class="modal-content">
-            <h3 class="card-title" style="color:#1E3A8A; font-weight:900;">إضافة مرجع أو فيديو تعليمي</h3>
+            <h3 class="card-title" style="color:#1E3A8A; font-weight:900;">إضافة مرجع أو فيديو</h3>
             <input type="text" id="kbTitle" class="form-control" placeholder="عنوان الكتالوج / الفيديو">
             <select id="kbCategory" class="form-control">
-                <option value="TPM">TPM (الصيانة الشاملة) 🏆</option>
-                <option value="JH">الصيانة الذاتية (JH) 👷‍♂️</option>
-                <option value="PM">الصيانة المخططة (PM) 🔧</option>
+                <option value="TPM">TPM (الصيانة الشاملة)</option>
+                <option value="JH">الصيانة الذاتية (JH)</option>
+                <option value="PM">الصيانة المخططة (PM)</option>
             </select>
             
-            <div class="upload-box" style="border: 2px dashed var(--primary); padding:15px; border-radius:12px; cursor:pointer;" onclick="document.getElementById('kbPdfFile').click()">
-                <div id="pdfExtractStatus" style="font-weight:bold; color:var(--primary);">اضغط لرفع ملف PDF 📄</div>
-                <input type="file" id="kbPdfFile" accept=".pdf" style="display:none;" onchange="handleMaterialUpload(event)">
-            </div>
+            <label class="upload-box full-width" style="display:block; border: 2px dashed var(--primary); padding:15px; border-radius:12px; cursor:pointer;">
+                <div id="pdfExtractStatus" style="font-weight:bold; color:var(--primary);">اضغط هنا لرفع ملف PDF 📄</div>
+                <input type="file" id="kbPdfFile" accept=".pdf" style="display:none;" onchange="window.handleMaterialUpload(event)">
+            </label>
             
             <div style="margin: 15px 0; text-align: center; position: relative; border-top: 1px solid #CBD5E1;">
                 <span style="background: #fff; padding: 0 10px; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #64748B; font-weight: bold;">أو رابط خارجي</span>
             </div>
             
-            <input type="text" id="kbExternalLink" class="form-control" placeholder="رابط فيديو يوتيوب أو ملف جوجل درايف 🔗">
+            <input type="text" id="kbExternalLink" class="form-control" placeholder="رابط فيديو يوتيوب أو جوجل درايف 🔗">
             
             <div class="row-flex" style="margin-top:20px;">
-                <button class="btn btn-success flex-2 shadow-btn" onclick="saveNewBook()">💾 حفظ في المكتبة</button>
+                <button class="btn btn-success flex-2 shadow-btn" onclick="window.saveNewBook()">💾 حفظ المرجع</button>
                 <button class="btn btn-danger flex-1" onclick="document.getElementById('addBookModal').style.display='none'">إلغاء</button>
             </div>
         </div>

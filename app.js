@@ -1137,7 +1137,7 @@ function viewDetailedReport(id) {
     document.getElementById('detGrade').innerText = grade;
     document.getElementById('detGrade').style.color = totalPct >= 80 ? '#2e7d32' : (totalPct >= 50 ? '#f57f17' : '#c62828');
 
-    // 3. ملء جدول توزيع الدرجات (Breakdown)
+// 3. ملء جدول توزيع الدرجات (Breakdown)
     let tableHtml = '';
     let detailsHtml = '';
 
@@ -1146,38 +1146,40 @@ function viewDetailedReport(id) {
         if (!r) return;
 
         let p = r.skipped ? 0 : Math.round((r.score / r.max) * 100);
-        let statusText = r.skipped ? 'تخطي' : `${r.score}/${r.max}`;
+        let statusText = r.skipped ? 'تخطي' : `${r.score} / ${r.max}`;
+        let pColor = p >= 80 ? '#059669' : (p >= 50 ? '#D97706' : '#DC2626');
         
-        // إضافة للصف في الجدول السريع
         tableHtml += `
             <tr>
-                <td><b>${k}</b></td>
-                <td>${AUDIT_DATA[k] ? AUDIT_DATA[k].name : '---'}</td>
-                <td>${statusText}</td>
-                <td style="font-weight:bold; color:${p >= 80 ? '#2e7d32' : '#000'}">${p}%</td>
+                <td style="padding: 12px; border: 1px solid #CBD5E1; font-weight: bold; color: #1E3A8A;">${k}</td>
+                <td style="padding: 12px; border: 1px solid #CBD5E1; text-align: right; color: #333;">${AUDIT_DATA[k] ? AUDIT_DATA[k].name : '---'}</td>
+                <td style="padding: 12px; border: 1px solid #CBD5E1; font-weight: bold; color: #555;">${statusText}</td>
+                <td style="padding: 12px; border: 1px solid #CBD5E1; font-weight: 900; color: ${pColor};">${p}%</td>
             </tr>`;
 
-        // إضافة للتفاصيل (الملاحظات والصور)
         if (!r.skipped) {
             let imps = (r.improvements && r.improvements.length > 0) 
-                ? r.improvements.map(i => `<div style="font-size:11px; margin-bottom:3px; color:#444;">• ${i}</div>`).join('') 
-                : '<span style="color:#2e7d32; font-weight:bold;">لا توجد ملاحظات</span>';
+                ? r.improvements.map(i => `<div style="font-size:12px; margin-bottom:6px; color:#333; padding-right:15px; position:relative;"><span style="position:absolute; right:0; color:#D97706;">🔹</span>${i}</div>`).join('') 
+                : '<div style="color:#059669; font-weight:bold; padding: 10px; background: #D1FAE5; border-radius: 8px; text-align: center;">🌟 أداء مثالي، لا توجد ملاحظات تحسينية</div>';
             
             let imgsHtml = ''; 
             if(r.images) { 
                 Object.values(r.images).forEach(img => { 
-                    if (img.data) imgsHtml += `<img src="${img.data}" style="height:80px; width:80px; object-fit:cover; margin:5px; border:1px solid #ddd; border-radius:4px;">`; 
+                    if (img.data) imgsHtml += `<img src="${img.data}" style="height:100px; width:100px; object-fit:cover; margin:5px; border:2px solid #E2E8F0; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">`; 
                 }); 
             }
 
             detailsHtml += `
-                <div style="margin-bottom:15px; padding:10px; border:1px solid #eee; border-radius:8px;">
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; margin-bottom:8px; padding-bottom:5px;">
-                        <b style="font-size:12px;">${k}: ${AUDIT_DATA[k].name}</b>
-                        <b style="color:#b87333;">${p}%</b>
+                <div style="margin-bottom: 20px; padding: 20px; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 12px; border-right: 4px solid ${pColor}; page-break-inside: avoid;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #CBD5E1; margin-bottom:15px; padding-bottom:10px;">
+                        <b style="font-size:15px; color:#1E3A8A;">${k}: ${AUDIT_DATA[k].name}</b>
+                        <b style="font-size:18px; color:${pColor}; background: #fff; padding: 4px 12px; border-radius: 8px; border: 1px solid #E2E8F0;">${p}%</b>
                     </div>
-                    <div style="margin-bottom:10px;">${imps}</div>
-                    <div>${imgsHtml}</div>
+                    <div style="margin-bottom:15px; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                        <h4 style="margin:0 0 10px; color:#64748B; font-size:12px;">ملاحظات التدقيق وفرص التحسين:</h4>
+                        ${imps}
+                    </div>
+                    ${imgsHtml ? `<div style="background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0;">${imgsHtml}</div>` : ''}
                 </div>`;
         }
     });

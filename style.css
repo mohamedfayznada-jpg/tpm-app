@@ -303,6 +303,45 @@ img, canvas, video { filter: none !important; }
     .dashboard-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .pillars-grid { gap: 10px; }
 }
+
+/* ==========================================
+   🧠 10. عقل المصنع (AI Knowledge Base)
+   ========================================== */
+.library-header-main { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px dashed var(--card-border); }
+.lib-icon-circle { width: 55px; height: 55px; background: linear-gradient(135deg, var(--primary), #3b82f6); color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 16px; font-size: 28px; box-shadow: 0 10px 20px rgba(30, 58, 138, 0.2); }
+
+/* صندوق بحث الذكاء الاصطناعي */
+.ai-search-container { background: #fff; padding: 25px; border-radius: 20px; border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 30px; position: relative; overflow: hidden; }
+.ai-search-container::before { content: ''; position: absolute; top: 0; right: 0; width: 5px; height: 100%; background: linear-gradient(180deg, #3b82f6, #8b5cf6); }
+.search-input-wrapper { display: flex; gap: 10px; background: #f8fafc; padding: 8px; border-radius: 16px; border: 2px solid #e2e8f0; transition: 0.3s; align-items: center; }
+.search-input-wrapper:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); background: #fff; }
+.search-input-wrapper .form-control { border: none; background: transparent; box-shadow: none; margin: 0; font-size: 14px; font-weight: 800; width: 100%; }
+.btn-ai-ask { background: linear-gradient(135deg, #3b82f6, #6366f1); color: #fff; border: none; border-radius: 12px; padding: 12px 25px; font-weight: 900; font-size: 14px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); white-space: nowrap; display: flex; align-items: center; gap: 8px;}
+.btn-ai-ask:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4); }
+
+/* رد الذكاء الاصطناعي */
+.ai-response-bubble { background: #f0fdf4; border: 2px solid #10b981; color: #064e3b; border-radius: 16px; padding: 25px; margin-top: 20px; font-size: 15px; font-weight: 800; line-height: 1.8; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.1); position: relative; }
+.ai-response-bubble::after { content: '✨ Factory AI'; position: absolute; top: -12px; right: 20px; background: #10b981; color: #fff; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 900; }
+
+/* رفوف الكتب الديجيتال (PDFs & Manuals) */
+.library-shelves-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; }
+.book-cover { background: #fff; border-radius: 12px 18px 18px 12px; border-right: 14px solid var(--primary); height: 210px; display: flex; flex-direction: column; justify-content: space-between; padding: 18px 15px; position: relative; box-shadow: -4px 8px 15px rgba(0,0,0,0.05); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); border-left: 1px solid var(--card-border); }
+.book-cover:hover { transform: translateY(-8px) translateX(4px); border-right-width: 20px; box-shadow: -8px 15px 25px rgba(0,0,0,0.1); border-color: var(--primary-light); }
+.book-tag { font-size: 11px; background: var(--primary-light); padding: 4px 8px; border-radius: 6px; color: var(--primary); font-weight: 900; width: fit-content; margin-bottom: 10px; }
+.book-title-main { font-size: 14px; font-weight: 900; color: var(--text-main); line-height: 1.5; }
+
+/* ==========================================
+   💡 11. مجتمع كايزن (Kaizen Social Feed)
+   ========================================== */
+.kaizen-post { background: #fff; border: 1px solid var(--card-border); padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); transition: 0.3s; position: relative; overflow: hidden; }
+.kaizen-post::before { content: ''; position: absolute; top: 0; right: 0; width: 5px; height: 100%; background: var(--success); }
+.kaizen-post:hover { box-shadow: 0 15px 30px rgba(0,0,0,0.08); transform: translateY(-3px); border-color: var(--success); }
+
+.kaizen-img { width: 100%; max-height: 250px; object-fit: cover; margin: 15px 0; border: 2px solid #e2e8f0; border-radius: 12px; transition: 0.4s; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.kaizen-img:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+
+.comment-box { background: #f8fafc; padding: 15px; margin-top: 15px; border-radius: 12px; border-right: 4px solid var(--primary); font-size: 14px; color: var(--text-main); font-weight: 800; border: 1px solid #e2e8f0; }
+
 /* ==========================================
    📱 ضبط شاشات الموبايل للشريط العلوي (Mobile Header Fix)
    ========================================== */

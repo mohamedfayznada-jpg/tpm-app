@@ -627,23 +627,29 @@
         <div id="knowledgeListContainer" class="library-shelves-grid"></div>
     </div>
 
-    <div class="modal-overlay" id="addBookModal">
+  <div class="modal-overlay" id="addBookModal">
         <div class="modal-content">
-            <h3 class="card-title" style="color:var(--gold);">إضافة مرجع أو كتالوج فني</h3>
-            <input type="text" id="kbTitle" class="form-control" placeholder="عنوان الكتالوج / المرجع">
+            <h3 class="card-title" style="color:#1E3A8A; font-weight:900;">إضافة مرجع أو فيديو تعليمي</h3>
+            <input type="text" id="kbTitle" class="form-control" placeholder="عنوان الكتالوج / الفيديو">
             <select id="kbCategory" class="form-control">
-                <option value="صيانة">تصنيف: صيانة 🛠️</option>
-                <option value="تشغيل">تصنيف: تشغيل ⚙️</option>
-                <option value="أمان">تصنيف: أمان 🛡️</option>
-                <option value="TPM">تصنيف: TPM 🏆</option>
+                <option value="TPM">TPM (الصيانة الشاملة) 🏆</option>
+                <option value="JH">الصيانة الذاتية (JH) 👷‍♂️</option>
+                <option value="PM">الصيانة المخططة (PM) 🔧</option>
             </select>
-            <div class="upload-box" onclick="document.getElementById('pdfInput').click()">
-                <div id="pdfExtractStatus">اضغط لرفع ملف PDF (كتالوج كامل) 📄</div>
-              <input type="file" id="kbPdfFile" accept=".pdf, video/mp4, video/*, image/*" onchange="handleMaterialUpload(event)" style="display:none;">
+            
+            <div class="upload-box" style="border: 2px dashed var(--primary); padding:15px; border-radius:12px; cursor:pointer;" onclick="document.getElementById('kbPdfFile').click()">
+                <div id="pdfExtractStatus" style="font-weight:bold; color:var(--primary);">اضغط لرفع ملف PDF 📄</div>
+                <input type="file" id="kbPdfFile" accept=".pdf" style="display:none;" onchange="handleMaterialUpload(event)">
             </div>
-            <textarea id="kbContent" class="form-control" rows="4" placeholder="سيظهر جزء من النص هنا للمعاينة تلقائياً..."></textarea>
-            <div class="row-flex">
-                <button class="btn btn-success flex-2 shadow-btn" onclick="addKnowledgeBaseArticle()">حفظ في المكتبة</button>
+            
+            <div style="margin: 15px 0; text-align: center; position: relative; border-top: 1px solid #CBD5E1;">
+                <span style="background: #fff; padding: 0 10px; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #64748B; font-weight: bold;">أو رابط خارجي</span>
+            </div>
+            
+            <input type="text" id="kbExternalLink" class="form-control" placeholder="رابط فيديو يوتيوب أو ملف جوجل درايف 🔗">
+            
+            <div class="row-flex" style="margin-top:20px;">
+                <button class="btn btn-success flex-2 shadow-btn" onclick="saveNewBook()">💾 حفظ في المكتبة</button>
                 <button class="btn btn-danger flex-1" onclick="document.getElementById('addBookModal').style.display='none'">إلغاء</button>
             </div>
         </div>

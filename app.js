@@ -2622,3 +2622,137 @@ window.addEventListener('offline', () => {
     document.body.style.borderTop = '4px solid var(--danger)';
     document.body.classList.add('offline-mode');
 });
+// ==========================================
+// 🧠 ثورة عقل TPM النابض (AI & Multimodal PDFs)
+// ==========================================
+
+// 1. الدالة المركزية للتواصل مع Gemini 1.5 وتمرير الـ PDFs
+async function callGeminiTPMExpert(promptText, pdfBase64 = null) {
+    const apiKey = globalApiKeys.gemini || window.__TPM_CONFIG__?.geminiApiKey;
+    if (!apiKey) {
+        showToast("⚠️ مفتاح Gemini غير متوفر!");
+        return "لم يتم إعداد مفتاح الذكاء الاصطناعي.";
+    }
+
+    showToast("🧠 جاري تحليل المراجع والتفكير...");
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    // إجبار الـ AI على تقمص شخصية خبير الـ TPM
+    let systemPrompt = `أنت خبير واستشاري عالمي في الصيانة الإنتاجية الشاملة (TPM) تعمل في مجموعة العربي.
+يجب أن تكون إجاباتك دقيقة، احترافية، مبنية على هندسة الصيانة، وتستخدم المصطلحات الفنية الصحيحة (OEE, JH, PM, 5S, Kaizen). 
+إذا تم إرفاق ملف PDF أو سياق، استخرج الإجابة منه، بما في ذلك وصف الجداول والصور الموجودة به.
+السؤال هو: ${promptText}`;
+
+    let contents = [{ parts: [{ text: systemPrompt }] }];
+
+    // إضافة الـ PDF للطلب لو موجود
+    if (pdfBase64) {
+        // تنظيف الـ Base64 من الـ Prefix
+        const b64Data = pdfBase64.split(',')[1] || pdfBase64;
+        contents[0].parts.push({
+            inline_data: { mime_type: "application/pdf", data: b64Data }
+        });
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: contents })
+        });
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+    } catch (error) {
+        console.error("Gemini Error:", error);
+        return "⚠️ حدث خطأ أثناء التواصل مع عقل المصنع.";
+    }
+}
+
+// 2. تفعيل سؤال المكتبة (يبحث في الكتب أو يسأل الخبير)
+async function askFactoryAI() {
+    const question = document.getElementById('kbSearchInput').value;
+    if (!question) return showToast("اكتب سؤالك أولاً!");
+
+    const responseBox = document.getElementById('aiSearchResponse');
+    const responseText = document.getElementById('aiResponseText');
+    responseBox.style.display = 'block';
+    responseText.innerHTML = "<i>جاري مراجعة كتالوجات ومراجع الـ TPM... ⏳</i>";
+
+    // لو عندنا مراجع PDF في الداتا بيز، هنبعت آخر مرجع كـ Context (في النسخة دي هنعتمد على الـ Prompt المباشر كخبير)
+    const aiAnswer = await callGeminiTPMExpert(question);
+    
+    // تنسيق الإجابة وتحويلها لـ HTML
+    responseText.innerHTML = aiAnswer.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--primary);">$1</b>');
+    
+    // حفظ الإجابة مؤقتاً عشان لو حب يحولها لـ OPL
+    window.lastAIAnswer = aiAnswer;
+}
+
+// 3. تحويل إجابة الـ AI إلى OPL بنقرة واحدة
+function convertAIToOPL() {
+    if (!window.lastAIAnswer) return showToast("لا توجد إجابة لتحويلها!");
+    
+    // نفتح مودال الـ OPL ونملاه أوتوماتيك
+    document.getElementById('oplModal').style.display = 'flex';
+    document.getElementById('oplTitle').value = "درس نقطة واحدة: " + document.getElementById('kbSearchInput').value.substring(0, 30);
+    document.getElementById('oplDesc').value = window.lastAIAnswer.replace(/\*/g, ''); // تنظيف النجوم
+    showToast("✨ تم سحب إجابة الخبير لنموذج الـ OPL!");
+}
+
+// 4. توليد امتحان تفاعلي للفنيين
+async function generateTPMQuiz() {
+    const topic = prompt("أدخل موضوع الامتحان (مثال: الخطوة الأولى في الصيانة الذاتية، قواعد الـ 5S):");
+    if (!topic) return;
+
+    const responseBox = document.getElementById('aiSearchResponse');
+    const responseText = document.getElementById('aiResponseText');
+    responseBox.style.display = 'block';
+    responseText.innerHTML = `<i>جاري تصميم امتحان احترافي عن (${topic})... ⏳</i>`;
+
+    const promptText = `قم بإنشاء اختبار قصير (Quiz) مكون من 3 أسئلة متعددة الاختيارات عن موضوع: ${topic}. 
+الأسئلة يجب أن تكون موجهة لفنيي المصانع وتخص تطبيق الـ TPM. 
+ضع الإجابة الصحيحة في نهاية الاختبار. نسق النص ليكون مقروءاً.`;
+
+    const quizText = await callGeminiTPMExpert(promptText);
+    responseText.innerHTML = quizText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--danger);">$1</b>');
+}
+
+// 5. زر الاستنجاد 🆘 (SOS) داخل خطوات المراجعة (JH Audit)
+// يتم استدعاء هذه الدالة من زر 🧠 الذي سنضيفه بجوار كل بند مراجعة
+window.askAIAuditHelp = async function(itemName) {
+    document.getElementById('aiModal').style.display = 'flex';
+    document.getElementById('aiModalText').innerHTML = "<i>جاري استشارة خبير الـ TPM... ⏳</i>";
+    
+    const promptText = `أنا مراجع صيانة ذاتية (JH Auditor) أقف الآن أمام الماكينة وأقوم بمراجعة بند يسمى: "${itemName}".
+اشرح لي كخبير:
+1. ما هو الغرض من هذا البند؟
+2. كيف أقوم بفحصه عملياً (خطوات الفحص)؟
+3. ما هي علامات الخطر أو العيوب التي يجب أن أبحث عنها؟`;
+
+    const helpText = await callGeminiTPMExpert(promptText);
+    document.getElementById('aiModalText').innerHTML = helpText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--success);">$1</b>');
+};
+
+// 6. حقن زر الاستنجاد في واجهة المراجعات أوتوماتيكياً
+// سيتم تنفيذ هذا التعديل على دالة renderAuditStep الموجودة لديك لتضيف الزر
+const originalRenderAuditItems = window.renderAuditItems;
+window.renderAuditItems = function(stepKey) {
+    if(originalRenderAuditItems) originalRenderAuditItems(stepKey);
+    
+    // بعد رسم العناصر، نقوم بإضافة زر 🧠 لكل عنصر
+    setTimeout(() => {
+        const items = document.querySelectorAll('.audit-item');
+        items.forEach(item => {
+            const header = item.querySelector('.item-header');
+            if(header && !header.querySelector('.sos-btn')) {
+                const titleText = header.innerText.replace(/[\d\.]/g, '').trim(); // استخراج اسم البند
+                const sosBtn = document.createElement('button');
+                sosBtn.className = "sos-btn";
+                sosBtn.innerHTML = "🧠 كيف أراجع هذا؟";
+                sosBtn.style.cssText = "margin-right:auto; background:#DBEAFE; color:#1E3A8A; border:1px solid #1E3A8A; border-radius:8px; padding:2px 10px; font-size:11px; font-weight:bold; cursor:pointer;";
+                sosBtn.onclick = () => askAIAuditHelp(titleText);
+                header.appendChild(sosBtn);
+            }
+        });
+    }, 200);
+};

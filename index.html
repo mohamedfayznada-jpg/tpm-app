@@ -595,7 +595,7 @@
     </div>
 
   <div class="container screen" id="knowledgeScreen">
-    <div class="library-header-main">
+<div class="library-header-main">
             <div style="display:flex; align-items:center; gap:12px;">
                 <div class="lib-icon-circle">📚</div>
                 <div>
@@ -604,7 +604,7 @@
                 </div>
             </div>
             <div style="display:flex; gap:8px;">
-                <button class="btn btn-sm btn-warning" style="width:auto; border-radius:10px; font-weight:900;" onclick="window.generateTPMQuiz()">📝 امتحان</button>
+                <button class="btn btn-sm btn-warning" style="width:auto; border-radius:10px; font-weight:900;" onclick="generateTPMQuiz()">📝 امتحان</button>
                 <button class="btn btn-sm btn-primary btn-role-admin" style="width:auto; border-radius:10px;" onclick="document.getElementById('addBookModal').style.display='flex'">➕ مرجع</button>
             </div>
         </div>
@@ -612,13 +612,13 @@
         <div class="ai-search-container" style="border: 2px solid #DBEAFE; background: linear-gradient(180deg, #ffffff, #F8FAFC);">
             <div class="search-input-wrapper" style="box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <input type="text" id="kbSearchInput" class="form-control" placeholder="اسأل الخبير (أعطال، خطوات، تحسينات)..." style="font-size:14px;">
-                <button class="btn-ai-ask" onclick="window.askFactoryAI()">🧠 اسأل الخبير</button>
+                <button class="btn-ai-ask" onclick="askFactoryAI()">🧠 اسأل الخبير</button>
             </div>
             
             <div id="aiSearchResponse" class="ai-response-bubble" style="display:none; padding: 25px;">
                 <div id="aiResponseText" style="font-size:14px; color:#111827; line-height:1.8; margin-bottom:15px; font-weight:bold;"></div>
                 <div id="oplBtnContainer" style="border-top:1px dashed #10B981; padding-top:15px; text-align:left; display:none;">
-                    <button class="btn btn-sm btn-success shadow-btn" style="border-radius:8px; font-weight:bold;" onclick="window.convertAIToOPL()">✨ تحويل لـ OPL</button>
+                    <button class="btn btn-sm btn-success shadow-btn" style="border-radius:8px; font-weight:bold;" onclick="convertAIToOPL()">✨ تحويل لـ OPL</button>
                 </div>
             </div>
         </div>
@@ -635,7 +635,7 @@
             
             <label class="upload-box full-width" style="display:block; border: 2px dashed var(--primary); padding:15px; border-radius:12px; cursor:pointer;">
                 <div id="pdfExtractStatus" style="font-weight:bold; color:var(--primary);">اضغط هنا لرفع ملف PDF 📄</div>
-                <input type="file" id="kbPdfFile" accept=".pdf" style="display:none;" onchange="window.handleMaterialUpload(event)">
+                <input type="file" id="kbPdfFile" accept=".pdf" style="display:none;" onchange="handleMaterialUpload(event)">
             </label>
             
             <div style="margin: 15px 0; text-align: center; position: relative; border-top: 1px solid #CBD5E1;">
@@ -645,12 +645,11 @@
             <input type="text" id="kbExternalLink" class="form-control" placeholder="رابط فيديو يوتيوب أو جوجل درايف 🔗">
             
             <div class="row-flex" style="margin-top:20px;">
-                <button class="btn btn-success flex-2 shadow-btn" onclick="window.saveNewBook()">💾 حفظ المرجع</button>
+                <button class="btn btn-success flex-2 shadow-btn" onclick="saveNewBook()">💾 حفظ المرجع</button>
                 <button class="btn btn-danger flex-1" onclick="document.getElementById('addBookModal').style.display='none'">إلغاء</button>
             </div>
         </div>
     </div>
-
  <div class="container screen" id="settingsScreen">
 <div style="margin-top:20px; padding:0 5px;">
             <button class="btn btn-primary full-width shadow-btn" style="background: linear-gradient(135deg, #1E3A8A, #3B82F6); color:#fff; padding:18px; border-radius:16px; font-size:16px; display:flex; align-items:center; justify-content:center; gap:12px; border:none; box-shadow: 0 10px 25px rgba(30,58,138,0.3);" onclick="openMyFullProfile()">

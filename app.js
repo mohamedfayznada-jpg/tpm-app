@@ -2623,35 +2623,36 @@ window.addEventListener('offline', () => {
     document.body.classList.add('offline-mode');
 });
 // ==========================================
-// 🧠 ثورة عقل TPM النابض (AI & Multimodal PDFs)
+// 🧠 ثورة عقل TPM النابض (المعدلة والمحمية)
 // ==========================================
 
-// 1. الدالة المركزية للتواصل مع Gemini 1.5 وتمرير الـ PDFs
 async function callGeminiTPMExpert(promptText, pdfBase64 = null) {
-    const apiKey = globalApiKeys.gemini || window.__TPM_CONFIG__?.geminiApiKey;
-    if (!apiKey) {
-        showToast("⚠️ مفتاح Gemini غير متوفر!");
-        return "لم يتم إعداد مفتاح الذكاء الاصطناعي.";
+    const apiKey = globalApiKeys.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
+    
+    // حماية لو مفيش مفتاح عشان المتصفح ميكراشش (صورة 3)
+    if (!apiKey || apiKey.trim() === "") {
+        showToast("⚠️ مفتاح الذكاء الاصطناعي غير متوفر!");
+        return "عذراً، يرجى إدخال مفتاح (Gemini API Key) في شاشة الإعدادات ليعمل عقل المصنع.";
     }
 
-    showToast("🧠 جاري تحليل المراجع والتفكير...");
+    showToast("🧠 جاري البحث والتفكير العميق...");
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
-    // إجبار الـ AI على تقمص شخصية خبير الـ TPM
-    let systemPrompt = `أنت خبير واستشاري عالمي في الصيانة الإنتاجية الشاملة (TPM) تعمل في مجموعة العربي.
-يجب أن تكون إجاباتك دقيقة، احترافية، مبنية على هندسة الصيانة، وتستخدم المصطلحات الفنية الصحيحة (OEE, JH, PM, 5S, Kaizen). 
-إذا تم إرفاق ملف PDF أو سياق، استخرج الإجابة منه، بما في ذلك وصف الجداول والصور الموجودة به.
+    // أمر صارم جداً للذكاء الاصطناعي لمنع الأكواد والاعتماد على الإنترنت كمرجع أساسي
+    let systemPrompt = `أنت خبير واستشاري هندسي محترف في الصيانة الإنتاجية الشاملة (TPM).
+مهمتك:
+1. الإجابة على أي سؤال يخص الـ TPM بناءً على معرفتك الواسعة بالإنترنت ومجال هندسة الصيانة (حتى لو لم أرفق لك مرجعاً).
+2. إذا أرفقت لك ملفاً أو نصاً، استخدمه كمرجع إضافي لدعم إجابتك.
+3. التزم بتوفير خطوات عملية، أسباب، وحلول تخص بيئة المصانع.
+
+⚠️ تحذير صارم: أجب بنص عربي طبيعي ومنسق تماماً. يُمنع منعاً باتاً كتابة أي أكواد برمجية (No HTML, No JS, No JSON) في إجابتك تحت أي ظرف.
 السؤال هو: ${promptText}`;
 
     let contents = [{ parts: [{ text: systemPrompt }] }];
 
-    // إضافة الـ PDF للطلب لو موجود
     if (pdfBase64) {
-        // تنظيف الـ Base64 من الـ Prefix
         const b64Data = pdfBase64.split(',')[1] || pdfBase64;
-        contents[0].parts.push({
-            inline_data: { mime_type: "application/pdf", data: b64Data }
-        });
+        contents[0].parts.push({ inline_data: { mime_type: "application/pdf", data: b64Data } });
     }
 
     try {
@@ -2660,13 +2661,79 @@ async function callGeminiTPMExpert(promptText, pdfBase64 = null) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: contents })
         });
+        
+        // معالجة الأخطاء قبل قراءة الـ JSON لمنع كراش (Unexpected token <)
+        if (!response.ok) {
+            console.error("API Error Status:", response.status);
+            return "⚠️ حدث خطأ في الاتصال بالذكاء الاصطناعي. تأكد من صحة المفتاح (API Key) وأنه غير منتهي الصلاحية.";
+        }
+
         const data = await response.json();
         return data.candidates[0].content.parts[0].text;
     } catch (error) {
-        console.error("Gemini Error:", error);
-        return "⚠️ حدث خطأ أثناء التواصل مع عقل المصنع.";
+        console.error("Fetch Error:", error);
+        return "⚠️ فشل الاتصال. يرجى التحقق من اتصالك بالإنترنت.";
     }
 }
+
+// ------------------------------------------
+// 📚 إدارة رفوف المكتبة (الفيديوهات والـ PDFs)
+// ------------------------------------------
+
+// حفظ المرجع الجديد
+function saveNewBook() {
+    const title = document.getElementById('kbTitle').value;
+    const cat = document.getElementById('kbCategory').value;
+    const link = document.getElementById('kbExternalLink').value;
+    
+    if (!title) return showToast("⚠️ يرجى إدخال عنوان المرجع.");
+    
+    const newBook = { 
+        id: Date.now(), 
+        title: title, 
+        cat: cat, 
+        link: link 
+        // سيتم دمج رفع الـ PDF لاحقاً هنا
+    };
+    
+    knowledgeBaseData.push(newBook);
+    
+    document.getElementById('addBookModal').style.display = 'none';
+    document.getElementById('kbTitle').value = '';
+    document.getElementById('kbExternalLink').value = '';
+    
+    showToast("✅ تم إضافة المرجع للمكتبة بنجاح!");
+    renderKnowledgeShelves();
+}
+
+// رسم المكتبة واللينكات (اليوتيوب / الدرايف)
+function renderKnowledgeShelves() {
+    const container = document.getElementById('knowledgeListContainer');
+    if (!container) return;
+
+    if (knowledgeBaseData.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #94A3B8; font-weight: bold;">المكتبة فارغة حالياً. اضغط على (إضافة مرجع) للبدء 📚</div>';
+        return;
+    }
+
+    container.innerHTML = knowledgeBaseData.map(book => {
+        let actionBtn = book.link ? `<button class="btn btn-sm btn-outline" style="width:100%; border-color:#DBEAFE; color:#1E3A8A; font-weight:bold; margin-top:15px;" onclick="window.open('${book.link}', '_blank')">📺 فتح الرابط / الفيديو</button>` : '';
+        
+        return `
+        <div class="book-cover">
+            <div>
+                <div class="book-tag">${book.cat}</div>
+                <div class="book-title-main">${book.title}</div>
+            </div>
+            ${actionBtn}
+        </div>`;
+    }).join('');
+}
+
+// استدعاء رسم المكتبة عند تحميل الشاشة
+window.addEventListener('load', () => {
+    setTimeout(renderKnowledgeShelves, 500);
+});
 
 // 2. تفعيل سؤال المكتبة (يبحث في الكتب أو يسأل الخبير)
 async function askFactoryAI() {

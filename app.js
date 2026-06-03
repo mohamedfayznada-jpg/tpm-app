@@ -1137,7 +1137,7 @@ function viewDetailedReport(id) {
     document.getElementById('detGrade').innerText = grade;
     document.getElementById('detGrade').style.color = totalPct >= 80 ? '#2e7d32' : (totalPct >= 50 ? '#f57f17' : '#c62828');
 
-// 3. ملء جدول توزيع الدرجات (Breakdown)
+// 3. ملء جدول توزيع الدرجات (Breakdown) بخطوط كبيرة وواضحة
     let tableHtml = '';
     let detailsHtml = '';
 
@@ -1151,42 +1151,42 @@ function viewDetailedReport(id) {
         
         tableHtml += `
             <tr>
-                <td style="padding: 12px; border: 1px solid #CBD5E1; font-weight: bold; color: #1E3A8A;">${k}</td>
-                <td style="padding: 12px; border: 1px solid #CBD5E1; text-align: right; color: #333;">${AUDIT_DATA[k] ? AUDIT_DATA[k].name : '---'}</td>
-                <td style="padding: 12px; border: 1px solid #CBD5E1; font-weight: bold; color: #555;">${statusText}</td>
-                <td style="padding: 12px; border: 1px solid #CBD5E1; font-weight: 900; color: ${pColor};">${p}%</td>
+                <td style="padding: 15px; border: 1px solid #CBD5E1; font-weight: 900; color: #1E3A8A; font-size: 15px;">${k}</td>
+                <td style="padding: 15px; border: 1px solid #CBD5E1; text-align: right; color: #111827; font-size: 15px; font-weight: 800; line-height: 1.6;">${AUDIT_DATA[k] ? AUDIT_DATA[k].name : '---'}</td>
+                <td style="padding: 15px; border: 1px solid #CBD5E1; font-weight: 900; color: #475569; font-size: 15px; font-family: Arial, sans-serif;">${statusText}</td>
+                <td style="padding: 15px; border: 1px solid #CBD5E1; font-weight: 900; color: ${pColor}; font-size: 18px; font-family: Arial, sans-serif;">${p}%</td>
             </tr>`;
 
         if (!r.skipped) {
             let imps = (r.improvements && r.improvements.length > 0) 
-                ? r.improvements.map(i => `<div style="font-size:12px; margin-bottom:6px; color:#333; padding-right:15px; position:relative;"><span style="position:absolute; right:0; color:#D97706;">🔹</span>${i}</div>`).join('') 
-                : '<div style="color:#059669; font-weight:bold; padding: 10px; background: #D1FAE5; border-radius: 8px; text-align: center;">🌟 أداء مثالي، لا توجد ملاحظات تحسينية</div>';
+                ? r.improvements.map(i => `<div style="font-size:15px; margin-bottom:8px; color:#111827; padding-right:25px; position:relative; font-weight: 800; line-height: 1.8;"><span style="position:absolute; right:0; color:#D97706; font-size: 14px; top: 4px;">⏺</span>${i}</div>`).join('') 
+                : '<div style="color:#059669; font-weight:900; padding: 15px; background: #D1FAE5; border-radius: 8px; text-align: center; font-size: 15px;">🌟 أداء مثالي، لا توجد ملاحظات تحسينية</div>';
             
             let imgsHtml = ''; 
             if(r.images) { 
                 Object.values(r.images).forEach(img => { 
-                    if (img.data) imgsHtml += `<img src="${img.data}" style="height:100px; width:100px; object-fit:cover; margin:5px; border:2px solid #E2E8F0; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">`; 
+                    if (img.data) imgsHtml += `<img src="${img.data}" style="height:120px; width:120px; object-fit:cover; margin:8px; border:2px solid #E2E8F0; border-radius:12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">`; 
                 }); 
             }
 
             detailsHtml += `
-                <div style="margin-bottom: 20px; padding: 20px; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 12px; border-right: 4px solid ${pColor}; page-break-inside: avoid;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #CBD5E1; margin-bottom:15px; padding-bottom:10px;">
-                        <b style="font-size:15px; color:#1E3A8A;">${k}: ${AUDIT_DATA[k].name}</b>
-                        <b style="font-size:18px; color:${pColor}; background: #fff; padding: 4px 12px; border-radius: 8px; border: 1px solid #E2E8F0;">${p}%</b>
+                <div style="margin-bottom: 25px; padding: 25px; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 16px; border-right: 5px solid ${pColor}; page-break-inside: avoid; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #CBD5E1; margin-bottom:15px; padding-bottom:12px;">
+                        <b style="font-size:16px; color:#1E3A8A; font-weight: 900;">${k}: ${AUDIT_DATA[k].name}</b>
+                        <b style="font-size:20px; color:${pColor}; background: #ffffff; padding: 6px 16px; border-radius: 10px; border: 1px solid #E2E8F0; font-family: Arial, sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">${p}%</b>
                     </div>
-                    <div style="margin-bottom:15px; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #E2E8F0;">
-                        <h4 style="margin:0 0 10px; color:#64748B; font-size:12px;">ملاحظات التدقيق وفرص التحسين:</h4>
+                    <div style="margin-bottom:15px; background: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0;">
+                        <h4 style="margin:0 0 12px; color:#64748B; font-size:14px; font-weight: 900;">ملاحظات التدقيق وفرص التحسين:</h4>
                         ${imps}
                     </div>
-                    ${imgsHtml ? `<div style="background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0;">${imgsHtml}</div>` : ''}
+                    ${imgsHtml ? `<div style="background: #ffffff; padding: 15px; border-radius: 12px; border: 1px solid #E2E8F0; text-align: center;">${imgsHtml}</div>` : ''}
                 </div>`;
         }
     });
 
     document.getElementById('detStepsTableBody').innerHTML = tableHtml;
     document.getElementById('detStepsContainer').innerHTML = detailsHtml;
-
+    
     // 4. معالجة التوقيع
     const sigDiv = document.getElementById('detSignatureImg');
     if (a.signature) {

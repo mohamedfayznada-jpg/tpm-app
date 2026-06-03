@@ -256,9 +256,22 @@ img, canvas, video { filter: none !important; }
 #tagsScreen .card { border-top: 4px solid var(--danger); }
 #settingsScreen .card { border-top: 4px solid #6D28D9; }
 
-.score-tag { background: var(--primary-light); color: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; border: 1px solid var(--primary); min-width: 45px; text-align: center; }
-.item-badge-max { font-size: 10px; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 4px; margin-right: auto; font-weight: bold;}
-/* ==========================================
+/* الدوائر المضيئة للتقييمات (Animated) */
+.score-circle { 
+    width: 110px; height: 110px; border-radius: 50%; 
+    border: 6px solid var(--primary); 
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    margin: 15px auto; background: var(--card-bg); 
+    box-shadow: 0 10px 20px rgba(30, 58, 138, 0.15); 
+    position: relative; overflow: hidden;
+}
+.score-circle::before {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: conic-gradient(transparent, rgba(30, 58, 138, 0.1), transparent 30%);
+    animation: rotateCircle 4s linear infinite;
+}
+@keyframes rotateCircle { 100% { transform: rotate(360deg); } }
+.score-circle .pct { font-size: 28px; font-weight: 900; color: var(--primary); z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }/* ==========================================
    📱 ضبط شاشات الموبايل (Mobile Responsiveness)
    ========================================== */
 @media (max-width: 768px) {

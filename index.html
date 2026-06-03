@@ -392,92 +392,87 @@
         <div id="historyListContainer"></div>
     </div>
 
-    <div class="container screen" id="detailedReportScreen">
-        <!-- قالب الورقة الرسمية A4 للتصدير PDF -->
-        <div class="report-wrapper print-area" id="printableReportArea" style="background: #fff; color: #000; padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; overflow: hidden;">
+<div class="container screen" id="detailedReportScreen">
+        <div class="report-wrapper print-area" id="printableReportArea" style="background: #ffffff; color: #111827; padding: 45px; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; overflow: hidden; line-height: 1.8; font-family: 'Cairo', sans-serif;">
             
-            <!-- العلامة المائية (Watermark) -->
-            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 100px; color: rgba(0,0,0,0.02); z-index: 0; pointer-events: none; font-weight: 900; white-space: nowrap;">FACTORY OS</div>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 110px; color: rgba(0,0,0,0.02); z-index: 0; pointer-events: none; font-weight: 900; white-space: nowrap; font-family: Arial, sans-serif;">FACTORY OS</div>
             
             <div style="position: relative; z-index: 1;">
-                <!-- رأس التقرير -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px double #1E3A8A; padding-bottom: 15px; margin-bottom: 25px;">
-                    <div>
-                        <div style="font-size: 28px; font-weight: 900; color: #1E3A8A; letter-spacing: 1px;">EL ARABY <span style="color: #D97706;">GROUP</span></div>
-                        <div style="font-size: 12px; color: #666; font-weight: bold; letter-spacing: 2px;">SMART FACTORY OS</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px double #1E3A8A; padding-bottom: 20px; margin-bottom: 30px;">
+                    <div style="direction: ltr; text-align: left;">
+                        <div style="font-size: 30px; font-weight: 900; color: #1E3A8A; letter-spacing: 1px; font-family: Arial, sans-serif;">EL ARABY <span style="color: #D97706;">GROUP</span></div>
+                        <div style="font-size: 14px; color: #64748B; font-weight: 900; letter-spacing: 2px; font-family: Arial, sans-serif;">SMART FACTORY OS</div>
                     </div>
                     <div style="text-align: left;">
-                        <h2 style="margin: 0; color: #000; font-size: 22px; font-weight: 900;">تقرير تدقيق فني (TPM)</h2>
-                        <p style="margin: 5px 0 0; font-size: 12px; color: #555; font-family: monospace;">التاريخ: <span id="detDate" style="font-weight:bold;">--</span></p>
+                        <h2 style="margin: 0; color: #111827; font-size: 24px; font-weight: 900;">تقرير تدقيق فني <span style="font-family: Arial, sans-serif; color: #1E3A8A;">(TPM)</span></h2>
+                        <p style="margin: 8px 0 0; font-size: 15px; color: #475569; font-weight: 700;">التاريخ: <span id="detDate" style="font-weight:900; color:#1E3A8A;">--</span></p>
                     </div>
                 </div>
 
-                <!-- الإحصائيات العلوية -->
-                <div style="display: flex; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 25px; overflow: hidden;">
-                    <div style="flex: 1; padding: 20px; text-align: center; border-left: 1px solid #E2E8F0;">
-                        <span style="display: block; font-size: 12px; color: #64748B; font-weight: bold;">النتيجة الإجمالية</span>
-                        <div id="detPct" style="font-size: 36px; font-weight: 900; color: #059669; margin-top: 5px;">0%</div>
+                <div style="display: flex; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; margin-bottom: 30px; overflow: hidden;">
+                    <div style="flex: 1; padding: 25px; text-align: center; border-left: 1px solid #E2E8F0;">
+                        <span style="display: block; font-size: 14px; color: #64748B; font-weight: 800;">النتيجة الإجمالية</span>
+                        <div id="detPct" style="font-size: 40px; font-weight: 900; color: #059669; margin-top: 5px; font-family: Arial, sans-serif;">0%</div>
                     </div>
-                    <div style="flex: 1; padding: 20px; text-align: center;">
-                        <span style="display: block; font-size: 12px; color: #64748B; font-weight: bold;">التقييم العام</span>
-                        <div id="detGrade" style="font-size: 24px; font-weight: 900; color: #1E3A8A; margin-top: 12px;">--</div>
+                    <div style="flex: 1; padding: 25px; text-align: center;">
+                        <span style="display: block; font-size: 14px; color: #64748B; font-weight: 800;">التقييم العام</span>
+                        <div id="detGrade" style="font-size: 28px; font-weight: 900; color: #1E3A8A; margin-top: 15px; font-family: Arial, sans-serif;">--</div>
                     </div>
                 </div>
 
-                <!-- جدول بيانات المراجعة -->
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 13px;">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 35px; font-size: 15px;">
                     <tr>
-                        <td style="padding: 12px; background: #F1F5F9; border: 1px solid #CBD5E1; font-weight: bold; width: 20%; color:#000;">القسم المستهدف:</td>
-                        <td id="detDept" style="padding: 12px; border: 1px solid #CBD5E1; width: 30%; color:#000; font-weight:bold;">--</td>
-                        <td style="padding: 12px; background: #F1F5F9; border: 1px solid #CBD5E1; font-weight: bold; width: 20%; color:#000;">المعدة / الخط:</td>
-                        <td id="detMachine" style="padding: 12px; border: 1px solid #CBD5E1; width: 30%; color:#000; font-weight:bold;">--</td>
+                        <td style="padding: 15px; background: #F1F5F9; border: 1px solid #CBD5E1; font-weight: 900; width: 20%; color:#1E3A8A;">القسم المستهدف:</td>
+                        <td id="detDept" style="padding: 15px; border: 1px solid #CBD5E1; width: 30%; color:#111827; font-weight:800;">--</td>
+                        <td style="padding: 15px; background: #F1F5F9; border: 1px solid #CBD5E1; font-weight: 900; width: 20%; color:#1E3A8A;">المعدة / الخط:</td>
+                        <td id="detMachine" style="padding: 15px; border: 1px solid #CBD5E1; width: 30%; color:#111827; font-weight:800;">--</td>
                     </tr>
                     <tr>
-                        <td style="padding: 12px; background: #F1F5F9; border: 1px solid #CBD5E1; font-weight: bold; color:#000;">المراجع المسؤول:</td>
-                        <td id="detAuditor" colspan="3" style="padding: 12px; border: 1px solid #CBD5E1; color:#000; font-weight:bold;">--</td>
+                        <td style="padding: 15px; background: #F1F5F9; border: 1px solid #CBD5E1; font-weight: 900; color:#1E3A8A;">المراجع المسؤول:</td>
+                        <td id="detAuditor" colspan="3" style="padding: 15px; border: 1px solid #CBD5E1; color:#111827; font-weight:800;">--</td>
                     </tr>
                 </table>
 
-                <h3 style="font-size: 16px; color: #1E3A8A; border-bottom: 2px solid #1E3A8A; padding-bottom: 8px; margin-bottom: 15px; font-weight: 900;">📊 تفاصيل درجات الصيانة الذاتية (JH)</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 13px; text-align: center;">
+                <h3 style="font-size: 18px; color: #1E3A8A; border-bottom: 3px solid #1E3A8A; padding-bottom: 10px; margin-bottom: 20px; font-weight: 900;">📊 تفاصيل درجات الصيانة الذاتية <span style="font-family: Arial, sans-serif;">(JH)</span></h3>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 35px; font-size: 15px; text-align: center;">
                     <thead>
-                        <tr style="background: #1E3A8A; color: #fff;">
-                            <th style="padding: 10px; border: 1px solid #CBD5E1;">الخطوة</th>
-                            <th style="padding: 10px; border: 1px solid #CBD5E1; width: 50%;">الوصف</th>
-                            <th style="padding: 10px; border: 1px solid #CBD5E1;">الدرجة</th>
-                            <th style="padding: 10px; border: 1px solid #CBD5E1;">النسبة</th>
+                        <tr style="background: #1E3A8A; color: #ffffff;">
+                            <th style="padding: 12px; border: 1px solid #CBD5E1; font-weight: 900;">الخطوة</th>
+                            <th style="padding: 12px; border: 1px solid #CBD5E1; width: 50%; font-weight: 900;">الوصف</th>
+                            <th style="padding: 12px; border: 1px solid #CBD5E1; font-weight: 900;">الدرجة</th>
+                            <th style="padding: 12px; border: 1px solid #CBD5E1; font-weight: 900;">النسبة</th>
                         </tr>
                     </thead>
                     <tbody id="detStepsTableBody"></tbody>
                 </table>
 
-                <h3 style="font-size: 16px; color: #1E3A8A; border-bottom: 2px solid #1E3A8A; padding-bottom: 8px; margin-bottom: 15px; font-weight: 900;">📝 فرص التحسين والملاحظات المرئية</h3>
-                <div id="detStepsContainer" style="font-size: 13px;"></div>
+                <h3 style="font-size: 18px; color: #1E3A8A; border-bottom: 3px solid #1E3A8A; padding-bottom: 10px; margin-bottom: 20px; font-weight: 900;">📝 فرص التحسين والملاحظات المرئية</h3>
+                <div id="detStepsContainer" style="font-size: 15px; color: #111827;"></div>
 
-                <!-- التوقيعات الرسمية -->
-                <div style="display: flex; justify-content: space-between; margin-top: 50px; padding-top: 20px; border-top: 1px solid #CBD5E1; page-break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; margin-top: 50px; padding-top: 25px; border-top: 2px solid #CBD5E1; page-break-inside: avoid;">
                     <div style="text-align: center; width: 30%;">
-                        <p style="margin: 0 0 10px; font-weight: bold; color: #000; font-size: 13px;">توقيع المراجع</p>
-                        <div id="detSignatureImg" style="height: 60px; display:flex; align-items:center; justify-content:center;"></div>
+                        <p style="margin: 0 0 10px; font-weight: 900; color: #111827; font-size: 15px;">توقيع المراجع</p>
+                        <div id="detSignatureImg" style="height: 70px; display:flex; align-items:center; justify-content:center;"></div>
                     </div>
                     <div style="text-align: center; width: 30%;">
-                        <p style="margin: 0 0 10px; font-weight: bold; color: #000; font-size: 13px;">اعتماد مدير القسم</p>
-                        <div style="border-bottom: 1px dashed #64748B; height: 40px; margin-top: 20px; width: 80%; margin-left: auto; margin-right: auto;"></div>
+                        <p style="margin: 0 0 10px; font-weight: 900; color: #111827; font-size: 15px;">اعتماد مدير القسم</p>
+                        <div style="border-bottom: 2px dashed #64748B; height: 50px; margin-top: 20px; width: 80%; margin-left: auto; margin-right: auto;"></div>
                     </div>
                     <div style="text-align: center; width: 30%;">
-                        <p style="margin: 0 0 10px; font-weight: bold; color: #000; font-size: 13px;">اعتماد مدير المصنع</p>
-                        <div style="border-bottom: 1px dashed #64748B; height: 40px; margin-top: 20px; width: 80%; margin-left: auto; margin-right: auto;"></div>
+                        <p style="margin: 0 0 10px; font-weight: 900; color: #111827; font-size: 15px;">اعتماد مدير المصنع</p>
+                        <div style="border-bottom: 2px dashed #64748B; height: 50px; margin-top: 20px; width: 80%; margin-left: auto; margin-right: auto;"></div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="row-flex no-print" style="margin-top: 20px;">
-            <button class="btn btn-primary flex-1 shadow-btn" style="padding: 14px;" onclick="downloadProfessionalPDF()">⬇️ تحميل PDF المطور</button>
-            <button class="btn btn-success flex-1" style="padding: 14px;" onclick="shareWhatsApp()">📱 مشاركة واتساب</button>
+            <button class="btn btn-primary flex-1 shadow-btn" style="padding: 16px; font-size: 15px;" onclick="downloadProfessionalPDF()">⬇️ تحميل PDF المطور</button>
+            <button class="btn btn-success flex-1" style="padding: 16px; font-size: 15px;" onclick="shareWhatsApp()">📱 مشاركة واتساب</button>
         </div>
-        <button class="btn btn-outline full-width no-print" style="margin-top:10px; padding: 14px;" onclick="showScreen('historyScreen')">العودة للأرشيف</button>
+        <button class="btn btn-outline full-width no-print" style="margin-top:15px; padding: 16px; font-size: 15px; font-weight: 900;" onclick="showScreen('historyScreen')">العودة للأرشيف</button>
     </div>
+    
     <div class="container screen" id="kaizenScreen">
         <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
             <h3 class="section-title" style="margin:0; border:none; padding:0;">مجتمع كايزن</h3>

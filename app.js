@@ -2233,9 +2233,8 @@ async function deleteJHRecord(type, id) {
     }
 }
 
-
 // ==========================================
-// 🛠️ 1. استعادة إعدادات الحساب والبروفايل (التي حذفت بالخطأ)
+// 🛠️ 1. استعادة إعدادات الحساب والبروفايل (عشان الداتا ترجع تظهر)
 // ==========================================
 function renderProfileAndSettings() {
     if(!currentUser || !currentUser.name) return;
@@ -2270,7 +2269,6 @@ function renderProfileAndSettings() {
             </div>`).join('') || '<div style="font-size:11px; text-align:center; padding:10px;">لا يوجد مهندسون مسجلون</div>';
     }
 
-    // استعادة عرض مفاتيح الـ API للمدير
     if (currentUser.role === 'admin') {
         document.getElementById('imgbbKeyInput').value = globalApiKeys.imgbb || '';
         document.getElementById('geminiKeyInput').value = globalApiKeys.gemini || '';
@@ -2287,7 +2285,7 @@ function removeDept(idx) {
 }
 
 function removeEngineer(idx) {
-    if(confirm(`⚠️ حذف المهندس (${maintenanceEngineers[idx].name}) من النظام؟`)) {
+    if(confirm(`⚠️ حذف المهندس (${maintenanceEngineers[idx].name})؟`)) {
         maintenanceEngineers.splice(idx, 1);
         syncRecord('maintenanceEngineers', maintenanceEngineers);
         renderProfileAndSettings();
@@ -2311,29 +2309,16 @@ async function updateProfilePic(event) {
 }
 
 // ==========================================
-// ⚙️ 2. استعادة محرك العمل بدون إنترنت (PWA)
-// ==========================================
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.error('PWA Error:', err));
-    });
-}
-window.addEventListener('online', () => { showToast('🟢 عاد الاتصال بالإنترنت'); document.body.classList.remove('offline-mode'); });
-window.addEventListener('offline', () => { showToast('🔴 انقطع الاتصال بالخادم!'); document.body.classList.add('offline-mode'); });
-
-
-// ==========================================
-// 🧠 3. المستشار الذكي وعقل المصنع (Gemini Pro - المستقر)
+// 🧠 2. المستشار الذكي وعقل المصنع (إصلاح زرارك الأصلي)
 // ==========================================
 
 // دالة اتصال جوجل المركزية
-async function fetchGeminiAPI(promptText, isHtml = false) {
+async function fetchGeminiAPI(promptText) {
     const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
     if(!k) throw new Error("مفتاح الذكاء الاصطناعي مفقود! ضفه في الإعدادات.");
 
-    // استخدمنا gemini-pro لأنه الأقوى والأكثر استقراراً ولا يعطي خطأ Not Found
+    // نستخدم الموديل المستقر
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
-    
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2345,41 +2330,40 @@ async function fetchGeminiAPI(promptText, isHtml = false) {
     
     let text = j.candidates[0].content.parts[0].text;
     
-    // 🚀 السلاح النووي: مسح علامات ```html أو ``` اللي بتبوظ التنسيق
-    text = text.replace(/```[a-zA-Z]*\n?/gi, '').replace(/```/g, '').trim();
-    
-    // لو طالبين نص عادي، هنمسح الـ HTML كمان
-    if(!isHtml) text = text.replace(/<\/?[^>]+(>|$)/g, ""); 
-    return text;
+    // 🚀 السلاح النووي: مسح أي أكواد برمجية أو Markdown تماماً
+    text = text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "");
+    return text.trim();
 }
 
-// دالة زر "شرح البند" الأصلي بتاعك
+// 🎯 استعادة الدالة الأصلية بتاعتك اللي مربوطة بزرار "شرح البند"
 async function explainItem(t) {
     document.getElementById('aiModal').style.display='flex'; 
-    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري تحليل البند... 🧠</h3></div>';
+    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري الشرح... 🧠</h3></div>';
     
     try {
-        let prompt = `أنت خبير صيانة. اشرح هذا البند للفني: "${t}". 
-        رد بتنسيق HTML منسق (استخدم <div> و <b> و <ul> فقط). 
-        تنبيه صارم: اكتب الكود مباشرة ولا تضع علامات Markdown أو \`\`\`html أبداً.`;
+        let prompt = `أنت خبير صيانة. اشرح هذا البند للفني باختصار شديد: "${t}". 
+        تنبيه صارم: أجب بنص عادي فقط (Plain Text). ممنوع منعا باتا استخدام أي كود أو HTML أو جداول.`;
         
-        let htmlResponse = await fetchGeminiAPI(prompt, true);
-        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${htmlResponse}</div>`;
+        let plainTextResponse = await fetchGeminiAPI(prompt);
+        // نعرض النص بشكل منسق بدون أكواد
+        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${plainTextResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--gold);">$1</b>')}</div>`;
     } catch(e) {
         document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ: ${e.message}</div>`;
     }
 }
 
 // ==========================================
-// 📚 4. مكتبة المصنع (إصلاح الاختفاء والرفع)
+// 📚 3. مكتبة المصنع (إصلاح الرفوف والكتب)
 // ==========================================
 
-window.renderKnowledgeShelves = function() {
+function renderKnowledgeShelves() {
     const container = document.getElementById('knowledgeListContainer');
     if(!container) return;
     
-    // إصلاح مشكلة تحول البيانات لـ Object بدل Array
-    let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
+    // تأمين تحويل البيانات عشان تترسم صح
+    let kbArray = [];
+    if(Array.isArray(knowledgeBaseData)) kbArray = knowledgeBaseData;
+    else if(typeof knowledgeBaseData === 'object' && knowledgeBaseData !== null) kbArray = Object.values(knowledgeBaseData);
     
     if(kbArray.length === 0) {
         container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;">لا توجد مراجع حالياً 📚</div>';
@@ -2390,48 +2374,48 @@ window.renderKnowledgeShelves = function() {
         <div class="book-cover">
             <div><div class="book-tag">${kb.category || 'TPM'}</div><div class="book-title-main">${kb.title}</div></div>
             <div style="display:flex; gap:5px; margin-top:15px;">
-                <button class="btn btn-sm btn-primary" style="flex:2;" onclick="window.openBookDetail('${kb.id}')">📖 فتح</button>
-                ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="flex:1;" onclick="window.deleteKnowledgeBook('${kb.id}')">🗑️</button>` : ''}
+                <button class="btn btn-sm btn-primary" style="flex:2;" onclick="openBookDetail('${kb.id}')">📖 فتح</button>
+                ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="flex:1;" onclick="deleteKnowledgeBook('${kb.id}')">🗑️</button>` : ''}
             </div>
         </div>
     `).join('');
-};
+}
 
-window.askFactoryAI = async function() {
+async function askFactoryAI() {
     const q = document.getElementById('kbSearchInput').value.trim();
     if(!q) return showToast('اكتب سؤالك!');
     document.getElementById('aiSearchResponse').style.display = 'block';
     document.getElementById('aiResponseText').innerHTML = '<i>جاري التفكير... ⏳</i>';
     try {
-        let prompt = `أجب باختصار في 3 سطور كمهندس صيانة عن: "${q}". نص عادي فقط ولا تستخدم جداول أو HTML.`;
-        let answer = await fetchGeminiAPI(prompt, false);
+        let answer = await fetchGeminiAPI(`أجب باختصار في 3 سطور كمهندس عن: "${q}". نص عادي فقط.`);
         document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:5px;">💡 إجابة الخبير:</div>${answer.replace(/\n/g, '<br>')}`;
         window.lastAIAnswer = answer;
     } catch(e) { document.getElementById('aiResponseText').innerHTML = `<b style="color:red;">⚠️ ${e.message}</b>`; }
-};
+}
 
-window.generateTPMQuiz = async function() {
+async function generateTPMQuiz() {
     const topic = prompt("أدخل موضوع الامتحان:");
     if(!topic) return;
     document.getElementById('aiSearchResponse').style.display = 'block';
     document.getElementById('aiResponseText').innerHTML = `<i>جاري تصميم امتحان... ⏳</i>`;
     try {
-        let answer = await fetchGeminiAPI(`ضع 3 أسئلة اختيارات بسيطة عن: ${topic}. بنص عادي فقط.`, false);
+        let answer = await fetchGeminiAPI(`ضع 3 أسئلة اختيارات بسيطة عن: ${topic}. بنص عادي فقط.`);
         document.getElementById('aiResponseText').innerHTML = answer.replace(/\n/g, '<br>');
     } catch(e) { document.getElementById('aiResponseText').innerHTML = `<b style="color:red;">⚠️ ${e.message}</b>`; }
-};
+}
 
-window.convertAIToOPL = function() {
+function convertAIToOPL() {
     if (!window.lastAIAnswer) return showToast("لا توجد إجابة!");
     document.getElementById('oplModal').style.display = 'flex';
     document.getElementById('oplTitle').value = "درس نقطة واحدة";
     document.getElementById('oplDesc').value = window.lastAIAnswer;
-};
+}
 
 let tempBase64Pdf = null;
-window.handleMaterialUpload = function(event) {
+function handleMaterialUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return alert("⚠️ أقصى حجم 5 ميجا عشان السيرفر ميهنجش.");
     document.getElementById('pdfExtractStatus').innerText = "جاري التجهيز... ⏳";
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -2439,9 +2423,9 @@ window.handleMaterialUpload = function(event) {
         document.getElementById('pdfExtractStatus').innerHTML = `✅ جاهز للرفع: <b style="color:var(--primary);">${file.name}</b>`;
     };
     reader.readAsDataURL(file);
-};
+}
 
-window.saveNewBook = async function() {
+async function saveNewBook() {
     const title = document.getElementById('kbTitle').value;
     if (!title) return showToast("⚠️ ادخل عنوان المرجع.");
     
@@ -2451,7 +2435,7 @@ window.saveNewBook = async function() {
     if(tempBase64Pdf) {
         showToast("جاري الرفع للسيرفر... ⏳");
         try { await db.ref('tpm_system/pdf_files/' + bookId).set({ base64: tempBase64Pdf }); } 
-        catch(e) { return alert("⚠️ فشل رفع الملف. تأكد من حجمه."); }
+        catch(e) { return alert("⚠️ فشل رفع الملف."); }
     }
     
     let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
@@ -2463,10 +2447,10 @@ window.saveNewBook = async function() {
     document.getElementById('kbTitle').value = '';
     document.getElementById('pdfExtractStatus').innerText = "اضغط لرفع ملف PDF 📄";
     tempBase64Pdf = null;
-    window.renderKnowledgeShelves();
-};
+    renderKnowledgeShelves();
+}
 
-window.openBookDetail = async function(id) {
+async function openBookDetail(id) {
     let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
     let kb = kbArray.find(x => x.id == id);
     if(!kb) return;
@@ -2479,18 +2463,18 @@ window.openBookDetail = async function(id) {
                 let w = window.open("");
                 if(w) w.document.write(`<iframe width='100%' height='100%' src='${snap.val().base64}' style='border:none; margin:0;'></iframe>`);
                 else alert("يرجى السماح بالنوافذ المنبثقة.");
-            }
+            } else { alert("الملف غير موجود بالسيرفر"); }
         } catch(e) { alert("خطأ في الجلب."); }
         document.getElementById('aiModal').style.display = 'none';
     }
-};
+}
 
-window.deleteKnowledgeBook = async function(id) {
+async function deleteKnowledgeBook(id) {
     if(confirm("⚠️ متأكد من الحذف؟")) {
         let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
         knowledgeBaseData = kbArray.filter(b => b.id != id);
         syncRecord('knowledgeBase', knowledgeBaseData);
         try { await db.ref('tpm_system/pdf_files/' + id).remove(); } catch(e){}
-        window.renderKnowledgeShelves();
+        renderKnowledgeShelves();
     }
-};
+}

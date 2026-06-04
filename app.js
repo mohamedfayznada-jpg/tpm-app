@@ -2309,15 +2309,13 @@ async function updateProfilePic(event) {
 }
 
 // ==========================================
-// 🧠 2. المستشار الذكي وعقل المصنع (إصلاح زرارك الأصلي)
+// 🧠 2. المستشار الذكي وعقل المصنع (Gemini Pro - المحصن ضد الأخطاء)
 // ==========================================
 
-// دالة اتصال جوجل المركزية
 async function fetchGeminiAPI(promptText) {
     const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
     if(!k) throw new Error("مفتاح الذكاء الاصطناعي مفقود! ضفه في الإعدادات.");
 
-    // نستخدم الموديل المستقر
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
     const res = await fetch(url, {
         method: 'POST',
@@ -2326,16 +2324,21 @@ async function fetchGeminiAPI(promptText) {
     });
 
     const j = await res.json();
+    
+    // 🚀 الحماية من خطأ (Cannot read properties of undefined reading 'parts')
     if(j.error) throw new Error(j.error.message);
+    if(!j.candidates || j.candidates.length === 0 || !j.candidates[0].content) {
+        console.error("Gemini Blocked Response:", j);
+        throw new Error("جوجل رفضت الإجابة (قد يكون بسبب قيود الأمان). حاول تغيير صيغة السؤال.");
+    }
     
     let text = j.candidates[0].content.parts[0].text;
     
-    // 🚀 السلاح النووي: مسح أي أكواد برمجية أو Markdown تماماً
+    // الفرم النووي لأي أكواد
     text = text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "");
     return text.trim();
 }
 
-// 🎯 استعادة الدالة الأصلية بتاعتك اللي مربوطة بزرار "شرح البند"
 async function explainItem(t) {
     document.getElementById('aiModal').style.display='flex'; 
     document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري الشرح... 🧠</h3></div>';
@@ -2345,7 +2348,6 @@ async function explainItem(t) {
         تنبيه صارم: أجب بنص عادي فقط (Plain Text). ممنوع منعا باتا استخدام أي كود أو HTML أو جداول.`;
         
         let plainTextResponse = await fetchGeminiAPI(prompt);
-        // نعرض النص بشكل منسق بدون أكواد
         document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${plainTextResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--gold);">$1</b>')}</div>`;
     } catch(e) {
         document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ: ${e.message}</div>`;
@@ -2353,14 +2355,13 @@ async function explainItem(t) {
 }
 
 // ==========================================
-// 📚 3. مكتبة المصنع (إصلاح الرفوف والكتب)
+// 📚 3. مكتبة المصنع (إصلاح فتح الـ PDF)
 // ==========================================
 
 function renderKnowledgeShelves() {
     const container = document.getElementById('knowledgeListContainer');
     if(!container) return;
     
-    // تأمين تحويل البيانات عشان تترسم صح
     let kbArray = [];
     if(Array.isArray(knowledgeBaseData)) kbArray = knowledgeBaseData;
     else if(typeof knowledgeBaseData === 'object' && knowledgeBaseData !== null) kbArray = Object.values(knowledgeBaseData);
@@ -2454,18 +2455,32 @@ async function openBookDetail(id) {
     let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
     let kb = kbArray.find(x => x.id == id);
     if(!kb) return;
+    
     if(kb.hasPdf) {
         document.getElementById('aiModal').style.display = 'flex';
-        document.getElementById('aiModalText').innerHTML = '<div style="padding:20px; text-align:center;">جاري جلب الملف... ⏳</div>';
+        document.getElementById('aiModalText').innerHTML = '<div style="padding:20px; text-align:center;">جاري تجهيز الملف للفتح... ⏳</div>';
         try {
             let snap = await db.ref('tpm_system/pdf_files/' + id).once('value');
             if(snap.val() && snap.val().base64) {
-                let w = window.open("");
-                if(w) w.document.write(`<iframe width='100%' height='100%' src='${snap.val().base64}' style='border:none; margin:0;'></iframe>`);
-                else alert("يرجى السماح بالنوافذ المنبثقة.");
-            } else { alert("الملف غير موجود بالسيرفر"); }
-        } catch(e) { alert("خطأ في الجلب."); }
-        document.getElementById('aiModal').style.display = 'none';
+                // 🚀 التحويل السحري لـ Blob لفتح الـ PDF بدون كراش من المتصفح
+                fetch(snap.val().base64)
+                .then(res => res.blob())
+                .then(blob => {
+                    let blobUrl = URL.createObjectURL(blob);
+                    window.open(blobUrl, '_blank');
+                    document.getElementById('aiModal').style.display = 'none';
+                }).catch(err => {
+                    alert("⚠️ فشل عرض الملف بسبب المتصفح.");
+                    document.getElementById('aiModal').style.display = 'none';
+                });
+            } else { 
+                alert("الملف غير موجود بالسيرفر"); 
+                document.getElementById('aiModal').style.display = 'none';
+            }
+        } catch(e) { 
+            alert("خطأ في الجلب من قاعدة البيانات."); 
+            document.getElementById('aiModal').style.display = 'none';
+        }
     }
 }
 

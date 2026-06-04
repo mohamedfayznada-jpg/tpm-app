@@ -1627,6 +1627,48 @@ async function predictMachineFailures() {
 }
 
 // الدالة الأساسية اللي زرار الشرح بينادي عليها!
+async function explainItem(t) {
+    const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey); 
+    if(!k) return showToast('مفتاح Gemini مفقود');
+    
+    document.getElementById('aiModal').style.display='flex'; 
+    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري استشارة عقل المصنع وتحليل البند... 🧠</h3></div>';
+    
+    try {
+        let factoryContext = (knowledgeBaseData || []).map(kb => `[مرجع: ${kb.title}]: ${kb.content || ''}`).join('\n\n').substring(0, 10000);
+        
+        let prompt = `أنت الخبير التقني لـ Factory OS. اشرح البند التالي للمراجع الميداني: "${t}". 
+        تحدث بصيغة تعليمية بناء على المراجع إن وجدت.
+        تنبيه صارم جداً: رد بتنسيق HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع منعاً باتاً كتابة علامات الماركداون مثل \`\`\`html.
+        المراجع المتاحة: ${factoryContext}`;
+
+        // 🚀 استخدام الموديل 1.5-flash السريع
+        let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`;
+        let res = await fetch(url, { 
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+        });
+        
+        // 🚀 نظام تحويل ذكي: لو המوديل مقفول يحول على gemini-pro تلقائياً
+        if (res.status === 404) {
+            url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
+            res = await fetch(url, { 
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+            });
+        }
+        
+        const j = await res.json(); 
+        if(j.error) throw new Error(j.error.message);
+
+        let rawHTML = j.candidates[0].content.parts[0].text;
+        
+        // 🚀 تنظيف الكود بالكامل من أي علامات بتلخبط المتصفح
+        rawHTML = rawHTML.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
+        
+        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8;">${rawHTML}</div>`;
+    } catch(e) { 
+        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ في استحضار الذاكرة: ${e.message}</div>`; 
+    }
+}
 
 // ------------------------------------------
 // إعدادات أخرى

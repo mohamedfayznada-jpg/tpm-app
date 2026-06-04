@@ -2146,229 +2146,119 @@ async function deleteJHRecord(type, id) {
 
 
 // ==========================================
-// 🧠 محرك المعرفة الذكي 3.0 (Bulletproof Edition)
+// 🧠 كبسولة عقل المصنع (Safe Mode - الإصدار المستقر)
 // ==========================================
 
-// 1. رسم المكتبة (بشكل محمي)
+// 1. رسم المكتبة
 window.renderKnowledgeShelves = function() {
     try {
         const container = document.getElementById('knowledgeListContainer');
         if(!container) return;
         if(!knowledgeBaseData || knowledgeBaseData.length === 0) {
-            container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; font-weight:bold; color:var(--text-muted);">لا توجد مراجع حالياً 📚</div>';
+            container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">لا توجد مراجع حالياً 📚</div>';
             return;
         }
         container.innerHTML = knowledgeBaseData.map(kb => `
             <div class="book-cover">
-                <div>
-                    <div class="book-tag">${kb.category || 'TPM'}</div>
-                    <div class="book-title-main">${kb.title}</div>
-                </div>
+                <div><div class="book-tag">${kb.category || 'TPM'}</div><div class="book-title-main">${kb.title}</div></div>
                 <div style="display:flex; gap:5px; margin-top:15px;">
                     <button class="btn btn-sm btn-primary" style="flex:2;" onclick="window.openBookDetail('${kb.id}')">📖 فتح وعرض</button>
                     ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="flex:1;" onclick="window.deleteKnowledgeBook('${kb.id}')">🗑️</button>` : ''}
                 </div>
-                ${kb.link ? `<button class="btn btn-sm btn-outline" style="width:100%; margin-top:8px;" onclick="window.open('${kb.link}', '_blank')">📺 الرابط الخارجي</button>` : ''}
             </div>
         `).join('');
-    } catch(e) { console.error("Render Error:", e); }
+    } catch(e) { console.error(e); }
 };
-
 window.addEventListener('load', () => { setTimeout(window.renderKnowledgeShelves, 500); });
 
-window.openBookDetail = async function(id) {
-    let kb = knowledgeBaseData.find(x => x.id == id);
-    if(!kb) return;
-    
-    if(kb.hasPdf) {
-        document.getElementById('aiModal').style.display = 'flex';
-        document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;">جاري جلب الملف من السيرفر... ⏳</div>';
-        try {
-            let snap = await db.ref('tpm_system/pdf_files/' + id).once('value');
-            let pdfData = snap.val();
-            if(pdfData && pdfData.base64) {
-                let pdfWindow = window.open("");
-                if(pdfWindow) pdfWindow.document.write(`<iframe width='100%' height='100%' style='border:none; margin:0;' src='${pdfData.base64}'></iframe>`);
-                else alert("⚠️ يرجى السماح بالنوافذ المنبثقة (Pop-ups) من أعلى المتصفح لعرض الملف.");
-            } else {
-                alert("⚠️ ملف PDF غير موجود بقاعدة البيانات.");
-            }
-        } catch(e) {
-            alert("⚠️ خطأ في جلب الملف من السيرفر.");
-        }
-        document.getElementById('aiModal').style.display = 'none';
-    } else if (kb.link) {
-        window.open(kb.link, '_blank');
-    } else {
-        alert("⚠️ لا يوجد محتوى لعرضه!");
-    }
-};
-
-window.deleteKnowledgeBook = async function(id) {
-    if(confirm("⚠️ متأكد من الحذف النهائي؟")) {
-        knowledgeBaseData = knowledgeBaseData.filter(b => b.id != id);
-        syncRecord('knowledgeBase', knowledgeBaseData);
-        try { await db.ref('tpm_system/pdf_files/' + id).remove(); } catch(e){}
-        window.renderKnowledgeShelves();
-    }
-};
-
-// 2. حماية الرفع لمنع انهيار الداتا بيز
-let tempBase64Pdf = null;
-window.handleMaterialUpload = function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    // 🚨 اللغم الثاني: نمنع رفع ملفات أكبر من 4 ميجا لأنها تخنق الـ Firebase RTDB
-    if (file.size > 4 * 1024 * 1024) { 
-        alert("⚠️ حجم الملف يتجاوز 4 ميجابايت! السيرفر لن يتحمل حفظه. يرجى رفعه على Google Drive ووضع الرابط الخاص به.");
-        event.target.value = "";
-        return;
-    }
-
-    document.getElementById('pdfExtractStatus').innerText = "جاري التجهيز... ⏳";
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        tempBase64Pdf = e.target.result;
-        document.getElementById('pdfExtractStatus').innerHTML = `✅ تم التجهيز بنجاح: ${file.name}`;
-    };
-    reader.onerror = function() { alert("⚠️ خطأ في قراءة الملف."); };
-    reader.readAsDataURL(file);
-};
-
-window.saveNewBook = async function() {
-    try {
-        const title = document.getElementById('kbTitle').value;
-        const cat = document.getElementById('kbCategory').value;
-        const link = document.getElementById('kbExternalLink').value;
-        if (!title) return alert("⚠️ ادخل عنوان المرجع.");
-        
-        let bookId = Date.now().toString();
-        let newBook = { id: bookId, title: title, category: cat, link: link, date: new Date().toLocaleDateString(), hasPdf: !!tempBase64Pdf };
-        
-        if(tempBase64Pdf) {
-            document.getElementById('addBookModal').style.display = 'none';
-            showToast("جاري رفع الملف للسيرفر... يرجى الانتظار ⏳");
-            await db.ref('tpm_system/pdf_files/' + bookId).set({ base64: tempBase64Pdf });
-        }
-        
-        knowledgeBaseData.push(newBook);
-        syncRecord('knowledgeBase', knowledgeBaseData);
-        
-        document.getElementById('addBookModal').style.display = 'none';
-        document.getElementById('kbTitle').value = '';
-        document.getElementById('kbExternalLink').value = '';
-        document.getElementById('pdfExtractStatus').innerText = "اضغط لرفع ملف PDF 📄";
-        tempBase64Pdf = null;
-        
-        showToast("✅ تم الإضافة بنجاح!");
-        window.renderKnowledgeShelves();
-    } catch(error) {
-        console.error(error);
-        alert("⚠️ حدث خطأ أثناء الحفظ! قد يكون الملف كبيراً جداً وخنق قاعدة البيانات.");
-    }
-};
-
-// ==========================================
-// 🧠 وظائف الذكاء الاصطناعي الأساسية (مضادة للهلوسة)
-// ==========================================
-
-// 🚨 اللغم الثالث: دالة تنظيف نووية تمسح أي كود غصب عن الذكاء الاصطناعي
-window.callGeminiClean = async function(promptText) {
+// 2. دالة الاتصال الموحدة بجوجل (محمية ومضادة للأكواد)
+window.callGeminiAPI = async function(promptText, pdfData = null) {
     const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
-    if(!k) throw new Error("مفتاح Gemini مفقود من شاشة الإعدادات!");
+    if(!k) throw new Error("مفتاح الذكاء الاصطناعي مفقود! ضفه في الإعدادات.");
+
+    // أمر قاهر لمنع الأكواد والجداول
+    let strictPrompt = `تنبيه صارم: أجب بنص عادي (Plain Text) فقط. ممنوع استخدام أي علامات HTML أو جداول أو كود. أجب باختصار في 3 نقاط فقط.\n\nالسؤال هو: ${promptText}`;
+    let contents = [{ parts: [{ text: strictPrompt }] }];
+    
+    if (pdfData) {
+        contents[0].parts.push({ inline_data: { mime_type: "application/pdf", data: pdfData } });
+    }
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-            generationConfig: { temperature: 0.1 } // 0.1 تمنع التأليف والهلوسة
-        })
+        body: JSON.stringify({ contents: contents })
     });
     
-    if(!res.ok) throw new Error("السيرفر رفض الطلب. تأكد من صحة المفتاح.");
     const j = await res.json();
-    let ans = j.candidates[0].content.parts[0].text;
+    if(j.error) throw new Error(j.error.message);
     
-    // الفرم النووي لأي كود أو HTML
-    ans = ans.replace(/```[a-z]*\n/gi, '').replace(/```/g, '').replace(/<\/?[^>]+(>|$)/g, "");
-    return ans.trim();
+    // فلتر لفرم أي كود يخرجه الذكاء الاصطناعي بالغلط
+    let rawText = j.candidates[0].content.parts[0].text;
+    return rawText.replace(/<\/?[^>]+(>|$)/g, "").replace(/```/g, ""); 
 };
 
+// 3. اسأل الخبير
 window.askFactoryAI = async function() {
     try {
-        const q = document.getElementById('kbSearchInput').value.trim();
-        if(!q) return alert('⚠️ اكتب سؤالك أولاً!');
+        const q = document.getElementById('kbSearchInput').value;
+        if(!q) { alert('اكتب سؤالك أولاً!'); return; }
         
         document.getElementById('aiSearchResponse').style.display = 'block';
         document.getElementById('aiResponseText').innerHTML = '<i>جاري التفكير... ⏳</i>';
         if(document.getElementById('oplBtnContainer')) document.getElementById('oplBtnContainer').style.display = 'none';
 
-        let prompt = `أجب باختصار شديد جدا (4 سطور كحد أقصى) بنص عادي فقط وبدون أكواد نهائيا عن: "${q}"`;
-        let answer = await window.callGeminiClean(prompt);
-        
-        document.getElementById('aiResponseText').innerHTML = answer.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--primary);">$1</b>');
+        let answer = await window.callGeminiAPI(q);
+        document.getElementById('aiResponseText').innerHTML = answer.replace(/\n/g, '<br>');
         window.lastAIAnswer = answer;
+        
         if(document.getElementById('oplBtnContainer')) document.getElementById('oplBtnContainer').style.display = 'block';
     } catch(e) {
         document.getElementById('aiResponseText').innerHTML = `<b style="color:red;">⚠️ خطأ: ${e.message}</b>`;
     }
 };
 
+// 4. توليد امتحان
 window.generateTPMQuiz = async function() {
     try {
-        const topic = prompt("أدخل موضوع الامتحان (مثال: الصيانة الذاتية):");
-        if (!topic) return;
-
+        const topic = prompt("أدخل موضوع الامتحان:");
+        if(!topic) return;
         document.getElementById('aiSearchResponse').style.display = 'block';
         document.getElementById('aiResponseText').innerHTML = `<i>جاري تصميم امتحان عن ${topic}... ⏳</i>`;
-
-        let prompt = `اكتب 3 أسئلة اختيارات بسيطة عن: ${topic}. بنص عادي فقط وبدون أي وسوم HTML أو أكواد.`;
-        let answer = await window.callGeminiClean(prompt);
         
-        document.getElementById('aiResponseText').innerHTML = answer.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--danger);">$1</b>');
+        let answer = await window.callGeminiAPI(`ضع 3 أسئلة اختيارات بسيطة عن: ${topic}`);
+        document.getElementById('aiResponseText').innerHTML = answer.replace(/\n/g, '<br>');
     } catch(e) {
         document.getElementById('aiResponseText').innerHTML = `<b style="color:red;">⚠️ خطأ: ${e.message}</b>`;
     }
 };
 
-window.convertAIToOPL = function() {
-    if (!window.lastAIAnswer) return alert("⚠️ لا توجد إجابة!");
-    document.getElementById('oplModal').style.display = 'flex';
-    document.getElementById('oplTitle').value = "درس نقطة واحدة";
-    document.getElementById('oplDesc').value = window.lastAIAnswer.replace(/\*/g, '');
-};
-
+// 5. الاستنجاد في المراجعة (زر الشرح)
 window.askAIAuditHelp = async function(itemName) {
     try {
         document.getElementById('aiModal').style.display = 'flex';
-        document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:20px;"><i>جاري استشارة الخبير... ⏳</i></div>';
+        document.getElementById('aiModalText').innerHTML = '<div style="padding:20px; text-align:center;">جاري الشرح... ⏳</div>';
         
-        let prompt = `اشرح باختصار شديد (3 نقاط كحد أقصى) بنص عادي فقط كيف أفحص البند التالي في المصنع: "${itemName}".`;
-        let answer = await window.callGeminiClean(prompt);
-        
-        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; padding:15px;">${answer.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--success);">$1</b>')}</div>`;
+        let answer = await window.callGeminiAPI(`كيف أفحص بند: "${itemName}" في المصنع؟`);
+        document.getElementById('aiModalText').innerHTML = `<div style="padding:15px; font-size:14px; line-height:1.7;">${answer.replace(/\n/g, '<br>')}</div>`;
     } catch(e) {
-        document.getElementById('aiModalText').innerHTML = `<div style="text-align:center; color:red; padding:20px;">⚠️ خطأ: ${e.message}</div>`;
+        document.getElementById('aiModalText').innerHTML = `<div style="padding:20px; color:red; text-align:center;">⚠️ خطأ: ${e.message}</div>`;
     }
 };
 
-// حقن زر الاستنجاد في المراجعة
+// حقن زر الاستنجاد
 if (!window.auditHelpInjected) {
     const originalRenderAuditItems = window.renderAuditItems || function(){};
     window.renderAuditItems = function(stepKey) {
         originalRenderAuditItems(stepKey);
         setTimeout(() => {
-            const items = document.querySelectorAll('.audit-item');
-            items.forEach(item => {
-                const header = item.querySelector('.item-header');
-                if(header && !header.querySelector('.sos-btn')) {
+            document.querySelectorAll('.audit-item .item-header').forEach(header => {
+                if(!header.querySelector('.sos-btn')) {
                     const titleText = header.innerText.replace(/[\d\.]/g, '').trim();
                     const btn = document.createElement('button');
                     btn.className = "sos-btn";
                     btn.innerHTML = "🧠 مساعدة";
-                    btn.style.cssText = "margin-right:auto; background:#DBEAFE; color:#1E3A8A; border:1px solid #1E3A8A; border-radius:8px; padding:4px 10px; font-size:11px; font-weight:bold; cursor:pointer;";
+                    btn.style.cssText = "margin-right:auto; background:#DBEAFE; color:#1E3A8A; border:1px solid #1E3A8A; border-radius:5px; padding:2px 8px; font-size:11px; cursor:pointer;";
                     btn.onclick = () => window.askAIAuditHelp(titleText);
                     header.appendChild(btn);
                 }
@@ -2377,3 +2267,82 @@ if (!window.auditHelpInjected) {
     };
     window.auditHelpInjected = true;
 }
+
+// 6. تحويل لـ OPL
+window.convertAIToOPL = function() {
+    if (!window.lastAIAnswer) { alert("لا توجد إجابة!"); return; }
+    document.getElementById('oplModal').style.display = 'flex';
+    document.getElementById('oplTitle').value = "درس نقطة واحدة";
+    document.getElementById('oplDesc').value = window.lastAIAnswer;
+};
+
+// 7. الرفع والحفظ
+let tempBase64Pdf = null;
+window.handleMaterialUpload = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert("⚠️ حجم الملف كبير! أقصى حجم 5 ميجا."); return; }
+    
+    document.getElementById('pdfExtractStatus').innerText = "جاري التجهيز... ⏳";
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        tempBase64Pdf = e.target.result;
+        document.getElementById('pdfExtractStatus').innerHTML = `✅ تم التجهيز: ${file.name}`;
+    };
+    reader.readAsDataURL(file);
+};
+
+window.saveNewBook = async function() {
+    try {
+        const title = document.getElementById('kbTitle').value;
+        if (!title) { alert("⚠️ ادخل عنوان المرجع."); return; }
+        
+        let bookId = Date.now().toString();
+        let newBook = { id: bookId, title: title, category: document.getElementById('kbCategory').value, hasPdf: !!tempBase64Pdf };
+        
+        if(tempBase64Pdf) {
+            alert("جاري حفظ الملف.. اضغط موافق للبدء.");
+            await db.ref('tpm_system/pdf_files/' + bookId).set({ base64: tempBase64Pdf });
+        }
+        
+        knowledgeBaseData.push(newBook);
+        syncRecord('knowledgeBase', knowledgeBaseData);
+        
+        document.getElementById('addBookModal').style.display = 'none';
+        document.getElementById('kbTitle').value = '';
+        document.getElementById('pdfExtractStatus').innerText = "اضغط لرفع ملف PDF 📄";
+        tempBase64Pdf = null;
+        
+        alert("✅ تم الحفظ بنجاح!");
+        window.renderKnowledgeShelves();
+    } catch(e) {
+        alert("⚠️ خطأ في الحفظ: " + e.message);
+    }
+};
+
+window.openBookDetail = async function(id) {
+    let kb = knowledgeBaseData.find(x => x.id == id);
+    if(!kb) return;
+    if(kb.hasPdf) {
+        document.getElementById('aiModal').style.display = 'flex';
+        document.getElementById('aiModalText').innerHTML = '<div style="padding:20px; text-align:center;">جاري جلب الملف... ⏳</div>';
+        try {
+            let snap = await db.ref('tpm_system/pdf_files/' + id).once('value');
+            if(snap.val() && snap.val().base64) {
+                let w = window.open("");
+                if(w) w.document.write(`<iframe width='100%' height='100%' src='${snap.val().base64}'></iframe>`);
+                else alert("اسمح بالنوافذ المنبثقة.");
+            }
+        } catch(e) { alert("خطأ في الجلب."); }
+        document.getElementById('aiModal').style.display = 'none';
+    }
+};
+
+window.deleteKnowledgeBook = async function(id) {
+    if(confirm("⚠️ متأكد من الحذف؟")) {
+        knowledgeBaseData = knowledgeBaseData.filter(b => b.id != id);
+        syncRecord('knowledgeBase', knowledgeBaseData);
+        try { await db.ref('tpm_system/pdf_files/' + id).remove(); } catch(e){}
+        window.renderKnowledgeShelves();
+    }
+};

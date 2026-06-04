@@ -3,14 +3,12 @@ console.log("🚀 AI Core V1.0 Loaded Successfully!");
 
 let tempAiPdf = null;
 
-// 1. محرك الذكاء الاصطناعي المُحكم
+// 1. محرك الذكاء الاصطناعي المُحكم (مضاد للفايروول)
 async function safeGeminiCall(promptText, pdfBase64 = null) {
     const key = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
-    if(!key) return "⚠️ خطأ: مفتاح الذكاء الاصطناعي مفقود من الإعدادات!";
+    if(!key) return "⚠️ خطأ: مفتاح الذكاء الاصطناعي مفقود!";
 
-    // برومبت عسكري يمنع أي هرتلة
     let prompt = `أنت مهندس صيانة. تعليمات صارمة جداً: أجب بنص عادي فقط. ممنوع استخدام أي جداول أو علامات HTML أو أكواد برمجية نهائياً. أجب باختصار شديد في 3 أسطر كحد أقصى.\n\nالسؤال هو: ${promptText}`;
-    
     let body = { contents: [{ parts: [{ text: prompt }] }] };
     
     if (pdfBase64) {
@@ -24,15 +22,21 @@ async function safeGeminiCall(promptText, pdfBase64 = null) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
+
+        // 🚀 فحص الفايروول: لو الرد مش JSON، يبقى الشبكة قافلة السكة!
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            console.error("Firewall Blocked the Request!");
+            return "⚠️ خطأ في الشبكة: جدار الحماية (Firewall) يمنع الوصول للذكاء الاصطناعي. يرجى التجربة من باقة الموبايل (Data).";
+        }
+
         const data = await res.json();
         if(data.error) return "⚠️ خطأ من جوجل: " + data.error.message;
         
         let text = data.candidates[0].content.parts[0].text;
-        // السلاح النووي: مسح أي كود Markdown أو HTML
-        text = text.replace(/```[\s\S]*?```/g, "").replace(/<\/?[^>]+(>|$)/g, ""); 
-        return text.trim();
+        return text.replace(/```[\s\S]*?```/g, "").replace(/<\/?[^>]+(>|$)/g, "").trim();
     } catch(e) {
-        return "⚠️ فشل الاتصال بالإنترنت أو السيرفر.";
+        return "⚠️ فشل الاتصال. تأكد من جودة الإنترنت أو جرب شبكة أخرى.";
     }
 }
 

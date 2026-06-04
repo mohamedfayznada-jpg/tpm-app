@@ -2146,238 +2146,179 @@ async function deleteJHRecord(type, id) {
 
 
 // ==========================================
-// 🧠 محرك المعرفة الذكي 2.0 (الإصدار المصحح والمستقر)
+// 🧠 محرك المعرفة الذكي 3.0 (الإصدار المحصن ضد اختفاء البيانات)
 // ==========================================
 
-// 1. رسم المكتبة (على الرفوف اللي رجعناها)
+// 1. رسم المكتبة (بشكل محمي ضد أعطال Firebase)
 window.renderKnowledgeShelves = function() {
-    const container = document.getElementById('knowledgeListContainer');
-    if(!container) return;
-
-    if(!knowledgeBaseData || knowledgeBaseData.length === 0) {
-        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:40px;">لا توجد كتب في المكتبة حالياً 📚</div>';
-        return;
-    }
-
-    container.innerHTML = knowledgeBaseData.map(kb => `
-        <div class="book-cover" onclick="openBookDetail('${kb.id}')">
-            <div>
-                <div class="book-tag">${kb.category || 'عام'}</div>
-                <div class="book-title-main">${kb.title}</div>
+    try {
+        const container = document.getElementById('knowledgeListContainer');
+        if(!container) return;
+        
+        // 🔥 الحل السحري: تحويل بيانات فايربيز لمصفوفة لو رجعت ككائن (Object)
+        let kbArray = [];
+        if (Array.isArray(knowledgeBaseData)) {
+            kbArray = knowledgeBaseData;
+        } else if (typeof knowledgeBaseData === 'object' && knowledgeBaseData !== null) {
+            kbArray = Object.values(knowledgeBaseData);
+        }
+        
+        if(kbArray.length === 0) {
+            container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;">لا توجد مراجع حالياً 📚</div>';
+            return;
+        }
+        
+        container.innerHTML = kbArray.map(kb => {
+            if(!kb) return '';
+            return `
+            <div class="book-cover">
+                <div><div class="book-tag">${kb.category || 'TPM'}</div><div class="book-title-main">${kb.title}</div></div>
+                <div style="display:flex; gap:5px; margin-top:15px;">
+                    <button class="btn btn-sm btn-primary" style="flex:2;" onclick="window.openBookDetail('${kb.id}')">📖 فتح</button>
+                    ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="flex:1;" onclick="window.deleteKnowledgeBook('${kb.id}')">🗑️</button>` : ''}
+                </div>
             </div>
-            <div style="font-size:10px; color:var(--text-muted); margin-top:10px;">
-                📅 ${kb.date || new Date().toLocaleDateString()}<br>
-                ${kb.hasPdf ? '<div style="color:var(--success); margin-top:5px; font-weight:bold;">📄 كتالوج متاح</div>' : ''}
-            </div>
-            ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="position:absolute; bottom:5px; left:5px; padding:2px 8px; font-size:10px;" onclick="event.stopPropagation(); deleteKnowledgeBook('${kb.id}')">🗑️ حذف</button>` : ''}
-        </div>
-    `).join('');
+        `}).join('');
+    } catch(e) { console.error("Library Render Error:", e); }
 };
 
 window.addEventListener('load', () => { setTimeout(window.renderKnowledgeShelves, 500); });
 
-// دالة اتصال جوجل الموحدة (لتصحيح اسم الموديل ومنع الأكواد)
-async function fetchGemini(prompt, pdfBase64 = null) {
+// دالة اتصال جوجل المركزية المزودة بنظام التحويل التلقائي للموديل
+window.callGeminiAPI = async function(promptText) {
     const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
-    if(!k) throw new Error("مفتاح Gemini مفقود من الإعدادات!");
+    if(!k) throw new Error("مفتاح الذكاء الاصطناعي مفقود!");
 
-    // 🚨 تصحيح الموديل لـ 1.5-flash بدل 2.5 الوهمي
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`;
+    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`;
+    let bodyData = JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] });
 
-    let contents = [{ parts: [{ text: prompt }] }];
-    if (pdfBase64) {
-        let b64Data = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
-        contents[0].parts.push({ inline_data: { mime_type: "application/pdf", data: b64Data } });
+    let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: bodyData });
+    
+    // التحويل لـ gemini-pro لو 1.5 مش مدعوم
+    if (res.status === 404) {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
+        res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: bodyData });
     }
-
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: contents })
-    });
-
+    
     const j = await res.json();
     if(j.error) throw new Error(j.error.message);
-
-    let text = j.candidates[0].content.parts[0].text;
-    // 🚨 تنظيف صارم لأي أكواد Markdown تبوظ شكل الـ HTML
-    return text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
-}
-
-// 2. فتح تفاصيل الكتاب والتلخيص
-window.openBookDetail = async function(id) {
-    let kb = knowledgeBaseData.find(x => x.id == id);
-    if(!kb) return;
-
-    document.getElementById('aiModal').style.display = 'flex';
-    document.getElementById('aiModalText').innerHTML = `<div style="text-align:center; padding:40px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري التلخيص... 🧠</h3></div>`;
-
-    try {
-        let prompt = `أنت الخبير الفني لـ Factory OS. المرجع: "${kb.title}".
-        اكتب ملخص تنفيذي في 3 نقاط بلغة فنية مبسطة.
-        رد بتنسيق HTML أنيق جداً (استخدم <div> و <ul> فقط. ممنوع كتابة علامة \`\`\`html مطلقاً).`;
-
-        let summaryHtml = await fetchGemini(prompt);
-
-        document.getElementById('aiModalText').innerHTML = `
-            <div style="background:linear-gradient(135deg, var(--primary), var(--bg-color)); padding:20px; border-radius:15px; border-bottom: 2px solid var(--gold); margin-bottom:20px;">
-                <h2 style="color:var(--gold); margin:0;">${kb.title}</h2>
-            </div>
-            <div class="summary-section" style="background:rgba(212,175,55,0.05); padding:15px; border-radius:12px; border-right:4px solid var(--gold); margin-bottom:20px;">
-                <h4 style="color:var(--gold); margin-bottom:10px;">🌟 الملخص الذكي للفنيين:</h4>
-                <div style="font-size:13px; line-height:1.7;">${summaryHtml}</div>
-            </div>
-            <button class="btn btn-warning full-width shadow-btn" style="padding:15px; border-radius:12px; font-weight:bold;" onclick="generateAutoQuiz('${id}')">🎓 بدء الاختبار الفني</button>
-        `;
-    } catch(e) {
-        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ: ${e.message}</div>`;
-    }
+    
+    // تنظيف الأكواد
+    let rawText = j.candidates[0].content.parts[0].text;
+    return rawText.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
 };
 
-// 3. اسأل الخبير (البحث الذكي)
 window.askFactoryAI = async function() {
-    const q = document.getElementById('kbSearchInput').value.trim();
-    if(!q) return showToast('اكتب سؤالك أولاً!');
-
-    const responseBox = document.getElementById('aiSearchResponse');
-    responseBox.style.display = 'block';
-    document.getElementById('aiResponseText').innerHTML = '<i>جاري البحث وتحليل سؤالك... ⏳</i>';
-
     try {
-        let context = (knowledgeBaseData || []).map(kb => `[${kb.title}]`).join(', ');
-        // إجبار الذكاء الاصطناعي على عدم استخدام أي HTML في الإجابات السريعة
-        let prompt = `أجب على السؤال باختصار شديد (نص عادي فقط، يمنع منعاً باتاً استخدام أي أكواد HTML أو جداول): "${q}". المراجع المتاحة: ${context}`;
+        const q = document.getElementById('kbSearchInput').value;
+        if(!q) { alert('اكتب سؤالك أولاً!'); return; }
+        
+        document.getElementById('aiSearchResponse').style.display = 'block';
+        document.getElementById('aiResponseText').innerHTML = '<i>جاري التفكير... ⏳</i>';
 
-        let answer = await fetchGemini(prompt);
-
-        document.getElementById('aiResponseText').innerHTML = `
-            <div style="color:var(--gold); font-weight:bold; margin-bottom:5px;">💡 إجابة عقل المصنع:</div>
-            ${answer.replace(/\n/g, '<br>')}
-        `;
+        let prompt = `أجب باختصار في 3 سطور فقط كمهندس صيانة عن: "${q}". لا تستخدم HTML أو جداول.`;
+        let answer = await window.callGeminiAPI(prompt);
+        
+        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:5px;">💡 إجابة الخبير:</div>${answer.replace(/\n/g, '<br>')}`;
         window.lastAIAnswer = answer;
     } catch(e) {
-        document.getElementById('aiResponseText').innerHTML = `<span style="color:red;">⚠️ ${e.message}</span>`;
+        document.getElementById('aiResponseText').innerHTML = `<b style="color:red;">⚠️ خطأ: ${e.message}</b>`;
     }
 };
 
-// 4. المولد الآلي للاختبارات
-window.generateAutoQuiz = async function(kbId) {
-    let kb = knowledgeBaseData.find(x => x.id == kbId);
-    if(!kb) return;
-
-    document.getElementById('aiModalText').innerHTML = `<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold); margin-top:15px;">جاري قراءة الكتالوج بالكامل من السيرفر... ⏳</h3></div>`;
-
+window.generateTPMQuiz = async function() {
     try {
-        let snap = await db.ref('tpm_system/pdf_files/' + kbId).once('value');
-        let pdfData = snap.val();
-
-        if(!pdfData || !pdfData.base64) throw new Error("ملف PDF غير متوفر.");
-
-        let prompt = `أنت مدرب فني. المرفق كتالوج بصيغة PDF.
-        قم بتصميم "اختبار فني (Quiz)" من 3 أسئلة اختيار من متعدد بناءً على محتواه.
-        أرجع الناتج بتنسيق HTML جذاب (استخدم <div> و <b> فقط). ممنوع كتابة علامات \`\`\`html مطلقاً.`;
-
-        let aiHTML = await fetchGemini(prompt, pdfData.base64);
-
-        document.getElementById('aiModalText').innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--copper); padding-bottom:10px;">
-                <h3 style="color:var(--success); margin:0;">اختبار: ${kb.title}</h3>
-                <button class="btn btn-sm btn-success shadow-btn" onclick="document.getElementById('aiModal').style.display='none'; showToast('تم إنهاء الاختبار! 🏆');">✅ إنهاء الاختبار</button>
-            </div>
-            <div style="background:var(--bg-color); padding:15px; border-radius:10px; font-size:14px; line-height:1.8;">
-                ${aiHTML}
-            </div>
-        `;
-    } catch(e) {
-        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ ${e.message}</div>`;
-    }
-};
-
-// 5. زر الاستنجاد في المراجعات
-window.askAIAuditHelp = async function(itemName) {
-    document.getElementById('aiModal').style.display = 'flex';
-    document.getElementById('aiModalText').innerHTML = "<div style='text-align:center; padding:20px;'>جاري استشارة الخبير... ⏳</div>";
-
-    try {
-        // حماية الشرح من الأكواد الطويلة
-        let prompt = `أنا مراجع صيانة. اشرح لي باختصار شديد (نص عادي فقط، يمنع منعا باتا استخدام أكواد HTML أو جداول) كيف أقوم بفحص هذا البند: "${itemName}"؟ اذكر خطوات الفحص وعلامات الخطر في 3 سطور فقط.`;
-        let answer = await fetchGemini(prompt);
+        const topic = prompt("أدخل موضوع الامتحان:");
+        if(!topic) return;
+        document.getElementById('aiSearchResponse').style.display = 'block';
+        document.getElementById('aiResponseText').innerHTML = `<i>جاري تصميم امتحان عن ${topic}... ⏳</i>`;
         
-        document.getElementById('aiModalText').innerHTML = `<div style="padding:15px; font-size:14px; line-height:1.7;">${answer.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--success);">$1</b>')}</div>`;
+        let answer = await window.callGeminiAPI(`ضع 3 أسئلة اختيارات بسيطة عن: ${topic}. بنص عادي فقط.`);
+        document.getElementById('aiResponseText').innerHTML = answer.replace(/\n/g, '<br>');
     } catch(e) {
-        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ ${e.message}</div>`;
+        document.getElementById('aiResponseText').innerHTML = `<b style="color:red;">⚠️ خطأ: ${e.message}</b>`;
     }
 };
 
-// حقن الزر أوتوماتيكياً
-if (!window.auditHelpInjected) {
-    const originalRenderAuditItems = window.renderAuditItems || function(){};
-    window.renderAuditItems = function(stepKey) {
-        originalRenderAuditItems(stepKey);
-        setTimeout(() => {
-            document.querySelectorAll('.audit-item .item-header').forEach(header => {
-                if(!header.querySelector('.sos-btn')) {
-                    const titleText = header.innerText.replace(/[\d\.]/g, '').trim();
-                    const btn = document.createElement('button');
-                    btn.className = "sos-btn";
-                    btn.innerHTML = "🧠 مساعدة";
-                    btn.style.cssText = "margin-right:auto; background:#DBEAFE; color:#1E3A8A; border:1px solid #1E3A8A; border-radius:5px; padding:2px 8px; font-size:11px; cursor:pointer;";
-                    btn.onclick = () => window.askAIAuditHelp(titleText);
-                    header.appendChild(btn);
-                }
-            });
-        }, 200);
-    };
-    window.auditHelpInjected = true;
-}
+window.convertAIToOPL = function() {
+    if (!window.lastAIAnswer) { alert("لا توجد إجابة!"); return; }
+    document.getElementById('oplModal').style.display = 'flex';
+    document.getElementById('oplTitle').value = "درس نقطة واحدة";
+    document.getElementById('oplDesc').value = window.lastAIAnswer;
+};
 
-// 6. رفع وحفظ الكتب
 let tempBase64Pdf = null;
 window.handleMaterialUpload = function(event) {
     const file = event.target.files[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert("⚠️ أقصى حجم للملف 5 ميجا لتجنب إيقاف السيرفر."); return; }
+    
     document.getElementById('pdfExtractStatus').innerText = "جاري التجهيز... ⏳";
     const reader = new FileReader();
     reader.onload = function(e) {
         tempBase64Pdf = e.target.result;
-        document.getElementById('pdfExtractStatus').innerHTML = `✅ تم التجهيز: ${file.name}`;
+        document.getElementById('pdfExtractStatus').innerHTML = `✅ تم التجهيز: <b style="color:var(--primary);">${file.name}</b>`;
     };
     reader.readAsDataURL(file);
 };
 
 window.saveNewBook = async function() {
-    const title = document.getElementById('kbTitle').value;
-    const cat = document.getElementById('kbCategory').value;
-
-    if (!title) return showToast("⚠️ ادخل عنوان المرجع.");
-
-    let bookId = Date.now().toString();
-    let newBook = { id: bookId, title: title, category: cat, date: new Date().toLocaleDateString(), hasPdf: !!tempBase64Pdf };
-
-    if(tempBase64Pdf) {
-        showToast("جاري رفع الملف للسيرفر... ⏳");
-        try {
+    try {
+        const title = document.getElementById('kbTitle').value;
+        if (!title) { alert("⚠️ ادخل عنوان المرجع."); return; }
+        
+        let bookId = Date.now().toString();
+        let newBook = { id: bookId, title: title, category: document.getElementById('kbCategory').value, hasPdf: !!tempBase64Pdf };
+        
+        if(tempBase64Pdf) {
+            alert("جاري رفع الملف وحفظ المرجع.. اضغط موافق للبدء.");
             await db.ref('tpm_system/pdf_files/' + bookId).set({ base64: tempBase64Pdf });
-        } catch(e) {
-            return showToast("⚠️ فشل رفع الملف. تأكد من حجمه.");
         }
+        
+        // التحويل لمصفوفة قبل الإضافة لتجنب أخطاء فايربيز
+        let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
+        kbArray.push(newBook);
+        knowledgeBaseData = kbArray;
+        
+        syncRecord('knowledgeBase', knowledgeBaseData);
+        
+        document.getElementById('addBookModal').style.display = 'none';
+        document.getElementById('kbTitle').value = '';
+        document.getElementById('pdfExtractStatus').innerText = "اضغط لرفع ملف PDF 📄";
+        tempBase64Pdf = null;
+        
+        window.renderKnowledgeShelves();
+    } catch(e) {
+        alert("⚠️ خطأ في الحفظ: " + e.message);
     }
+};
 
-    knowledgeBaseData.push(newBook);
-    syncRecord('knowledgeBase', knowledgeBaseData);
-
-    document.getElementById('addBookModal').style.display = 'none';
-    document.getElementById('kbTitle').value = '';
-    document.getElementById('pdfExtractStatus').innerText = "اضغط لرفع ملف PDF 📄";
-    tempBase64Pdf = null;
-
-    showToast("✅ تم الإضافة بنجاح!");
-    window.renderKnowledgeShelves();
+window.openBookDetail = async function(id) {
+    let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
+    let kb = kbArray.find(x => x.id == id);
+    if(!kb) return;
+    
+    if(kb.hasPdf) {
+        document.getElementById('aiModal').style.display = 'flex';
+        document.getElementById('aiModalText').innerHTML = '<div style="padding:20px; text-align:center;">جاري جلب الملف... ⏳</div>';
+        try {
+            let snap = await db.ref('tpm_system/pdf_files/' + id).once('value');
+            if(snap.val() && snap.val().base64) {
+                let w = window.open("");
+                if(w) w.document.write(`<iframe width='100%' height='100%' src='${snap.val().base64}' style='border:none; margin:0;'></iframe>`);
+                else alert("يرجى السماح بالنوافذ المنبثقة (Pop-ups) لعرض الملف.");
+            } else {
+                alert("ملف PDF غير موجود بالسيرفر.");
+            }
+        } catch(e) { alert("خطأ في الجلب."); }
+        document.getElementById('aiModal').style.display = 'none';
+    }
 };
 
 window.deleteKnowledgeBook = async function(id) {
     if(confirm("⚠️ متأكد من الحذف؟")) {
-        knowledgeBaseData = knowledgeBaseData.filter(b => b.id != id);
+        let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
+        knowledgeBaseData = kbArray.filter(b => b.id != id);
         syncRecord('knowledgeBase', knowledgeBaseData);
         try { await db.ref('tpm_system/pdf_files/' + id).remove(); } catch(e){}
         window.renderKnowledgeShelves();

@@ -2234,189 +2234,136 @@ async function deleteJHRecord(type, id) {
 }
 
 // ==========================================
-// 🛠️ 1. استعادة إعدادات الحساب والبروفايل (عشان الداتا ترجع تظهر)
-// ==========================================
-function renderProfileAndSettings() {
-    if(!currentUser || !currentUser.name) return;
-    document.getElementById('profileName').innerText = currentUser.name;
-    const roleMap = { admin: 'مدير نظام 👑', auditor: 'مراجع فني 📝', operator: 'مشغل معدة ⚙️', viewer: 'مشاهد 👁️' };
-    document.getElementById('profileRoleBadge').innerText = roleMap[currentUser.role] || currentUser.role;
-    
-    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
-    if (uid && usersData[uid] && typeof usersData[uid] === 'object' && usersData[uid].avatar) {
-        document.getElementById('profileAvatar').src = usersData[uid].avatar;
-    }
-
-    document.getElementById('myAudits').innerText = historyData.filter(h => h.auditor === currentUser.name && !h.stepsOrder.includes('ManualKaizen')).length;
-    document.getElementById('myTags').innerText = tagsData.filter(t => t.auditor === currentUser.name).length;
-    document.getElementById('myKaizens').innerText = historyData.filter(h => h.auditor === currentUser.name && h.stepsOrder.includes('ManualKaizen')).length;
-
-    const deptList = document.getElementById('managedDeptsList');
-    if(deptList) {
-        deptList.innerHTML = departments.map((d, i) => `
-            <div class="item-row">
-                <span class="name">🏭 ${d}</span>
-                <button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeDept(${i})">حذف</button>
-            </div>`).join('');
-    }
-
-    const engList = document.getElementById('managedEngsList');
-    if(engList) {
-        engList.innerHTML = (maintenanceEngineers || []).map((e, i) => `
-            <div class="item-row" style="border-right-color:var(--warning);">
-                <div><span class="name">🛠️ ${e.name}</span><br><small style="font-size:9px; color:var(--text-muted);">${e.phone}</small></div>
-                <button class="btn btn-sm btn-danger" style="margin:0; padding:2px 8px;" onclick="removeEngineer(${i})">حذف</button>
-            </div>`).join('') || '<div style="font-size:11px; text-align:center; padding:10px;">لا يوجد مهندسون مسجلون</div>';
-    }
-
-    if (currentUser.role === 'admin') {
-        document.getElementById('imgbbKeyInput').value = globalApiKeys.imgbb || '';
-        document.getElementById('geminiKeyInput').value = globalApiKeys.gemini || '';
-    }
-}
-
-function removeDept(idx) {
-    if(confirm(`⚠️ هل تريد حذف قسم (${departments[idx]})؟`)) {
-        departments.splice(idx, 1);
-        syncRecord('departments', departments);
-        renderProfileAndSettings();
-        showToast('تم حذف القسم');
-    }
-}
-
-function removeEngineer(idx) {
-    if(confirm(`⚠️ حذف المهندس (${maintenanceEngineers[idx].name})؟`)) {
-        maintenanceEngineers.splice(idx, 1);
-        syncRecord('maintenanceEngineers', maintenanceEngineers);
-        renderProfileAndSettings();
-        showToast('تم الحذف');
-    }
-}
-
-async function updateProfilePic(event) {
-    const file = event.target.files[0]; 
-    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
-    if(!file || !uid) return;
-    showToast('جاري تحديث الصورة... ⏳');
-    processAndEnhanceImage(file, async function(dataUrl) {
-        const url = await uploadImageToStorage(dataUrl);
-        if (url) {
-            await db.ref(`tpm_system/users/${uid}/avatar`).set(url);
-            document.getElementById('profileAvatar').src = url;
-            showToast('تم التحديث 😎');
-        } else { showToast('⚠️ فشل الرفع.'); }
-    });
-}
-
-// ==========================================
-// 🧠 2. المستشار الذكي وعقل المصنع (Gemini Pro - المحصن ضد الأخطاء)
+// 🛡️ المحرك المدرع والذكاء الاصطناعي (الإصدار النهائي المضاد للأعطال)
 // ==========================================
 
-async function fetchGeminiAPI(promptText) {
+// 1. نظام القضاء على الأزرار المكررة (مضاد فيروسات برمجي)
+setInterval(() => {
+    document.querySelectorAll('.new-sos-btn').forEach(btn => btn.remove());
+}, 1000);
+
+// 2. محرك جوجل الذكي (يجرب 4 سيرفرات لتفادي خطأ Not Found)
+window.fetchGeminiAPI = async function(promptText, pdfBase64 = null) {
     const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
     if(!k) throw new Error("مفتاح الذكاء الاصطناعي مفقود! ضفه في الإعدادات.");
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-    });
-
-    const j = await res.json();
+    const models = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-1.0-pro', 'gemini-pro'];
+    let lastError = "";
     
-    // 🚀 الحماية من خطأ (Cannot read properties of undefined reading 'parts')
-    if(j.error) throw new Error(j.error.message);
-    if(!j.candidates || j.candidates.length === 0 || !j.candidates[0].content) {
-        console.error("Gemini Blocked Response:", j);
-        throw new Error("جوجل رفضت الإجابة (قد يكون بسبب قيود الأمان). حاول تغيير صيغة السؤال.");
+    let body = { contents: [{ parts: [{ text: promptText }] }] };
+    if(pdfBase64) {
+        let b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
+        body.contents[0].parts.push({ inline_data: { mime_type: "application/pdf", data: b64 } });
     }
-    
-    let text = j.candidates[0].content.parts[0].text;
-    
-    // الفرم النووي لأي أكواد
-    text = text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "");
-    return text.trim();
-}
 
-async function explainItem(t) {
+    for (let model of models) {
+        try {
+            let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            let j = await res.json();
+            if(!j.error && j.candidates && j.candidates.length > 0) {
+                let text = j.candidates[0].content.parts[0].text;
+                // الفرم النووي لأي كود HTML أو Markdown
+                return text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "").trim();
+            } else if (j.error) {
+                lastError = j.error.message;
+            }
+        } catch(e) { lastError = e.message; }
+    }
+    throw new Error("جميع سيرفرات جوجل مشغولة أو غير مدعومة: " + lastError);
+};
+
+// 3. إصلاح زرار (شرح البند) الأصلي
+window.explainItem = async function(t) {
     document.getElementById('aiModal').style.display='flex'; 
     document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري الشرح... 🧠</h3></div>';
-    
     try {
-        let prompt = `أنت خبير صيانة. اشرح هذا البند للفني باختصار شديد: "${t}". 
-        تنبيه صارم: أجب بنص عادي فقط (Plain Text). ممنوع منعا باتا استخدام أي كود أو HTML أو جداول.`;
-        
-        let plainTextResponse = await fetchGeminiAPI(prompt);
-        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${plainTextResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--gold);">$1</b>')}</div>`;
+        let prompt = `أنت خبير صيانة. اشرح هذا البند للفني باختصار: "${t}". تنبيه صارم: أجب بنص عادي (Plain Text) فقط. ممنوع استخدام كود أو جداول.`;
+        let ans = await window.fetchGeminiAPI(prompt);
+        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${ans.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--gold);">$1</b>')}</div>`;
     } catch(e) {
         document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ: ${e.message}</div>`;
     }
-}
+};
 
-// ==========================================
-// 📚 3. مكتبة المصنع (إصلاح فتح الـ PDF)
-// ==========================================
+// 4. إصلاح فحص الصور والتنبؤ (كانوا بيضربوا بسبب الموديل القديم)
+window.runAIVision = async function(itemId, itemTitle) {
+    let imgObj = currentStepImages['img_' + itemId]; if(!imgObj) return showToast('لا توجد صورة');
+    document.getElementById('aiModalText').innerHTML = "<div style='text-align:center;'>جاري فحص الصورة... ⏳</div>"; 
+    document.getElementById('aiModal').style.display = 'flex';
+    try {
+        const base64Img = await getBase64FromUrl(imgObj.data);
+        let ans = await window.fetchGeminiAPI(`حلل هذه الصورة لبند: "${itemTitle}". بنص عادي فقط.`, base64Img);
+        document.getElementById('aiModalText').innerHTML = ans.replace(/\n/g, '<br>');
+    } catch(e) { document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center;">خطأ: ${e.message}</div>`; }
+};
 
-function renderKnowledgeShelves() {
+window.predictMachineFailures = async function() {
+    const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerText='جاري تحليل البيانات... ⏳';
+    try {
+        let prompt = "بناء على التاجات: " + tagsData.map(t=>t.desc).join(',') + " توقع الماكينات المعرضة للتوقف. أجب بنص عادي.";
+        let ans = await window.fetchGeminiAPI(prompt);
+        r.innerHTML = ans.replace(/\n/g, '<br>');
+    } catch(e) { r.innerHTML = `<span style="color:red;">خطأ: ${e.message}</span>`; }
+};
+
+// 5. مكتبة المصنع وعقل الـ AI
+window.renderKnowledgeShelves = function() {
     const container = document.getElementById('knowledgeListContainer');
     if(!container) return;
-    
-    let kbArray = [];
-    if(Array.isArray(knowledgeBaseData)) kbArray = knowledgeBaseData;
-    else if(typeof knowledgeBaseData === 'object' && knowledgeBaseData !== null) kbArray = Object.values(knowledgeBaseData);
-    
+    let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
     if(kbArray.length === 0) {
-        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;">لا توجد مراجع حالياً 📚</div>';
+        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;">لا توجد مراجع 📚</div>';
         return;
     }
-    
     container.innerHTML = kbArray.map(kb => `
         <div class="book-cover">
             <div><div class="book-tag">${kb.category || 'TPM'}</div><div class="book-title-main">${kb.title}</div></div>
             <div style="display:flex; gap:5px; margin-top:15px;">
-                <button class="btn btn-sm btn-primary" style="flex:2;" onclick="openBookDetail('${kb.id}')">📖 فتح</button>
-                ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="flex:1;" onclick="deleteKnowledgeBook('${kb.id}')">🗑️</button>` : ''}
+                <button class="btn btn-sm btn-primary" style="flex:2;" onclick="window.openBookDetail('${kb.id}')">📖 فتح</button>
+                ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="flex:1;" onclick="window.deleteKnowledgeBook('${kb.id}')">🗑️</button>` : ''}
             </div>
         </div>
     `).join('');
-}
+};
 
-async function askFactoryAI() {
+window.askFactoryAI = async function() {
     const q = document.getElementById('kbSearchInput').value.trim();
     if(!q) return showToast('اكتب سؤالك!');
     document.getElementById('aiSearchResponse').style.display = 'block';
     document.getElementById('aiResponseText').innerHTML = '<i>جاري التفكير... ⏳</i>';
     try {
-        let answer = await fetchGeminiAPI(`أجب باختصار في 3 سطور كمهندس عن: "${q}". نص عادي فقط.`);
-        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:5px;">💡 إجابة الخبير:</div>${answer.replace(/\n/g, '<br>')}`;
-        window.lastAIAnswer = answer;
+        let ans = await window.fetchGeminiAPI(`أجب باختصار في 3 سطور كمهندس عن: "${q}". نص عادي فقط.`);
+        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:5px;">💡 إجابة الخبير:</div>${ans.replace(/\n/g, '<br>')}`;
+        window.lastAIAnswer = ans;
     } catch(e) { document.getElementById('aiResponseText').innerHTML = `<b style="color:red;">⚠️ ${e.message}</b>`; }
-}
+};
 
-async function generateTPMQuiz() {
+window.generateTPMQuiz = async function() {
     const topic = prompt("أدخل موضوع الامتحان:");
     if(!topic) return;
     document.getElementById('aiSearchResponse').style.display = 'block';
     document.getElementById('aiResponseText').innerHTML = `<i>جاري تصميم امتحان... ⏳</i>`;
     try {
-        let answer = await fetchGeminiAPI(`ضع 3 أسئلة اختيارات بسيطة عن: ${topic}. بنص عادي فقط.`);
-        document.getElementById('aiResponseText').innerHTML = answer.replace(/\n/g, '<br>');
+        let ans = await window.fetchGeminiAPI(`ضع 3 أسئلة اختيارات بسيطة عن: ${topic}. بنص عادي فقط.`);
+        document.getElementById('aiResponseText').innerHTML = ans.replace(/\n/g, '<br>');
     } catch(e) { document.getElementById('aiResponseText').innerHTML = `<b style="color:red;">⚠️ ${e.message}</b>`; }
-}
+};
 
-function convertAIToOPL() {
+window.convertAIToOPL = function() {
     if (!window.lastAIAnswer) return showToast("لا توجد إجابة!");
     document.getElementById('oplModal').style.display = 'flex';
     document.getElementById('oplTitle').value = "درس نقطة واحدة";
     document.getElementById('oplDesc').value = window.lastAIAnswer;
-}
+};
 
+// 6. رفع وفتح الـ PDF (الحل العبقري لكراش المتصفح)
 let tempBase64Pdf = null;
-function handleMaterialUpload(event) {
+window.handleMaterialUpload = function(event) {
     const file = event.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return alert("⚠️ أقصى حجم 5 ميجا عشان السيرفر ميهنجش.");
+    if (file.size > 5 * 1024 * 1024) return alert("⚠️ أقصى حجم 5 ميجا.");
     document.getElementById('pdfExtractStatus').innerText = "جاري التجهيز... ⏳";
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -2424,19 +2371,18 @@ function handleMaterialUpload(event) {
         document.getElementById('pdfExtractStatus').innerHTML = `✅ جاهز للرفع: <b style="color:var(--primary);">${file.name}</b>`;
     };
     reader.readAsDataURL(file);
-}
+};
 
-async function saveNewBook() {
+window.saveNewBook = async function() {
     const title = document.getElementById('kbTitle').value;
     if (!title) return showToast("⚠️ ادخل عنوان المرجع.");
-    
     let bookId = Date.now().toString();
     let newBook = { id: bookId, title: title, category: document.getElementById('kbCategory').value, hasPdf: !!tempBase64Pdf };
     
     if(tempBase64Pdf) {
         showToast("جاري الرفع للسيرفر... ⏳");
         try { await db.ref('tpm_system/pdf_files/' + bookId).set({ base64: tempBase64Pdf }); } 
-        catch(e) { return alert("⚠️ فشل رفع الملف."); }
+        catch(e) { return alert("⚠️ فشل الرفع."); }
     }
     
     let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
@@ -2448,48 +2394,45 @@ async function saveNewBook() {
     document.getElementById('kbTitle').value = '';
     document.getElementById('pdfExtractStatus').innerText = "اضغط لرفع ملف PDF 📄";
     tempBase64Pdf = null;
-    renderKnowledgeShelves();
-}
+    window.renderKnowledgeShelves();
+};
 
-async function openBookDetail(id) {
+window.openBookDetail = async function(id) {
     let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
     let kb = kbArray.find(x => x.id == id);
     if(!kb) return;
-    
     if(kb.hasPdf) {
         document.getElementById('aiModal').style.display = 'flex';
         document.getElementById('aiModalText').innerHTML = '<div style="padding:20px; text-align:center;">جاري تجهيز الملف للفتح... ⏳</div>';
         try {
             let snap = await db.ref('tpm_system/pdf_files/' + id).once('value');
             if(snap.val() && snap.val().base64) {
-                // 🚀 التحويل السحري لـ Blob لفتح الـ PDF بدون كراش من المتصفح
-                fetch(snap.val().base64)
-                .then(res => res.blob())
-                .then(blob => {
-                    let blobUrl = URL.createObjectURL(blob);
-                    window.open(blobUrl, '_blank');
-                    document.getElementById('aiModal').style.display = 'none';
-                }).catch(err => {
-                    alert("⚠️ فشل عرض الملف بسبب المتصفح.");
-                    document.getElementById('aiModal').style.display = 'none';
-                });
-            } else { 
-                alert("الملف غير موجود بالسيرفر"); 
+                // تحويل الـ Base64 لـ Blob عشان المتصفح ميمنعوش
+                const b64 = snap.val().base64.split(',')[1] || snap.val().base64;
+                const bin = atob(b64);
+                const arr = new Uint8Array(bin.length);
+                for(let i=0; i<bin.length; i++) arr[i] = bin.charCodeAt(i);
+                const blob = new Blob([arr], {type: 'application/pdf'});
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
                 document.getElementById('aiModal').style.display = 'none';
-            }
-        } catch(e) { 
-            alert("خطأ في الجلب من قاعدة البيانات."); 
-            document.getElementById('aiModal').style.display = 'none';
-        }
+            } else { alert("الملف غير موجود"); document.getElementById('aiModal').style.display = 'none'; }
+        } catch(e) { alert("خطأ في الجلب."); document.getElementById('aiModal').style.display = 'none';}
     }
-}
+};
 
-async function deleteKnowledgeBook(id) {
+window.deleteKnowledgeBook = async function(id) {
     if(confirm("⚠️ متأكد من الحذف؟")) {
         let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
         knowledgeBaseData = kbArray.filter(b => b.id != id);
         syncRecord('knowledgeBase', knowledgeBaseData);
         try { await db.ref('tpm_system/pdf_files/' + id).remove(); } catch(e){}
-        renderKnowledgeShelves();
+        window.renderKnowledgeShelves();
     }
-}
+};
+
+// 7. ربط الأزرار القديمة بالدوال الجديدة (تأمين إضافي)
+window.askAI_New = window.askFactoryAI;
+window.quizAI_New = window.generateTPMQuiz;
+window.uploadPdf_New = window.handleMaterialUpload;
+window.saveBook_New = window.saveNewBook;

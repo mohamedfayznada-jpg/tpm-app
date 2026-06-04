@@ -1523,64 +1523,151 @@ function saveApiKeys() {
 function enableApiKeysEdit() { document.getElementById('imgbbKeyInput').disabled = false; document.getElementById('geminiKeyInput').disabled = false; showToast('الحقول جاهزة للتعديل'); }
 
 // ------------------------------------------
-// 🤖 المستشار الذكي وعقل المصنع (AI)
+// 🤖 المستشار الذكي وعقل المصنع (AI) - الإصدار النهائي والمستقر
 // ------------------------------------------
 async function getBase64FromUrl(url) {
-    try { const res = await fetch(url); const blob = await res.blob(); return new Promise(resolve => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result.split(',')[1]); reader.readAsDataURL(blob); });
-    } catch(e) { return new Promise((resolve, reject) => { let img = new Image(); img.crossOrigin = 'Anonymous'; img.onload = () => { let canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]); }; img.onerror = reject; img.src = url; }); }
+    try { 
+        const res = await fetch(url); 
+        const blob = await res.blob(); 
+        return new Promise(resolve => { 
+            const reader = new FileReader(); 
+            reader.onloadend = () => resolve(reader.result.split(',')[1]); 
+            reader.readAsDataURL(blob); 
+        });
+    } catch(e) { 
+        return new Promise((resolve, reject) => { 
+            let img = new Image(); 
+            img.crossOrigin = 'Anonymous'; 
+            img.onload = () => { 
+                let canvas = document.createElement('canvas'); 
+                canvas.width = img.width; canvas.height = img.height; 
+                canvas.getContext('2d').drawImage(img, 0, 0); 
+                resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]); 
+            }; 
+            img.onerror = reject; 
+            img.src = url; 
+        }); 
+    }
 }
 
 async function runAIVision(itemId, itemTitle) {
-    const apiKey = globalApiKeys.gemini; if(!apiKey) return showToast('مفتاح Gemini مفقود');
-    let imgObj = currentStepImages['img_' + itemId]; if(!imgObj) return showToast('لا توجد صورة لفحصها');
-    document.getElementById('aiModalText').innerHTML = "جاري فحص الصورة..."; document.getElementById('aiModal').style.display = 'flex';
+    const apiKey = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
+    if(!apiKey) return showToast('مفتاح Gemini مفقود');
+    
+    let imgObj = currentStepImages['img_' + itemId]; 
+    if(!imgObj) return showToast('لا توجد صورة لفحصها');
+    
+    document.getElementById('aiModalText').innerHTML = "<div style='text-align:center;'>جاري فحص الصورة... ⏳</div>"; 
+    document.getElementById('aiModal').style.display = 'flex';
+    
     try {
         const base64Img = await getBase64FromUrl(imgObj.data);
-        let promptParts = [{ text: `أنت مهندس صيانة. حلل هذه الصورة بناءً على بند: "${itemTitle}". رد بـ HTML منسق.` }];
+        // أوامر صارمة لمنع الأكواد
+        let promptParts = [{ text: `أنت مهندس صيانة. حلل هذه الصورة بناءً على بند: "${itemTitle}". رد بـ HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع كتابة علامات \`\`\`html نهائياً.` }];
+        
         if(knowledgeBaseData && knowledgeBaseData.length > 0) {
-            let kbPromises = []; knowledgeBaseData.forEach(kb => { if(kb.content) promptParts.unshift({ text: `مرجع (${kb.title}): ${kb.content}` }); if(kb.images) { kb.images.forEach(imgUrl => { kbPromises.push(getBase64FromUrl(imgUrl).then(b64 => { promptParts.unshift({ inline_data: { mime_type: "image/jpeg", data: b64 } }); }).catch(e=>e)); }); } });
-            await Promise.all(kbPromises); promptParts.unshift({ text: "كتالوجات وجداول المصنع المعتمدة:" });
+            let kbPromises = []; 
+            knowledgeBaseData.forEach(kb => { 
+                if(kb.content) promptParts.unshift({ text: `مرجع (${kb.title}): ${kb.content}` }); 
+                if(kb.images) { 
+                    kb.images.forEach(imgUrl => { 
+                        kbPromises.push(getBase64FromUrl(imgUrl).then(b64 => { promptParts.unshift({ inline_data: { mime_type: "image/jpeg", data: b64 } }); }).catch(e=>e)); 
+                    }); 
+                } 
+            });
+            await Promise.all(kbPromises); 
+            promptParts.unshift({ text: "كتالوجات وجداول المصنع المعتمدة:" });
         }
+        
         promptParts.push({ inline_data: { mime_type: "image/jpeg", data: base64Img } });
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: promptParts }] }) });
-        const result = await response.json(); document.getElementById('aiModalText').innerHTML = nl2brSafe(result.candidates[0].content.parts[0].text); awardPoints(5, 'فحص بالذكاء الاصطناعي');
-    } catch(e) { document.getElementById('aiModalText').innerHTML = "خطأ في الاتصال"; }
+        
+        // استخدام الموديل الصحيح المدعوم للرؤية
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { 
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: promptParts }] }) 
+        });
+        
+        const result = await response.json(); 
+        if(result.error) throw new Error(result.error.message);
+        
+        let text = result.candidates[0].content.parts[0].text;
+        // السلاح النووي لتنظيف الكود من الماركداون
+        text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
+        
+        document.getElementById('aiModalText').innerHTML = text; 
+        awardPoints(5, 'فحص بالذكاء الاصطناعي');
+    } catch(e) { 
+        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center;">خطأ في الاتصال: ${e.message}</div>`; 
+    }
 }
 
 async function predictMachineFailures() {
-    const k = globalApiKeys.gemini; if(!k) return showToast('مفتاح Gemini غير مفعل');
-    const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerText='جاري تحليل البيانات...';
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: "بناءً على التاجات التالية، توقع الماكينات المعرضة للتوقف وقدم نصيحة: " + tagsData.map(t=>t.desc).join(',') }] }] }) });
-        const j = await res.json(); r.innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
-    } catch(e) { r.innerText='فشل الاتصال'; }
-}
-
-async function explainItem(t) {
-    const k = globalApiKeys.gemini; if(!k) return showToast('مفتاح Gemini مفقود');
-    document.getElementById('aiModal').style.display='flex'; 
-    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center;">جاري مراجعة عقل المصنع وتحليل البند... 🧠🔍</div>';
+    const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey); 
+    if(!k) return showToast('مفتاح Gemini غير مفعل');
+    
+    const r = document.getElementById('aiPredictionResult'); 
+    r.style.display='block'; r.innerText='جاري تحليل البيانات... ⏳';
     
     try {
-        // 🚀 سحب السياق من كل الكتب المخزنة في المكتبة
-        let factoryContext = knowledgeBaseData.map(kb => `[مرجع: ${kb.title} - تصنيف: ${kb.category}]: ${kb.content}`).join('\n\n');
+        let prompt = "بناءً على التاجات التالية، توقع الماكينات المعرضة للتوقف وقدم نصيحة. أجب بنص عادي أو HTML بسيط بدون علامات \`\`\`html: " + tagsData.map(t=>t.desc).join(',');
         
-        let prompt = `أنت الخبير التقني لـ Factory OS. بناءً على المراجع والكتالوجات المرفقة أدناه الخاصة بمصنعنا فقط، اشرح البند التالي للمراجع الميداني: "${t}". 
-        تحدث بصيغة تعليمية، أخبره ماذا يفحص بالظبط وكيف يتأكد من مطابقة المعايير بناءً على ما تعلمته من المراجع.
-        إذا لم تجد معلومة محددة في المراجع، استخدم خبرتك العامة في الـ TPM لتقديم نصيحة عملية. 
-        رد بتنسيق HTML أنيق.
-        
-        سياق المصنع المعتمد:
-        ${factoryContext}`;
-
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, { 
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
         });
+        
         const j = await res.json(); 
-        document.getElementById('aiModalText').innerHTML = nl2brSafe(j.candidates[0].content.parts[0].text);
-    } catch(e) { document.getElementById('aiModalText').innerText='خطأ في استحضار الذاكرة المعرفية'; }
+        if(j.error) throw new Error(j.error.message);
+        
+        let text = j.candidates[0].content.parts[0].text;
+        text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
+        
+        r.innerHTML = text;
+    } catch(e) { 
+        r.innerHTML = `<span style="color:red;">فشل الاتصال: ${e.message}</span>`; 
+    }
+}
+
+// الدالة الأساسية اللي زرار الشرح بينادي عليها!
+async function explainItem(t) {
+    const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey); 
+    if(!k) return showToast('مفتاح Gemini مفقود');
+    
+    document.getElementById('aiModal').style.display='flex'; 
+    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري استشارة عقل المصنع وتحليل البند... 🧠</h3></div>';
+    
+    try {
+        let factoryContext = (knowledgeBaseData || []).map(kb => `[مرجع: ${kb.title}]: ${kb.content || ''}`).join('\n\n').substring(0, 10000);
+        
+        let prompt = `أنت الخبير التقني لـ Factory OS. اشرح البند التالي للمراجع الميداني: "${t}". 
+        تحدث بصيغة تعليمية بناء على المراجع إن وجدت.
+        تنبيه صارم جداً: رد بتنسيق HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع منعاً باتاً كتابة علامات الماركداون مثل \`\`\`html.
+        المراجع المتاحة: ${factoryContext}`;
+
+        // 🚀 استخدام الموديل 1.5-flash السريع
+        let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`;
+        let res = await fetch(url, { 
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+        });
+        
+        // 🚀 نظام تحويل ذكي: لو המوديل مقفول يحول على gemini-pro تلقائياً
+        if (res.status === 404) {
+            url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
+            res = await fetch(url, { 
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+            });
+        }
+        
+        const j = await res.json(); 
+        if(j.error) throw new Error(j.error.message);
+
+        let rawHTML = j.candidates[0].content.parts[0].text;
+        
+        // 🚀 تنظيف الكود بالكامل من أي علامات بتلخبط المتصفح
+        rawHTML = rawHTML.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
+        
+        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8;">${rawHTML}</div>`;
+    } catch(e) { 
+        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ في استحضار الذاكرة: ${e.message}</div>`; 
+    }
 }
 // ------------------------------------------
 // إعدادات أخرى

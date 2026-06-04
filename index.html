@@ -594,51 +594,58 @@
         </div>
     </div>
 
-  <div class="container screen" id="knowledgeScreen">
-<div class="library-header-main">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div class="lib-icon-circle">📚</div>
-                <div>
-                    <h3 style="color:#1E3A8A; margin:0; font-size:18px; font-weight:900;">عقل TPM</h3>
-                </div>
+ <div class="container screen" id="knowledgeScreen">
+        <!-- هيدر الصفحة الجديد كلياً -->
+        <div class="header-actions" style="background: linear-gradient(135deg, #1E3A8A, #3B82F6); padding: 20px; border-radius: 15px; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);">
+            <div>
+                <h2 style="margin: 0; font-size: 20px; font-weight: 900;">🧠 عقل المصنع</h2>
+                <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">مكتبة المراجع والمستشار الذكي</p>
             </div>
-            <div style="display:flex; gap:8px;">
-                <button class="btn btn-sm btn-warning" onclick="quizAI_New()">📝 امتحان</button>
-                <button class="btn btn-sm btn-primary" onclick="document.getElementById('addBookModal').style.display='flex'">➕ مرجع</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-warning" style="font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: none;" onclick="generateTPMQuiz()">📝 اختبار فني</button>
+                <button class="btn btn-light btn-role-admin" style="color: #1E3A8A; font-weight: bold; background: white; border: none;" onclick="document.getElementById('addBookModal').style.display='flex'">➕ رفع مرجع</button>
+            </div>
+        </div>
+
+        <!-- صندوق المستشار الذكي -->
+        <div class="card glass-card" style="border-top: 4px solid var(--gold); padding: 20px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="kbSearchInput" class="form-control" style="margin: 0; flex: 1; border-radius: 10px;" placeholder="اسأل المستشار الذكي (مثال: كيف أمنع تسريب الزيت من الطلمبة؟)...">
+                <button class="btn btn-primary" style="margin: 0; border-radius: 10px; width: 100px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.1);" onclick="askFactoryAI()">اسأل 🤖</button>
+            </div>
+            
+            <div id="aiSearchResponse" style="display: none; margin-top: 20px; background: rgba(212, 175, 55, 0.1); border-radius: 12px; padding: 15px; border-right: 4px solid var(--gold);">
+                <div id="aiResponseText" style="font-size: 14px; line-height: 1.8; color: var(--text-main);"></div>
+                <div id="oplBtnContainer" style="margin-top: 15px; text-align: left; display: none;">
+                    <button class="btn btn-sm btn-success shadow-btn" style="border-radius: 8px;" onclick="convertAIToOPL()">✨ تحويل لدرس نقطة واحدة (OPL)</button>
+                </div>
             </div>
         </div>
 
-        <div class="ai-search-container" style="border: 2px solid #DBEAFE; background: #fff;">
-            <div class="search-input-wrapper">
-                <input type="text" id="kbSearchInput" class="form-control" placeholder="اسأل الخبير...">
-                <button class="btn-ai-ask" onclick="askAI_New()">🧠 اسأل</button>
-            </div>
-            <div id="aiSearchResponse" class="ai-response-bubble" style="display:none; padding: 20px;">
-                <div id="aiResponseText" style="font-size:14px; font-weight:bold;"></div>
-                <div style="margin-top:15px; border-top:1px dashed #10B981; padding-top:10px;">
-                    <button class="btn btn-sm btn-success" onclick="convertAIToOPL()">✨ OPL</button>
-                </div>
-            </div>
-        </div>
-<div class="ai-search-container" style="border: 2px solid #DBEAFE; background: #fff;">
-            </div>
+        <h3 class="section-title">📚 الأرشيف الفني والكتالوجات</h3>
+        <div id="knowledgeListContainer" class="library-shelves-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px;"></div>
 
-        <div id="knowledgeListContainer" class="library-shelves-grid" style="margin-top: 30px; margin-bottom: 30px;"></div>
-
+        <!-- نافذة الإضافة المتطورة -->
         <div class="modal-overlay" id="addBookModal">
-        <div class="modal-content">
-            <h3 class="card-title">إضافة مرجع</h3>
-            <input type="text" id="kbTitle" class="form-control" placeholder="عنوان الكتالوج">
-            <select id="kbCategory" class="form-control"><option>TPM</option></select>
-            
-            <label class="upload-box" style="display:block; border: 2px dashed var(--primary); padding:15px; text-align:center; cursor:pointer;">
-                <div id="pdfExtractStatus">اضغط لرفع ملف PDF 📄</div>
-                <input type="file" accept=".pdf" style="display:none;" onchange="uploadPdf_New(event)">
-            </label>
-            
-            <div class="row-flex" style="margin-top:20px;">
-                <button class="btn btn-success flex-2" onclick="saveBook_New()">💾 حفظ</button>
-                <button class="btn btn-danger flex-1" onclick="document.getElementById('addBookModal').style.display='none'">إلغاء</button>
+            <div class="modal-content">
+                <h3 class="card-title" style="color: var(--primary);">رفع مرجع جديد</h3>
+                <input type="text" id="kbTitle" class="form-control" placeholder="عنوان الكتالوج أو المرجع">
+                <select id="kbCategory" class="form-control">
+                    <option value="صيانة ذاتية (JH)">صيانة ذاتية (JH)</option>
+                    <option value="صيانة مخططة (PM)">صيانة مخططة (PM)</option>
+                    <option value="أدلة تشغيل (SOP)">أدلة تشغيل (SOP)</option>
+                    <option value="أخرى">أخرى</option>
+                </select>
+                
+                <label class="upload-box" style="display: block; border: 2px dashed var(--gold); padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; background: rgba(212, 175, 55, 0.05); margin-bottom: 15px;">
+                    <div id="pdfExtractStatus" style="color: var(--gold); font-weight: bold;">اضغط هنا لرفع الكتالوج (PDF) 📄</div>
+                    <input type="file" accept=".pdf" style="display: none;" onchange="handleMaterialUpload(event)">
+                </label>
+                
+                <div class="row-flex">
+                    <button class="btn btn-success flex-2 shadow-btn" onclick="saveNewBook()">💾 حفظ في الأرشيف</button>
+                    <button class="btn btn-danger flex-1" onclick="document.getElementById('addBookModal').style.display='none'">إلغاء</button>
+                </div>
             </div>
         </div>
     </div>

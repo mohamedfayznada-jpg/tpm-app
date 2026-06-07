@@ -1967,48 +1967,45 @@ function openLossRegistration(lossId, lossName) {
 }
 
 
+// ==========================================
+// 🛡️ معالجة الأذونات (استكمال الجزء المحذوف)
+// ==========================================
 async function saveUserPermissions() {
     if (!editingUserUid) return;
     const pages = ['homeScreen', 'tasksScreen', 'historyScreen', 'kaizenScreen', 'tagsScreen', 'knowledgeScreen'];
     let newPerms = {};
-    
     pages.forEach(p => {
         let sel = document.getElementById('perm_' + p);
         if (sel) newPerms[p] = sel.value;
     });
-
     await db.ref(`tpm_system/users/${editingUserUid}/permissions`).set(newPerms);
     showToast('تم تحديث الأذونات بنجاح');
     document.getElementById('permissionsModal').style.display = 'none';
 }
-let currentKbFilter = 'الكل';
 
+let currentKbFilter = 'الكل';
 function filterCat(cat, btn) {
     currentKbFilter = cat;
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    renderKnowledgeBase();
+    renderKnowledgeShelves(); // تم تعديلها للمسمى الصحيح
 }
+function filterLibrary() { renderKnowledgeShelves(); }
 
-function filterLibrary() { renderKnowledgeBase(); }
-
-
-// ------------------------------------------
+// ==========================================
 // 👷‍♂️ محرك بوابة الصيانة الذاتية (JH Portal Engine)
-// ------------------------------------------
+// ==========================================
 let currentJHDept = null;
 let jhDocumentsData = {};
 
 function showJHPortal() {
     currentJHDept = null;
     document.getElementById('jhToolbox').style.display = 'none';
-    
     let grid = departments.map(d => `
         <div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer; border-right:4px solid var(--success);" onclick="selectJHDept('${d}')">
             <b style="color:var(--gold); font-size:13px;">🏭 ${d}</b>
         </div>
     `).join('');
-    
     document.getElementById('jhDeptGrid').innerHTML = grid;
     showScreen('jhPortalScreen');
 }
@@ -2016,110 +2013,65 @@ function showJHPortal() {
 function selectJHDept(dept) {
     currentJHDept = dept;
     document.getElementById('selectedJHDeptTitle').innerText = `داشبورد قسم: ${dept}`;
-    
-    // 1. حساب آخر مراجعة (الجودة والأداء)
     const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen'));
     const lastScore = deptAudits.length > 0 ? deptAudits[deptAudits.length - 1].totalPct : 0;
     document.getElementById('deptAuditScore').innerText = lastScore + '%';
-    
-    // 2. حساب التاجات المفتوحة (تأثير على المتاحية)
     const deptTags = tagsData.filter(t => t.dept === dept);
     const openTags = deptTags.filter(t => t.status !== 'done' && t.status !== 'closed').length;
     document.getElementById('deptOpenTags').innerText = openTags;
-    
-    // ⚙️ 3. محرك حساب الـ OEE (معادلة ذكية تدمج المراجعات مع الأعطال)
     let calculatedOEE = Math.max(0, Math.round((lastScore * 0.95) - (openTags * 1.5)));
     if (deptAudits.length === 0) calculatedOEE = 0;
-    
     const oeeEl = document.getElementById('deptOEE');
     oeeEl.innerText = calculatedOEE + '%';
-
-    // 🎯 4. نظام المستهدفات (Goals)
     const goalEl = document.getElementById('deptGoalDisplay');
     if (deptGoalsData[dept]) {
         goalEl.style.display = 'block';
         goalEl.innerHTML = `🎯 المستهدف الشهري للكفاءة: <b style="font-size:14px;">${deptGoalsData[dept]}%</b>`;
-        // تغيير لون الـ OEE لو حقق التارجت
         oeeEl.style.color = calculatedOEE >= deptGoalsData[dept] ? 'var(--success)' : '#00BCD4';
     } else {
         goalEl.style.display = 'none';
         oeeEl.style.color = '#00BCD4';
     }
-
-    // 📈 5. رسم المخطط البياني المصغر (Mini Trend Chart)
     const ctx = document.getElementById('jhMiniTrendChart');
     if (ctx) {
         if (jhMiniChartInstance) jhMiniChartInstance.destroy();
-        
         let last5Audits = deptAudits.slice(-5);
         let labels = last5Audits.map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]);
         let data = last5Audits.map(a => a.totalPct);
-        
         jhMiniChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels.length > 0 ? labels : ['-'],
-                datasets: [{
-                    label: 'كفاءة JH %',
-                    data: data.length > 0 ? data : [0],
-                    borderColor: '#d4af37',
-                    backgroundColor: 'rgba(212, 175, 55, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 2
-                }]
+                datasets: [{ label: 'كفاءة JH %', data: data.length > 0 ? data : [0], borderColor: '#d4af37', backgroundColor: 'rgba(212, 175, 55, 0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 2 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    y: { display: false, min: 0, max: 100 }, 
-                    x: { ticks: { color: '#bdae93', font: {size: 8} }, grid: {display: false} } 
-                },
-                plugins: { legend: { display: false } }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, min: 0, max: 100 }, x: { ticks: { color: '#bdae93', font: {size: 8} }, grid: {display: false} } }, plugins: { legend: { display: false } } }
         });
     }
-
-    // 🏆 6. تحديث ترتيب الأبطال الداخلي
     renderInternalDeptLeaderboard(dept);
-
     document.getElementById('jhToolbox').style.display = 'block';
     window.scrollTo({ top: document.getElementById('jhToolbox').offsetTop - 20, behavior: 'smooth' });
 }
 
-// 🎯 دالة ضبط وتحديث المستهدف (للمديرين)
 function setDeptGoal() {
     if(!currentJHDept) return;
     let currentGoal = deptGoalsData[currentJHDept] || 85;
     let newGoal = prompt(`أدخل النسبة المئوية للمستهدف (Target OEE) لقسم ${currentJHDept}:\n(مثال: 85)`, currentGoal);
-    
     if (newGoal && !isNaN(newGoal) && newGoal > 0 && newGoal <= 100) {
         syncRecord(`dept_goals/${currentJHDept}`, parseInt(newGoal));
         showToast('تم تحديث المستهدف بنجاح 🎯 وسينعكس فوراً للجميع.');
-    } else if (newGoal) {
-        showToast('يرجى إدخال رقم صحيح بين 1 و 100');
-    }
+    } else if (newGoal) { showToast('يرجى إدخال رقم صحيح بين 1 و 100'); }
 }
+
 function renderInternalDeptLeaderboard(dept) {
     const container = document.getElementById('deptInternalLeaderboard');
     if(!container) return;
-
-    // تجميع نقاط مستخدمي هذا القسم فقط
     let deptUsers = [];
     for (let uid in usersData) {
         if(usersData[uid].dept === dept) {
-            deptUsers.push({
-                name: usersData[uid].name,
-                points: userPoints[uid] || 0,
-                avatar: usersData[uid].avatar
-            });
+            deptUsers.push({ name: usersData[uid].name, points: userPoints[uid] || 0, avatar: usersData[uid].avatar });
         }
     }
-    
-    // ترتيب تنازلي
     deptUsers.sort((a,b) => b.points - a.points);
-    
     container.innerHTML = deptUsers.slice(0, 3).map((u, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:5px 10px; border-radius:8px;">
             <div style="display:flex; align-items:center; gap:8px;">
@@ -2131,26 +2083,16 @@ function renderInternalDeptLeaderboard(dept) {
         </div>
     `).join('') || '<div style="font-size:10px; color:var(--text-muted); text-align:center;">لا يوجد أعضاء مسجلين بهذا القسم بعد</div>';
 }
-function startNewAuditFlowFromPortal() {
-    currentViewedDept = currentJHDept;
-    startNewAuditFlow();
-}
+
+function startNewAuditFlowFromPortal() { currentViewedDept = currentJHDept; startNewAuditFlow(); }
 
 async function openJHDocument(type) {
-    const headerMap = { 
-        'SOC': '🧗‍♂️ حصر الأماكن صعبة الوصول (SOC)', 
-        'Safety': '⚠️ حصر الأماكن غير الآمنة (Safety Map)', 
-        'Anatomy': '⚙️ تشريح وشرح أجزاء الماكينة' 
-    };
-    
+    const headerMap = { 'SOC': '🧗‍♂️ حصر الأماكن صعبة الوصول (SOC)', 'Safety': '⚠️ حصر الأماكن غير الآمنة (Safety Map)', 'Anatomy': '⚙️ تشريح وشرح أجزاء الماكينة' };
     document.getElementById('jhDocHeader').innerText = headerMap[type];
     renderJHDocForm(type);
-    
-    // سحب البيانات من السيرفر لهذا القسم وهذا النوع
     showToast('جاري تحميل السجلات... ⏳');
     const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value');
     let records = snap.val() ? Object.values(snap.val()) : [];
-    
     renderJHDocList(type, records);
     showScreen('jhDocumentScreen');
 }
@@ -2158,69 +2100,31 @@ async function openJHDocument(type) {
 function renderJHDocForm(type) {
     let formHtml = '';
     if(type === 'SOC') {
-        formHtml = `
-            <h4 style="margin:0 0 10px; color:var(--gold);">تسجيل مكان صعب جديد</h4>
-            <input type="text" id="socLocation" class="form-control" placeholder="المكان (مثال: خلف الطلمبة 1)">
-            <input type="text" id="socReason" class="form-control" placeholder="سبب الصعوبة (ضيق، حرارة..)">
-            <button class="btn btn-warning full-width" onclick="saveJHRecord('SOC')">➕ إضافة للسجل</button>
-        `;
+        formHtml = `<h4 style="margin:0 0 10px; color:var(--gold);">تسجيل مكان صعب جديد</h4><input type="text" id="socLocation" class="form-control" placeholder="المكان (مثال: خلف الطلمبة 1)"><input type="text" id="socReason" class="form-control" placeholder="سبب الصعوبة (ضيق، حرارة..)"><button class="btn btn-warning full-width" onclick="saveJHRecord('SOC')">➕ إضافة للسجل</button>`;
     } else if(type === 'Safety') {
-        formHtml = `
-            <h4 style="margin:0 0 10px; color:var(--danger);">تسجيل خطر أمان</h4>
-            <input type="text" id="safeHazard" class="form-control" placeholder="وصف الخطر (سلك مكشوف، مسمار بارز)">
-            <select id="safeLevel" class="form-control">
-                <option value="high">خطر حرج 🔴</option>
-                <option value="med">خطر متوسط 🟡</option>
-            </select>
-            <button class="btn btn-danger full-width" onclick="saveJHRecord('Safety')">➕ تسجيل الخطر</button>
-        `;
+        formHtml = `<h4 style="margin:0 0 10px; color:var(--danger);">تسجيل خطر أمان</h4><input type="text" id="safeHazard" class="form-control" placeholder="وصف الخطر (سلك مكشوف، مسمار بارز)"><select id="safeLevel" class="form-control"><option value="high">خطر حرج 🔴</option><option value="med">خطر متوسط 🟡</option></select><button class="btn btn-danger full-width" onclick="saveJHRecord('Safety')">➕ تسجيل الخطر</button>`;
     } else {
-        formHtml = `
-            <h4 style="margin:0 0 10px; color:var(--gold);">إضافة شرح جزء</h4>
-            <input type="text" id="partName" class="form-control" placeholder="اسم الجزء">
-            <textarea id="partDesc" class="form-control" placeholder="وظيفة الجزء وكيفية فحصه"></textarea>
-            <button class="btn btn-primary full-width" onclick="saveJHRecord('Anatomy')">💾 حفظ البيانات</button>
-        `;
+        formHtml = `<h4 style="margin:0 0 10px; color:var(--gold);">إضافة شرح جزء</h4><input type="text" id="partName" class="form-control" placeholder="اسم الجزء"><textarea id="partDesc" class="form-control" placeholder="وظيفة الجزء وكيفية فحصه"></textarea><button class="btn btn-primary full-width" onclick="saveJHRecord('Anatomy')">💾 حفظ البيانات</button>`;
     }
     document.getElementById('jhDocActionArea').innerHTML = formHtml;
 }
 
 async function saveJHRecord(type) {
     let data = { id: uniqueNumericId().toString(), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
-    
-    if(type === 'SOC') {
-        data.location = document.getElementById('socLocation').value;
-        data.reason = document.getElementById('socReason').value;
-        if(!data.location) return;
-    } else if(type === 'Safety') {
-        data.hazard = document.getElementById('safeHazard').value;
-        data.level = document.getElementById('safeLevel').value;
-        if(!data.hazard) return;
-    } else {
-        data.name = document.getElementById('partName').value;
-        data.desc = document.getElementById('partDesc').value;
-        if(!data.name) return;
-    }
-
+    if(type === 'SOC') { data.location = document.getElementById('socLocation').value; data.reason = document.getElementById('socReason').value; if(!data.location) return;
+    } else if(type === 'Safety') { data.hazard = document.getElementById('safeHazard').value; data.level = document.getElementById('safeLevel').value; if(!data.hazard) return;
+    } else { data.name = document.getElementById('partName').value; data.desc = document.getElementById('partDesc').value; if(!data.name) return; }
     await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data);
     showToast('تم تحديث السجل الفني بنجاح ✅');
-    openJHDocument(type); // تحديث القائمة
+    openJHDocument(type);
 }
 
 function renderJHDocList(type, records) {
     let html = records.reverse().map(r => `
         <div class="item-row" style="border-right-color:${type==='Safety'?'var(--danger)':'var(--gold)'};">
-            <div style="flex:1;">
-                <b>${r.location || r.hazard || r.name}</b><br>
-                <small style="color:var(--text-muted);">${r.reason || r.level || r.desc}</small>
-            </div>
-            <div style="text-align:left;">
-                <small style="font-size:9px;">${r.date}</small><br>
-                ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin:0;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️</button>` : ''}
-            </div>
-        </div>
-    `).join('');
-    
+            <div style="flex:1;"><b>${r.location || r.hazard || r.name}</b><br><small style="color:var(--text-muted);">${r.reason || r.level || r.desc}</small></div>
+            <div style="text-align:left;"><small style="font-size:9px;">${r.date}</small><br>${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin:0;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️</button>` : ''}</div>
+        </div>`).join('');
     document.getElementById('jhDocListContainer').innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted);">لا توجد سجلات مسجلة لهذا القسم</div>';
 }
 
@@ -2232,49 +2136,31 @@ async function deleteJHRecord(type, id) {
 }
 
 // ==========================================
-// 🚀 المستشار الذكي وعقل المصنع (الإصدار المستقر والمفصل)
+// 🤖 المستشار الذكي، المكتبة، والذكاء الاصطناعي (الإصدار الذهبي - بدون أخطاء)
 // ==========================================
 
-// 🔫 قاتل الأزرار المكررة (ينظف أي زرار مساعدة قديم)
-setInterval(() => {
-    document.querySelectorAll('.sos-btn').forEach(btn => btn.remove());
-}, 1000);
-
-// 🧠 محرك جوجل الآمن (يتخطى حظر الموديلات)
-window.fetchGeminiAPI = async function(promptText, pdfBase64 = null) {
+// 1. محرك جوجل الآمن (استخدام gemini-pro المستقر لتخطي حظر الموديلات)
+async function fetchGeminiAPI(promptText) {
     const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
     if(!k) throw new Error("مفتاح الذكاء الاصطناعي مفقود! ضفه في الإعدادات.");
 
-    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`;
-    let body = { contents: [{ parts: [{ text: promptText }] }] };
+    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
+    let body = JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] });
+
+    let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
+    const j = await res.json();
     
-    if (pdfBase64) {
-        let b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
-        body.contents[0].parts.push({ inline_data: { mime_type: "application/pdf", data: b64 } });
+    if(j.error) throw new Error(j.error.message);
+    if(!j.candidates || j.candidates.length === 0 || !j.candidates[0].content) {
+        throw new Error("جوجل رفضت الإجابة بسبب قيود الأمان.");
     }
+    
+    let text = j.candidates[0].content.parts[0].text;
+    // مسح علامات الكود اللي بتبوظ التنسيق
+    return text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "").trim();
+}
 
-    try {
-        let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        
-        if (res.status === 404) {
-            url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
-            res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        }
-
-        const j = await res.json();
-        if(j.error) throw new Error(j.error.message);
-        if(!j.candidates || j.candidates.length === 0 || !j.candidates[0].content) {
-            throw new Error("جوجل رفضت الإجابة بسبب قيود الأمان. جرب صياغة أخرى.");
-        }
-        
-        let text = j.candidates[0].content.parts[0].text;
-        return text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "").trim();
-    } catch (e) {
-        throw e;
-    }
-};
-
-// 🎯 دالة الشرح المطورة (خطوات عملية مفصلة 1, 2, 3)
+// 2. دالة الشرح (مربوطة بالزرار الأصلي "شرح البند" - وبتشرح خطوات تفصيلية)
 window.explainItem = async function(t) {
     document.getElementById('aiModal').style.display='flex'; 
     document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري تحضير خطوات العمل... 🧠</h3></div>';
@@ -2284,17 +2170,14 @@ window.explainItem = async function(t) {
         تنبيه صارم: لا أريد كلاماً عاماً. أريد خطوات عمل محددة ومرقمة (1, 2, 3) توضح *كيفية تنفيذ هذا البند عملياً* في المصنع، وما هي علامات الخطر أو الأعطال التي يجب البحث عنها أثناء الفحص.
         أجب بنص عادي (Plain Text) فقط، وممنوع استخدام أي أكواد أو علامات HTML أو Markdown نهائياً.`;
         
-        let plainTextResponse = await window.fetchGeminiAPI(prompt);
-        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${plainTextResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--gold);">$1</b>')}</div>`;
+        let plainTextResponse = await fetchGeminiAPI(prompt);
+        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right; color:var(--text-main);">${plainTextResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--gold);">$1</b>')}</div>`;
     } catch(e) {
         document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ: ${e.message}</div>`;
     }
 };
 
-// ==========================================
-// 📚 3. ثورة عقل المصنع والمستشار الذكي
-// ==========================================
-
+// 3. عقل المصنع (اسأل الخبير والامتحان)
 window.askFactoryAI = async function() {
     const q = document.getElementById('kbSearchInput').value.trim();
     if(!q) return showToast('اكتب سؤالك أولاً!');
@@ -2307,7 +2190,7 @@ window.askFactoryAI = async function() {
         let prompt = `أنت مستشار فني في مصنع يطبق نظام TPM. أجب على هذا السؤال من الفنيين بشكل عملي وواضح: "${q}". 
         تنبيه: أجب بنص عادي فقط بدون أكواد أو HTML.`;
         
-        let answer = await window.fetchGeminiAPI(prompt);
+        let answer = await fetchGeminiAPI(prompt);
         document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">💡 إجابة الخبير:</div>${answer.replace(/\n/g, '<br>')}`;
         window.lastAIAnswer = answer;
         if(document.getElementById('oplBtnContainer')) document.getElementById('oplBtnContainer').style.display = 'block';
@@ -2326,7 +2209,7 @@ window.generateTPMQuiz = async function() {
     
     try {
         let prompt = `قم بإعداد اختبار فني من 3 أسئلة اختيار من متعدد حول: ${topic}. تنبيه: أجب بنص عادي فقط وبدون أكواد.`;
-        let answer = await window.fetchGeminiAPI(prompt);
+        let answer = await fetchGeminiAPI(prompt);
         document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">📝 الاختبار الفني:</div>${answer.replace(/\n/g, '<br>')}`;
     } catch(e) { 
         document.getElementById('aiResponseText').innerHTML = `<b style="color:var(--danger);">⚠️ ${e.message}</b>`; 
@@ -2340,11 +2223,12 @@ window.convertAIToOPL = function() {
     document.getElementById('oplDesc').value = window.lastAIAnswer.replace(/\*/g, '');
 };
 
+// 4. إدارة المكتبة (رفع، عرض، حذف)
 let tempBase64Pdf = null;
 window.handleMaterialUpload = function(event) {
     const file = event.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return alert("⚠️ أقصى حجم للملف 5 ميجابايت.");
+    if (file.size > 5 * 1024 * 1024) return alert("⚠️ أقصى حجم للملف 5 ميجابايت لتجنب إيقاف السيرفر.");
     
     document.getElementById('pdfExtractStatus').innerText = "جاري التجهيز... ⏳";
     const reader = new FileReader();
@@ -2362,7 +2246,7 @@ window.saveNewBook = async function() {
     let bookId = Date.now().toString();
     let catEl = document.getElementById('kbCategory');
     let cat = catEl ? catEl.value : 'TPM';
-    let newBook = { id: bookId, title: title, category: cat, hasPdf: !!tempBase64Pdf };
+    let newBook = { id: bookId, title: title, category: cat, hasPdf: !!tempBase64Pdf, date: new Date().toLocaleDateString('ar-EG') };
     
     if(tempBase64Pdf) {
         showToast("جاري الرفع لقاعدة البيانات... ⏳");
@@ -2401,6 +2285,7 @@ window.renderKnowledgeShelves = function() {
     container.innerHTML = kbArray.map(kb => `
         <div class="book-cover">
             <div><div class="book-tag">${kb.category || 'TPM'}</div><div class="book-title-main">${kb.title}</div></div>
+            <div style="font-size:10px; color:var(--text-muted); margin-top:5px;">📅 ${kb.date || ''}</div>
             <div style="display:flex; gap:5px; margin-top:15px;">
                 <button class="btn btn-sm btn-primary" style="flex:2;" onclick="openBookDetail('${kb.id}')">📖 عرض</button>
                 ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="flex:1;" onclick="deleteKnowledgeBook('${kb.id}')">🗑️</button>` : ''}
@@ -2437,6 +2322,8 @@ window.openBookDetail = async function(id) {
             alert("خطأ في الاتصال بقاعدة البيانات."); 
             document.getElementById('aiModal').style.display = 'none'; 
         }
+    } else {
+        alert("هذا المرجع لا يحتوي على ملف PDF.");
     }
 };
 
@@ -2449,4 +2336,24 @@ window.deleteKnowledgeBook = async function(id) {
         window.renderKnowledgeShelves();
         showToast("تم الحذف بنجاح 🗑️");
     }
+};
+
+// 5. التنبؤ بالأعطال والرؤية
+window.runAIVision = async function(itemId, itemTitle) {
+    let imgObj = currentStepImages['img_' + itemId]; if(!imgObj) return showToast('لا توجد صورة');
+    document.getElementById('aiModalText').innerHTML = "<div style='text-align:center;'>جاري فحص الصورة... ⏳</div>"; 
+    document.getElementById('aiModal').style.display = 'flex';
+    try {
+        let ans = await fetchGeminiAPI(`حلل هذه الصورة لبند: "${itemTitle}". ماذا ترى؟ أجب بنص عادي.`);
+        document.getElementById('aiModalText').innerHTML = ans.replace(/\n/g, '<br>');
+    } catch(e) { document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center;">خطأ: ${e.message}</div>`; }
+};
+
+window.predictMachineFailures = async function() {
+    const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerText='جاري التحليل... ⏳';
+    try {
+        let prompt = "بناء على التاجات: " + tagsData.map(t=>t.desc).join(',') + " توقع الماكينات المعرضة للتوقف. أجب بنص عادي.";
+        let ans = await fetchGeminiAPI(prompt);
+        r.innerHTML = ans.replace(/\n/g, '<br>');
+    } catch(e) { r.innerHTML = `<span style="color:red;">خطأ: ${e.message}</span>`; }
 };

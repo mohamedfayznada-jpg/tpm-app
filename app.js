@@ -810,7 +810,7 @@ function saveApiKeys() { globalApiKeys.imgbb = document.getElementById('imgbbKey
 function enableApiKeysEdit() { document.getElementById('imgbbKeyInput').disabled = false; document.getElementById('geminiKeyInput').disabled = false; showToast('الحقول جاهزة للتعديل'); }
 
 // ==========================================
-// 🛡️ معالجة الأذونات (استكمال الجزء المحذوف)
+// 🛡️ معالجة الأذونات وإدارة النظام
 // ==========================================
 async function saveUserPermissions() {
     if (!editingUserUid) return;
@@ -978,41 +978,58 @@ async function deleteJHRecord(type, id) {
 }
 
 // ==========================================
-// 🤖 المستشار الذكي، المكتبة، والذكاء الاصطناعي (الإصدار الذهبي - بدون أخطاء)
+// 🤖 المستشار الذكي، المكتبة، والذكاء الاصطناعي (الإصدار المحصن ضد الكراش)
 // ==========================================
 
-async function fetchAI(prompt) {
-    const k = globalApiKeys.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
-    if (!k) throw new Error("مفتاح Gemini مفقود!");
+// 1. الدالة الموحدة الذكية (تجرب 3 موديلات لضمان النجاح)
+window.fetchGeminiAPI = async function(promptText, pdfBase64 = null) {
+    const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
+    if(!k) throw new Error("مفتاح الذكاء الاصطناعي مفقود! ضفه في الإعدادات.");
 
-    let contents = [{ parts: [{ text: prompt }] }];
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents })
-    });
+    let body = { contents: [{ parts: [{ text: promptText }] }] };
+    if(pdfBase64) {
+        let b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
+        body.contents[0].parts.push({ inline_data: { mime_type: "application/pdf", data: b64 } });
+    }
 
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    if (!data.candidates || !data.candidates[0].content) throw new Error("إجابة فارغة من الذكاء الاصطناعي");
+    // المصفوفة السحرية لتخطي الخطأ الملعون (Not Found)
+    const models = ['gemini-1.5-flash', 'gemini-1.0-pro', 'gemini-pro'];
+    let lastError = "";
 
-    let text = data.candidates[0].content.parts[0].text;
-    text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
-    return text;
-}
+    for (let model of models) {
+        try {
+            let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            let j = await res.json();
+            if (!j.error && j.candidates && j.candidates.length > 0) {
+                let text = j.candidates[0].content.parts[0].text;
+                // الفرم النووي لكل الأكواد وعلامات الماركداون
+                return text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "").trim();
+            } else if (j.error) {
+                lastError = j.error.message;
+            }
+        } catch(e) { lastError = e.message; }
+    }
+    throw new Error("جميع سيرفرات جوجل مشغولة: " + lastError);
+};
 
-async function explainItem(t) {
+// 2. زر الشرح الأصلي (يعطي خطوات تفصيلية 1,2,3)
+window.explainItem = async function(t) {
     document.getElementById('aiModal').style.display='flex'; 
-    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;">جاري الشرح... ⏳</div>';
+    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري تحضير خطوات العمل... 🧠</h3></div>';
     
     try {
-        let prompt = `أنت مهندس صيانة خبير. اشرح هذا البند باختصار وفي خطوات عملية: "${t}". أجب بنص منسق باستخدام <b> و <br> فقط بدون علامات markdown.`;
-        let ans = await fetchAI(prompt);
-        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${ans}</div>`;
+        let prompt = `أنت مهندس صيانة خبير. المطلوب منك شرح البند التالي للفنيين: "${t}".
+        تنبيه صارم جداً: لا تكتب كلاماً عاماً. اكتب (خطوات عمل مرقمة 1, 2, 3) توضح كيفية التنفيذ العملي، وما هي علامات الخطر.
+        يمنع منعاً باتاً استخدام أي أكواد HTML أو جداول. أجب بنص عادي فقط.`;
+        
+        let ans = await window.fetchGeminiAPI(prompt);
+        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${ans.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--gold);">$1</b>')}</div>`;
     } catch(e) {
         document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ: ${e.message}</div>`;
     }
-}
+};
 
 window.askFactoryAI = async function() {
     const q = document.getElementById('kbSearchInput').value.trim();
@@ -1023,9 +1040,9 @@ window.askFactoryAI = async function() {
     document.getElementById('aiResponseText').innerHTML = '<div style="text-align:center; color:var(--gold); font-weight:bold;">جاري استشارة الذكاء الاصطناعي... ⏳</div>';
     
     try {
-        let prompt = `أنت مستشار فني. أجب على هذا السؤال من الفنيين بشكل عملي وواضح: "${q}". أجب بنص منسق باستخدام <b> و <br> فقط بدون علامات markdown.`;
-        let answer = await fetchAI(prompt);
-        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">💡 إجابة الخبير:</div>${answer}`;
+        let prompt = `أنت مستشار فني. أجب على هذا السؤال: "${q}". أجب بنص عادي فقط وبدون أي أكواد نهائياً.`;
+        let answer = await window.fetchGeminiAPI(prompt);
+        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">💡 إجابة الخبير:</div>${answer.replace(/\n/g, '<br>')}`;
         window.lastAIAnswer = answer;
         if(document.getElementById('oplBtnContainer')) document.getElementById('oplBtnContainer').style.display = 'block';
     } catch(e) { 
@@ -1042,9 +1059,9 @@ window.generateTPMQuiz = async function() {
     document.getElementById('aiResponseText').innerHTML = '<div style="text-align:center; color:var(--gold); font-weight:bold;">جاري تصميم الاختبار... ⏳</div>';
     
     try {
-        let prompt = `قم بإعداد اختبار فني من 3 أسئلة حول: ${topic}. أجب بنص منسق باستخدام <b> و <br> فقط بدون علامات markdown.`;
-        let answer = await fetchAI(prompt);
-        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">📝 الاختبار الفني:</div>${answer}`;
+        let prompt = `قم بإعداد اختبار فني من 3 أسئلة حول: ${topic}. أجب بنص عادي فقط وبدون أي أكواد.`;
+        let answer = await window.fetchGeminiAPI(prompt);
+        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">📝 الاختبار الفني:</div>${answer.replace(/\n/g, '<br>')}`;
     } catch(e) { 
         document.getElementById('aiResponseText').innerHTML = `<b style="color:var(--danger);">⚠️ ${e.message}</b>`; 
     }
@@ -1054,14 +1071,14 @@ window.convertAIToOPL = function() {
     if (!window.lastAIAnswer) return showToast("لا توجد إجابة لتحويلها!");
     document.getElementById('oplModal').style.display = 'flex';
     document.getElementById('oplTitle').value = "درس نقطة واحدة: " + (document.getElementById('kbSearchInput') ? document.getElementById('kbSearchInput').value.substring(0, 20) : '');
-    document.getElementById('oplDesc').value = window.lastAIAnswer.replace(/<[^>]*>?/gm, '');
+    document.getElementById('oplDesc').value = window.lastAIAnswer.replace(/\*/g, '');
 };
 
 let tempBase64Pdf = null;
 window.handleMaterialUpload = function(event) {
     const file = event.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return alert("⚠️ أقصى حجم للملف 5 ميجابايت.");
+    if (file.size > 5 * 1024 * 1024) return alert("⚠️ أقصى حجم للملف 5 ميجابايت لتجنب إيقاف السيرفر.");
     
     document.getElementById('pdfExtractStatus').innerText = "جاري التجهيز... ⏳";
     const reader = new FileReader();
@@ -1171,6 +1188,9 @@ window.deleteKnowledgeBook = async function(id) {
     }
 };
 
+// ==========================================
+// فحص الصور والتنبؤ بالأعطال (تم التصحيح لمنع الـ Error)
+// ==========================================
 window.runAIVision = async function(itemId, itemTitle) {
     let imgObj = currentStepImages['img_' + itemId]; if(!imgObj) return showToast('لا توجد صورة');
     document.getElementById('aiModalText').innerHTML = "<div style='text-align:center;'>جاري فحص الصورة... ⏳</div>"; 
@@ -1180,25 +1200,24 @@ window.runAIVision = async function(itemId, itemTitle) {
         const key = globalApiKeys.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
         if (!key) throw new Error("مفتاح Gemini مفقود!");
         
-        let contents = [{ parts: [{ text: `حلل هذه الصورة لبند: "${itemTitle}". ماذا ترى؟ أجب بنص منسق باستخدام <b> و <br> فقط بدون علامات markdown.` }, { inline_data: { mime_type: "image/jpeg", data: base64Img } }] }];
+        let contents = [{ parts: [{ text: `حلل هذه الصورة لبند: "${itemTitle}". ماذا ترى؟ أجب بنص عادي.` }, { inline_data: { mime_type: "image/jpeg", data: base64Img } }] }];
+        // الصور مش بتدعم gemini-pro، بتدعم flash بس
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents })
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents })
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error.message);
         let text = data.candidates[0].content.parts[0].text;
         text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
-        document.getElementById('aiModalText').innerHTML = text;
+        document.getElementById('aiModalText').innerHTML = text.replace(/\n/g, '<br>');
     } catch(e) { document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center;">خطأ: ${e.message}</div>`; }
 };
 
 window.predictMachineFailures = async function() {
     const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerText='جاري التحليل... ⏳';
     try {
-        let prompt = "بناء على التاجات: " + tagsData.map(t=>t.desc).join(',') + " توقع الماكينات المعرضة للتوقف. أجب بنص منسق باستخدام <b> و <br> فقط بدون علامات markdown.";
-        let ans = await fetchAI(prompt);
-        r.innerHTML = ans;
+        let prompt = "بناء على التاجات: " + tagsData.map(t=>t.desc).join(',') + " توقع الماكينات المعرضة للتوقف. أجب بنص عادي.";
+        let ans = await window.fetchGeminiAPI(prompt);
+        r.innerHTML = ans.replace(/\n/g, '<br>');
     } catch(e) { r.innerHTML = `<span style="color:red;">خطأ: ${e.message}</span>`; }
 };

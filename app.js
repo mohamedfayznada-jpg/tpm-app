@@ -3,7 +3,7 @@
 // ==========================================
 // جلب الاتصال بقاعدة البيانات مباشرة من مكتبة فايربيز لتجنب تداخل الـ HTML
 const db = firebase.database();
-const auth = firebase.auth();الخ
+const auth = firebase.auth();
 
 
 let tpmSystemRef = null, tpmSystemListener = null;

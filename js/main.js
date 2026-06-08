@@ -14,6 +14,7 @@ db.ref('.info/connected').on('value', snap => {
     }
 });
 
-// إتاحة بعض المتغيرات مؤقتاً للـ window عشان app.js القديم ميضربش مرة واحدة
+// إتاحة المتغيرات مؤقتاً للـ window عشان app.js القديم يشتغل
 window.db = db;
-window.Validator = Validator; // ⬅️ أضف هذا السطر
+window.auth = auth;           // ⬅️ أضف هذا السطر
+window.Validator = Validator;

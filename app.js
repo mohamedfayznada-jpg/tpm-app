@@ -2263,7 +2263,7 @@ window.fetchGeminiAPI = async function(promptText, pdfBase64 = null) {
         imageBase64: base64ImageString 
     })
 });
-    }
+    
 
         const j = await res.json();
         if(j.error) throw new Error(j.error.message);

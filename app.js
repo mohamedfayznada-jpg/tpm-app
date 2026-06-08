@@ -1645,12 +1645,14 @@ async function explainItem(t) {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
         });
         
-        // 🚀 نظام تحويل ذكي: لو המوديل مقفول يحول على gemini-pro تلقائياً
-        if (res.status === 404) {
-            url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
-            res = await fetch(url, { 
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
-            });
+      const response = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+        prompt: promptText, 
+        imageBase64: base64ImageString 
+    })
+});
         }
         
         const j = await res.json(); 
@@ -2253,10 +2255,15 @@ window.fetchGeminiAPI = async function(promptText, pdfBase64 = null) {
     try {
         let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         
-        if (res.status === 404) {
-            url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${k}`;
-            res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        }
+      const response = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+        prompt: promptText, 
+        imageBase64: base64ImageString 
+    })
+});
+    }
 
         const j = await res.json();
         if(j.error) throw new Error(j.error.message);

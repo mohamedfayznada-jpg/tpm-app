@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = 'tpm-app-v194'; // ⬅️ تم التحديث
+const CACHE_NAME = 'tpm-app-v195'; // ⬅️ تم التحديث
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

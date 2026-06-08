@@ -1,13 +1,9 @@
 // ==========================================
 // 🚀 FACTORY OS - V5.0 (INDUSTRIAL GRADE)
 // ==========================================
-// حماية المتغيرات الأساسية من التداخل مع الـ DOM
-const db = window.db || firebase.database();
-const auth = window.auth || firebase.auth();
-
-// بعدهم هتلاقي بقية المتغيرات بتاعتك عادي جداً
-// let tpmSystemRef = null, tpmSystemListener = null;
-// ... الخ
+// جلب الاتصال بقاعدة البيانات مباشرة من مكتبة فايربيز لتجنب تداخل الـ HTML
+const db = firebase.database();
+const auth = firebase.auth();الخ
 
 
 let tpmSystemRef = null, tpmSystemListener = null;

@@ -1,14 +1,19 @@
-const CACHE_NAME = 'tpm-app-v188';
+// sw.js
+const CACHE_NAME = 'tpm-app-v189'; // ⬅️ تم التحديث
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './style.css',     // ⚠️ مهم جداً
-  './app.js',        // ⚠️ الكود الأساسي
-  './config.js',     // ⚠️ الإعدادات
+  './style.css',     
+  './app.js',        
+  './config.js',     
   './manifest.json',
-  './icon.png'
+  './icon.png',
+  // ⬅️ أضفنا الملفات الجديدة عشان تشتغل أوفلاين
+  './js/main.js',
+  './js/config/env.js',
+  './js/core/firebase-init.js',
+  './js/utils/validator.js'
 ];
-
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE))

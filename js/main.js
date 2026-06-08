@@ -1,7 +1,7 @@
 // js/main.js
 import { ENV } from './config/env.js';
 import { db, auth } from './core/firebase-init.js';
-
+import { Validator } from './utils/validator.js'; // ⬅️ أضف هذا السطر
 console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} INITIALIZED`);
 
 // مراقبة حالة الاتصال بالسيرفر
@@ -16,3 +16,4 @@ db.ref('.info/connected').on('value', snap => {
 
 // إتاحة بعض المتغيرات مؤقتاً للـ window عشان app.js القديم ميضربش مرة واحدة
 window.db = db;
+window.Validator = Validator; // ⬅️ أضف هذا السطر

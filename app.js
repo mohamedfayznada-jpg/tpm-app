@@ -359,10 +359,14 @@ async function uploadImageToStorage(fileOrDataUrl) {
         const formData = new FormData();
         formData.append('image', b64);
         
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-            method: 'POST',
-            body: formData
-        });
+      // الكود الجديد للاتصال بالباك إند الخاص بنا لرفع الصور
+const response = await fetch('/api/imgbb', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // تأكد إن المتغير اللي شايل الصورة الـ base64 عندك اسمه متطابق هنا
+    // لو اسمه b64Data مثلاً غيره لـ b64Data 
+    body: JSON.stringify({ image: base64ImageString }) 
+});
         const data = await res.json();
         if(data.success) return data.data.url;
         return null;
@@ -1570,11 +1574,15 @@ async function runAIVision(itemId, itemTitle) {
         
         promptParts.push({ inline_data: { mime_type: "image/jpeg", data: base64Img } });
         
-        // استخدام الموديل الصحيح المدعوم للرؤية
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { 
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: promptParts }] }) 
-        });
-        
+      // الكود الجديد للاتصال بالباك إند الخاص بنا لتحليل الذكاء الاصطناعي
+const response = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+        prompt: promptText, // حط اسم المتغير اللي شايل السؤال بتاعك
+        imageBase64: base64ImageString // حط اسم المتغير اللي شايل الصورة، لو مفيش صورة خليه null
+    })
+});
         const result = await response.json(); 
         if(result.error) throw new Error(result.error.message);
         

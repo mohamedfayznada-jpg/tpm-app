@@ -1,4 +1,5 @@
 export default async function handler(req, res) {
+    // 1. التأكد إن الطلب POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -9,37 +10,44 @@ export default async function handler(req, res) {
 
         if (!apiKey) throw new Error("Gemini API Key is missing.");
 
-        // تجهيز الـ Payload لجوجل
-        let contents = [];
-        if (imageBase64) {
-            contents.push({
-                parts: [
-                    { text: prompt },
-                    { inline_data: { mime_type: "image/jpeg", data: imageBase64 } }
-                ]
-            });
-        } else {
-            contents.push({
-                parts: [{ text: prompt }]
+        // 2. تجهيز المصفوفة الخاصة بالمحتوى
+        let parts = [{ text: prompt || "تحليل" }];
+
+        // 3. تنظيف الصورة بذكاء (Sanitization)
+        if (imageBase64 && typeof imageBase64 === 'string' && imageBase64.length > 20) {
+            // لو الصورة جاية بالـ prefix، هنقصه وناخد الداتا البيور بس
+            const cleanBase64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+            
+            parts.push({
+                inline_data: { 
+                    mime_type: "image/jpeg", 
+                    data: cleanBase64 
+                }
             });
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // 4. استخدام الموديل الأحدث والأكثر استقراراً
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
         
+        // 5. إرسال الطلب لجوجل بالصيغة القياسية
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents })
+            body: JSON.stringify({
+                contents: [{
+                    role: "user", // ⬅️ إضافة الدور ضرورية في التحديث الجديد
+                    parts: parts
+                }]
+            })
         });
 
         const data = await response.json();
         
-        // لو في إيرور من جوجل نرجعه
+        // لو جوجل اعترضت، نرجع الإيرور بوضوح
         if (data.error) {
             throw new Error(data.error.message);
         }
 
-        // إرجاع النتيجة للفرونت إند
         res.status(200).json(data);
     } catch (error) {
         console.error("Gemini AI Error:", error);

@@ -1579,9 +1579,9 @@ const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-        prompt: promptText, // حط اسم المتغير اللي شايل السؤال بتاعك
-        imageBase64: base64ImageString // حط اسم المتغير اللي شايل الصورة، لو مفيش صورة خليه null
-    })
+      prompt: prompt,        // ⬅️ المتغير عندك اسمه prompt
+        imageBase64: null      // ⬅️ مفيش صورة في الدالة دي، فهنبعتها فاضية
+        })
 });
         const result = await response.json(); 
         if(result.error) throw new Error(result.error.message);
@@ -1649,8 +1649,8 @@ async function explainItem(t) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-        prompt: promptText, 
-        imageBase64: base64ImageString 
+       prompt: prompt,        // ⬅️ المتغير عندك اسمه prompt
+        imageBase64: null      // ⬅️ مفيش صورة في الدالة دي، فهنبعتها فاضية
     })
 });
         
@@ -2259,8 +2259,8 @@ window.fetchGeminiAPI = async function(promptText, pdfBase64 = null) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-        prompt: promptText, 
-        imageBase64: base64ImageString 
+       prompt: prompt,        // ⬅️ المتغير عندك اسمه prompt
+        imageBase64: null      // ⬅️ مفيش صورة في الدالة دي، فهنبعتها فاضية
     })
 });
     

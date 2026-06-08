@@ -341,11 +341,6 @@ function forceAcceptBarcode(decodedText) {
 // Architected by م.مُحَمَّد فَايِز - 100% Free ImgBB Engine
 // ==========================================
 async function uploadImageToStorage(fileOrDataUrl) {
-    const apiKey = globalApiKeys.imgbb;
-    if (!apiKey) {
-        showToast('⚠️ لا يوجد مفتاح ImgBB. يرجى إضافته من الإعدادات.');
-        return null;
-    }
     try {
         let base64Data = fileOrDataUrl;
         if (typeof fileOrDataUrl !== 'string') {
@@ -356,27 +351,23 @@ async function uploadImageToStorage(fileOrDataUrl) {
             });
         }
         const b64 = base64Data.split(',')[1];
-        const formData = new FormData();
-        formData.append('image', b64);
         
-      // الكود الجديد للاتصال بالباك إند الخاص بنا لرفع الصور
-const response = await fetch('/api/imgbb', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    // تأكد إن المتغير اللي شايل الصورة الـ base64 عندك اسمه متطابق هنا
-    // لو اسمه b64Data مثلاً غيره لـ b64Data 
-    body: JSON.stringify({ image: base64ImageString }) 
-});
-        const data = await res.json();
+        // الاتصال الآمن بسيرفر Vercel
+        const response = await fetch('/api/imgbb', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: b64 }) 
+        });
+        
+        const data = await response.json();
         if(data.success) return data.data.url;
         return null;
     } catch(e) {
         console.error("ImgBB Error:", e);
-        showToast('⚠️ فشل الرفع على ImgBB');
+        showToast('⚠️ فشل الرفع عبر السيرفر');
         return null;
     }
 }
-
 // محرك ضغط الصور لتوفير المساحة المجانية 100%
 function compressImageProcess(file) {
     return new Promise((resolve) => {
@@ -1544,9 +1535,6 @@ async function getBase64FromUrl(url) {
 }
 
 async function runAIVision(itemId, itemTitle) {
-    const apiKey = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
-    if(!apiKey) return showToast('مفتاح Gemini مفقود');
-    
     let imgObj = currentStepImages['img_' + itemId]; 
     if(!imgObj) return showToast('لا توجد صورة لفحصها');
     
@@ -1555,39 +1543,27 @@ async function runAIVision(itemId, itemTitle) {
     
     try {
         const base64Img = await getBase64FromUrl(imgObj.data);
-        // أوامر صارمة لمنع الأكواد
-        let promptParts = [{ text: `أنت مهندس صيانة. حلل هذه الصورة بناءً على بند: "${itemTitle}". رد بـ HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع كتابة علامات \`\`\`html نهائياً.` }];
         
+        // تجميع النص والكتالوجات
+        let fullPrompt = `أنت مهندس صيانة. حلل هذه الصورة بناءً على بند: "${itemTitle}". رد بـ HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع كتابة علامات \`\`\`html نهائياً.\n`;
         if(knowledgeBaseData && knowledgeBaseData.length > 0) {
-            let kbPromises = []; 
-            knowledgeBaseData.forEach(kb => { 
-                if(kb.content) promptParts.unshift({ text: `مرجع (${kb.title}): ${kb.content}` }); 
-                if(kb.images) { 
-                    kb.images.forEach(imgUrl => { 
-                        kbPromises.push(getBase64FromUrl(imgUrl).then(b64 => { promptParts.unshift({ inline_data: { mime_type: "image/jpeg", data: b64 } }); }).catch(e=>e)); 
-                    }); 
-                } 
-            });
-            await Promise.all(kbPromises); 
-            promptParts.unshift({ text: "كتالوجات وجداول المصنع المعتمدة:" });
+            fullPrompt += "\nكتالوجات المصنع المعتمدة:\n" + knowledgeBaseData.map(kb => `[${kb.title}]: ${kb.content}`).join('\n');
         }
         
-        promptParts.push({ inline_data: { mime_type: "image/jpeg", data: base64Img } });
+        // الاتصال الآمن بالسيرفر
+        const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                prompt: fullPrompt,        
+                imageBase64: base64Img      
+            })
+        });
         
-      // الكود الجديد للاتصال بالباك إند الخاص بنا لتحليل الذكاء الاصطناعي
-const response = await fetch('/api/gemini', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      prompt: prompt,        // ⬅️ المتغير عندك اسمه prompt
-        imageBase64: null      // ⬅️ مفيش صورة في الدالة دي، فهنبعتها فاضية
-        })
-});
         const result = await response.json(); 
-        if(result.error) throw new Error(result.error.message);
+        if(result.error) throw new Error(result.error);
         
         let text = result.candidates[0].content.parts[0].text;
-        // السلاح النووي لتنظيف الكود من الماركداون
         text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
         
         document.getElementById('aiModalText').innerHTML = text; 
@@ -1598,21 +1574,19 @@ const response = await fetch('/api/gemini', {
 }
 
 async function predictMachineFailures() {
-    const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey); 
-    if(!k) return showToast('مفتاح Gemini غير مفعل');
-    
     const r = document.getElementById('aiPredictionResult'); 
     r.style.display='block'; r.innerText='جاري تحليل البيانات... ⏳';
     
     try {
         let prompt = "بناءً على التاجات التالية، توقع الماكينات المعرضة للتوقف وقدم نصيحة. أجب بنص عادي أو HTML بسيط بدون علامات \`\`\`html: " + tagsData.map(t=>t.desc).join(',');
         
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, { 
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+        const response = await fetch('/api/gemini', { 
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ prompt: prompt, imageBase64: null }) 
         });
         
-        const j = await res.json(); 
-        if(j.error) throw new Error(j.error.message);
+        const j = await response.json(); 
+        if(j.error) throw new Error(j.error);
         
         let text = j.candidates[0].content.parts[0].text;
         text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
@@ -1623,52 +1597,37 @@ async function predictMachineFailures() {
     }
 }
 
-// الدالة الأساسية اللي زرار الشرح بينادي عليها!
 async function explainItem(t) {
-    const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey); 
-    if(!k) return showToast('مفتاح Gemini مفقود');
-    
-    document.getElementById('aiModal').style.display='flex'; 
-    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري استشارة عقل المصنع وتحليل البند... 🧠</h3></div>';
-    
-    try {
-        let factoryContext = (knowledgeBaseData || []).map(kb => `[مرجع: ${kb.title}]: ${kb.content || ''}`).join('\n\n').substring(0, 10000);
-        
-        let prompt = `أنت الخبير التقني لـ Factory OS. اشرح البند التالي للمراجع الميداني: "${t}". 
-        تحدث بصيغة تعليمية بناء على المراجع إن وجدت.
-        تنبيه صارم جداً: رد بتنسيق HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع منعاً باتاً كتابة علامات الماركداون مثل \`\`\`html.
-        المراجع المتاحة: ${factoryContext}`;
+    document.getElementById('aiModal').style.display='flex'; 
+    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري استشارة عقل المصنع وتحليل البند... 🧠</h3></div>';
+    
+    try {
+        let factoryContext = (knowledgeBaseData || []).map(kb => `[مرجع: ${kb.title}]: ${kb.content || ''}`).join('\n\n').substring(0, 10000);
+        let prompt = `أنت الخبير التقني لـ Factory OS. اشرح البند التالي للمراجع الميداني: "${t}". 
+        تحدث بصيغة تعليمية بناء على المراجع إن وجدت.
+        تنبيه صارم جداً: رد بتنسيق HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع منعاً باتاً كتابة علامات الماركداون مثل \`\`\`html.
+        المراجع المتاحة: ${factoryContext}`;
 
-        // 🚀 استخدام الموديل 1.5-flash السريع
-        let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`;
-        let res = await fetch(url, { 
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
-        });
-        
-      const response = await fetch('/api/gemini', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-       prompt: prompt,        // ⬅️ المتغير عندك اسمه prompt
-        imageBase64: null      // ⬅️ مفيش صورة في الدالة دي، فهنبعتها فاضية
-    })
-});
-        
-        
-        const j = await res.json(); 
-        if(j.error) throw new Error(j.error.message);
+        const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+               prompt: prompt,        
+               imageBase64: null      
+            })
+        });
+        
+        const j = await response.json(); 
+        if(j.error) throw new Error(j.error);
 
-        let rawHTML = j.candidates[0].content.parts[0].text;
-        
-        // 🚀 تنظيف الكود بالكامل من أي علامات بتلخبط المتصفح
-        rawHTML = rawHTML.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
-        
-        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8;">${rawHTML}</div>`;
-    } catch(e) { 
-        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ في استحضار الذاكرة: ${e.message}</div>`; 
-    }
+        let rawHTML = j.candidates[0].content.parts[0].text;
+        rawHTML = rawHTML.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
+        
+        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8;">${rawHTML}</div>`;
+    } catch(e) { 
+        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ في الاتصال: ${e.message}</div>`; 
+    }
 }
-
 // ------------------------------------------
 // إعدادات أخرى
 // ------------------------------------------
@@ -2241,32 +2200,20 @@ setInterval(() => {
 
 // 🧠 محرك جوجل الآمن (يتخطى حظر الموديلات)
 window.fetchGeminiAPI = async function(promptText, pdfBase64 = null) {
-    const k = globalApiKeys?.gemini || (window.__TPM_CONFIG__ && window.__TPM_CONFIG__.geminiApiKey);
-    if(!k) throw new Error("مفتاح الذكاء الاصطناعي مفقود! ضفه في الإعدادات.");
-
-    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`;
-    let body = { contents: [{ parts: [{ text: promptText }] }] };
-    
+    let b64 = null;
     if (pdfBase64) {
-        let b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
-        body.contents[0].parts.push({ inline_data: { mime_type: "application/pdf", data: b64 } });
+        b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
     }
 
     try {
-        let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: promptText, imageBase64: b64 })
+        });
         
-      const response = await fetch('/api/gemini', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-       prompt: prompt,        // ⬅️ المتغير عندك اسمه prompt
-        imageBase64: null      // ⬅️ مفيش صورة في الدالة دي، فهنبعتها فاضية
-    })
-});
-    
-
-        const j = await res.json();
-        if(j.error) throw new Error(j.error.message);
+        const j = await response.json();
+        if(j.error) throw new Error(j.error);
         if(!j.candidates || j.candidates.length === 0 || !j.candidates[0].content) {
             throw new Error("جوجل رفضت الإجابة بسبب قيود الأمان. جرب صياغة أخرى.");
         }

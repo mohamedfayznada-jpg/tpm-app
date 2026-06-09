@@ -2526,6 +2526,8 @@ window.updateProfilePic = async function(event) {
 
 let pdcaData = [];
 let isPdcaListenerActive = false;
+let currentPDCAImg = null;
+let pdcaChartInstance = null;
 
 // 1. دالة التبديل بين شاشات الـ KK
 window.switchKKTab = function(tabId, btnElement) {
@@ -2602,24 +2604,24 @@ window.renderKKDashboard = function() {
             pdcaContainer.innerHTML = filteredPDCA.reverse().map(p => {
                 let statusColor = p.status === 'Plan' ? 'var(--warning)' : (p.status === 'Do' ? '#3B82F6' : (p.status === 'Check' ? 'var(--gold)' : (p.status === 'Act' ? 'var(--success)' : 'var(--text-muted)')));
                 let controls = hasRole('admin') || currentUser.name === p.owner ? `
-                    <select class="form-control flex-2" style="margin:0; padding:2px; font-size:11px; height:auto; border-color:${statusColor}; color:${statusColor}; font-weight:bold;" onchange="updatePDCAStatus('${p.id}', this.value)">
+                    <select class="form-control flex-2" style="margin:0; padding:2px; font-size:11px; height:auto; border-color:${statusColor}; color:${statusColor}; font-weight:bold;" onclick="event.stopPropagation()" onchange="updatePDCAStatus('${p.id}', this.value)">
                         <option value="Plan" ${p.status==='Plan'?'selected':''}>خطط (Plan) 🟡</option>
                         <option value="Do" ${p.status==='Do'?'selected':''}>نفذ (Do) 🔵</option>
                         <option value="Check" ${p.status==='Check'?'selected':''}>تحقق (Check) 🟠</option>
                         <option value="Act" ${p.status==='Act'?'selected':''}>اعتمد (Act) 🟢</option>
                         <option value="Closed" ${p.status==='Closed'?'selected':''}>مغلق 🔒</option>
                     </select>
-                    <button class="btn btn-sm btn-danger flex-1" style="margin:0; padding:2px;" onclick="deletePDCA('${p.id}')">🗑️</button>
+                    <button class="btn btn-sm btn-danger flex-1" style="margin:0; padding:2px;" onclick="event.stopPropagation(); deletePDCA('${p.id}')">🗑️</button>
                 ` : `<div style="font-size:11px; font-weight:bold; color:${statusColor};">المرحلة: ${p.status}</div>`;
 
                 return `
-                <div class="card glass-card" style="padding:15px; border-right:4px solid ${statusColor};">
+                <div class="card glass-card" style="padding:15px; border-right:4px solid ${statusColor}; cursor:pointer; transition:0.2s;" onclick="viewPDCADetails('${p.id}')" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                         <b style="color:var(--text-main); font-size:14px;">${p.title}</b>
                         <span style="font-size:10px; color:var(--text-muted);">${p.date}</span>
                     </div>
                     <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">
-                        🏭 القسم: ${p.dept} | 👤 المالك: ${p.owner}
+                        🏭 القسم: ${p.dept} | 👤 المالك: ${p.owner} | 🎯 التأثير: ${p.impact || 'غير محدد'}
                     </div>
                     <div class="row-flex" style="align-items:center;">
                         ${controls}
@@ -2632,34 +2634,126 @@ window.renderKKDashboard = function() {
 
 // 3. دالة إنشاء مشروع PDCA جديد
 window.createNewPDCA = function() {
+    let opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
+    document.getElementById('pdcaDept').innerHTML = opts;
+    
     let filterEl = document.getElementById('kkGlobalDeptFilter');
-    let targetDept = filterEl ? filterEl.value : 'الكل';
+    if(filterEl && filterEl.value !== 'الكل') document.getElementById('pdcaDept').value = filterEl.value;
 
-    if(targetDept === 'الكل') {
-        let deptNames = departments.join(' أو ');
-        targetDept = prompt(`لأي قسم تريد إنشاء مشروع التحسين؟\n(${deptNames})`, departments[0]);
-        if(!targetDept || !departments.includes(targetDept)) return showToast('⚠️ يرجى إدخال اسم قسم صحيح.');
+    // تصفير الخانات
+    document.getElementById('pdcaTitle').value = '';
+    document.getElementById('pdcaBefore').value = '';
+    document.getElementById('pdcaAfter').value = '';
+    document.getElementById('pdcaUnit').value = '';
+    document.getElementById('pdcaPlan').value = '';
+    document.getElementById('pdcaDo').value = '';
+    currentPDCAImg = null;
+    document.getElementById('pdcaImgPreview').innerHTML = '';
+
+    document.getElementById('pdcaCreateModal').style.display = 'flex';
+};
+
+// التعامل مع صورة المشروع
+window.handlePDCAImage = function(e) {
+    const f = e.target.files[0]; if(!f) return;
+    showToast('جاري تحضير الصورة...');
+    processAndEnhanceImage(f, function(dataUrl) { 
+        currentPDCAImg = dataUrl; 
+        document.getElementById('pdcaImgPreview').innerHTML = `<span style="color:var(--success);">✅ صورة جاهزة للرفع</span>`; 
+    });
+};
+
+// حفظ مشروع الـ PDCA الكامل
+window.saveNewPDCA = async function() {
+    let t = document.getElementById('pdcaTitle').value;
+    let b = parseFloat(document.getElementById('pdcaBefore').value) || 0;
+    let a = parseFloat(document.getElementById('pdcaAfter').value) || 0;
+    let unit = document.getElementById('pdcaUnit').value || 'وحدة';
+    
+    if(!t) return showToast('⚠️ عنوان المشروع (المشكلة) مطلوب!');
+
+    let uploadedUrl = null;
+    if (currentPDCAImg) {
+        showToast('جاري رفع صورة المشروع... ⏳');
+        uploadedUrl = await uploadImageToStorage(currentPDCAImg);
     }
-
-    let title = prompt(`عنوان مشروع التحسين (PDCA) لقسم [${targetDept}]:\n(مثال: القضاء على توقف طلمبة الرفع)`);
-    if(!title) return;
 
     let pdcaObj = {
         id: uniqueNumericId().toString(),
-        title: sanitizeInput(title),
-        dept: targetDept,
+        title: sanitizeInput(t),
+        dept: document.getElementById('pdcaDept').value,
+        impact: document.getElementById('pdcaImpact').value,
+        beforeVal: b,
+        afterVal: a,
+        unit: sanitizeInput(unit),
+        planText: sanitizeInput(document.getElementById('pdcaPlan').value),
+        doText: sanitizeInput(document.getElementById('pdcaDo').value),
+        checkText: "في انتظار النتائج والتحقق...",
+        actText: "في انتظار الاعتماد والتنميط...",
+        image: uploadedUrl,
         status: 'Plan',
         owner: currentUser.name || 'مجهول',
         date: new Date().toLocaleDateString('ar-EG')
     };
 
-    // تحديث الواجهة فوراً (Optimistic UI)
     pdcaData.push(pdcaObj);
     renderKKDashboard();
-
     syncRecord('pdca/' + pdcaObj.id, pdcaObj);
-    awardPoints(15, 'إطلاق مشروع تحسين PDCA');
-    showToast('تم إطلاق مشروع التحسين بنجاح 🚀');
+    
+    document.getElementById('pdcaCreateModal').style.display = 'none';
+    awardPoints(25, 'إطلاق A3 PDCA متكامل');
+    showToast('تم إطلاق المشروع بنجاح 🚀');
+};
+
+// عرض المشروع (A3 Dashboard View)
+window.viewPDCADetails = function(id) {
+    let p = pdcaData.find(x => x.id == id);
+    if(!p) return;
+
+    document.getElementById('viewPdcaTitle').innerText = p.title;
+    document.getElementById('viewPdcaDept').innerText = p.dept;
+    
+    const impactMap = { 'P': 'الإنتاجية (Productivity)', 'Q': 'الجودة (Quality)', 'C': 'التكلفة (Cost)', 'S': 'السلامة (Safety)' };
+    document.getElementById('viewPdcaImpact').innerText = impactMap[p.impact] || p.impact;
+    document.getElementById('viewPdcaOwner').innerText = p.owner;
+
+    document.getElementById('viewPdcaPlan').innerText = p.planText || 'لم يسجل';
+    document.getElementById('viewPdcaDo').innerText = p.doText || 'لم يسجل';
+    document.getElementById('viewPdcaCheck').innerText = p.checkText || 'لم يسجل';
+    document.getElementById('viewPdcaAct').innerText = p.actText || 'لم يسجل';
+
+    if(p.image) {
+        document.getElementById('viewPdcaImg').src = p.image;
+        document.getElementById('viewPdcaImgContainer').style.display = 'block';
+    } else {
+        document.getElementById('viewPdcaImgContainer').style.display = 'none';
+    }
+
+    // رسم Chart.js (Before vs After)
+    const ctx = document.getElementById('pdcaChart');
+    if (pdcaChartInstance) pdcaChartInstance.destroy(); 
+    
+    pdcaChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['قبل التحسين', 'الهدف / بعد التحسين'],
+            datasets: [{
+                label: p.unit,
+                data: [p.beforeVal, p.afterVal],
+                backgroundColor: ['rgba(239, 68, 68, 0.8)', 'rgba(34, 197, 94, 0.8)'],
+                borderColor: ['#ef4444', '#22c55e'],
+                borderWidth: 1,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { color: '#cbd5e1', font: {family: 'Cairo'} } }, x: { ticks: { color: '#fff', font: {family: 'Cairo', weight: 'bold'} } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    document.getElementById('pdcaViewModal').style.display = 'flex';
 };
 
 // 4. تحديث حالة الـ PDCA أو حذفه
@@ -2686,7 +2780,9 @@ window.openLossRegistration = function(lossId, lossName) {
     if(targetDept === 'الكل') {
         let deptNames = departments.join(' أو ');
         targetDept = prompt(`لأي قسم تريد تسجيل هذا الفقد؟\n(${deptNames})`, departments[0]);
-        if(!targetDept || !departments.includes(targetDept)) return showToast('⚠️ يرجى إدخال اسم قسم صحيح.');
+        if(!targetDept || !departments.includes(targetDept)) {
+            return showToast('⚠️ يرجى إدخال اسم قسم صحيح مطابق للمصنع.');
+        }
     }
 
     let mins = prompt(`تسجيل فقد لـ [${targetDept}]:\nنوع الفقد: ${lossName}\n\nأدخل مدة التوقف (بالدقائق):`);

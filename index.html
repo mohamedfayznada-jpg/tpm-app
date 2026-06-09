@@ -276,6 +276,75 @@
             <div id="usersLeaderboardContainer" class="leaderboard-list"></div>
         </div>
     </div>
+
+<div id="deptDashboardScreen" class="screen">
+    <div style="padding: 20px;">
+        <div class="row-flex" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 id="deptViewTitle" style="color: var(--gold); margin: 0; font-weight: 900;">لوحة قيادة القسم</h2>
+            <button class="btn btn-sm btn-outline" style="border-radius: 20px;" onclick="goBack()">🔙 رجوع للرئيسية</button>
+        </div>
+
+        <div class="row-flex" style="gap: 15px; margin-bottom: 25px;">
+            <div class="card glass-card" style="flex: 1; text-align: center; padding: 15px; border-top: 4px solid var(--success);">
+                <div style="font-size: 11px; color: var(--text-muted); font-weight: bold;">متوسط كفاءة JH</div>
+                <div id="deptAvgScore" style="font-size: 26px; font-weight: 900; color: var(--success); text-shadow: 0 2px 4px rgba(0,0,0,0.5);">0%</div>
+            </div>
+            
+            <div class="card glass-card" style="flex: 1; text-align: center; padding: 15px; border-top: 4px solid var(--danger);">
+                <div style="font-size: 11px; color: var(--text-muted); font-weight: bold;">تاجات مفتوحة (أعطال)</div>
+                <div id="deptOpenTags" style="font-size: 26px; font-weight: 900; color: var(--danger); text-shadow: 0 2px 4px rgba(0,0,0,0.5);">0</div>
+            </div>
+            
+            <div class="card glass-card" style="flex: 1; text-align: center; padding: 15px; border-top: 4px solid var(--warning);">
+                <div style="font-size: 11px; color: var(--text-muted); font-weight: bold;">مهام صيانة مخططة</div>
+                <div id="deptTasksCount" style="font-size: 26px; font-weight: 900; color: var(--warning); text-shadow: 0 2px 4px rgba(0,0,0,0.5);">0</div>
+            </div>
+        </div>
+
+        <div class="row-flex" style="gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
+            <div class="card glass-card" style="flex: 1; min-width: 300px; padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: var(--gold); margin: 0;">رادار التميز (JH Steps)</h4>
+                    <span style="font-size: 10px; color: var(--text-muted);">التغطية الحالية</span>
+                </div>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="deptRadarChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card glass-card" style="flex: 1; min-width: 300px; padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: var(--gold); margin: 0;">منحنى التطور (Trend)</h4>
+                    <span style="font-size: 10px; color: var(--text-muted);">آخر 5 مراجعات</span>
+                </div>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="deptTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card glass-card" style="padding: 20px; border: 1px solid rgba(198,40,40,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                <h4 style="color: var(--danger); margin: 0;">🚨 بؤر الخطر (Top Critical Tags)</h4>
+                <span style="font-size: 10px; background: var(--danger); color: white; padding: 2px 8px; border-radius: 10px;">تدخل فوري</span>
+            </div>
+            
+            <div id="deptActionItems" style="display: flex; flex-direction: column; gap: 10px;">
+                </div>
+        </div>
+        
+        <div class="row-flex" style="margin-top: 25px; gap: 15px;">
+            <button class="btn btn-primary flex-1" style="font-size: 14px; font-weight: bold; padding: 12px;" onclick="startNewAuditFlowFromPortal()">
+                📝 تنفيذ مراجعة للقسم
+            </button>
+            <button class="btn btn-outline flex-1" style="font-size: 14px; font-weight: bold; padding: 12px; border-color: var(--warning); color: var(--warning);" onclick="showScreen('tasksScreen')">
+                ⚙️ إدارة مهام القسم
+            </button>
+        </div>
+    </div>
+</div>
+
+    
  <div class="container screen" id="deptDashboardScreen">
         <div class="sticky-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid rgba(212,175,55,0.3);">
             <div style="display:flex; gap:10px;">

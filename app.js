@@ -2633,6 +2633,7 @@ window.renderKKDashboard = function() {
 };
 
 // 3. دالة إنشاء مشروع PDCA جديد
+// 3. دالة إنشاء مشروع PDCA جديد (وتصفير الخانات)
 window.createNewPDCA = function() {
     let opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
     document.getElementById('pdcaDept').innerHTML = opts;
@@ -2640,19 +2641,20 @@ window.createNewPDCA = function() {
     let filterEl = document.getElementById('kkGlobalDeptFilter');
     if(filterEl && filterEl.value !== 'الكل') document.getElementById('pdcaDept').value = filterEl.value;
 
-    // تصفير الخانات
+    // تصفير جميع الخانات بما فيها الـ Check والـ Act
     document.getElementById('pdcaTitle').value = '';
     document.getElementById('pdcaBefore').value = '';
     document.getElementById('pdcaAfter').value = '';
     document.getElementById('pdcaUnit').value = '';
     document.getElementById('pdcaPlan').value = '';
     document.getElementById('pdcaDo').value = '';
+    document.getElementById('pdcaCheck').value = '';
+    document.getElementById('pdcaAct').value = '';
     currentPDCAImg = null;
     document.getElementById('pdcaImgPreview').innerHTML = '';
 
     document.getElementById('pdcaCreateModal').style.display = 'flex';
 };
-
 // التعامل مع صورة المشروع
 window.handlePDCAImage = function(e) {
     const f = e.target.files[0]; if(!f) return;
@@ -2678,6 +2680,7 @@ window.saveNewPDCA = async function() {
         uploadedUrl = await uploadImageToStorage(currentPDCAImg);
     }
 
+    // سحب البيانات من كل الخانات
     let pdcaObj = {
         id: uniqueNumericId().toString(),
         title: sanitizeInput(t),
@@ -2688,21 +2691,27 @@ window.saveNewPDCA = async function() {
         unit: sanitizeInput(unit),
         planText: sanitizeInput(document.getElementById('pdcaPlan').value),
         doText: sanitizeInput(document.getElementById('pdcaDo').value),
-        checkText: "في انتظار النتائج والتحقق...",
-        actText: "في انتظار الاعتماد والتنميط...",
+        checkText: sanitizeInput(document.getElementById('pdcaCheck').value), // سحب نص الـ Check
+        actText: sanitizeInput(document.getElementById('pdcaAct').value),     // سحب نص الـ Act
         image: uploadedUrl,
-        status: 'Plan',
+        status: 'Closed', // ممكن نخليها Plan كبداية، أو Closed لو المشروع خلصان
         owner: currentUser.name || 'مجهول',
         date: new Date().toLocaleDateString('ar-EG')
     };
+
+    // لو المستخدم كتب حاجة في Act معناه إن المشروع خلصان وتم اعتماده
+    if (pdcaObj.actText !== '') pdcaObj.status = 'Closed';
+    else if (pdcaObj.checkText !== '') pdcaObj.status = 'Check';
+    else if (pdcaObj.doText !== '') pdcaObj.status = 'Do';
+    else pdcaObj.status = 'Plan';
 
     pdcaData.push(pdcaObj);
     renderKKDashboard();
     syncRecord('pdca/' + pdcaObj.id, pdcaObj);
     
     document.getElementById('pdcaCreateModal').style.display = 'none';
-    awardPoints(25, 'إطلاق A3 PDCA متكامل');
-    showToast('تم إطلاق المشروع بنجاح 🚀');
+    awardPoints(25, 'إطلاق/تسجيل A3 PDCA متكامل');
+    showToast('تم حفظ المشروع بنجاح 🚀');
 };
 
 // عرض المشروع (A3 Dashboard View)

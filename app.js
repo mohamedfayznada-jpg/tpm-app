@@ -2524,7 +2524,10 @@ window.updateProfilePic = async function(event) {
 // 📉 محرك ركيزة التحسين المستمر المطور (KK Pillar Engine)
 // ==========================================
 
-// 1. دالة التبديل بين شاشات الـ KK الداخلية
+let pdcaData = [];
+let isPdcaListenerActive = false;
+
+// 1. دالة التبديل بين شاشات الـ KK
 window.switchKKTab = function(tabId, btnElement) {
     document.querySelectorAll('.kk-tab-content').forEach(c => c.style.display = 'none');
     document.querySelectorAll('.kk-nav-btn').forEach(b => b.style.opacity = '0.5');
@@ -2534,68 +2537,156 @@ window.switchKKTab = function(tabId, btnElement) {
     if(btnElement) btnElement.style.opacity = '1';
 };
 
-// 2. رسم لوحة الفواقد بناءً على القسم المختار
+// 2. المحرك المركزي للوحة الـ KK (شجرة الفواقد والـ PDCA)
 window.renderKKDashboard = function() {
-    let container = document.getElementById('kkLossTreeContainer');
-    if(!container) return;
+    // تشغيل المراقبة الحية لمشاريع الـ PDCA (مرة واحدة فقط)
+    if(!isPdcaListenerActive && isOnline && firebase.auth().currentUser) {
+        db.ref('tpm_system/pdca').on('value', snap => {
+            pdcaData = snap.val() ? Object.values(snap.val()) : [];
+            renderKKDashboard(); // إعادة الرسم عند وصول البيانات
+        });
+        isPdcaListenerActive = true;
+    }
 
-    // قراءة القسم المحدد من الفلتر
-    let filterEl = document.getElementById('kkDeptFilter');
+    // قراءة القسم المحدد من الفلتر المركزي
+    let filterEl = document.getElementById('kkGlobalDeptFilter');
     let selectedDept = filterEl ? filterEl.value : 'الكل';
     
-    // تصفية الفواقد (Losses) بناءً على القسم
+    // --- تصفية الفواقد (Losses) ورسم الشجرة ---
     let filteredLosses = registeredLosses;
     if (selectedDept !== 'الكل') {
         filteredLosses = registeredLosses.filter(l => l.dept === selectedDept);
     }
 
-    // رسم كروت الـ 8 فواقد
-    let html = tpmLosses.map(loss => {
-        let currentLossMins = filteredLosses.filter(l => l.lossId === loss.id).reduce((sum, curr) => sum + curr.minutes, 0);
-        let currentLossCost = currentLossMins * COST_PER_MINUTE; 
-        
-        let borderColor = currentLossMins > 60 ? 'var(--danger)' : (currentLossMins > 0 ? 'var(--warning)' : 'rgba(255,255,255,0.1)');
-        let shadowEffect = currentLossMins > 60 ? 'box-shadow: 0 0 15px rgba(198,40,40,0.5);' : '';
-        
-        return `
-        <div class="card glass-card" style="border-top:4px solid ${borderColor}; ${shadowEffect} text-align:center; padding:15px; cursor:pointer; transition: transform 0.2s;" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'" onclick="openLossRegistration('${loss.id}', '${loss.name}')">
-            <div style="font-size:24px; margin-bottom:5px; filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${loss.icon}</div>
-            <div style="font-size:11px; font-weight:bold; color:var(--text-main); margin-bottom:10px; height:30px;">${loss.name}</div>
-            <div style="background:rgba(0,0,0,0.3); padding:5px; border-radius:5px;">
-                <div style="font-size:11px; color:var(--text-muted);">⏱️ ${currentLossMins} دقيقة</div>
-                <div style="font-size:12px; font-weight:900; color:${currentLossCost > 0 ? 'var(--danger)' : 'var(--success)'}; margin-top:2px;">${currentLossCost.toLocaleString()} ج.م</div>
-            </div>
-        </div>`;
-    }).join('');
-    
-    container.innerHTML = html;
+    let lossContainer = document.getElementById('kkLossTreeContainer');
+    if(lossContainer) {
+        lossContainer.innerHTML = tpmLosses.map(loss => {
+            let currentLossMins = filteredLosses.filter(l => l.lossId === loss.id).reduce((sum, curr) => sum + curr.minutes, 0);
+            let currentLossCost = currentLossMins * COST_PER_MINUTE; 
+            
+            let borderColor = currentLossMins > 60 ? 'var(--danger)' : (currentLossMins > 0 ? 'var(--warning)' : 'rgba(255,255,255,0.1)');
+            let shadowEffect = currentLossMins > 60 ? 'box-shadow: 0 0 15px rgba(198,40,40,0.5);' : '';
+            
+            return `
+            <div class="card glass-card" style="border-top:4px solid ${borderColor}; ${shadowEffect} text-align:center; padding:15px; cursor:pointer; transition: transform 0.2s;" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'" onclick="openLossRegistration('${loss.id}', '${loss.name}')">
+                <div style="font-size:24px; margin-bottom:5px; filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${loss.icon}</div>
+                <div style="font-size:11px; font-weight:bold; color:var(--text-main); margin-bottom:10px; height:30px;">${loss.name}</div>
+                <div style="background:rgba(0,0,0,0.3); padding:5px; border-radius:5px;">
+                    <div style="font-size:11px; color:var(--text-muted);">⏱️ ${currentLossMins} دقيقة</div>
+                    <div style="font-size:12px; font-weight:900; color:${currentLossCost > 0 ? 'var(--danger)' : 'var(--success)'}; margin-top:2px;">${currentLossCost.toLocaleString()} ج.م</div>
+                </div>
+            </div>`;
+        }).join('');
+    }
 
-    // تحديث العدادات العلوية الكبرى بالبيانات المفلترة فقط
+    // --- تحديث العدادات العلوية ---
     let totalMins = filteredLosses.reduce((sum, l) => sum + l.minutes, 0);
-    let hoursEl = document.getElementById('kkTotalLossHours');
-    let costEl = document.getElementById('kkTotalLossCost');
-    
-    if(hoursEl) hoursEl.innerText = (totalMins / 60).toFixed(1);
-    if(costEl) costEl.innerText = (totalMins * COST_PER_MINUTE).toLocaleString();
+    if(document.getElementById('kkTotalLossHours')) document.getElementById('kkTotalLossHours').innerText = (totalMins / 60).toFixed(1);
+    if(document.getElementById('kkTotalLossCost')) document.getElementById('kkTotalLossCost').innerText = (totalMins * COST_PER_MINUTE).toLocaleString();
 
-    // تحديث عداد مشاريع الكايزن النشطة بناءً على القسم المختار
-    const activeKaizens = historyData.filter(h => h.stepsOrder.includes('ManualKaizen') && (selectedDept === 'الكل' || h.dept === selectedDept)).length;
-    const kaizenCounterEl = document.getElementById('kkActiveProjects');
-    if(kaizenCounterEl) kaizenCounterEl.innerText = activeKaizens;
+    // --- تصفية ورسم مشاريع الـ PDCA ---
+    let filteredPDCA = pdcaData;
+    if (selectedDept !== 'الكل') {
+        filteredPDCA = pdcaData.filter(p => p.dept === selectedDept);
+    }
+    
+    // تحديث عداد الـ PDCA (للمشاريع النشطة فقط غير المغلقة)
+    let activePDCACount = filteredPDCA.filter(p => p.status !== 'Closed').length;
+    if(document.getElementById('kkActiveProjects')) document.getElementById('kkActiveProjects').innerText = activePDCACount;
+
+    let pdcaContainer = document.getElementById('kkPdcaContainer');
+    if(pdcaContainer) {
+        if(filteredPDCA.length === 0) {
+            pdcaContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px;">لا توجد مشاريع تحسين (PDCA) مسجلة لهذا القسم حالياً.</div>';
+        } else {
+            pdcaContainer.innerHTML = filteredPDCA.reverse().map(p => {
+                let statusColor = p.status === 'Plan' ? 'var(--warning)' : (p.status === 'Do' ? '#3B82F6' : (p.status === 'Check' ? 'var(--gold)' : (p.status === 'Act' ? 'var(--success)' : 'var(--text-muted)')));
+                let controls = hasRole('admin') || currentUser.name === p.owner ? `
+                    <select class="form-control flex-2" style="margin:0; padding:2px; font-size:11px; height:auto; border-color:${statusColor}; color:${statusColor}; font-weight:bold;" onchange="updatePDCAStatus('${p.id}', this.value)">
+                        <option value="Plan" ${p.status==='Plan'?'selected':''}>خطط (Plan) 🟡</option>
+                        <option value="Do" ${p.status==='Do'?'selected':''}>نفذ (Do) 🔵</option>
+                        <option value="Check" ${p.status==='Check'?'selected':''}>تحقق (Check) 🟠</option>
+                        <option value="Act" ${p.status==='Act'?'selected':''}>اعتمد (Act) 🟢</option>
+                        <option value="Closed" ${p.status==='Closed'?'selected':''}>مغلق 🔒</option>
+                    </select>
+                    <button class="btn btn-sm btn-danger flex-1" style="margin:0; padding:2px;" onclick="deletePDCA('${p.id}')">🗑️</button>
+                ` : `<div style="font-size:11px; font-weight:bold; color:${statusColor};">المرحلة: ${p.status}</div>`;
+
+                return `
+                <div class="card glass-card" style="padding:15px; border-right:4px solid ${statusColor};">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <b style="color:var(--text-main); font-size:14px;">${p.title}</b>
+                        <span style="font-size:10px; color:var(--text-muted);">${p.date}</span>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">
+                        🏭 القسم: ${p.dept} | 👤 المالك: ${p.owner}
+                    </div>
+                    <div class="row-flex" style="align-items:center;">
+                        ${controls}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+    }
 };
 
-// 3. تسجيل فقد جديد مع ربطه بالقسم
+// 3. دالة إنشاء مشروع PDCA جديد
+window.createNewPDCA = function() {
+    let filterEl = document.getElementById('kkGlobalDeptFilter');
+    let targetDept = filterEl ? filterEl.value : 'الكل';
+
+    if(targetDept === 'الكل') {
+        let deptNames = departments.join(' أو ');
+        targetDept = prompt(`لأي قسم تريد إنشاء مشروع التحسين؟\n(${deptNames})`, departments[0]);
+        if(!targetDept || !departments.includes(targetDept)) return showToast('⚠️ يرجى إدخال اسم قسم صحيح.');
+    }
+
+    let title = prompt(`عنوان مشروع التحسين (PDCA) لقسم [${targetDept}]:\n(مثال: القضاء على توقف طلمبة الرفع)`);
+    if(!title) return;
+
+    let pdcaObj = {
+        id: uniqueNumericId().toString(),
+        title: sanitizeInput(title),
+        dept: targetDept,
+        status: 'Plan',
+        owner: currentUser.name || 'مجهول',
+        date: new Date().toLocaleDateString('ar-EG')
+    };
+
+    // تحديث الواجهة فوراً (Optimistic UI)
+    pdcaData.push(pdcaObj);
+    renderKKDashboard();
+
+    syncRecord('pdca/' + pdcaObj.id, pdcaObj);
+    awardPoints(15, 'إطلاق مشروع تحسين PDCA');
+    showToast('تم إطلاق مشروع التحسين بنجاح 🚀');
+};
+
+// 4. تحديث حالة الـ PDCA أو حذفه
+window.updatePDCAStatus = function(id, newStatus) {
+    let p = pdcaData.find(x => x.id == id);
+    if(p) {
+        p.status = newStatus;
+        syncRecord('pdca/' + id, p);
+        if(newStatus === 'Act') awardPoints(20, 'اعتماد وتنميط تحسين (Act)');
+    }
+};
+window.deletePDCA = function(id) {
+    if(confirm('هل أنت متأكد من حذف هذا المشروع نهائياً؟')) {
+        deleteRecord('pdca/' + id);
+        showToast('تم مسح المشروع 🗑️');
+    }
+};
+
+// 5. تسجيل فقد جديد
 window.openLossRegistration = function(lossId, lossName) {
-    let filterEl = document.getElementById('kkDeptFilter');
-    let selectedDept = filterEl ? filterEl.value : 'الكل';
+    let filterEl = document.getElementById('kkGlobalDeptFilter');
+    let targetDept = filterEl ? filterEl.value : 'الكل';
     
-    let targetDept = selectedDept;
     if(targetDept === 'الكل') {
         let deptNames = departments.join(' أو ');
         targetDept = prompt(`لأي قسم تريد تسجيل هذا الفقد؟\n(${deptNames})`, departments[0]);
-        if(!targetDept || !departments.includes(targetDept)) {
-            return showToast('⚠️ يرجى إدخال اسم قسم صحيح مطابق للمصنع.');
-        }
+        if(!targetDept || !departments.includes(targetDept)) return showToast('⚠️ يرجى إدخال اسم قسم صحيح.');
     }
 
     let mins = prompt(`تسجيل فقد لـ [${targetDept}]:\nنوع الفقد: ${lossName}\n\nأدخل مدة التوقف (بالدقائق):`);
@@ -2611,42 +2702,38 @@ window.openLossRegistration = function(lossId, lossName) {
             user: currentUser.name || 'مجهول'
         };
         
-        // التحديث الفوري للواجهة
         registeredLosses.push(lossObj);
         renderKKDashboard(); 
-
-        // إرسال البيانات للسيرفر
         syncRecord('losses/' + lossObj.id, lossObj); 
         
         awardPoints(5, 'تحليل وتسجيل فقد توقف');
-        showToast(`✅ تم تسجيل ${parsedMins} دقيقة لقسم ${targetDept} بنجاح.`);
+        showToast(`✅ تم تسجيل ${parsedMins} دقيقة لقسم ${targetDept}.`);
     } else if (mins) {
         showToast('⚠️ يرجى إدخال رقم صحيح للدقائق');
     }
 };
 
-// 4. دالة بدء المراجعة لفريق التحسين
+// 6. دالة المراجعة (بنية تحتية للمرحلة القادمة)
 window.startKKAudit = function() {
     const selectedDept = document.getElementById('kkAuditDeptSelect').value;
     if(!selectedDept) return showToast('يرجى اختيار القسم أولاً');
-    
     showToast(`تم تجهيز بيئة المراجعة لقسم: ${selectedDept}. جاري برمجة نموذج الأسئلة في التحديث القادم! 🚀`);
 };
 
-// 5. دالة تحديث كافة قوائم الأقسام المنسدلة في النظام
+// 7. تحديث القوائم المنسدلة للأقسام
+const originalUpdateDeptDropdown = window.updateDeptDropdown;
 window.updateDeptDropdown = function() {
+    if(typeof originalUpdateDeptDropdown === 'function') originalUpdateDeptDropdown();
+    
     let opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
     
-    // تحديث أي قائمة منسدلة عادية تحتوي على كلمة Dept
-    document.querySelectorAll('select').forEach(s => {
-        if(s.id.includes('Dept') && s.id !== 'kkDeptFilter') s.innerHTML = opts;
-    });
+    const kkAuditSelect = document.getElementById('kkAuditDeptSelect');
+    if(kkAuditSelect) kkAuditSelect.innerHTML = opts;
 
-    // تحديث فلتر الأقسام الخاص بشجرة الفواقد (يحتوي على خيار 'الكل')
-    const kkFilter = document.getElementById('kkDeptFilter');
-    if(kkFilter) {
-        let currentVal = kkFilter.value;
-        kkFilter.innerHTML = `<option value="الكل">🏭 جميع الأقسام</option>` + opts;
-        kkFilter.value = currentVal || 'الكل'; 
+    const kkGlobalFilter = document.getElementById('kkGlobalDeptFilter');
+    if(kkGlobalFilter) {
+        let currentVal = kkGlobalFilter.value;
+        kkGlobalFilter.innerHTML = `<option value="الكل">🏭 جميع الأقسام</option>` + opts;
+        kkGlobalFilter.value = currentVal || 'الكل'; 
     }
 };

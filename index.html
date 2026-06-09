@@ -345,52 +345,7 @@
 </div>
 
     
- <div class="container screen" id="deptDashboardScreen">
-        <div class="sticky-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid rgba(212,175,55,0.3);">
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
-                <button class="btn btn-sm btn-success btn-role-auditor" onclick="startNewAuditFlow()">📝 مراجعة القسم</button>
-            </div>
-            <h2 id="deptViewTitle" style="color:var(--gold); margin:0; font-size:16px;">اسم القسم</h2>
-        </div>
-        <div class="dashboard-stats modern-stats">
-            <div class="card stat-card glass-card">
-                <div class="stat-value primary-text" id="deptAvgScore">0%</div>
-                <div class="stat-label">كفاءة JH الأخيرة</div>
-            </div>
-            <div class="card stat-card glass-card">
-                <div class="stat-value danger-text" id="deptOpenTags">0</div>
-                <div class="stat-label">أعطال نشطة</div>
-            </div>
-            <div class="card stat-card glass-card">
-                <div class="stat-value success-text" id="deptTasksCount">0</div>
-                <div class="stat-label">مهام مفتوحة</div>
-            </div>
-        </div>
 
-        <div class="row-flex" style="flex-wrap: wrap; gap: 15px; margin-top:20px;">
-            <div class="card glass-card flex-1" style="min-width:280px; padding:20px;">
-                <h4 class="card-title" style="font-size:13px; text-align:center; color:var(--gold);">🕸️ رادار توازن خطوات JH</h4>
-                <div style="height:250px; width:100%;"><canvas id="deptRadarChart"></canvas></div>
-            </div>
-
-            <div class="card glass-card flex-1" style="min-width:280px; padding:20px;">
-                <h4 class="card-title" style="font-size:13px; text-align:center; color:var(--success);">📈 منحنى تطور الأداء التاريخي</h4>
-                <div style="height:250px; width:100%;"><canvas id="deptTrendChart"></canvas></div>
-            </div>
-        </div>
-
-        <h3 class="section-title">🚨 تنبيهات الأعطال والتحسينات</h3>
-        <div id="deptActionItems" style="margin-top:10px; padding-bottom:30px;"></div>
-    </div>
-    <div class="container screen" id="setupScreen">
-        <div class="card">
-            <h3 class="card-title">تكوين المراجعة</h3>
-            <div class="form-group"><label>القسم:</label><select class="form-control" id="selectDept"></select></div>
-            <div class="form-group"><label>الماكينة (اختياري):</label><input type="text" id="setupMachine" class="form-control" placeholder="مثال: خط التعبئة 1"></div>
-            <button class="btn btn-success full-width" onclick="initAuditSequential()">بدء الفحص</button>
-        </div>
-    </div>
 
 <div class="container screen" id="auditScreen">
         <div class="card sticky-header" style="padding:20px; background: #0f172a; border-radius: 24px; border: 2px solid var(--primary-light); box-shadow: 0 10px 30px rgba(15,23,42,0.2);">
@@ -721,89 +676,55 @@
     </div>
 </div> 
     
-    <div class="container screen" id="settingsScreen">
-<div style="margin-top:20px; padding:0 5px;">
-            <button class="btn btn-primary full-width shadow-btn" style="background: linear-gradient(135deg, #1E3A8A, #3B82F6); color:#fff; padding:18px; border-radius:16px; font-size:16px; display:flex; align-items:center; justify-content:center; gap:12px; border:none; box-shadow: 0 10px 25px rgba(30,58,138,0.3);" onclick="openMyFullProfile()">
-                <span style="font-size:24px;">🛡️</span>
-                <b style="font-weight:900; letter-spacing:0.5px;">دخول مركز القيادة الشخصي</b>
-            </button>
+  <div id="settingsScreen" class="screen">
+    <div style="padding: 20px;">
+        <h2 style="color: var(--gold); margin-bottom: 20px; font-weight: 900;">مركز القيادة والإعدادات</h2>
+
+        <div class="card glass-card" style="padding: 20px; text-align: center; border-top: 4px solid var(--primary);">
+            <img id="settingsAvatar" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--gold); margin-bottom: 10px; background: #fff;">
+            <h3 id="settingsUserName" style="margin: 0; color: var(--text-main);">جاري التحميل...</h3>
+            <div id="settingsUserRole" style="font-size: 12px; color: var(--gold); font-weight: bold; margin-top: 5px;">...</div>
+            <div id="settingsUserPoints" style="font-size: 11px; color: var(--success); margin-top: 5px; font-weight: 900;">0 نقطة</div>
         </div>
 
-        <div class="card glass-card" style="text-align:center; padding:40px 20px 25px; position:relative; overflow:visible; margin-top:45px; border-top: none;">
-            <div style="position:absolute; top:-40px; left:50%; transform:translateX(-50%);">
-                <div style="position:relative; width:95px; height:95px;">
-                    <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=1E3A8A&color=ffffff" style="width:100%; height:100%; border-radius:30%; object-fit:cover; border:4px solid #ffffff; background:#f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.15); transform: rotate(-5deg); transition: 0.3s;" onmouseover="this.style.transform='rotate(0deg) scale(1.05)'" onmouseout="this.style.transform='rotate(-5deg) scale(1)'">
-                    <label class="edit-badge">
-                        ✏️<input type="file" accept="image/*" style="display:none;" onchange="updateProfilePic(event)">
-                    </label>
-                </div>
-            </div>
-            <div style="margin-top:25px;">
-                <h2 id="profileName" style="color:#111827; margin:0; font-size:22px; font-weight:900;">اسم المستخدم</h2>
-                <div id="profileRoleBadge" style="display:inline-block; background:#DBEAFE; color:#1E3A8A; border:1px solid #93C5FD; padding:6px 18px; border-radius:50px; font-size:12px; font-weight:900; margin-top:10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">دور المستخدم</div>
-            </div>
+        <div class="card glass-card" style="padding: 20px; margin-top: 20px;">
+            <h4 style="color: var(--text-main); margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">✏️ تحديث البيانات الميدانية</h4>
+            
+            <label style="font-size: 11px; color: var(--text-muted);">الاسم بالكامل</label>
+            <input type="text" id="editName" class="form-control" placeholder="اسمك">
+            
+            <label style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">رقم الهاتف (للتواصل السريع)</label>
+            <input type="text" id="editPhone" class="form-control" placeholder="رقم الموبايل">
+            
+            <label style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">القسم الحالي</label>
+            <select id="editDept" class="form-control"></select>
+            
+            <button class="btn btn-primary full-width" style="margin-top: 15px;" onclick="savePersonalData()">💾 حفظ التحديثات</button>
         </div>
 
-        <div class="settings-tabs">
-            <button class="tab-btn active" onclick="switchSettingsTab('my-activity')">📊 نشاطي</button>
-            <button class="tab-btn btn-role-admin" onclick="switchSettingsTab('factory-manage')">🏭 الإدارة</button>
-            <button class="tab-btn btn-role-admin" onclick="switchSettingsTab('system-admin')">⚙️ السيستم</button>
-        </div>
-
-        <div id="tab-my-activity" class="settings-tab-content active">
-            <h4 class="section-title">📊 سجل تفاعلي</h4>
-            <div class="dashboard-stats modern-stats">
-                <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value" id="myAudits">0</div><div class="stat-label">مراجعاتي</div></div>
-                <div class="card stat-card glass-card" style="border-color:var(--danger);"><div class="stat-value" id="myTags">0</div><div class="stat-label">تاجاتي</div></div>
-                <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value" id="myKaizens">0</div><div class="stat-label">كايزن</div></div>
+        <div class="card glass-card" style="padding: 20px; margin-top: 20px;">
+            <h4 style="color: var(--text-main); margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">🎛️ إعدادات النظام</h4>
+            
+            <div class="row-flex" style="justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span style="font-size: 13px;">الوضع الليلي (مريح للعين)</span>
+                <button class="btn btn-sm btn-outline" style="border-radius: 20px; width: auto;" onclick="toggleDarkMode()">تبديل 🌙/☀️</button>
             </div>
-            <button class="btn btn-outline full-width" onclick="toggleDarkMode()">🌗 وضع القراءة (ليلي/نهاري)</button>
-        </div>
-
-        <div id="tab-factory-manage" class="settings-tab-content">
-            <h4 class="section-title" style="color:var(--gold);">🏗️ هيكل الأقسام</h4>
-            <div class="card glass-card">
-                <div class="row-flex" style="margin-bottom:15px;">
-                    <input type="text" id="newDeptInput" class="form-control flex-2" placeholder="اسم القسم الجديد" style="margin:0;">
-                    <button class="btn btn-primary flex-1" onclick="addOrUpdateDept()">➕ إضافة</button>
-                </div>
-                <div id="managedDeptsList" style="max-height:200px; overflow-y:auto;">
-                    </div>
-            </div>
-
-            <h4 class="section-title" style="color:var(--warning);">🛠️ فريق الصيانة</h4>
-            <div class="card glass-card">
-                <div class="row-flex" style="margin-bottom:10px;">
-                    <input type="text" id="newEngName" class="form-control flex-1" placeholder="الاسم" style="margin:0;">
-                    <input type="tel" id="newEngPhone" class="form-control flex-1" placeholder="واتساب" style="margin:0;">
-                    <button class="btn btn-warning" onclick="addEngineer()">➕</button>
-                </div>
-                <div id="managedEngsList" style="max-height:200px; overflow-y:auto;">
-                    </div>
+            
+            <div class="row-flex" style="justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span style="font-size: 13px;">حالة الاتصال بالسيرفر</span>
+                <span id="cloudStatusSettings" style="font-size: 11px; font-weight: bold; background: rgba(46,125,50,0.2); color: var(--success); padding: 3px 8px; border-radius: 10px;">متصل 🟢</span>
             </div>
         </div>
 
-        <div id="tab-system-admin" class="settings-tab-content">
-            <h4 class="section-title" style="color:var(--danger);">🔑 مفاتيح العقل الإلكتروني</h4>
-            <div class="card glass-card">
-                <input type="password" id="imgbbKeyInput" class="form-control" placeholder="مفتاح ImgBB">
-                <input type="password" id="geminiKeyInput" class="form-control" placeholder="مفتاح Gemini AI">
-                <div class="row-flex">
-                    <button class="btn btn-primary flex-2" onclick="saveApiKeys()">💾 حفظ</button>
-                    <button class="btn btn-outline flex-1" onclick="enableApiKeysEdit()">✏️ تعديل</button>
-                </div>
-            </div>
-
-            <h4 class="section-title">👥 إدارة المستخدمين</h4>
-            <div id="usersListContainer"></div>
-
-            <h4 class="section-title">📂 البيانات والنسخ</h4>
-            <button class="btn btn-success full-width" onclick="exportToCSV()">📊 تصدير Excel كامل</button>
+        <div style="margin-top: 30px;">
+            <button class="btn btn-danger full-width" onclick="logout()" style="font-size: 16px; font-weight: bold;">🚪 تسجيل خروج</button>
         </div>
-
-        <button class="btn btn-danger full-width shadow-btn" style="margin-top:30px; border-radius:15px;" onclick="logout()">تسجيل الخروج 🚪</button>
+        
+        <div style="text-align: center; margin-top: 20px; color: var(--text-muted); font-size: 10px;">
+            TPM Enterprise OS v5.0<br>Architected by Eng. Mohamed Fayez
+        </div>
     </div>
-
+</div>
    
 <div class="container screen" id="pmScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">

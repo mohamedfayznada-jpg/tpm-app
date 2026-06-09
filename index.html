@@ -904,8 +904,15 @@
             </div>
         </div>
 
-        <div id="kkTab-lossTree" class="kk-tab-content">
-            <h3 class="section-title" style="color:var(--danger); border-color:var(--danger); font-size:14px;">رصد الخسائر والـ 8 فواقد الكبرى</h3>
+       <div id="kkTab-lossTree" class="kk-tab-content">
+            <div class="row-flex" style="justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(220, 38, 38, 0.2); padding-bottom: 10px;">
+                <h3 class="section-title" style="color:var(--danger); border:none; padding:0; margin:0; font-size:14px;">رصد الـ 8 فواقد الكبرى</h3>
+                
+                <select id="kkDeptFilter" class="form-control" style="width: auto; min-width: 140px; margin: 0; border: 1px solid var(--danger); font-size: 12px; font-weight: bold;" onchange="renderKKDashboard()">
+                    <option value="الكل">🏭 جميع الأقسام</option>
+                </select>
+            </div>
+            
             <div id="kkLossTreeContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;">
                 </div>
         </div>

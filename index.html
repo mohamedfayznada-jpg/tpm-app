@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TPM Enterprise System</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
     <meta name="theme-color" content="#111d33">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
@@ -949,7 +950,91 @@
             </div>
         </div>
     </div>
+<div class="modal-overlay" id="pdcaCreateModal">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; border-bottom: 2px solid var(--success); padding-bottom:10px; margin-bottom:15px;">
+                <h3 class="card-title" style="margin:0; color:var(--success);">💡 إطلاق مشروع تحسين (A3 PDCA)</h3>
+                <button class="btn btn-sm btn-danger" style="width:auto; margin:0;" onclick="document.getElementById('pdcaCreateModal').style.display='none'">X</button>
+            </div>
+            
+            <div class="form-group"><label>عنوان المشروع (المشكلة):</label><input type="text" id="pdcaTitle" class="form-control" placeholder="مثال: التخلص من توقفات سير التعبئة"></div>
+            
+            <div class="row-flex">
+                <div class="form-group flex-1"><label>القسم المستهدف:</label><select id="pdcaDept" class="form-control"></select></div>
+                <div class="form-group flex-1"><label>مجال التأثير (KPI):</label>
+                    <select id="pdcaImpact" class="form-control">
+                        <option value="P">الإنتاجية (Productivity)</option>
+                        <option value="Q">الجودة (Quality)</option>
+                        <option value="C">التكلفة (Cost)</option>
+                        <option value="S">السلامة (Safety)</option>
+                    </select>
+                </div>
+            </div>
 
+            <div class="row-flex" style="background:rgba(198,40,40,0.05); border:1px dashed var(--danger); padding:10px; border-radius:10px; margin-bottom:15px;">
+                <div class="form-group flex-1" style="margin:0;"><label style="color:var(--danger);">قيمة الفاقد (قبل):</label><input type="number" id="pdcaBefore" class="form-control" placeholder="رقم فقط (مثال: 50)"></div>
+                <div class="form-group flex-1" style="margin:0;"><label style="color:var(--success);">الهدف / بعد التحسين:</label><input type="number" id="pdcaAfter" class="form-control" placeholder="رقم فقط (مثال: 0)"></div>
+                <div class="form-group flex-1" style="margin:0;"><label>وحدة القياس:</label><input type="text" id="pdcaUnit" class="form-control" placeholder="دقيقة، قطعة، جنيه..."></div>
+            </div>
+
+            <h4 style="color:var(--gold); border-bottom:1px solid var(--copper); padding-bottom:5px;">دورة الـ PDCA بالتفصيل:</h4>
+            <div class="form-group"><label>🟡 خطط (Plan): تحليل السبب الجذري والهدف</label><textarea id="pdcaPlan" class="form-control" rows="2" placeholder="ما هو أصل المشكلة وكيف سنحلها؟"></textarea></div>
+            <div class="form-group"><label>🔵 نفذ (Do): الإجراءات المتخذة</label><textarea id="pdcaDo" class="form-control" rows="2" placeholder="ماذا تم تنفيذه على أرض الواقع؟"></textarea></div>
+            
+            <div class="upload-box success-border" style="margin-bottom:20px;">
+                <label style="color:var(--success); cursor:pointer;">📸 إرفاق صورة للمشروع (اختياري)
+                    <input type="file" style="display:none;" accept="image/*" onchange="handlePDCAImage(event)">
+                </label>
+                <div id="pdcaImgPreview" style="text-align:center; font-size:11px; margin-top:5px; color:var(--text-main);"></div>
+            </div>
+
+            <button class="btn btn-success full-width shadow-btn" onclick="saveNewPDCA()">🚀 حفظ وإطلاق المشروع</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="pdcaViewModal">
+        <div class="modal-content" style="max-width: 800px; background: #0f172a; border: 1px solid var(--gold); box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--gold); padding-bottom:10px; margin-bottom:20px;">
+                <h3 id="viewPdcaTitle" style="margin:0; color:var(--gold); font-weight:900;">عنوان المشروع</h3>
+                <button class="btn btn-sm btn-danger" style="width:auto; margin:0;" onclick="document.getElementById('pdcaViewModal').style.display='none'">إغلاق X</button>
+            </div>
+
+            <div class="row-flex" style="flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+                <div class="card flex-1" style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border-right:4px solid var(--primary);">
+                    <div style="font-size:11px; color:#cbd5e1;">القسم المستهدف: <b id="viewPdcaDept" style="color:#fff;">--</b></div>
+                    <div style="font-size:11px; color:#cbd5e1; margin-top:5px;">مجال التأثير: <b id="viewPdcaImpact" style="color:var(--success);">--</b></div>
+                    <div style="font-size:11px; color:#cbd5e1; margin-top:5px;">قائد المشروع: <b id="viewPdcaOwner" style="color:var(--gold);">--</b></div>
+                </div>
+
+                <div class="card flex-2" style="background:rgba(0,0,0,0.3); padding:10px; border-radius:12px; height:150px; position:relative;">
+                    <canvas id="pdcaChart"></canvas>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+                <div style="background:rgba(234, 179, 8, 0.1); border:1px solid #eab308; padding:15px; border-radius:10px;">
+                    <h4 style="margin:0 0 10px; color:#eab308;">🟡 P - خطط (Plan)</h4>
+                    <div id="viewPdcaPlan" style="font-size:13px; color:#cbd5e1; line-height:1.6;"></div>
+                </div>
+                <div style="background:rgba(59, 130, 246, 0.1); border:1px solid #3b82f6; padding:15px; border-radius:10px;">
+                    <h4 style="margin:0 0 10px; color:#3b82f6;">🔵 D - نفذ (Do)</h4>
+                    <div id="viewPdcaDo" style="font-size:13px; color:#cbd5e1; line-height:1.6;"></div>
+                </div>
+                <div style="background:rgba(249, 115, 22, 0.1); border:1px solid #f97316; padding:15px; border-radius:10px;">
+                    <h4 style="margin:0 0 10px; color:#f97316;">🟠 C - تحقق (Check)</h4>
+                    <div id="viewPdcaCheck" style="font-size:13px; color:#cbd5e1; line-height:1.6;"></div>
+                </div>
+                <div style="background:rgba(34, 197, 94, 0.1); border:1px solid #22c55e; padding:15px; border-radius:10px;">
+                    <h4 style="margin:0 0 10px; color:#22c55e;">🟢 A - اعتمد (Act)</h4>
+                    <div id="viewPdcaAct" style="font-size:13px; color:#cbd5e1; line-height:1.6;"></div>
+                </div>
+            </div>
+
+            <div id="viewPdcaImgContainer" style="text-align:center; display:none;">
+                <img id="viewPdcaImg" src="" style="max-width:100%; max-height:250px; border-radius:10px; border:2px solid var(--gold);">
+            </div>
+        </div>
+    </div>
     <script type="module" src="js/main.js"></script>
     <script src="app.js" defer></script>  
 </body>

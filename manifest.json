@@ -1,21 +1,19 @@
 {
-  "name": "TPM Enterprise System",
-  "short_name": "إدارة TPM",
-  "description": "نظام إدارة المراجعات والصيانة الشاملة",
-  "start_url": "./index.html",
+  "name": "الصيانة الإنتاجية الشاملة - TPM",
+  "short_name": "TPM OS",
+  "description": "نظام إدارة الصيانة والمراجعات الذكي",
+  "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#F5F5F5",
-  "theme_color": "#1565C0",
-  "dir": "rtl",
-  "lang": "ar",
+  "background_color": "#111d33",
+  "theme_color": "#d4af37",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "/icon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icon.png",
+      "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }

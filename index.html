@@ -977,10 +977,27 @@
                 <div class="form-group flex-1" style="margin:0;"><label>وحدة القياس:</label><input type="text" id="pdcaUnit" class="form-control" placeholder="دقيقة، قطعة، جنيه..."></div>
             </div>
 
-            <h4 style="color:var(--gold); border-bottom:1px solid var(--copper); padding-bottom:5px;">دورة الـ PDCA بالتفصيل:</h4>
-            <div class="form-group"><label>🟡 خطط (Plan): تحليل السبب الجذري والهدف</label><textarea id="pdcaPlan" class="form-control" rows="2" placeholder="ما هو أصل المشكلة وكيف سنحلها؟"></textarea></div>
-            <div class="form-group"><label>🔵 نفذ (Do): الإجراءات المتخذة</label><textarea id="pdcaDo" class="form-control" rows="2" placeholder="ماذا تم تنفيذه على أرض الواقع؟"></textarea></div>
+           <h4 style="color:var(--gold); border-bottom:1px solid var(--copper); padding-bottom:5px; margin-top:15px;">دورة الـ PDCA بالتفصيل:</h4>
             
+            <div style="background:rgba(234, 179, 8, 0.05); border-right:3px solid #eab308; padding:10px; margin-bottom:10px; border-radius:5px;">
+                <label style="color:#eab308; font-weight:bold; font-size:12px;">🟡 خطط (Plan): تحليل السبب الجذري والهدف</label>
+                <textarea id="pdcaPlan" class="form-control" rows="2" placeholder="ما هو أصل المشكلة وكيف سنحلها؟" style="margin-top:5px;"></textarea>
+            </div>
+            
+            <div style="background:rgba(59, 130, 246, 0.05); border-right:3px solid #3b82f6; padding:10px; margin-bottom:10px; border-radius:5px;">
+                <label style="color:#3b82f6; font-weight:bold; font-size:12px;">🔵 نفذ (Do): الإجراءات المتخذة</label>
+                <textarea id="pdcaDo" class="form-control" rows="2" placeholder="ماذا تم تنفيذه على أرض الواقع؟" style="margin-top:5px;"></textarea>
+            </div>
+
+            <div style="background:rgba(249, 115, 22, 0.05); border-right:3px solid #f97316; padding:10px; margin-bottom:10px; border-radius:5px;">
+                <label style="color:#f97316; font-weight:bold; font-size:12px;">🟠 تحقق (Check): مراجعة النتائج</label>
+                <textarea id="pdcaCheck" class="form-control" rows="2" placeholder="هل تحققت الأهداف؟ وما هي النتائج بالأرقام؟" style="margin-top:5px;"></textarea>
+            </div>
+
+            <div style="background:rgba(34, 197, 94, 0.05); border-right:3px solid #22c55e; padding:10px; margin-bottom:15px; border-radius:5px;">
+                <label style="color:#22c55e; font-weight:bold; font-size:12px;">🟢 اعتمد (Act): التنميط والتعميم</label>
+                <textarea id="pdcaAct" class="form-control" rows="2" placeholder="كيف سنضمن عدم تكرار المشكلة؟ (تحديث خرائط، OPL، تدريب...)" style="margin-top:5px;"></textarea>
+            </div>          
             <div class="upload-box success-border" style="margin-bottom:20px;">
                 <label style="color:var(--success); cursor:pointer;">📸 إرفاق صورة للمشروع (اختياري)
                     <input type="file" style="display:none;" accept="image/*" onchange="handlePDCAImage(event)">

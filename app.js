@@ -658,81 +658,86 @@ function updateHomeDashboard() {
 let deptRadarInstance = null;
 let deptTrendInstance = null;
 
-function openDeptDashboard(dept) {
+window.openDeptDashboard = function(dept) {
     currentViewedDept = dept;
-    document.getElementById('deptViewTitle').innerText = `لوحة قيادة: ${dept}`;
     
-    // فلترة البيانات الخاصة بالقسم
-    const deptAudits = historyData.filter(h => h.dept === dept).sort((a,b) => new Date(a.date) - new Date(b.date));
+    // 1. (Poka-Yoke): التوجيه أولاً! نظهر الشاشة قبل رسم أي داتا عشان الكانفاس ياخد أبعاد
+    showScreen('deptDashboardScreen');
+    
+    // 2. تحديث العناوين والأرقام مع حماية ضد غياب العناصر
+    const titleEl = document.getElementById('deptViewTitle');
+    if(titleEl) titleEl.innerText = `لوحة قيادة: ${dept}`;
+    
+    const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen')).sort((a,b) => new Date(a.date) - new Date(b.date));
     const deptTags = tagsData.filter(t => t.dept === dept && t.status === 'open');
     const deptTasks = tasksData.filter(t => t.dept === dept && t.status !== 'done');
     
-    // 1. تحديث الأرقام
     const lastAudit = deptAudits[deptAudits.length-1];
-    document.getElementById('deptAvgScore').innerText = lastAudit ? lastAudit.totalPct + '%' : '0%';
-    document.getElementById('deptOpenTags').innerText = deptTags.length;
-    document.getElementById('deptTasksCount').innerText = deptTasks.length;
+    
+    if(document.getElementById('deptAvgScore')) document.getElementById('deptAvgScore').innerText = lastAudit ? lastAudit.totalPct + '%' : '0%';
+    if(document.getElementById('deptOpenTags')) document.getElementById('deptOpenTags').innerText = deptTags.length;
+    if(document.getElementById('deptTasksCount')) document.getElementById('deptTasksCount').innerText = deptTasks.length;
 
-   // 2. رسم رادار JH (JH Steps Radar) - تم تصحيح المسميات هنا
-    const steps = ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6']; // إضافة الشرطة (-)
-    const stepScores = steps.map(s => {
-        if (!lastAudit || !lastAudit.results[s] || lastAudit.results[s].skipped) return 0;
-        return Math.round((lastAudit.results[s].score / lastAudit.results[s].max) * 100);
-    });
+    // 3. رسم رادار خطوات الصيانة الذاتية (Safe Rendering)
+    try {
+        const steps = ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'];
+        const stepScores = steps.map(s => {
+            if (!lastAudit || !lastAudit.results[s] || lastAudit.results[s].skipped) return 0;
+            return Math.round((lastAudit.results[s].score / lastAudit.results[s].max) * 100);
+        });
 
-    const radarCtx = document.getElementById('deptRadarChart');
-    if (deptRadarInstance) deptRadarInstance.destroy();
-    deptRadarInstance = new Chart(radarCtx, {
-        type: 'radar',
-        data: {
-            labels: ['JH0', 'JH1', 'JH2', 'JH3', 'JH4', 'JH5', 'JH6'],
-            datasets: [{
-                label: 'مستوى التنفيذ %',
-                data: stepScores,
-                backgroundColor: 'rgba(212, 175, 55, 0.2)',
-                borderColor: '#d4af37',
-                pointBackgroundColor: '#b87333',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
-            plugins: { legend: { display: false } }
+        const radarCtx = document.getElementById('deptRadarChart');
+        if (radarCtx && typeof Chart !== 'undefined') {
+            if (deptRadarInstance) deptRadarInstance.destroy();
+            deptRadarInstance = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['التحضيرية', 'الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة'],
+                    datasets: [{
+                        label: 'مستوى التنفيذ %',
+                        data: stepScores,
+                        backgroundColor: 'rgba(212, 175, 55, 0.2)',
+                        borderColor: '#d4af37',
+                        pointBackgroundColor: '#b87333',
+                        borderWidth: 2
+                    }]
+                },
+                options: { scales: { r: { beginAtZero: true, max: 100, ticks: { display: false } } }, plugins: { legend: { display: false } } }
+            });
         }
-    });
+    } catch(e) { console.error("Radar Chart Error:", e); }
 
-    // 3. رسم منحنى التطور (Performance Trend)
-    const trendCtx = document.getElementById('deptTrendChart');
-    if (deptTrendInstance) deptTrendInstance.destroy();
-    deptTrendInstance = new Chart(trendCtx, {
-        type: 'line',
-        data: {
-            labels: deptAudits.slice(-5).map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]),
-            datasets: [{
-                label: 'الكفاءة %',
-                data: deptAudits.slice(-5).map(a => a.totalPct),
-                borderColor: '#2e7d32',
-                backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            scales: { y: { beginAtZero: true, max: 100 }, x: { grid: { display: false } } },
-            plugins: { legend: { display: false } }
+    // 4. رسم منحنى الأداء (Safe Rendering)
+    try {
+        const trendCtx = document.getElementById('deptTrendChart');
+        if (trendCtx && typeof Chart !== 'undefined') {
+            if (deptTrendInstance) deptTrendInstance.destroy();
+            deptTrendInstance = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: deptAudits.slice(-5).map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]),
+                    datasets: [{
+                        label: 'الكفاءة %',
+                        data: deptAudits.slice(-5).map(a => a.totalPct),
+                        borderColor: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.1)', fill: true, tension: 0.4
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
+            });
         }
-    });
+    } catch(e) { console.error("Trend Chart Error:", e); }
 
-    // 4. عرض أهم 3 تاجات مفتوحة في القسم
-    document.getElementById('deptActionItems').innerHTML = deptTags.slice(0,3).map(t => `
-        <div class="card glass-card" style="padding:12px; border-right:4px solid ${t.color==='red'?'var(--danger)':'var(--primary-light)'}; margin-bottom:10px;">
-            <div style="font-weight:bold; font-size:12px; color:var(--text-main);">${t.desc}</div>
-            <div style="font-size:10px; color:var(--text-muted); margin-top:5px;">👤 ${t.auditor} | ⚙️ ${t.machine || 'عام'}</div>
-        </div>
-    `).join('') || '<div style="text-align:center; color:var(--success); font-size:12px; padding:20px;">لا توجد أعطال حرجة في هذا القسم 🎉</div>';
-
-    showScreen('deptDashboardScreen');
-}
+    // 5. تحديث التاجات الحرجة (الأعطال التي تتطلب تدخل فوري)
+    const actionItemsEl = document.getElementById('deptActionItems');
+    if(actionItemsEl) {
+        actionItemsEl.innerHTML = deptTags.slice(0,3).map(t => `
+            <div style="background:rgba(0,0,0,0.2); padding:10px; border-right:4px solid var(--danger); border-radius:5px;">
+                <div style="font-size:12px; font-weight:bold; color:var(--text-main);">${t.desc}</div>
+                <div style="font-size:10px; color:var(--text-muted); margin-top:5px;">⚙️ ${t.machine || 'عام'} | 👤 ${t.auditor}</div>
+            </div>
+        `).join('') || '<div style="text-align:center; color:var(--success); font-size:12px;">لا توجد أعطال حرجة متوقفة بالقسم 🎉</div>';
+    }
+};
 function updateDeptDashboard() {
     if(!currentViewedDept) return;
     let machineFilter = document.getElementById('dashMachineFilter').value.trim().toLowerCase();

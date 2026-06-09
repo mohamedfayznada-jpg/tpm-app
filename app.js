@@ -2420,86 +2420,103 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-
 // ==========================================
-// ⚙️ محرك مركز القيادة (Profile & Settings)
+// ⚙️ محرك مركز القيادة المتقدم (Advanced Settings Engine)
 // ==========================================
 
+// 1. الدالة الرئيسية لفتح الشاشة (المسؤولة عن منع الشاشة البيضاء)
 window.renderProfileAndSettings = function() {
-    // 1. إظهار الشاشة
     showScreen('settingsScreen');
     
-    // 2. سحب بيانات المستخدم الحالي بأمان
+    // سحب بيانات المستخدم الحالي
     const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
     let u = usersData[uid] || currentUser;
 
-    // 3. حقن البيانات في الواجهة
-    const avatarEl = document.getElementById('settingsAvatar');
-    if(avatarEl) avatarEl.src = u.avatar || `https://ui-avatars.com/api/?name=${u.name || 'User'}&background=1b2a47&color=d4af37`;
-    
-    const nameEl = document.getElementById('settingsUserName');
+    // حقن البيانات في الهيكل الخاص بك
+    const nameEl = document.getElementById('profileName');
     if(nameEl) nameEl.innerText = u.name || 'مستخدم مجهول';
     
-    const roleEl = document.getElementById('settingsUserRole');
+    const roleEl = document.getElementById('profileRoleBadge');
     if(roleEl) {
-        let roleAr = u.role === 'admin' ? 'مدير نظام (Admin)' : (u.role === 'auditor' ? 'مراجع ميداني' : 'فني / مشغل');
-        roleEl.innerText = `الرتبة: ${roleAr}`;
+        let roleName = u.role === 'admin' ? 'مدير المصنع (Admin)' : (u.role === 'auditor' ? 'مراجع TPM' : 'فني صيانة');
+        roleEl.innerText = `الرتبة: ${roleName}`;
     }
     
-    const ptsEl = document.getElementById('settingsUserPoints');
-    if(ptsEl) ptsEl.innerText = `${userPoints[uid] || 0} نقطة تقييم`;
+    const avatarEl = document.getElementById('profileAvatar');
+    if(avatarEl) avatarEl.src = u.avatar || `https://ui-avatars.com/api/?name=${u.name || 'User'}&background=1E3A8A&color=ffffff`;
 
-    // 4. تعبئة فورم التعديل
-    if(document.getElementById('editName')) document.getElementById('editName').value = u.name || '';
-    if(document.getElementById('editPhone')) document.getElementById('editPhone').value = u.phone || '';
-    
-    // 5. تحديث قائمة الأقسام
-    const deptSelect = document.getElementById('editDept');
-    if(deptSelect) {
-        deptSelect.innerHTML = departments.map(d => `<option value="${d}" ${u.dept === d ? 'selected' : ''}>${d}</option>`).join('');
-    }
+    // 📊 حساب تفاعلات المستخدم (TPM Metrics)
+    // بنفلتر الداتا مجاناً في المتصفح (Client-side) بدون أي تكلفة على السيرفر
+    let myAuditsCount = historyData.filter(h => h.auditor === u.name && !h.stepsOrder.includes('ManualKaizen')).length;
+    let myTagsCount = tagsData.filter(t => t.auditor === u.name).length;
+    let myKaizensCount = historyData.filter(h => h.auditor === u.name && h.stepsOrder.includes('ManualKaizen')).length;
 
-    // 6. تحديث حالة الاتصال
-    const cloudEl = document.getElementById('cloudStatusSettings');
-    if(cloudEl) {
-        cloudEl.innerHTML = isOnline ? 'متصل 🟢' : 'أوفلاين (يعمل من الكاش) 🔴';
-        cloudEl.style.color = isOnline ? 'var(--success)' : 'var(--danger)';
+    if(document.getElementById('myAudits')) document.getElementById('myAudits').innerText = myAuditsCount;
+    if(document.getElementById('myTags')) document.getElementById('myTags').innerText = myTagsCount;
+    if(document.getElementById('myKaizens')) document.getElementById('myKaizens').innerText = myKaizensCount;
+
+    // 🔐 حماية الصلاحيات (إخفاء التابات الإدارية عن العمال العاديين)
+    document.querySelectorAll('.btn-role-admin').forEach(el => {
+        el.style.display = u.role === 'admin' ? 'inline-block' : 'none';
+    });
+
+    // تشغيل التابة الأولى افتراضياً
+    if(typeof switchSettingsTab === 'function') {
+        switchSettingsTab('my-activity');
     }
 };
 
-window.savePersonalData = async function() {
-    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
-    if(!uid) return showToast('خطأ: غير مسجل الدخول');
+// 2. دالة التبديل بين التابات (Tabs Navigation)
+window.switchSettingsTab = function(tabId) {
+    // إخفاء كل المحتوى
+    document.querySelectorAll('.settings-tab-content').forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none'; // تأكيد الإخفاء
+    });
+    // إزالة اللون من كل الأزرار
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    
+    // إظهار التابة المطلوبة
+    const targetTab = document.getElementById('tab-' + tabId);
+    if(targetTab) {
+        targetTab.classList.add('active');
+        targetTab.style.display = 'block';
+    }
+    
+    // تلوين الزرار المضغوط
+    if(event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
+};
 
-    const newName = document.getElementById('editName').value.trim();
-    const newPhone = document.getElementById('editPhone').value.trim();
-    const newDept = document.getElementById('editDept').value;
+// 3. دالة زر "دخول مركز القيادة الشخصي"
+window.openMyFullProfile = function() {
+    // توجيه ذكي لنفس الشاشة لضمان تحديث البيانات
+    renderProfileAndSettings();
+    showToast('تم فتح مركز القيادة بنجاح 🛡️');
+};
 
-    if(!newName) return showToast('⚠️ الاسم بالكامل مطلوب');
-
-    showToast('جاري تحديث هويتك الميدانية... ⏳');
+// 4. دالة تغيير الصورة الشخصية (مضادة للأعطال)
+window.updateProfilePic = async function(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+    
+    showToast('جاري تحديث الصورة... ⏳');
     try {
-        await db.ref(`tpm_system/users/${uid}`).update({
-            name: newName,
-            phone: newPhone,
-            dept: newDept
+        // نستخدم الدالة المجانية بتاعتنا لضغط ورفع الصورة
+        processAndEnhanceImage(file, async function(dataUrl) {
+            const url = await uploadImageToStorage(dataUrl); // ترسل لـ Vercel
+            if(url) {
+                const uid = firebase.auth().currentUser.uid;
+                await db.ref(`tpm_system/users/${uid}`).update({ avatar: url });
+                document.getElementById('profileAvatar').src = url;
+                showToast('تم تحديث الصورة ✅');
+            } else {
+                showToast('⚠️ فشل رفع الصورة');
+            }
         });
-
-        currentUser.name = newName;
-        localStorage.setItem('tpm_user', newName);
-        
-        showToast('تم التحديث بنجاح ✅');
-        renderProfileAndSettings(); // إعادة رسم الشاشة بالبيانات الجديدة
     } catch(e) {
-        showToast('⚠️ فشل التحديث، تأكد من الاتصال');
-    }
-};
-
-window.logout = function() {
-    if(confirm("هل أنت متأكد من تسجيل الخروج من ورديتك؟")) {
-        firebase.auth().signOut().then(() => { 
-            localStorage.removeItem('tpm_user');
-            window.location.reload(); 
-        });
+        console.error(e);
+        showToast('حدث خطأ أثناء الرفع');
     }
 };

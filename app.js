@@ -2520,3 +2520,53 @@ window.updateProfilePic = async function(event) {
         showToast('حدث خطأ أثناء الرفع');
     }
 };
+// ==========================================
+// 📉 محرك ركيزة التحسين المستمر المطور (KK Pillar Engine)
+// ==========================================
+
+// 1. دالة التبديل بين شاشات الـ KK الداخلية
+window.switchKKTab = function(tabId, btnElement) {
+    // إخفاء كل المحتوى
+    document.querySelectorAll('.kk-tab-content').forEach(c => c.style.display = 'none');
+    // إزالة الشفافية من كل الأزرار
+    document.querySelectorAll('.kk-nav-btn').forEach(b => b.style.opacity = '0.5');
+    
+    // إظهار المحتوى المطلوب وتنشيط الزر
+    const targetTab = document.getElementById('kkTab-' + tabId);
+    if(targetTab) targetTab.style.display = 'block';
+    if(btnElement) btnElement.style.opacity = '1';
+};
+
+// 2. تحديث عدد مشاريع الكايزن في لوحة الـ KK
+// هنعمل Hook على دالة الـ render الأصلية عشان تحدث الرقم
+const originalRenderKKDashboard = window.renderKKDashboard;
+window.renderKKDashboard = function() {
+    // تشغيل الدالة الأصلية اللي بترسم الفواقد
+    if(typeof originalRenderKKDashboard === 'function') originalRenderKKDashboard();
+    
+    // تحديث عدد مشاريع التحسين (كايزن)
+    const activeKaizens = historyData.filter(h => h.stepsOrder.includes('ManualKaizen')).length;
+    const kaizenCounterEl = document.getElementById('kkActiveProjects');
+    if(kaizenCounterEl) kaizenCounterEl.innerText = activeKaizens;
+};
+
+// 3. دالة بدء المراجعة (بنية تحتية للمرحلة القادمة)
+window.startKKAudit = function() {
+    const selectedDept = document.getElementById('kkAuditDeptSelect').value;
+    if(!selectedDept) return showToast('يرجى اختيار القسم أولاً');
+    
+    // هذا تنبيه مؤقت حتى نقوم بإنشاء نموذج أسئلة الـ KK (Audits)
+    showToast(`تم تجهيز بيئة المراجعة لقسم: ${selectedDept}. جاري برمجة نموذج الأسئلة في التحديث القادم! 🚀`);
+};
+
+// 4. تحديث قائمة الأقسام في الـ KK
+const originalUpdateDeptDropdown = window.updateDeptDropdown;
+window.updateDeptDropdown = function() {
+    // تشغيل الدالة الأصلية
+    if(typeof originalUpdateDeptDropdown === 'function') originalUpdateDeptDropdown();
+    
+    // إضافة الأقسام لقائمة المراجعة في الـ KK
+    let opts = departments.map(d=>`<option value="${d}">${d}</option>`).join('');
+    const kkSelect = document.getElementById('kkAuditDeptSelect');
+    if(kkSelect) kkSelect.innerHTML = opts;
+};

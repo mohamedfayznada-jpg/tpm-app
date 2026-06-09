@@ -871,12 +871,23 @@
         <div id="jhDocListContainer"></div>
     </div>
 
-  <div id="kkScreen" class="container screen">
+ <!-- ========================================== -->
+    <!-- 📉 بوابة التحسين المستمر (Kobetsu Kaizen - KK) -->
+    <!-- ========================================== -->
+    <div id="kkScreen" class="container screen">
+        <!-- الهيدر والفلتر المركزي -->
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
-            <h2 style="color:#FFC107; margin:0; font-size:18px;">📉 التحسين المستمر (KK)</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
+                <h2 style="color:#FFC107; margin:0; font-size:18px;">📉 التحسين المستمر</h2>
+            </div>
+            <!-- الفلتر المركزي (يتحكم في كل الشاشة) -->
+            <select id="kkGlobalDeptFilter" class="form-control" style="width:auto; min-width:130px; margin:0; border:1px solid var(--gold); font-size:12px; font-weight:bold; background:rgba(212,175,55,0.1); color:var(--gold);" onchange="renderKKDashboard()">
+                <option value="الكل">🏭 جميع الأقسام</option>
+            </select>
         </div>
 
+        <!-- 1. لوحة القيادة العلوية (KPI Dashboard) -->
         <div class="dashboard-stats modern-stats" style="margin-bottom: 20px;">
             <div class="card stat-card glass-card" style="border-color:var(--danger); padding:10px;">
                 <div class="stat-value danger-text"><span id="kkTotalLossHours">0</span><small style="font-size:12px;">h</small></div>
@@ -886,46 +897,52 @@
                 <div class="stat-value success-text"><span id="kkTotalLossCost">0</span><small style="font-size:12px;">ج</small></div>
                 <div class="stat-label">النزيف المالي</div>
             </div>
-            <div class="card stat-card glass-card" style="border-color:var(--gold); padding:10px;" onclick="showScreen('kaizenScreen')" style="cursor:pointer;">
+            <div class="card stat-card glass-card" style="border-color:var(--gold); padding:10px; cursor:pointer;" onclick="switchKKTab('pdca', document.querySelectorAll('.kk-nav-btn')[1])">
                 <div class="stat-value" id="kkActiveProjects" style="color:var(--gold);">0</div>
                 <div class="stat-label">مشاريع (PDCA)</div>
             </div>
         </div>
 
+        <!-- 2. أزرار التنقل السريع (Pillar Navigation) -->
         <div class="grid-layout" style="margin-bottom:25px; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));">
             <div class="card glass-card text-center kk-nav-btn active" onclick="switchKKTab('lossTree', this)" style="border-top:4px solid var(--danger); cursor:pointer; padding:10px;">
                 <div style="font-size:24px;">🌳</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">شجرة الفواقد</div>
             </div>
-            <div class="card glass-card text-center kk-nav-btn" onclick="showScreen('kaizenScreen')" style="border-top:4px solid var(--success); cursor:pointer; padding:10px;">
-                <div style="font-size:24px;">💡</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مشاريع التحسين</div>
+            <div class="card glass-card text-center kk-nav-btn" onclick="switchKKTab('pdca', this)" style="border-top:4px solid var(--success); cursor:pointer; padding:10px; opacity:0.5;">
+                <div style="font-size:24px;">💡</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مشاريع (PDCA)</div>
             </div>
-            <div class="card glass-card text-center kk-nav-btn" onclick="switchKKTab('kkAudit', this)" style="border-top:4px solid var(--gold); cursor:pointer; padding:10px;">
+            <div class="card glass-card text-center kk-nav-btn" onclick="switchKKTab('kkAudit', this)" style="border-top:4px solid var(--gold); cursor:pointer; padding:10px; opacity:0.5;">
                 <div style="font-size:24px;">📋</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مراجعة الركيزة</div>
             </div>
         </div>
 
-       <div id="kkTab-lossTree" class="kk-tab-content">
-            <div class="row-flex" style="justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(220, 38, 38, 0.2); padding-bottom: 10px;">
-                <h3 class="section-title" style="color:var(--danger); border:none; padding:0; margin:0; font-size:14px;">رصد الـ 8 فواقد الكبرى</h3>
-                
-                <select id="kkDeptFilter" class="form-control" style="width: auto; min-width: 140px; margin: 0; border: 1px solid var(--danger); font-size: 12px; font-weight: bold;" onchange="renderKKDashboard()">
-                    <option value="الكل">🏭 جميع الأقسام</option>
-                </select>
-            </div>
-            
-            <div id="kkLossTreeContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;">
-                </div>
+        <!-- 3. محتوى التابات (Tab Contents) -->
+        
+        <!-- التابة الأولى: شجرة الفواقد -->
+        <div id="kkTab-lossTree" class="kk-tab-content">
+            <h3 class="section-title" style="color:var(--danger); border-color:var(--danger); font-size:14px;">رصد الخسائر والـ 8 فواقد الكبرى</h3>
+            <div id="kkLossTreeContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;"></div>
         </div>
 
+        <!-- التابة الثانية: مشاريع التحسين (PDCA) الجديدة -->
+        <div id="kkTab-pdca" class="kk-tab-content" style="display:none;">
+            <div class="row-flex" style="justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(46, 125, 50, 0.2); padding-bottom: 10px;">
+                <h3 class="section-title" style="color:var(--success); border:none; padding:0; margin:0; font-size:14px;">إدارة دورة التحسين (PDCA)</h3>
+                <button class="btn btn-sm btn-success" style="width:auto; margin:0;" onclick="createNewPDCA()">➕ مشروع جديد</button>
+            </div>
+            <div id="kkPdcaContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+
+        <!-- التابة الثالثة: مراجعة فريق الـ KK -->
         <div id="kkTab-kkAudit" class="kk-tab-content" style="display:none;">
             <h3 class="section-title" style="color:var(--gold); border-color:var(--gold); font-size:14px;">تقييم ونضج فريق الـ KK</h3>
             <div class="card glass-card" style="padding:20px;">
                 <div style="text-align:center; font-size:40px; margin-bottom:10px;">📊</div>
                 <p style="font-size:12px; color:var(--text-muted); margin-bottom:20px; text-align:center; line-height:1.6;">
-                    نموذج المراجعة الخاص بفرق التحسين المستمر.<br>سيتم إدراج أسئلة تقييم (OEE Analysis, PDCA Cycle, Why-Why Analysis) قريباً.
+                    نموذج المراجعة الخاص بفرق التحسين المستمر.<br>سيتم إدراج أسئلة تقييم (OEE, PDCA, Why-Why) هنا قريباً.
                 </p>
                 <div class="form-group">
-                    <label style="color:var(--gold); font-size:12px; font-weight:bold;">اختر القسم للمراجعة:</label>
+                    <label style="color:var(--gold); font-size:12px; font-weight:bold;">القسم المستهدف:</label>
                     <select id="kkAuditDeptSelect" class="form-control" style="border:1px solid var(--gold);"></select>
                 </div>
                 <button class="btn btn-warning full-width shadow-btn" style="font-size:15px; padding:12px; font-weight:bold;" onclick="startKKAudit()">🚀 بدء مراجعة الـ KK</button>

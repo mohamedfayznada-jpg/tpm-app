@@ -2419,3 +2419,87 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
+
+// ==========================================
+// ⚙️ محرك مركز القيادة (Profile & Settings)
+// ==========================================
+
+window.renderProfileAndSettings = function() {
+    // 1. إظهار الشاشة
+    showScreen('settingsScreen');
+    
+    // 2. سحب بيانات المستخدم الحالي بأمان
+    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
+    let u = usersData[uid] || currentUser;
+
+    // 3. حقن البيانات في الواجهة
+    const avatarEl = document.getElementById('settingsAvatar');
+    if(avatarEl) avatarEl.src = u.avatar || `https://ui-avatars.com/api/?name=${u.name || 'User'}&background=1b2a47&color=d4af37`;
+    
+    const nameEl = document.getElementById('settingsUserName');
+    if(nameEl) nameEl.innerText = u.name || 'مستخدم مجهول';
+    
+    const roleEl = document.getElementById('settingsUserRole');
+    if(roleEl) {
+        let roleAr = u.role === 'admin' ? 'مدير نظام (Admin)' : (u.role === 'auditor' ? 'مراجع ميداني' : 'فني / مشغل');
+        roleEl.innerText = `الرتبة: ${roleAr}`;
+    }
+    
+    const ptsEl = document.getElementById('settingsUserPoints');
+    if(ptsEl) ptsEl.innerText = `${userPoints[uid] || 0} نقطة تقييم`;
+
+    // 4. تعبئة فورم التعديل
+    if(document.getElementById('editName')) document.getElementById('editName').value = u.name || '';
+    if(document.getElementById('editPhone')) document.getElementById('editPhone').value = u.phone || '';
+    
+    // 5. تحديث قائمة الأقسام
+    const deptSelect = document.getElementById('editDept');
+    if(deptSelect) {
+        deptSelect.innerHTML = departments.map(d => `<option value="${d}" ${u.dept === d ? 'selected' : ''}>${d}</option>`).join('');
+    }
+
+    // 6. تحديث حالة الاتصال
+    const cloudEl = document.getElementById('cloudStatusSettings');
+    if(cloudEl) {
+        cloudEl.innerHTML = isOnline ? 'متصل 🟢' : 'أوفلاين (يعمل من الكاش) 🔴';
+        cloudEl.style.color = isOnline ? 'var(--success)' : 'var(--danger)';
+    }
+};
+
+window.savePersonalData = async function() {
+    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
+    if(!uid) return showToast('خطأ: غير مسجل الدخول');
+
+    const newName = document.getElementById('editName').value.trim();
+    const newPhone = document.getElementById('editPhone').value.trim();
+    const newDept = document.getElementById('editDept').value;
+
+    if(!newName) return showToast('⚠️ الاسم بالكامل مطلوب');
+
+    showToast('جاري تحديث هويتك الميدانية... ⏳');
+    try {
+        await db.ref(`tpm_system/users/${uid}`).update({
+            name: newName,
+            phone: newPhone,
+            dept: newDept
+        });
+
+        currentUser.name = newName;
+        localStorage.setItem('tpm_user', newName);
+        
+        showToast('تم التحديث بنجاح ✅');
+        renderProfileAndSettings(); // إعادة رسم الشاشة بالبيانات الجديدة
+    } catch(e) {
+        showToast('⚠️ فشل التحديث، تأكد من الاتصال');
+    }
+};
+
+window.logout = function() {
+    if(confirm("هل أنت متأكد من تسجيل الخروج من ورديتك؟")) {
+        firebase.auth().signOut().then(() => { 
+            localStorage.removeItem('tpm_user');
+            window.location.reload(); 
+        });
+    }
+};

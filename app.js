@@ -2526,47 +2526,127 @@ window.updateProfilePic = async function(event) {
 
 // 1. دالة التبديل بين شاشات الـ KK الداخلية
 window.switchKKTab = function(tabId, btnElement) {
-    // إخفاء كل المحتوى
     document.querySelectorAll('.kk-tab-content').forEach(c => c.style.display = 'none');
-    // إزالة الشفافية من كل الأزرار
     document.querySelectorAll('.kk-nav-btn').forEach(b => b.style.opacity = '0.5');
     
-    // إظهار المحتوى المطلوب وتنشيط الزر
     const targetTab = document.getElementById('kkTab-' + tabId);
     if(targetTab) targetTab.style.display = 'block';
     if(btnElement) btnElement.style.opacity = '1';
 };
 
-// 2. تحديث عدد مشاريع الكايزن في لوحة الـ KK
-// هنعمل Hook على دالة الـ render الأصلية عشان تحدث الرقم
-const originalRenderKKDashboard = window.renderKKDashboard;
+// 2. رسم لوحة الفواقد بناءً على القسم المختار
 window.renderKKDashboard = function() {
-    // تشغيل الدالة الأصلية اللي بترسم الفواقد
-    if(typeof originalRenderKKDashboard === 'function') originalRenderKKDashboard();
+    let container = document.getElementById('kkLossTreeContainer');
+    if(!container) return;
+
+    // قراءة القسم المحدد من الفلتر
+    let filterEl = document.getElementById('kkDeptFilter');
+    let selectedDept = filterEl ? filterEl.value : 'الكل';
     
-    // تحديث عدد مشاريع التحسين (كايزن)
-    const activeKaizens = historyData.filter(h => h.stepsOrder.includes('ManualKaizen')).length;
+    // تصفية الفواقد (Losses) بناءً على القسم
+    let filteredLosses = registeredLosses;
+    if (selectedDept !== 'الكل') {
+        filteredLosses = registeredLosses.filter(l => l.dept === selectedDept);
+    }
+
+    // رسم كروت الـ 8 فواقد
+    let html = tpmLosses.map(loss => {
+        let currentLossMins = filteredLosses.filter(l => l.lossId === loss.id).reduce((sum, curr) => sum + curr.minutes, 0);
+        let currentLossCost = currentLossMins * COST_PER_MINUTE; 
+        
+        let borderColor = currentLossMins > 60 ? 'var(--danger)' : (currentLossMins > 0 ? 'var(--warning)' : 'rgba(255,255,255,0.1)');
+        let shadowEffect = currentLossMins > 60 ? 'box-shadow: 0 0 15px rgba(198,40,40,0.5);' : '';
+        
+        return `
+        <div class="card glass-card" style="border-top:4px solid ${borderColor}; ${shadowEffect} text-align:center; padding:15px; cursor:pointer; transition: transform 0.2s;" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'" onclick="openLossRegistration('${loss.id}', '${loss.name}')">
+            <div style="font-size:24px; margin-bottom:5px; filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${loss.icon}</div>
+            <div style="font-size:11px; font-weight:bold; color:var(--text-main); margin-bottom:10px; height:30px;">${loss.name}</div>
+            <div style="background:rgba(0,0,0,0.3); padding:5px; border-radius:5px;">
+                <div style="font-size:11px; color:var(--text-muted);">⏱️ ${currentLossMins} دقيقة</div>
+                <div style="font-size:12px; font-weight:900; color:${currentLossCost > 0 ? 'var(--danger)' : 'var(--success)'}; margin-top:2px;">${currentLossCost.toLocaleString()} ج.م</div>
+            </div>
+        </div>`;
+    }).join('');
+    
+    container.innerHTML = html;
+
+    // تحديث العدادات العلوية الكبرى بالبيانات المفلترة فقط
+    let totalMins = filteredLosses.reduce((sum, l) => sum + l.minutes, 0);
+    let hoursEl = document.getElementById('kkTotalLossHours');
+    let costEl = document.getElementById('kkTotalLossCost');
+    
+    if(hoursEl) hoursEl.innerText = (totalMins / 60).toFixed(1);
+    if(costEl) costEl.innerText = (totalMins * COST_PER_MINUTE).toLocaleString();
+
+    // تحديث عداد مشاريع الكايزن النشطة بناءً على القسم المختار
+    const activeKaizens = historyData.filter(h => h.stepsOrder.includes('ManualKaizen') && (selectedDept === 'الكل' || h.dept === selectedDept)).length;
     const kaizenCounterEl = document.getElementById('kkActiveProjects');
     if(kaizenCounterEl) kaizenCounterEl.innerText = activeKaizens;
 };
 
-// 3. دالة بدء المراجعة (بنية تحتية للمرحلة القادمة)
+// 3. تسجيل فقد جديد مع ربطه بالقسم
+window.openLossRegistration = function(lossId, lossName) {
+    let filterEl = document.getElementById('kkDeptFilter');
+    let selectedDept = filterEl ? filterEl.value : 'الكل';
+    
+    let targetDept = selectedDept;
+    if(targetDept === 'الكل') {
+        let deptNames = departments.join(' أو ');
+        targetDept = prompt(`لأي قسم تريد تسجيل هذا الفقد؟\n(${deptNames})`, departments[0]);
+        if(!targetDept || !departments.includes(targetDept)) {
+            return showToast('⚠️ يرجى إدخال اسم قسم صحيح مطابق للمصنع.');
+        }
+    }
+
+    let mins = prompt(`تسجيل فقد لـ [${targetDept}]:\nنوع الفقد: ${lossName}\n\nأدخل مدة التوقف (بالدقائق):`);
+    
+    if(mins && !isNaN(mins) && parseInt(mins) > 0) {
+        let parsedMins = parseInt(mins);
+        let lossObj = {
+            id: uniqueNumericId().toString(),
+            lossId: lossId,
+            dept: targetDept,
+            minutes: parsedMins,
+            date: new Date().toLocaleDateString('ar-EG'),
+            user: currentUser.name || 'مجهول'
+        };
+        
+        // التحديث الفوري للواجهة
+        registeredLosses.push(lossObj);
+        renderKKDashboard(); 
+
+        // إرسال البيانات للسيرفر
+        syncRecord('losses/' + lossObj.id, lossObj); 
+        
+        awardPoints(5, 'تحليل وتسجيل فقد توقف');
+        showToast(`✅ تم تسجيل ${parsedMins} دقيقة لقسم ${targetDept} بنجاح.`);
+    } else if (mins) {
+        showToast('⚠️ يرجى إدخال رقم صحيح للدقائق');
+    }
+};
+
+// 4. دالة بدء المراجعة لفريق التحسين
 window.startKKAudit = function() {
     const selectedDept = document.getElementById('kkAuditDeptSelect').value;
     if(!selectedDept) return showToast('يرجى اختيار القسم أولاً');
     
-    // هذا تنبيه مؤقت حتى نقوم بإنشاء نموذج أسئلة الـ KK (Audits)
     showToast(`تم تجهيز بيئة المراجعة لقسم: ${selectedDept}. جاري برمجة نموذج الأسئلة في التحديث القادم! 🚀`);
 };
 
-// 4. تحديث قائمة الأقسام في الـ KK
-const originalUpdateDeptDropdown = window.updateDeptDropdown;
+// 5. دالة تحديث كافة قوائم الأقسام المنسدلة في النظام
 window.updateDeptDropdown = function() {
-    // تشغيل الدالة الأصلية
-    if(typeof originalUpdateDeptDropdown === 'function') originalUpdateDeptDropdown();
+    let opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
     
-    // إضافة الأقسام لقائمة المراجعة في الـ KK
-    let opts = departments.map(d=>`<option value="${d}">${d}</option>`).join('');
-    const kkSelect = document.getElementById('kkAuditDeptSelect');
-    if(kkSelect) kkSelect.innerHTML = opts;
+    // تحديث أي قائمة منسدلة عادية تحتوي على كلمة Dept
+    document.querySelectorAll('select').forEach(s => {
+        if(s.id.includes('Dept') && s.id !== 'kkDeptFilter') s.innerHTML = opts;
+    });
+
+    // تحديث فلتر الأقسام الخاص بشجرة الفواقد (يحتوي على خيار 'الكل')
+    const kkFilter = document.getElementById('kkDeptFilter');
+    if(kkFilter) {
+        let currentVal = kkFilter.value;
+        kkFilter.innerHTML = `<option value="الكل">🏭 جميع الأقسام</option>` + opts;
+        kkFilter.value = currentVal || 'الكل'; 
+    }
 };

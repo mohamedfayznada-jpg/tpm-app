@@ -1204,6 +1204,21 @@
             <div id="historyModalContent" style="display:flex; flex-direction:column; gap:10px;"></div>
         </div>
     </div>
+
+    <div class="modal-overlay" id="editJHRecordModal">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; border-bottom: 2px solid var(--warning); padding-bottom:10px; margin-bottom:15px;">
+                <h3 class="card-title" style="margin:0; color:var(--warning);">✏️ تعديل بيانات الخريطة</h3>
+                <button class="btn btn-sm btn-danger" style="width:auto; margin:0;" onclick="document.getElementById('editJHRecordModal').style.display='none'">X</button>
+            </div>
+            <input type="hidden" id="editJhId">
+            <input type="hidden" id="editJhType">
+            
+            <div id="editJhFormFields" style="display:flex; flex-direction:column; gap:10px;"></div>
+
+            <button class="btn btn-warning full-width shadow-btn" style="margin-top:15px; font-weight:bold; color:#000;" onclick="updateJHRecordData()">💾 حفظ التعديلات</button>
+        </div>
+    </div>
     <script type="module" src="js/main.js"></script>
     <script src="app.js" defer></script>  
 </body>

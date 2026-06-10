@@ -2223,11 +2223,14 @@ const factoryCLITData = [
   {"region": "تنك الــ POLO +C5", "part": "موتور القلاب", "operation": "تنظيف", "action": "ازالة الاتربة والتسريبات", "tools": "هواء مضغوط قماش", "frequency": "أسبوعي", "timeBefore": "20sec", "timeAfter": "20sec", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""}
 ];
 
-let currentClitFilter = 'الكل';
+// ==========================================
+// 🧠 محرك الفلاتر المتداخلة وتوليد الخرائط
+// ==========================================
+let clitSelectedZone = 'الكل';
+let clitSelectedOp = 'الكل';
+let clitSelectedFreq = 'الكل';
+let currentDocType = '';
 
-// ==========================================
-// 🧠 محرك العرض وتوليد كروت الخرائط
-// ==========================================
 function generateCLITCard(r, type) {
     let content = ''; let borderColor = 'var(--gold)'; let bgGlow = '';
 
@@ -2239,24 +2242,22 @@ function generateCLITCard(r, type) {
         else if(op.includes('فحص')) { borderColor = '#22c55e'; icon = '🔍'; bgGlow = 'rgba(34, 197, 94, 0.05)'; }
         else if(op.includes('تربيط') || op.includes('ربط')) { borderColor = '#ef4444'; icon = '🔧'; bgGlow = 'rgba(239, 68, 68, 0.05)'; }
 
-        // هنا عرضنا كل الأوقات والتفاصيل اللي استخرجناها!
         content = `
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                <b style="color:var(--text-main); font-size:14px;">${icon} ${r.region} ${r.part ? ' - ' + r.part : ''}</b>
+                <b style="color:var(--text-main); font-size:14px;">${icon} [${r.region}] ${r.part ? ' - ' + r.part : ''}</b>
                 <span style="font-size:10px; background:${borderColor}; color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${r.frequency || 'دوري'}</span>
             </div>
             <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px; line-height:1.5;">
                 <span style="color:${borderColor}; font-weight:bold;">الإجراء:</span> ${r.action || r.standard}
             </div>
-            <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor};">
+            <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor}; line-height:1.6;">
                 <b>🎯 المعيار / الحالة المثلى:</b> ${r.optimalState || r.standard || 'حسب المواصفة'}<br>
                 ${r.degradation ? `<b>⚠️ حالة التدهور المتوقعة:</b> <span style="color:var(--danger);">${r.degradation}</span><br>` : ''}
                 <b>🛠️ الأدوات وموقف الماكينة:</b> ${r.tools || 'يدوي'} | <span style="color:var(--warning); font-weight:bold;">${r.machineState || 'مجهول'}</span><br>
-                <b>⏱️ الزمن المطلوب (قبل/بعد التحسين):</b> ${r.timeBefore || '-'} / <span style="color:var(--success); font-weight:bold;">${r.timeAfter || '-'}</span>
+                <b>⏱️ الزمن (قبل/بعد):</b> ${r.timeBefore || '-'} / <span style="color:var(--success); font-weight:bold;">${r.timeAfter || '-'}</span>
             </div>
         `;
     } 
-    // باقي التصنيفات (تلوث، أمان، الخ..)
     else if(type === 'Contamination') {
         borderColor = '#795548'; bgGlow = 'rgba(121, 85, 72, 0.05)';
         content = `<b>📍 ${r.location}</b><br><small style="color:#795548;">التلوث: ${r.typeDesc}</small>`;
@@ -2276,15 +2277,15 @@ function generateCLITCard(r, type) {
     return `<div class="card glass-card" style="border-right:5px solid ${borderColor}; background:${bgGlow}; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
         <div style="flex:1;">${content}</div>
         <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
-            <small style="font-size:9px; color:var(--gold); font-weight:bold;">معيار المصنع 🏭</small>
+            <small style="font-size:9px; color:var(--gold); font-weight:bold;">معيار المصنع 🏭</small><br>
             ${deleteBtn}
         </div>
     </div>`;
 }
-let currentDocType = '';
 
-let activeChecklistTasks = [];
-
+// ==========================================
+// 📂 فتح المستندات والتحكم بالفلاتر
+// ==========================================
 window.openJHDocument = async function(type) {
     currentDocType = type;
     const headerMap = { 
@@ -2297,13 +2298,27 @@ window.openJHDocument = async function(type) {
     
     document.getElementById('jhDocHeader').innerText = headerMap[type];
     
-    const filters = document.getElementById('clitFrequencyFilters');
+    const statsContainer = document.getElementById('clitStatsSummary');
+    const zoneFilters = document.getElementById('clitZoneFilters');
+    const opFilters = document.getElementById('clitOpFilters');
+    const freqFilters = document.getElementById('clitFrequencyFilters');
     const startBtn = document.getElementById('startChecklistBtnContainer');
-    if(type === 'CLIT') {
-        if(filters) filters.style.display = 'flex';
+
+    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') {
+        if(statsContainer) statsContainer.style.display = 'block';
+        if(zoneFilters) zoneFilters.style.display = 'flex';
+        if(opFilters) opFilters.style.display = 'grid';
+        if(freqFilters) freqFilters.style.display = 'flex';
         if(startBtn) startBtn.style.display = 'block';
+        
+        clitSelectedZone = 'الكل'; clitSelectedOp = 'الكل'; clitSelectedFreq = 'الكل';
+        resetFilterButtonsUI();
+        calculateLiveBadgesAndCounters();
     } else {
-        if(filters) filters.style.display = 'none';
+        if(statsContainer) statsContainer.style.display = 'none';
+        if(zoneFilters) zoneFilters.style.display = 'none';
+        if(opFilters) opFilters.style.display = 'none';
+        if(freqFilters) freqFilters.style.display = 'none';
         if(startBtn) startBtn.style.display = 'none';
     }
 
@@ -2322,34 +2337,58 @@ window.openJHDocument = async function(type) {
     showScreen('jhDocumentScreen');
 };
 
-window.filterCLIT = function(freq, btnEl) {
-    currentClitFilter = freq;
-    document.querySelectorAll('.clit-filter-btn').forEach(b => {
-        b.classList.remove('active'); b.classList.remove('btn-primary'); b.classList.add('btn-outline');
+function calculateLiveBadgesAndCounters() {
+    if(currentJHDept !== 'حقن الكابينة') return;
+    if(document.getElementById('statTotalPoints')) document.getElementById('statTotalPoints').innerText = factoryCLITData.length;
+
+    const zones = ['الجيكات', 'الهيد', 'الفرن', 'مدخل', 'عربة', 'تجهيزة'];
+    zones.forEach(z => {
+        let count = factoryCLITData.filter(item => item.region && item.region.includes(z)).length;
+        let badge = document.getElementById(`badge-count-${z}`);
+        if(badge) badge.innerText = count;
     });
-    btnEl.classList.add('active'); btnEl.classList.remove('btn-outline'); btnEl.classList.add('btn-primary');
-    
-    let records = (currentJHDept === 'حقن الكابينة' && currentDocType === 'CLIT') ? factoryCLITData : [];
-    renderJHDocList('CLIT', records);
+}
+
+function resetFilterButtonsUI() {
+    document.querySelectorAll('.clit-zone-btn, .clit-op-btn, .clit-freq-btn').forEach(btn => {
+        btn.classList.remove('active', 'btn-primary', 'btn-success'); btn.classList.add('btn-outline');
+    });
+    document.querySelectorAll('.clit-zone-btn')[0].classList.add('active');
+    document.querySelectorAll('.clit-op-btn')[0].classList.add('active', 'btn-primary');
+    document.querySelectorAll('.clit-freq-btn')[0].classList.add('active');
+}
+
+window.filterCLITZone = function(zone, btnEl) {
+    clitSelectedZone = zone;
+    document.querySelectorAll('.clit-zone-btn').forEach(b => b.classList.remove('active')); btnEl.classList.add('active');
+    renderJHDocList('CLIT', factoryCLITData);
+};
+
+window.filterCLITOp = function(op, btnEl) {
+    clitSelectedOp = op;
+    document.querySelectorAll('.clit-op-btn').forEach(b => { b.classList.remove('active', 'btn-primary'); b.classList.add('btn-outline'); });
+    btnEl.classList.add('active', 'btn-primary');
+    renderJHDocList('CLIT', factoryCLITData);
+};
+
+window.filterCLITFreq = function(freq, btnEl) {
+    clitSelectedFreq = freq;
+    document.querySelectorAll('.clit-freq-btn').forEach(b => b.classList.remove('active')); btnEl.classList.add('active');
+    renderJHDocList('CLIT', factoryCLITData);
 };
 
 window.renderJHDocForm = function(type) {
     let formHtml = '';
-    
     if(type === 'CLIT') {
         formHtml = `
             <h4 style="margin:0 0 10px; color:#00BCD4;">تسجيل معيار CLIT إضافي (تحديث الخريطة)</h4>
             <div class="row-flex">
                 <select id="clitType" class="form-control flex-1">
-                    <option value="تنظيف">تنظيف (C)</option>
-                    <option value="تزييت">تزييت/تشحيم (L)</option>
-                    <option value="فحص">فحص (I)</option>
-                    <option value="تربيط">تربيط (T)</option>
+                    <option value="تنظيف">تنظيف (C)</option><option value="تزييت">تزييت/تشحيم (L)</option>
+                    <option value="فحص">فحص (I)</option><option value="تربيط">تربيط (T)</option>
                 </select>
                 <select id="clitFreq" class="form-control flex-1">
-                    <option value="يومي">يومي</option>
-                    <option value="أسبوعي">أسبوعي</option>
-                    <option value="شهري">شهري</option>
+                    <option value="يومي">يومي</option><option value="أسبوعي">أسبوعي</option><option value="شهري">شهري</option>
                 </select>
             </div>
             <input type="text" id="clitPart" class="form-control" placeholder="الجزء / المنطقة المستهدفة">
@@ -2374,10 +2413,7 @@ window.renderJHDocForm = function(type) {
         formHtml = `
             <h4 style="margin:0 0 10px; color:var(--danger);">تسجيل خطر أمان</h4>
             <input type="text" id="safeHazard" class="form-control" placeholder="وصف الخطر (سلك مكشوف، مسمار بارز)">
-            <select id="safeLevel" class="form-control">
-                <option value="high">خطر حرج 🔴</option>
-                <option value="med">خطر متوسط 🟡</option>
-            </select>
+            <select id="safeLevel" class="form-control"><option value="high">خطر حرج 🔴</option><option value="med">خطر متوسط 🟡</option></select>
             <button class="btn btn-danger full-width" onclick="saveJHRecord('Safety')">➕ تسجيل الخطر</button>
         `;
     } else {
@@ -2391,28 +2427,38 @@ window.renderJHDocForm = function(type) {
     document.getElementById('jhDocActionArea').innerHTML = formHtml;
 };
 
-// ==========================================
-// 🧠 محرك التصنيف وعرض الخرائط المطور (Grouped By Operation)
-// ==========================================
 window.renderJHDocList = function(type, records) {
-    let filteredRecords = records;
-    if(type === 'CLIT' && currentClitFilter !== 'الكل') {
-        filteredRecords = records.filter(r => r.frequency && r.frequency.includes(currentClitFilter));
-    }
-
     let container = document.getElementById('jhDocListContainer');
-    
-    if(type === 'CLIT') {
-        // --- تصنيف الخرائط حسب نوع العملية (C, L, I, T) ---
+    if(!container) return;
+
+    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') {
+        let filtered = factoryCLITData.filter(item => {
+            let matchZone = (clitSelectedZone === 'الكل') || (item.region && item.region.includes(clitSelectedZone));
+            let itemOp = item.operation || '';
+            let matchOp = (clitSelectedOp === 'الكل') || 
+                          (clitSelectedOp === 'تزييت' && (itemOp.includes('تزييت') || itemOp.includes('تشحيم'))) ||
+                          (itemOp.includes(clitSelectedOp));
+            let matchFreq = (clitSelectedFreq === 'الكل') || (item.frequency && item.frequency.includes(clitSelectedFreq));
+            return matchZone && matchOp && matchFreq;
+        });
+
+        if(document.getElementById('statActiveFiltered')) document.getElementById('statActiveFiltered').innerText = filtered.length;
+        if(document.getElementById('statEstimatedTime')) document.getElementById('statEstimatedTime').innerText = Math.round(filtered.length * 1.5) + 'm';
+
+        if(filtered.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;">لا توجد أي نقاط فحص تطابق الفلاتر حالياً 📭</div>';
+            return;
+        }
+
         const opGroups = { '🧹 عمليات التنظيف (C)': [], '🛢️ عمليات التزييت والتشحيم (L)': [], '🔍 عمليات الفحص (I)': [], '🔧 عمليات التربيط (T)': [] };
         
-        filteredRecords.forEach(r => {
+        filtered.forEach(r => {
             let op = r.operation || r.clitType || '';
             if(op.includes('تنظيف') || op.includes('تنطيف')) opGroups['🧹 عمليات التنظيف (C)'].push(r);
             else if(op.includes('تزييت') || op.includes('تشحيم')) opGroups['🛢️ عمليات التزييت والتشحيم (L)'].push(r);
             else if(op.includes('فحص')) opGroups['🔍 عمليات الفحص (I)'].push(r);
             else if(op.includes('تربيط') || op.includes('ربط')) opGroups['🔧 عمليات التربيط (T)'].push(r);
-            else opGroups['🔍 عمليات الفحص (I)'].push(r); // احتياطي لأي بند غير مصنف
+            else opGroups['🔍 عمليات الفحص (I)'].push(r);
         });
 
         let html = '';
@@ -2422,14 +2468,42 @@ window.renderJHDocList = function(type, records) {
                 html += opGroups[groupName].map(r => generateCLITCard(r, type)).join('');
             }
         }
-        container.innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted); font-weight:bold;">لا توجد مهام مطابقة للفلتر 📭</div>';
+        container.innerHTML = html;
     } else {
-        // الخرائط العادية (SOC, Safety, etc)
-        let html = filteredRecords.map(r => generateCLITCard(r, type)).join('');
+        let html = records.reverse().map(r => generateCLITCard(r, type)).join('');
         container.innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted); font-weight:bold;">لا توجد سجلات مسجلة لهذا القسم 📭</div>';
     }
 };
 
+window.saveJHRecord = async function(type) {
+    let data = { id: uniqueNumericId().toString(), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
+    if(type === 'CLIT') {
+        data.clitType = document.getElementById('clitType').value;
+        data.part = document.getElementById('clitPart').value;
+        data.standard = document.getElementById('clitStandard').value;
+        data.frequency = document.getElementById('clitFreq').value;
+        if(!data.part || !data.standard) return showToast('أكمل البيانات المطلوبة');
+    } else if(type === 'Contamination') {
+        data.location = document.getElementById('contLocation').value;
+        data.typeDesc = document.getElementById('contType').value;
+        if(!data.location) return;
+    } else if(type === 'SOC') {
+        data.location = document.getElementById('socLocation').value;
+        data.reason = document.getElementById('socReason').value;
+        if(!data.location) return;
+    } else if(type === 'Safety') {
+        data.hazard = document.getElementById('safeHazard').value;
+        data.level = document.getElementById('safeLevel').value;
+        if(!data.hazard) return;
+    } else {
+        data.name = document.getElementById('partName').value;
+        data.desc = document.getElementById('partDesc').value;
+        if(!data.name) return;
+    }
+    await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data);
+    showToast('تم إضافة السجل بنجاح ✅');
+    openJHDocument(type); 
+};
 
 // ==========================================
 // 📅 محرك الـ Calendar والسجلات (Execution Engine)
@@ -2438,12 +2512,10 @@ let currentJHExecutions = [];
 let viewingMonth = new Date().getMonth();
 let viewingYear = new Date().getFullYear();
 
-// تحديث اختيار القسم لسحب الأرشيف الخاص به
 const originalSelectJHDept = window.selectJHDept;
 window.selectJHDept = function(dept) {
     if(typeof originalSelectJHDept === 'function') originalSelectJHDept(dept);
     
-    // سحب سجلات التنفيذ لهذا القسم لرسم الـ Calendar
     if(isOnline) {
         db.ref(`tpm_system/clit_executions/${dept}`).on('value', snap => {
             currentJHExecutions = snap.val() ? Object.values(snap.val()) : [];
@@ -2470,13 +2542,10 @@ window.renderJHCalendar = function() {
     let html = '';
     
     for(let d = 1; d <= daysInMonth; d++) {
-        // صيغة التاريخ المضبوطة (مثال: 15/6/2026)
         let checkDateStr = new Date(viewingYear, viewingMonth, d).toLocaleDateString('ar-EG');
-        
-        // البحث عن أي تنفيذات تمت في هذا اليوم
         let dayExecs = currentJHExecutions.filter(ex => ex.date === checkDateStr);
         
-        let bgColor = 'rgba(255,255,255,0.05)'; // أبيض (لم ينفذ)
+        let bgColor = 'rgba(255,255,255,0.05)'; 
         let border = '1px solid rgba(255,255,255,0.1)';
         let cursor = 'default';
         let clickAction = '';
@@ -2485,12 +2554,10 @@ window.renderJHCalendar = function() {
             cursor = 'pointer';
             clickAction = `onclick="viewDayExecutions('${checkDateStr}')"`;
             
-            // التحقق من التاجات (العيوب)
             let hasOpenTags = false;
             dayExecs.forEach(ex => {
                 ex.tasks.forEach(t => {
                     if(t.status === 'issue' && t.tagId) {
-                        // هل التاج ده لسه مفتوح في السيستم الأساسي؟
                         let globalTag = tagsData.find(tg => tg.id === t.tagId);
                         if(globalTag && globalTag.status !== 'closed' && globalTag.status !== 'done') {
                             hasOpenTags = true;
@@ -2500,10 +2567,10 @@ window.renderJHCalendar = function() {
             });
 
             if(hasOpenTags) {
-                bgColor = 'rgba(234, 179, 8, 0.2)'; // أصفر (فيها تاجات مفتوحة)
+                bgColor = 'rgba(234, 179, 8, 0.2)'; 
                 border = '2px solid var(--warning)';
             } else {
-                bgColor = 'rgba(34, 197, 94, 0.2)'; // أخضر (سليم أو تاجاته اتقفلت)
+                bgColor = 'rgba(34, 197, 94, 0.2)'; 
                 border = '2px solid var(--success)';
             }
         }
@@ -2513,7 +2580,6 @@ window.renderJHCalendar = function() {
     grid.innerHTML = html;
 };
 
-// استعراض أرشيف يوم محدد
 window.viewDayExecutions = function(dateStr) {
     let dayExecs = currentJHExecutions.filter(ex => ex.date === dateStr);
     let html = dayExecs.map(ex => {
@@ -2551,19 +2617,31 @@ window.viewDayExecutions = function(dateStr) {
 // ==========================================
 // 📋 محرك قائمة الفحص التفاعلية (Checklist Engine)
 // ==========================================
-window.startCLITChecklist = function() {
-    if (currentClitFilter === 'الكل') return showToast('⚠️ يرجى اختيار دورية محددة (يومي، أسبوعي..) لبدء الفحص.');
-    
-    let recordsToExecute = (currentJHDept === 'حقن الكابينة') ? factoryCLITData.filter(r => r.frequency && r.frequency.includes(currentClitFilter)) : [];
-    if(recordsToExecute.length === 0) return showToast('لا توجد مهام لهذه الدورية.');
+let activeChecklistTasks = [];
 
-    // إضافة تاريخ اليوم للشاشة
-    document.getElementById('checklistCurrentDate').innerText = new Date().toLocaleDateString('ar-EG');
+window.startCLITChecklist = function() {
+    if (clitSelectedFreq === 'الكل') return showToast('⚠️ يرجى اختيار دورية محددة (يومي، أسبوعي..) لبدء الفحص.');
     
-    // بناء مصفوفة التنفيذ الشاملة (لجميع البنود)
+    // الفلترة بتتم على حسب الدورية المطلوبة والقسم
+    let recordsToExecute = [];
+    if (currentJHDept === 'حقن الكابينة') {
+        recordsToExecute = factoryCLITData.filter(item => {
+            let matchZone = (clitSelectedZone === 'الكل') || (item.region && item.region.includes(clitSelectedZone));
+            let itemOp = item.operation || '';
+            let matchOp = (clitSelectedOp === 'الكل') || 
+                          (clitSelectedOp === 'تزييت' && (itemOp.includes('تزييت') || itemOp.includes('تشحيم'))) ||
+                          (itemOp.includes(clitSelectedOp));
+            let matchFreq = (item.frequency && item.frequency.includes(clitSelectedFreq));
+            return matchZone && matchOp && matchFreq;
+        });
+    }
+
+    if(recordsToExecute.length === 0) return showToast('لا توجد مهام مطابقة للفلتر الحالي لبدء الفحص.');
+
+    document.getElementById('checklistCurrentDate').innerText = new Date().toLocaleDateString('ar-EG');
     activeChecklistTasks = recordsToExecute.map(r => ({ ...r, status: 'pending', tagId: null }));
 
-    document.getElementById('activeChecklistFreq').innerText = `${currentClitFilter} - ${currentJHDept}`;
+    document.getElementById('activeChecklistFreq').innerText = `${clitSelectedFreq} - ${currentJHDept}`;
     renderChecklistUI();
     showScreen('clitChecklistScreen');
 };
@@ -2583,10 +2661,10 @@ window.renderChecklistUI = function() {
         
         let op = t.operation || '';
         let icon = '⚙️'; let colorTheme = 'var(--primary)';
-        if(op.includes('تنظيف')) { icon = '🧹'; colorTheme = '#3b82f6'; }
+        if(op.includes('تنظيف') || op.includes('تنطيف')) { icon = '🧹'; colorTheme = '#3b82f6'; }
         else if(op.includes('تزييت') || op.includes('تشحيم')) { icon = '🛢️'; colorTheme = '#f97316'; }
         else if(op.includes('فحص')) { icon = '🔍'; colorTheme = '#22c55e'; }
-        else if(op.includes('تربيط')) { icon = '🔧'; colorTheme = '#ef4444'; }
+        else if(op.includes('تربيط') || op.includes('ربط')) { icon = '🔧'; colorTheme = '#ef4444'; }
 
         let cardStyle = isDone ? 'border-color:var(--success); background:rgba(46,125,50,0.05); opacity:0.8;' 
                       : (isIssue ? 'border-color:var(--danger); background:rgba(198,40,40,0.05);' 
@@ -2616,6 +2694,8 @@ window.markChecklistItem = function(idx, status) {
     activeChecklistTasks[idx].status = status;
     renderChecklistUI();
 };
+
+let currentTaggingChecklistIdx = null;
 
 window.openCLITIssueModal = function(idx) {
     let t = activeChecklistTasks[idx];
@@ -2656,13 +2736,13 @@ window.submitFinalChecklist = async function() {
     
     showToast('جاري أرشفة القائمة في السجل الذكي... ⏳');
     let executionObj = {
-        id: uniqueNumericId().toString(), dept: currentJHDept, frequency: currentClitFilter,
+        id: uniqueNumericId().toString(), dept: currentJHDept, frequency: clitSelectedFreq,
         date: new Date().toLocaleDateString('ar-EG'), time: new Date().toLocaleTimeString('ar-EG'),
         user: currentUser.name, tasks: activeChecklistTasks
     };
     
     await db.ref(`tpm_system/clit_executions/${currentJHDept}/${executionObj.id}`).set(executionObj);
-    awardPoints(30, `تنفيذ دورة صيانة ذاتية (${currentClitFilter})`);
+    awardPoints(30, `تنفيذ دورة صيانة ذاتية (${clitSelectedFreq})`);
     showToast('تم حفظ دورة الصيانة بنجاح ✅');
     showScreen('jhDocumentScreen');
 };

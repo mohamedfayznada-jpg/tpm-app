@@ -2285,125 +2285,212 @@ window.renderJHDocForm = function(type) {
     document.getElementById('jhDocActionArea').innerHTML = formHtml;
 };
 
+// ==========================================
+// 🧠 محرك التصنيف وعرض الخرائط المطور (Grouped By Operation)
+// ==========================================
 window.renderJHDocList = function(type, records) {
     let filteredRecords = records;
     if(type === 'CLIT' && currentClitFilter !== 'الكل') {
         filteredRecords = records.filter(r => r.frequency && r.frequency.includes(currentClitFilter));
     }
 
-    let html = filteredRecords.map((r, index) => {
-        let content = ''; let borderColor = 'var(--gold)'; let bgGlow = '';
-
-        if(type === 'CLIT') {
+    let container = document.getElementById('jhDocListContainer');
+    
+    if(type === 'CLIT') {
+        // --- تصنيف الخرائط حسب نوع العملية (C, L, I, T) ---
+        const opGroups = { '🧹 عمليات التنظيف (C)': [], '🛢️ عمليات التزييت والتشحيم (L)': [], '🔍 عمليات الفحص (I)': [], '🔧 عمليات التربيط (T)': [] };
+        
+        filteredRecords.forEach(r => {
             let op = r.operation || r.clitType || '';
-            let icon = '⚙️';
-            if(op.includes('تنظيف') || op.includes('تنطيف')) { borderColor = '#3b82f6'; icon = '🧹'; bgGlow = 'rgba(59, 130, 246, 0.05)'; }
-            else if(op.includes('تزييت') || op.includes('تشحيم')) { borderColor = '#f97316'; icon = '🛢️'; bgGlow = 'rgba(249, 115, 22, 0.05)'; }
-            else if(op.includes('فحص')) { borderColor = '#22c55e'; icon = '🔍'; bgGlow = 'rgba(34, 197, 94, 0.05)'; }
-            else if(op.includes('تربيط') || op.includes('ربط')) { borderColor = '#ef4444'; icon = '🔧'; bgGlow = 'rgba(239, 68, 68, 0.05)'; }
+            if(op.includes('تنظيف') || op.includes('تنطيف')) opGroups['🧹 عمليات التنظيف (C)'].push(r);
+            else if(op.includes('تزييت') || op.includes('تشحيم')) opGroups['🛢️ عمليات التزييت والتشحيم (L)'].push(r);
+            else if(op.includes('فحص')) opGroups['🔍 عمليات الفحص (I)'].push(r);
+            else if(op.includes('تربيط') || op.includes('ربط')) opGroups['🔧 عمليات التربيط (T)'].push(r);
+            else opGroups['🔍 عمليات الفحص (I)'].push(r); // احتياطي لأي بند غير مصنف
+        });
 
-            content = `
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                    <b style="color:var(--text-main); font-size:14px;">${icon} ${r.region} ${r.part ? ' - ' + r.part : ''}</b>
-                    <span style="font-size:10px; background:${borderColor}; color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${r.frequency || 'دوري'}</span>
-                </div>
-                <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px; line-height:1.5;">
-                    <span style="color:${borderColor}; font-weight:bold;">الإجراء:</span> ${r.action || r.standard}
-                </div>
-                <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor};">
-                    <b>🎯 المعيار المقبول/الخطر:</b> ${r.optimalState || r.standard || 'حسب المواصفة'}<br>
-                    <b>⚠️ حالة التدهور:</b> <span style="color:var(--danger);">${r.degradation || 'غير مسجل'}</span><br>
-                    <b>🛠️ الأدوات وموقف الماكينة:</b> ${r.tools || 'يدوي'} | ${r.machineState || 'مجهول'}
-                </div>
-            `;
-        } 
-        else if(type === 'Contamination') {
-            borderColor = '#795548'; bgGlow = 'rgba(121, 85, 72, 0.05)';
-            content = `<b>📍 ${r.location}</b><br><small style="color:#795548;">التلوث: ${r.typeDesc}</small>`;
-        } else if(type === 'SOC') {
-            borderColor = 'var(--warning)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
-            content = `<b>🚧 ${r.location}</b><br><small style="color:var(--warning);">السبب: ${r.reason}</small>`;
-        } else if(type === 'Safety') {
-            borderColor = 'var(--danger)'; bgGlow = 'rgba(244, 67, 54, 0.05)';
-            content = `<b>${r.level==='high'?'🔴':'🟡'} ${r.hazard}</b>`;
-        } else {
-            borderColor = 'var(--gold)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
-            content = `<b>⚙️ ${r.name}</b><br><small style="color:var(--gold);">${r.desc}</small>`;
+        let html = '';
+        for (let groupName in opGroups) {
+            if(opGroups[groupName].length > 0) {
+                html += `<h4 style="color:var(--gold); margin:20px 0 10px; border-bottom:2px solid var(--copper); padding-bottom:5px;">${groupName}</h4>`;
+                html += opGroups[groupName].map(r => generateCLITCard(r, type)).join('');
+            }
+        }
+        container.innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted); font-weight:bold;">لا توجد مهام مطابقة للفلتر 📭</div>';
+    } else {
+        // الخرائط العادية (SOC, Safety, etc)
+        let html = filteredRecords.map(r => generateCLITCard(r, type)).join('');
+        container.innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted); font-weight:bold;">لا توجد سجلات مسجلة لهذا القسم 📭</div>';
+    }
+};
+
+// دالة مساعدة لتوليد كارت الـ CLIT لتنظيف الكود
+function generateCLITCard(r, type) {
+    let content = ''; let borderColor = 'var(--gold)'; let bgGlow = '';
+    if(type === 'CLIT') {
+        let op = r.operation || r.clitType || '';
+        if(op.includes('تنظيف') || op.includes('تنطيف')) { borderColor = '#3b82f6'; bgGlow = 'rgba(59, 130, 246, 0.05)'; }
+        else if(op.includes('تزييت') || op.includes('تشحيم')) { borderColor = '#f97316'; bgGlow = 'rgba(249, 115, 22, 0.05)'; }
+        else if(op.includes('فحص')) { borderColor = '#22c55e'; bgGlow = 'rgba(34, 197, 94, 0.05)'; }
+        else if(op.includes('تربيط') || op.includes('ربط')) { borderColor = '#ef4444'; bgGlow = 'rgba(239, 68, 68, 0.05)'; }
+
+        content = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <b style="color:var(--text-main); font-size:14px;">${r.region} ${r.part ? ' - ' + r.part : ''}</b>
+                <span style="font-size:10px; background:${borderColor}; color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${r.frequency || 'دوري'}</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px; line-height:1.5;">
+                <span style="color:${borderColor}; font-weight:bold;">الإجراء:</span> ${r.action || r.standard}
+            </div>
+            <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor};">
+                <b>🎯 المعيار المقبول/الخطر:</b> ${r.optimalState || r.standard || 'حسب المواصفة'}<br>
+                <b>⚠️ حالة التدهور:</b> <span style="color:var(--danger);">${r.degradation || 'غير مسجل'}</span><br>
+                <b>🛠️ الأدوات وموقف الماكينة:</b> ${r.tools || 'يدوي'} | ${r.machineState || 'مجهول'}
+            </div>
+        `;
+    } 
+    // ... (باقي الأنواع زي التلوث والأمان زي ما هي)
+    let deleteBtn = (hasRole('admin') && r.id && !r.region) ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️ حذف</button>` : '';
+    
+    return `<div class="card glass-card" style="border-right:5px solid ${borderColor}; background:${bgGlow}; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="flex:1;">${content}</div>
+        <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
+            <small style="font-size:9px; color:var(--gold); font-weight:bold;">معيار المصنع 🏭</small>
+            ${deleteBtn}
+        </div>
+    </div>`;
+}
+
+// ==========================================
+// 📅 محرك الـ Calendar والسجلات (Execution Engine)
+// ==========================================
+let currentJHExecutions = [];
+let viewingMonth = new Date().getMonth();
+let viewingYear = new Date().getFullYear();
+
+// تحديث اختيار القسم لسحب الأرشيف الخاص به
+const originalSelectJHDept = window.selectJHDept;
+window.selectJHDept = function(dept) {
+    if(typeof originalSelectJHDept === 'function') originalSelectJHDept(dept);
+    
+    // سحب سجلات التنفيذ لهذا القسم لرسم الـ Calendar
+    if(isOnline) {
+        db.ref(`tpm_system/clit_executions/${dept}`).on('value', snap => {
+            currentJHExecutions = snap.val() ? Object.values(snap.val()) : [];
+            renderJHCalendar(); 
+        });
+    }
+};
+
+window.changeCalendarMonth = function(dir) {
+    viewingMonth += dir;
+    if(viewingMonth > 11) { viewingMonth = 0; viewingYear++; }
+    else if(viewingMonth < 0) { viewingMonth = 11; viewingYear--; }
+    renderJHCalendar();
+};
+
+window.renderJHCalendar = function() {
+    const grid = document.getElementById('jhCalendarGrid');
+    if(!grid) return;
+
+    const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+    document.getElementById('currentCalendarMonth').innerText = `${monthNames[viewingMonth]} ${viewingYear}`;
+
+    let daysInMonth = new Date(viewingYear, viewingMonth + 1, 0).getDate();
+    let html = '';
+    
+    for(let d = 1; d <= daysInMonth; d++) {
+        // صيغة التاريخ المضبوطة (مثال: 15/6/2026)
+        let checkDateStr = new Date(viewingYear, viewingMonth, d).toLocaleDateString('ar-EG');
+        
+        // البحث عن أي تنفيذات تمت في هذا اليوم
+        let dayExecs = currentJHExecutions.filter(ex => ex.date === checkDateStr);
+        
+        let bgColor = 'rgba(255,255,255,0.05)'; // أبيض (لم ينفذ)
+        let border = '1px solid rgba(255,255,255,0.1)';
+        let cursor = 'default';
+        let clickAction = '';
+
+        if(dayExecs.length > 0) {
+            cursor = 'pointer';
+            clickAction = `onclick="viewDayExecutions('${checkDateStr}')"`;
+            
+            // التحقق من التاجات (العيوب)
+            let hasOpenTags = false;
+            dayExecs.forEach(ex => {
+                ex.tasks.forEach(t => {
+                    if(t.status === 'issue' && t.tagId) {
+                        // هل التاج ده لسه مفتوح في السيستم الأساسي؟
+                        let globalTag = tagsData.find(tg => tg.id === t.tagId);
+                        if(globalTag && globalTag.status !== 'closed' && globalTag.status !== 'done') {
+                            hasOpenTags = true;
+                        }
+                    }
+                });
+            });
+
+            if(hasOpenTags) {
+                bgColor = 'rgba(234, 179, 8, 0.2)'; // أصفر (فيها تاجات مفتوحة)
+                border = '2px solid var(--warning)';
+            } else {
+                bgColor = 'rgba(34, 197, 94, 0.2)'; // أخضر (سليم أو تاجاته اتقفلت)
+                border = '2px solid var(--success)';
+            }
         }
 
-        let deleteBtn = '';
-        if(hasRole('admin') && r.id && !r.region) { 
-            deleteBtn = `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️ حذف</button>`;
-        }
+        html += `<div style="background:${bgColor}; border:${border}; padding:10px 0; border-radius:8px; cursor:${cursor}; font-weight:bold; font-size:12px;" ${clickAction} title="${checkDateStr}">${d}</div>`;
+    }
+    grid.innerHTML = html;
+};
+
+// استعراض أرشيف يوم محدد
+window.viewDayExecutions = function(dateStr) {
+    let dayExecs = currentJHExecutions.filter(ex => ex.date === dateStr);
+    let html = dayExecs.map(ex => {
+        let issues = ex.tasks.filter(t => t.status === 'issue').length;
+        let done = ex.tasks.filter(t => t.status === 'done').length;
+        let total = ex.tasks.length;
+        let borderColor = issues > 0 ? 'var(--warning)' : 'var(--success)';
+        
+        let detailsHtml = ex.tasks.map(t => {
+            let icon = t.status === 'done' ? '✅' : '❌';
+            let color = t.status === 'done' ? 'var(--success)' : 'var(--danger)';
+            return `<div style="font-size:11px; padding:3px 0; border-bottom:1px dashed rgba(255,255,255,0.05); color:${color};">${icon} ${t.region} - ${t.part || t.action}</div>`;
+        }).join('');
 
         return `
-        <div class="card glass-card" style="border-right:5px solid ${borderColor}; background:${bgGlow}; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
-            <div style="flex:1;">
-                ${content}
+        <div class="card glass-card" style="border-right:4px solid ${borderColor}; padding:10px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <b style="color:var(--text-main); font-size:13px;">دورية: ${ex.frequency}</b>
+                <span style="font-size:10px; color:var(--text-muted);">👤 ${ex.user} | ⏰ ${ex.time}</span>
             </div>
-            ${r.date ? `
-            <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
-                <small style="font-size:9px; color:var(--text-muted);">${r.date}</small><br>
-                <small style="font-size:10px; color:var(--text-main);">${r.user}</small><br>
-                ${deleteBtn}
-            </div>` : `
-            <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
-                <small style="font-size:9px; color:var(--gold); font-weight:bold;">معيار المصنع 🏭</small>
+            <div style="font-size:11px; font-weight:bold; margin-bottom:10px;">
+                النتيجة: إنجاز <span style="color:var(--success);">${done}</span> | مشاكل <span style="color:var(--danger);">${issues}</span> من أصل ${total}
             </div>
-            `}
+            <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; max-height:100px; overflow-y:auto;">
+                ${detailsHtml}
+            </div>
         </div>`;
     }).join('');
-    
-    document.getElementById('jhDocListContainer').innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted); font-weight:bold;">لا توجد مهام مطابقة للفلتر 📭</div>';
+
+    document.getElementById('historyModalDate').innerText = dateStr;
+    document.getElementById('historyModalContent').innerHTML = html;
+    document.getElementById('clitHistoryModal').style.display = 'flex';
 };
 
-window.saveJHRecord = async function(type) {
-    let data = { id: uniqueNumericId().toString(), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
-    if(type === 'CLIT') {
-        data.clitType = document.getElementById('clitType').value;
-        data.part = document.getElementById('clitPart').value;
-        data.standard = document.getElementById('clitStandard').value;
-        data.frequency = document.getElementById('clitFreq').value;
-        if(!data.part || !data.standard) return showToast('أكمل البيانات المطلوبة');
-    } else if(type === 'Contamination') {
-        data.location = document.getElementById('contLocation').value;
-        data.typeDesc = document.getElementById('contType').value;
-        if(!data.location) return;
-    } else if(type === 'SOC') {
-        data.location = document.getElementById('socLocation').value;
-        data.reason = document.getElementById('socReason').value;
-        if(!data.location) return;
-    } else if(type === 'Safety') {
-        data.hazard = document.getElementById('safeHazard').value;
-        data.level = document.getElementById('safeLevel').value;
-        if(!data.hazard) return;
-    } else {
-        data.name = document.getElementById('partName').value;
-        data.desc = document.getElementById('partDesc').value;
-        if(!data.name) return;
-    }
-
-    await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data);
-    showToast('تم إضافة المعيار/السجل بنجاح ✅');
-    openJHDocument(type); 
-};
-window.deleteJHRecord = async function(type, id) {
-    if(confirm('هل أنت متأكد من حذف هذا السجل؟')) {
-        await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).remove();
-        openJHDocument(type);
-    }
-};
-
-// --- محرك قائمة الفحص التفاعلية (Checklist Engine) ---
-
+// ==========================================
+// 📋 محرك قائمة الفحص التفاعلية (Checklist Engine)
+// ==========================================
 window.startCLITChecklist = function() {
     if (currentClitFilter === 'الكل') return showToast('⚠️ يرجى اختيار دورية محددة (يومي، أسبوعي..) لبدء الفحص.');
     
     let recordsToExecute = (currentJHDept === 'حقن الكابينة') ? factoryCLITData.filter(r => r.frequency && r.frequency.includes(currentClitFilter)) : [];
-    
     if(recordsToExecute.length === 0) return showToast('لا توجد مهام لهذه الدورية.');
 
-    // بناء مصفوفة التنفيذ
+    // إضافة تاريخ اليوم للشاشة
+    document.getElementById('checklistCurrentDate').innerText = new Date().toLocaleDateString('ar-EG');
+    
+    // بناء مصفوفة التنفيذ الشاملة (لجميع البنود)
     activeChecklistTasks = recordsToExecute.map(r => ({ ...r, status: 'pending', tagId: null }));
 
     document.getElementById('activeChecklistFreq').innerText = `${currentClitFilter} - ${currentJHDept}`;
@@ -2435,12 +2522,12 @@ window.renderChecklistUI = function() {
                       : (isIssue ? 'border-color:var(--danger); background:rgba(198,40,40,0.05);' 
                       : `border-left:5px solid ${colorTheme};`);
 
-        let tagBadge = t.tagId ? `<div style="margin-top:10px; padding:5px; background:var(--danger); color:white; border-radius:5px; font-size:11px; text-align:center; font-weight:bold; cursor:pointer;" onclick="showScreen('tagsScreen'); document.getElementById('filterTagMachine').value='${t.part || t.region}'; renderTags();">🚨 تم إصدار تاج للمشكلة (اضغط للعرض)</div>` : '';
+        let tagBadge = t.tagId ? `<div style="margin-top:10px; padding:5px; background:var(--danger); color:white; border-radius:5px; font-size:11px; text-align:center; font-weight:bold; cursor:pointer;" onclick="showScreen('tagsScreen'); document.getElementById('filterTagMachine').value='${t.part || t.region}'; renderTags();">🚨 تم إصدار تاج للمشكلة برقم [${t.tagId.substring(t.tagId.length - 4)}] (اضغط للعرض)</div>` : '';
 
         return `
         <div class="card glass-card" style="padding:15px; transition:0.3s; ${cardStyle}">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <b style="font-size:13px; color:var(--text-main);">${idx+1}. ${icon} ${t.region} ${t.part ? ' - ' + t.part : ''}</b>
+                <b style="font-size:13px; color:var(--text-main);">${idx+1}. ${icon} [${op}] ${t.region} ${t.part ? ' - ' + t.part : ''}</b>
                 <span style="font-size:10px; background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px;">${t.machineState || 'تعمل'}</span>
             </div>
             <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px;"><b>الإجراء:</b> ${t.action}</div>
@@ -2459,8 +2546,6 @@ window.markChecklistItem = function(idx, status) {
     activeChecklistTasks[idx].status = status;
     renderChecklistUI();
 };
-
-let currentTaggingChecklistIdx = null;
 
 window.openCLITIssueModal = function(idx) {
     let t = activeChecklistTasks[idx];

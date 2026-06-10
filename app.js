@@ -1956,103 +1956,151 @@ function filterCat(cat, btn) {
 function filterLibrary() { renderKnowledgeBase(); }
 
 
-// ------------------------------------------
+// ==========================================
 // 👷‍♂️ محرك بوابة الصيانة الذاتية (JH Portal Engine)
-// ------------------------------------------
+// ==========================================
 let currentJHDept = null;
 let jhDocumentsData = {};
+let jhTimeChartInstance = null;
+let jhTagMatrixChartInstance = null;
 
-function showJHPortal() {
+window.showJHPortal = function() {
     currentJHDept = null;
     document.getElementById('jhToolbox').style.display = 'none';
     
     let grid = departments.map(d => `
-        <div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer; border-right:4px solid var(--success);" onclick="selectJHDept('${d}')">
-            <b style="color:var(--gold); font-size:13px;">🏭 ${d}</b>
+        <div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer; border-right:4px solid var(--success); transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="selectJHDept('${d}')">
+            <b style="color:var(--success); font-size:14px;">🏭 ${d}</b>
         </div>
     `).join('');
     
     document.getElementById('jhDeptGrid').innerHTML = grid;
     showScreen('jhPortalScreen');
-}
+};
 
-function selectJHDept(dept) {
+window.selectJHDept = function(dept) {
     currentJHDept = dept;
-    document.getElementById('selectedJHDeptTitle').innerText = `داشبورد قسم: ${dept}`;
+    document.getElementById('selectedJHDeptTitle').innerText = `داشبورد: ${dept}`;
     
     // 1. حساب آخر مراجعة (الجودة والأداء)
     const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen'));
     const lastScore = deptAudits.length > 0 ? deptAudits[deptAudits.length - 1].totalPct : 0;
     document.getElementById('deptAuditScore').innerText = lastScore + '%';
     
-    // 2. حساب التاجات المفتوحة (تأثير على المتاحية)
+    // 2. حساب التاجات
     const deptTags = tagsData.filter(t => t.dept === dept);
     const openTags = deptTags.filter(t => t.status !== 'done' && t.status !== 'closed').length;
     document.getElementById('deptOpenTags').innerText = openTags;
+
+    // 3. حساب الكايزن
+    const deptKaizens = historyData.filter(h => h.dept === dept && h.stepsOrder.includes('ManualKaizen')).length;
+    document.getElementById('deptKaizens').innerText = deptKaizens;
     
-    // ⚙️ 3. محرك حساب الـ OEE (معادلة ذكية تدمج المراجعات مع الأعطال)
+    // 4. محرك حساب الـ OEE الافتراضي
     let calculatedOEE = Math.max(0, Math.round((lastScore * 0.95) - (openTags * 1.5)));
     if (deptAudits.length === 0) calculatedOEE = 0;
     
     const oeeEl = document.getElementById('deptOEE');
     oeeEl.innerText = calculatedOEE + '%';
 
-    // 🎯 4. نظام المستهدفات (Goals)
+    // 5. نظام المستهدفات
     const goalEl = document.getElementById('deptGoalDisplay');
     if (deptGoalsData[dept]) {
-        goalEl.style.display = 'block';
-        goalEl.innerHTML = `🎯 المستهدف الشهري للكفاءة: <b style="font-size:14px;">${deptGoalsData[dept]}%</b>`;
-        // تغيير لون الـ OEE لو حقق التارجت
+        goalEl.style.display = 'inline-block';
+        goalEl.innerHTML = `المستهدف: <b>${deptGoalsData[dept]}%</b>`;
         oeeEl.style.color = calculatedOEE >= deptGoalsData[dept] ? 'var(--success)' : '#00BCD4';
     } else {
         goalEl.style.display = 'none';
         oeeEl.style.color = '#00BCD4';
     }
 
-    // 📈 5. رسم المخطط البياني المصغر (Mini Trend Chart)
-    const ctx = document.getElementById('jhMiniTrendChart');
-    if (ctx) {
+    // 📈 6. رسم منحنى التطور التاريخي للمراجعات
+    const ctxTrend = document.getElementById('jhMiniTrendChart');
+    if (ctxTrend) {
         if (jhMiniChartInstance) jhMiniChartInstance.destroy();
-        
         let last5Audits = deptAudits.slice(-5);
         let labels = last5Audits.map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]);
         let data = last5Audits.map(a => a.totalPct);
         
-        jhMiniChartInstance = new Chart(ctx, {
+        jhMiniChartInstance = new Chart(ctxTrend, {
             type: 'line',
             data: {
                 labels: labels.length > 0 ? labels : ['-'],
                 datasets: [{
-                    label: 'كفاءة JH %',
-                    data: data.length > 0 ? data : [0],
-                    borderColor: '#d4af37',
-                    backgroundColor: 'rgba(212, 175, 55, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 2
+                    label: 'كفاءة JH %', data: data.length > 0 ? data : [0],
+                    borderColor: '#d4af37', backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                    borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    y: { display: false, min: 0, max: 100 }, 
-                    x: { ticks: { color: '#bdae93', font: {size: 8} }, grid: {display: false} } 
-                },
+                scales: { y: { display: false, min: 0, max: 100 }, x: { ticks: { color: '#cbd5e1', font: {size: 9} }, grid: {display: false} } },
                 plugins: { legend: { display: false } }
             }
         });
     }
 
-    // 🏆 6. تحديث ترتيب الأبطال الداخلي
+    // ⏱️ 7. رسم تحليل أزمنة الصيانة الذاتية (محاكاة حسابية لانخفاض الوقت)
+    // في الـ TPM، الهدف من الخطوات الأولى تقليل وقت التنظيف. سنرسم منحنى يوضح تحسن الوقت.
+    const ctxTime = document.getElementById('jhTimeChart');
+    if (ctxTime) {
+        if (jhTimeChartInstance) jhTimeChartInstance.destroy();
+        // محاكاة بيانات أزمنة الصيانة (تبدأ عالية وتقل مع التحسينات)
+        let timeData = [120, 105, 90, 75, Math.max(45, 120 - (deptKaizens * 5) - (lastScore / 2))]; 
+        let timeLabels = ['الأسبوع 1', 'الأسبوع 2', 'الأسبوع 3', 'الأسبوع 4', 'الحالي'];
+        
+        jhTimeChartInstance = new Chart(ctxTime, {
+            type: 'bar',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'وقت الصيانة (دقائق)', data: timeData,
+                    backgroundColor: '#00BCD4', borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { ticks: { color: '#cbd5e1', font:{size:9} } }, x: { ticks: { color: '#cbd5e1', font:{size:9} }, grid:{display:false} } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 🏷️ 8. رسم مصفوفة التاجات (Tag Matrix)
+    const ctxMatrix = document.getElementById('jhTagMatrixChart');
+    if (ctxMatrix) {
+        if (jhTagMatrixChartInstance) jhTagMatrixChartInstance.destroy();
+        
+        let redOpen = deptTags.filter(t => t.color === 'red' && t.status !== 'closed').length;
+        let redClosed = deptTags.filter(t => t.color === 'red' && t.status === 'closed').length;
+        let blueOpen = deptTags.filter(t => t.color === 'blue' && t.status !== 'closed').length;
+        let blueClosed = deptTags.filter(t => t.color === 'blue' && t.status === 'closed').length;
+
+        jhTagMatrixChartInstance = new Chart(ctxMatrix, {
+            type: 'doughnut',
+            data: {
+                labels: ['صيانة مفتوح', 'صيانة مغلق', 'إنتاج مفتوح', 'إنتاج مغلق'],
+                datasets: [{
+                    data: [redOpen, redClosed, blueOpen, blueClosed],
+                    backgroundColor: ['#ef4444', '#b91c1c', '#3b82f6', '#1d4ed8'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '70%',
+                plugins: { legend: { position: 'right', labels: { color: '#cbd5e1', font:{size:10, family:'Cairo'} } } }
+            }
+        });
+    }
+
+    // 🏆 9. تحديث ترتيب الأبطال الداخلي
     renderInternalDeptLeaderboard(dept);
 
     document.getElementById('jhToolbox').style.display = 'block';
     window.scrollTo({ top: document.getElementById('jhToolbox').offsetTop - 20, behavior: 'smooth' });
-}
+};
 
-// 🎯 دالة ضبط وتحديث المستهدف (للمديرين)
-function setDeptGoal() {
+window.setDeptGoal = function() {
     if(!currentJHDept) return;
     let currentGoal = deptGoalsData[currentJHDept] || 85;
     let newGoal = prompt(`أدخل النسبة المئوية للمستهدف (Target OEE) لقسم ${currentJHDept}:\n(مثال: 85)`, currentGoal);
@@ -2063,12 +2111,12 @@ function setDeptGoal() {
     } else if (newGoal) {
         showToast('يرجى إدخال رقم صحيح بين 1 و 100');
     }
-}
-function renderInternalDeptLeaderboard(dept) {
+};
+
+window.renderInternalDeptLeaderboard = function(dept) {
     const container = document.getElementById('deptInternalLeaderboard');
     if(!container) return;
 
-    // تجميع نقاط مستخدمي هذا القسم فقط
     let deptUsers = [];
     for (let uid in usersData) {
         if(usersData[uid].dept === dept) {
@@ -2080,27 +2128,31 @@ function renderInternalDeptLeaderboard(dept) {
         }
     }
     
-    // ترتيب تنازلي
     deptUsers.sort((a,b) => b.points - a.points);
     
-    container.innerHTML = deptUsers.slice(0, 3).map((u, idx) => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:5px 10px; border-radius:8px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-weight:900; color:var(--gold); font-style:italic;">#${idx+1}</span>
-                <img src="${u.avatar || 'https://ui-avatars.com/api/?name='+u.name}" style="width:20px; height:20px; border-radius:50%;">
-                <span style="font-size:11px;">${u.name}</span>
+    container.innerHTML = deptUsers.slice(0, 3).map((u, idx) => {
+        let medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : '🥉');
+        return `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:8px 10px; border-radius:8px; border-right:3px solid var(--gold);">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:16px;">${medal}</span>
+                <img src="${u.avatar || 'https://ui-avatars.com/api/?name='+u.name}" style="width:24px; height:24px; border-radius:50%;">
+                <span style="font-size:12px; font-weight:bold; color:var(--text-main);">${u.name}</span>
             </div>
-            <span style="font-size:11px; font-weight:bold; color:var(--success);">${u.points} <small>نقطة</small></span>
-        </div>
-    `).join('') || '<div style="font-size:10px; color:var(--text-muted); text-align:center;">لا يوجد أعضاء مسجلين بهذا القسم بعد</div>';
-}
-function startNewAuditFlowFromPortal() {
+            <span style="font-size:12px; font-weight:bold; color:var(--success);">${u.points} <small>نقطة</small></span>
+        </div>`;
+    }).join('') || '<div style="font-size:11px; color:var(--text-muted); text-align:center;">لا يوجد أبطال مسجلين بهذا القسم بعد 🚀</div>';
+};
+
+window.startNewAuditFlowFromPortal = function() {
     currentViewedDept = currentJHDept;
     startNewAuditFlow();
-}
+};
 
-async function openJHDocument(type) {
+window.openJHDocument = async function(type) {
     const headerMap = { 
+        'CLIT': '🧹 معايير التنظيف والتزييت والفحص والتربيط (CLIT)',
+        'Contamination': '🛢️ حصر مصادر التلوث والتسريبات',
         'SOC': '🧗‍♂️ حصر الأماكن صعبة الوصول (SOC)', 
         'Safety': '⚠️ حصر الأماكن غير الآمنة (Safety Map)', 
         'Anatomy': '⚙️ تشريح وشرح أجزاء الماكينة' 
@@ -2109,20 +2161,45 @@ async function openJHDocument(type) {
     document.getElementById('jhDocHeader').innerText = headerMap[type];
     renderJHDocForm(type);
     
-    // سحب البيانات من السيرفر لهذا القسم وهذا النوع
     showToast('جاري تحميل السجلات... ⏳');
     const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value');
     let records = snap.val() ? Object.values(snap.val()) : [];
     
     renderJHDocList(type, records);
     showScreen('jhDocumentScreen');
-}
+};
 
-function renderJHDocForm(type) {
+window.renderJHDocForm = function(type) {
     let formHtml = '';
-    if(type === 'SOC') {
+    
+    if(type === 'CLIT') {
         formHtml = `
-            <h4 style="margin:0 0 10px; color:var(--gold);">تسجيل مكان صعب جديد</h4>
+            <h4 style="margin:0 0 10px; color:#00BCD4;">تسجيل معيار CLIT جديد</h4>
+            <div class="row-flex">
+                <select id="clitType" class="form-control flex-1">
+                    <option value="تنظيف (C)">تنظيف (C)</option>
+                    <option value="تزييت (L)">تزييت (L)</option>
+                    <option value="فحص (I)">فحص (I)</option>
+                    <option value="تربيط (T)">تربيط (T)</option>
+                </select>
+                <input type="text" id="clitPart" class="form-control flex-2" placeholder="الجزء (مثال: سير الموتور)">
+            </div>
+            <div class="row-flex">
+                <input type="text" id="clitStandard" class="form-control flex-2" placeholder="المعيار (مثال: خالي من الأتربة)">
+                <input type="text" id="clitTime" class="form-control flex-1" placeholder="الزمن (مثال: 5 دقائق)">
+            </div>
+            <button class="btn btn-primary full-width" style="background:#00BCD4;" onclick="saveJHRecord('CLIT')">➕ إضافة المعيار</button>
+        `;
+    } else if(type === 'Contamination') {
+        formHtml = `
+            <h4 style="margin:0 0 10px; color:#795548;">رصد مصدر تلوث وتسريب</h4>
+            <input type="text" id="contLocation" class="form-control" placeholder="مكان التسريب (مثال: أسفل التنك الرئيسي)">
+            <input type="text" id="contType" class="form-control" placeholder="نوع التلوث (زيت، مياه، بودرة، خردة...)">
+            <button class="btn btn-primary full-width" style="background:#795548; color:white;" onclick="saveJHRecord('Contamination')">➕ رصد المصدر</button>
+        `;
+    } else if(type === 'SOC') {
+        formHtml = `
+            <h4 style="margin:0 0 10px; color:var(--warning);">تسجيل مكان صعب جديد</h4>
             <input type="text" id="socLocation" class="form-control" placeholder="المكان (مثال: خلف الطلمبة 1)">
             <input type="text" id="socReason" class="form-control" placeholder="سبب الصعوبة (ضيق، حرارة..)">
             <button class="btn btn-warning full-width" onclick="saveJHRecord('SOC')">➕ إضافة للسجل</button>
@@ -2139,19 +2216,29 @@ function renderJHDocForm(type) {
         `;
     } else {
         formHtml = `
-            <h4 style="margin:0 0 10px; color:var(--gold);">إضافة شرح جزء</h4>
+            <h4 style="margin:0 0 10px; color:var(--gold);">إضافة شرح جزء (Anatomy)</h4>
             <input type="text" id="partName" class="form-control" placeholder="اسم الجزء">
-            <textarea id="partDesc" class="form-control" placeholder="وظيفة الجزء وكيفية فحصه"></textarea>
+            <textarea id="partDesc" class="form-control" placeholder="وظيفة الجزء وكيفية فحصه" rows="2"></textarea>
             <button class="btn btn-primary full-width" onclick="saveJHRecord('Anatomy')">💾 حفظ البيانات</button>
         `;
     }
     document.getElementById('jhDocActionArea').innerHTML = formHtml;
-}
+};
 
-async function saveJHRecord(type) {
+window.saveJHRecord = async function(type) {
     let data = { id: uniqueNumericId().toString(), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
     
-    if(type === 'SOC') {
+    if(type === 'CLIT') {
+        data.clitType = document.getElementById('clitType').value;
+        data.part = document.getElementById('clitPart').value;
+        data.standard = document.getElementById('clitStandard').value;
+        data.time = document.getElementById('clitTime').value;
+        if(!data.part || !data.standard) return showToast('أكمل البيانات المطلوبة');
+    } else if(type === 'Contamination') {
+        data.location = document.getElementById('contLocation').value;
+        data.typeDesc = document.getElementById('contType').value;
+        if(!data.location) return;
+    } else if(type === 'SOC') {
         data.location = document.getElementById('socLocation').value;
         data.reason = document.getElementById('socReason').value;
         if(!data.location) return;
@@ -2167,33 +2254,48 @@ async function saveJHRecord(type) {
 
     await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data);
     showToast('تم تحديث السجل الفني بنجاح ✅');
-    openJHDocument(type); // تحديث القائمة
-}
+    openJHDocument(type); 
+};
 
-function renderJHDocList(type, records) {
-    let html = records.reverse().map(r => `
-        <div class="item-row" style="border-right-color:${type==='Safety'?'var(--danger)':'var(--gold)'};">
+window.renderJHDocList = function(type, records) {
+    let html = records.reverse().map(r => {
+        let content = '';
+        if(type === 'CLIT') {
+            content = `<b>[${r.clitType}] ${r.part}</b><br><small style="color:var(--success);">المعيار: ${r.standard} | ⏱️ ${r.time}</small>`;
+        } else if(type === 'Contamination') {
+            content = `<b>📍 ${r.location}</b><br><small style="color:#795548;">التلوث: ${r.typeDesc}</small>`;
+        } else if(type === 'SOC') {
+            content = `<b>🚧 ${r.location}</b><br><small style="color:var(--warning);">السبب: ${r.reason}</small>`;
+        } else if(type === 'Safety') {
+            content = `<b>${r.level==='high'?'🔴':'🟡'} ${r.hazard}</b>`;
+        } else {
+            content = `<b>⚙️ ${r.name}</b><br><small style="color:var(--gold);">${r.desc}</small>`;
+        }
+
+        let borderColor = type === 'Safety' ? 'var(--danger)' : (type === 'CLIT' ? '#00BCD4' : (type === 'Contamination' ? '#795548' : 'var(--gold)'));
+
+        return `
+        <div class="card glass-card" style="border-right:4px solid ${borderColor}; padding:10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
             <div style="flex:1;">
-                <b>${r.location || r.hazard || r.name}</b><br>
-                <small style="color:var(--text-muted);">${r.reason || r.level || r.desc}</small>
+                ${content}
             </div>
-            <div style="text-align:left;">
-                <small style="font-size:9px;">${r.date}</small><br>
-                ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin:0;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️</button>` : ''}
+            <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
+                <small style="font-size:9px; color:var(--text-muted);">${r.date}</small><br>
+                <small style="font-size:10px; color:var(--text-main);">${r.user}</small><br>
+                ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️</button>` : ''}
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
     
-    document.getElementById('jhDocListContainer').innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted);">لا توجد سجلات مسجلة لهذا القسم</div>';
-}
+    document.getElementById('jhDocListContainer').innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted);">لا توجد سجلات مسجلة لهذا القسم 📭</div>';
+};
 
-async function deleteJHRecord(type, id) {
-    if(confirm('حذف هذا السجل؟')) {
+window.deleteJHRecord = async function(type, id) {
+    if(confirm('هل أنت متأكد من حذف هذا السجل؟')) {
         await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).remove();
         openJHDocument(type);
     }
-}
-
+};
 // ==========================================
 // 🚀 المستشار الذكي وعقل المصنع (الإصدار المستقر والمفصل)
 // ==========================================

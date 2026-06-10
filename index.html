@@ -905,7 +905,17 @@
             <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">⬅️ عودة</button>
             <h2 id="jhDocHeader" style="color:var(--gold); margin:0; font-size:18px;">السجل الهندي</h2>
         </div>
-        <div id="jhDocActionArea" class="card glass-card btn-role-auditor"></div>
+      <!-- منطقة الإجراءات والفلاتر العلوية -->
+        <div id="jhDocActionArea" class="card glass-card btn-role-auditor" style="padding:15px; margin-bottom:15px;"></div>
+        
+        <!-- فلاتر الدورية (تظهر فقط في خريطة الـ CLIT) -->
+        <div id="clitFrequencyFilters" style="display:none; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+            <button class="btn btn-sm clit-filter-btn active" style="border-radius:20px; padding:5px 15px;" onclick="filterCLIT('الكل', this)">الكل 📋</button>
+            <button class="btn btn-sm btn-outline clit-filter-btn" style="border-radius:20px; padding:5px 15px;" onclick="filterCLIT('يومي', this)">يومي / وردية 🟢</button>
+            <button class="btn btn-sm btn-outline clit-filter-btn" style="border-radius:20px; padding:5px 15px;" onclick="filterCLIT('أسبوعي', this)">أسبوعي 🟡</button>
+            <button class="btn btn-sm btn-outline clit-filter-btn" style="border-radius:20px; padding:5px 15px;" onclick="filterCLIT('شهري', this)">شهري / سنوي 🔴</button>
+        </div>
+
         <div id="jhDocListContainer"></div>
     </div>
 

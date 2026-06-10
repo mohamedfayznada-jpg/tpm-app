@@ -929,14 +929,48 @@
     <button class="btn btn-success full-width shadow-btn" style="font-size:16px; font-weight:900; padding:15px; border-radius:12px;" onclick="startCLITChecklist()">📋 بدء تنفيذ قائمة الفحص (Checklist)</button>
 </div>
         <!-- فلاتر الدورية (تظهر فقط في خريطة الـ CLIT) -->
-        <div id="clitFrequencyFilters" style="display:none; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-            <button class="btn btn-sm clit-filter-btn active" style="border-radius:20px; padding:5px 15px;" onclick="filterCLIT('الكل', this)">الكل 📋</button>
-            <button class="btn btn-sm btn-outline clit-filter-btn" style="border-radius:20px; padding:5px 15px;" onclick="filterCLIT('يومي', this)">يومي / وردية 🟢</button>
-            <button class="btn btn-sm btn-outline clit-filter-btn" style="border-radius:20px; padding:5px 15px;" onclick="filterCLIT('أسبوعي', this)">أسبوعي 🟡</button>
-            <button class="btn btn-sm btn-outline clit-filter-btn" style="border-radius:20px; padding:5px 15px;" onclick="filterCLIT('شهري', this)">شهري / سنوي 🔴</button>
+       <div id="clitStatsSummary" class="card glass-card" style="padding:15px; margin-bottom:20px; border-top:4px solid var(--gold); display:none; background:linear-gradient(135deg, rgba(26,42,71,0.8), rgba(15,23,42,0.9));">
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; text-align:center;">
+                <div style="border-left:1px dashed rgba(255,255,255,0.1);">
+                    <div style="font-size:20px; font-weight:900; color:var(--gold);" id="statTotalPoints">0</div>
+                    <div style="font-size:10px; color:var(--text-muted);">إجمالي نقاط الخريطة</div>
+                </div>
+                <div style="border-left:1px dashed rgba(255,255,255,0.1);">
+                    <div style="font-size:20px; font-weight:900; color:#00BCD4;" id="statActiveFiltered">0</div>
+                    <div style="font-size:10px; color:var(--text-muted);">النقاط المفلترة حالياً</div>
+                </div>
+                <div>
+                    <div style="font-size:20px; font-weight:900; color:var(--success);" id="statEstimatedTime">0m</div>
+                    <div style="font-size:10px; color:var(--text-muted);">الوقت المعياري المستهدف</div>
+                </div>
+            </div>
         </div>
 
-        <div id="jhDocListContainer"></div>
+        <div id="clitZoneFilters" style="display:none; gap:8px; margin-bottom:15px; overflow-x:auto; padding-bottom:5px; white-space:nowrap; direction:rtl;">
+            <button class="btn btn-sm clit-zone-btn active" style="border-radius:12px; font-weight:900; padding:8px 16px;" onclick="filterCLITZone('الكل', this)">الكل 🏭</button>
+            <button class="btn btn-sm btn-outline clit-zone-btn" style="border-radius:12px; font-weight:700; padding:8px 16px;" onclick="filterCLITZone('الجيكات', this)">الجيكات <span class="badge" id="badge-count-الجيكات">0</span></button>
+            <button class="btn btn-sm btn-outline clit-zone-btn" style="border-radius:12px; font-weight:700; padding:8px 16px;" onclick="filterCLITZone('الهيد', this)">الهد (عربة ومحاور) <span class="badge" id="badge-count-الهيد">0</span></button>
+            <button class="btn btn-sm btn-outline clit-zone-btn" style="border-radius:12px; font-weight:700; padding:8px 16px;" onclick="filterCLITZone('الفرن', this)">الفرن <span class="badge" id="badge-count-الفرن">0</span></button>
+            <button class="btn btn-sm btn-outline clit-zone-btn" style="border-radius:12px; font-weight:700; padding:8px 16px;" onclick="filterCLITZone('مدخل', this)">المدخل والمخرج <span class="badge" id="badge-count-مدخل">0</span></button>
+            <button class="btn btn-sm btn-outline clit-zone-btn" style="border-radius:12px; font-weight:700; padding:8px 16px;" onclick="filterCLITZone('عربة', this)">عربة الكابينة <span class="badge" id="badge-count-عربة">0</span></button>
+            <button class="btn btn-sm btn-outline clit-zone-btn" style="border-radius:12px; font-weight:700; padding:8px 16px;" onclick="filterCLITZone('تجهيزة', this)">التنكات والتجهيزات <span class="badge" id="badge-count-تجهيزة">0</span></button>
+        </div>
+
+        <div id="clitOpFilters" style="display:none; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:15px;">
+            <button class="btn btn-sm clit-op-btn btn-primary" style="border-radius:10px; font-size:11px; font-weight:900;" onclick="filterCLITOp('الكل', this)">الكل 📋</button>
+            <button class="btn btn-sm btn-outline clit-op-btn" style="border-radius:10px; font-size:11px; border-color:#3b82f6; color:#3b82f6;" onclick="filterCLITOp('تنظيف', this)">🧹 تنظيف</button>
+            <button class="btn btn-sm btn-outline clit-op-btn" style="border-radius:10px; font-size:11px; border-color:#f97316; color:#f97316;" onclick="filterCLITOp('تزييت', this)">🛢️ تزييت/تشحيم</button>
+            <button class="btn btn-sm btn-outline clit-op-btn" style="border-radius:10px; font-size:11px; border-color:#22c55e; color:#22c55e;" onclick="filterCLITOp('فحص', this)">🔍 فحص</button>
+        </div>
+
+        <div id="clitFrequencyFilters" style="display:none; justify-content:center; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+            <button class="btn btn-sm clit-freq-btn active" style="border-radius:20px; padding:4px 15px; font-size:11px;" onclick="filterCLITFreq('الكل', this)">كل الدوريات ⏱️</button>
+            <button class="btn btn-sm btn-outline clit-freq-btn" style="border-radius:20px; padding:4px 15px; font-size:11px;" onclick="filterCLITFreq('يومي', this)">يومي/وردية</button>
+            <button class="btn btn-sm btn-outline clit-freq-btn" style="border-radius:20px; padding:4px 15px; font-size:11px;" onclick="filterCLITFreq('أسبوعي', this)">أسبوعي</button>
+            <button class="btn btn-sm btn-outline clit-freq-btn" style="border-radius:20px; padding:4px 15px; font-size:11px;" onclick="filterCLITFreq('شهري', this)">شهري/سنوي</button>
+        </div>
+
+        <div id="jhDocListContainer" style="padding-bottom:100px;"></div>
     </div>
 
  <!-- ========================================== -->

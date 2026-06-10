@@ -2149,9 +2149,63 @@ window.startNewAuditFlowFromPortal = function() {
     startNewAuditFlow();
 };
 
+// ==========================================
+// 📚 قاعدة بيانات الـ CLIT الحقيقية (من ملفات الـ Excel)
+// ==========================================
+const factoryCLITData = [
+  {"region": "الهد", "part": "", "operation": "تنظيف", "action": "تنظيف الـ nozzle للايزو خاص هد 1", "frequency": "شهري", "tools": "هواء مضغوط", "standard": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
+  {"region": "الهد", "part": "", "operation": "تنظيف", "action": "تنظيف الـ nozzle البولو خاص هد 1", "frequency": "شهري", "tools": "هواء مضغوط", "standard": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
+  {"region": "الهد", "part": "", "operation": "تنظيف", "action": "تنظيف الـ nozzle للايزو خاص هد 2", "frequency": "شهري", "tools": "هواء مضغوط", "standard": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
+  {"region": "الهد", "part": "", "operation": "تنظيف", "action": "تنظيف الـ nozzle البولو خاص هد 2", "frequency": "شهري", "tools": "هواء مضغوط", "standard": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
+  {"region": "الهد", "part": "الهد", "operation": "فحص", "action": "مراجعة ربط اللاكور الخراطيم المثبتة على هد 1", "frequency": "أسبوعي", "tools": "مفاتيح والن الربط", "standard": "عدم الربط الجيد في الوصلات قد يؤدي الي تسريب"},
+  {"region": "الهد", "part": "", "operation": "فحص", "action": "مراجعة ربط اللاكور الخراطيم المثبتة على هد 2", "frequency": "أسبوعي", "tools": "مفاتيح والن الربط", "standard": "عدم الربط الجيد في الوصلات قد يؤدي الي تسريب"},
+  {"region": "الهد", "part": "", "operation": "فحص", "action": "فحص خراطيم هد 1 الواصلة من البلوكة الى الهد من التآكل وتثبيتها", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
+  {"region": "الهد", "part": "", "operation": "فحص", "action": "فحص خراطيم هد 2 الواصلة من البلوكة الى الهد من التآكل وتثبيتها", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
+  {"region": "الهد", "part": "", "operation": "فحص", "action": "التأكد من مستوى زيت التزييت فى جميع كبات التزييت ألا يقل عن 50%", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "نقص مستوي الزيت يودي تلف الموتور"},
+  {"region": "الهد", "part": "", "operation": "فحص", "action": "وصلات الايزو والبولو والهيدروليك", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
+  {"region": "الموتور الخاص بالحركة في اتجاة X", "part": "", "operation": "تنطيف", "action": "تنظيف الموتور الخاص بالحركة في اتجاة X", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاوساخ يودي الي ارتفاع حرارة الموتور او تلفة"},
+  {"region": "الموتور الخاص بالحركة في اتجاةY", "part": "", "operation": "تنطيف", "action": "تنظيف الموتور الخاص بالحركة في اتجاة Y", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاوساخ يودي الي ارتفاع حرارة الموتور او تلفة"},
+  {"region": "موتور عربة الهد اتجاة X", "part": "", "operation": "فحص", "action": "موتور عربة الهد اتجاة X", "frequency": "شهري", "tools": "بالاذن", "standard": "تلف البلى وتلف الملفات الداخلية للموتور"},
+  {"region": "موتور عربة الهد اتجاة", "part": "", "operation": "فحص", "action": "موتور عربة الهد اتجاة Y", "frequency": "شهري", "tools": "بالاذن", "standard": "تلف البلى وتلف الملفات الداخلية للموتور"},
+  {"region": "وصلات الهواء الخاصة ببستم طلوع ونزول هد 1", "part": "عربة الهد", "operation": "فحص", "action": "التأكد من عدم وجود تسريب في وصلات الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين والاذن", "standard": "تسريب في البستم ويمكن عدم حركنة"},
+  {"region": "وصلات الهواء الخاصة ببستم طلوع ونزول هد 2", "part": "", "operation": "فحص", "action": "التأكد من عدم وجود تسريب في وصلات الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين والاذن", "standard": "تسريب في البستم ويمكن عدم حركنة"},
+  {"region": "بلف الهواء المتحكم فى بستم هد 1", "part": "", "operation": "فحص", "action": "التأكد من عدم وجود تسريب هواء فى بلف الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين والاذن", "standard": "يمكن ان يتسبب في عدم حركة البستم او بطئة"},
+  {"region": "بلف الهواء المتحكم فى بستم هد 2", "part": "", "operation": "فحص", "action": "التأكد من عدم وجود تسريب هواء فى بلف الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين والاذن", "standard": "يمكن ان يتسبب في عدم حركة البستم او بطئة"},
+  {"region": "السير المسنن الخاص بحركة عربة الهد", "part": "", "operation": "فحص", "action": "السير المسنن الخاص بحركة عربة الهد", "frequency": "شهري", "tools": "N فحص بالعين واليد", "standard": "يمكن حدوث مشكله في عربة الهيد وحدوث دقره"},
+  {"region": "الترس الخاص بحركة عربة الهد من التآكل او البوش", "part": "", "operation": "فحص", "action": "فحص الترس الخاص بحركة عربة الهد من التآكل", "frequency": "شهري", "tools": "N فحص بالعين واليد", "standard": "يمكن حدوث مشكله في عربة الهيد وحدوث دقره"},
+  {"region": "ترس والجريدة المسننة خاص الموتور المتحكم فى محور Y", "part": "", "operation": "فحص", "action": "فحص ترس والجريدة المسننة خاص الموتور", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "حدوث مشكله في حركة عربة الهيد في محور Y"},
+  {"region": "Stream Distribution", "part": "Stream Distribution", "operation": "فحص", "action": "فحص ال كامات stream الخاص بالهد 1 وتغيرها", "frequency": "شهري", "tools": "N فحص بالعين واليد", "standard": "يمكن ان تسبب عدم الحقن في حالة عدم فتحها"},
+  {"region": "Stream Distribution", "part": "", "operation": "تنظيف", "action": "Stream Distribution تنظيف الخاص بالهد 1", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاوساخ قد يسبب خلل في حركتة"},
+  {"region": "Stream Distribution", "part": "", "operation": "تنظيف", "action": "Stream Distribution تنظيف الخاص بالهد 2", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاوساخ قد يسبب خلل في حركتة"},
+  {"region": "Stream Distribution", "part": "", "operation": "فحص", "action": "فحص ال كامات stream الخاص بالهد 2 وتغيرها", "frequency": "شهري", "tools": "N فحص بالعين واليد", "standard": "يمكن ان تسبب عدم الحقن في حالة عدم فتحها"},
+  {"region": "Stream Distribution", "part": "", "operation": "تزييت", "action": "التأكد من تزييت الــ Stream Distribution", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تلف الاستريم"},
+  {"region": "Stream Distribution", "part": "", "operation": "تزييت", "action": "التأكد من تزييت الــ Stream Distribution لهد 2", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تلف الاستريم"},
+  {"region": "Stream Distribution", "part": "بلوكات الهيدروليك", "operation": "فحص", "action": "بلوكة البلفات الخاص بالهد1", "frequency": "شهري", "tools": "N فحص بالعين", "standard": "حدوث تسريب في احد البلوكات"},
+  {"region": "Stream Distribution", "part": "", "operation": "تنظيف", "action": "تنظيف بلوكات الهيدروليك الخاص بالهد 1", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاتربة والاوساخ قد يمنع اكتشاف التسريبات"},
+  {"region": "Stream Distribution", "part": "", "operation": "تنظيف", "action": "تنظيف بلوكات الهيدروليك الخاص بالهد 2", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاتربة والاوساخ قد يمنع اكتشاف التسريبات"},
+  {"region": "Stream Distribution", "part": "", "operation": "فحص", "action": "بلوكة البلفات الخاص بالهد2", "frequency": "شهري", "tools": "N فحص بالعين", "standard": "حدوث تسريب في احد البلوكات"},
+  {"region": "HEATING SYSTEM", "part": "خراطيم التسخين", "operation": "فحص", "action": "مراجعة سلامة خراطيم التسخين وتغيير ما يلزم", "frequency": "يومي", "tools": "N فحص بالعين", "standard": "تلف في احد الخراطيم يودي الي تسريب"},
+  {"region": "HEATING SYSTEM", "part": "وصلات التسخين والغلايات", "operation": "فحص", "action": "معالجة أي تسريب في وصلات التسخين", "frequency": "يومي", "tools": "N فحص بالعين", "standard": "عدم وصول الزيت الى البلانسرات وحدوث تآكل"},
+  {"region": "HEATING SYSTEM", "part": "وحدة التسخين", "operation": "تنظيف", "action": "تنظيف وحدة التسخين كاملة", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "انخفاض جودة التسخين"},
+  {"region": "HEATING SYSTEM", "part": "عداد الحرارة", "operation": "فحص", "action": "التحقق من درجة الحرارة", "frequency": "يومي", "tools": "N فحص بالعين", "standard": "ارتفاع او انخفاض الحرارة يقلل من جودة الحقن"},
+  {"region": "HEATING SYSTEM", "part": "مياة الغلايات فحص وتغيير", "operation": "تزويد مياة الغلاية او تغييرة في حالة الحاجة", "action": "", "frequency": "أسبوعي", "tools": "", "standard": "انخفاض جودة التسخين"},
+  {"region": "HEATING SYSTEM", "part": "الوصلات", "operation": "تربيط", "action": "مراجعة ربط جميع الوصلات عند عزم معين", "frequency": "يومي", "tools": "بالعدد والان المناسب", "standard": "حدوث تسريب في الوصلات"},
+  {"region": "HEATING SYSTEM", "part": "البستم", "operation": "فحص", "action": "التأكد من ربط البستم فى الونش وسلامة الحركة", "frequency": "أسبوعي", "tools": "بالعدد والان المناسب", "standard": "حدوث خلل في حركة البستم وتلف الحشوة"},
+  {"region": "HEATING SYSTEM", "part": "", "operation": "تشحيم", "action": "تشحيم دلاليل حركة البستم بشحم Mobliux EP -2", "frequency": "شهري", "tools": "", "standard": "تأكل في دلايل الحركة وتلفها"},
+  {"region": "HEATING SYSTEM", "part": "السيور", "operation": "فحص", "action": "فحص السيور الخاصة بدخول الثلاجة للفرن", "frequency": "أسبوعي", "tools": "N فحص بالعين واليد", "standard": "تلف السير وعدم حركة الثلاجة"},
+  {"region": "HEATING SYSTEM", "part": "وصلات الهواء والبلف", "operation": "فحص", "action": "التأكد من عدم وجود تسريب في وصلات الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "عدم حركة البستم بسبب التسريب"},
+  {"region": "JIG", "part": "جسم فتايل صعود وهبوط الجيك", "operation": "تزييت", "action": "تشحيم باستخدام Mobil gear 600 XP320", "frequency": "شهري", "tools": "مسدس شحم / مزيتة", "standard": "عدد النقاط: 56"},
+  {"region": "عربة الهيد", "part": "قضيب حركة عربة الهيد اعلى الماكينة", "operation": "تزييت", "action": "تشحيم باستخدام Mobilux ep - 0", "frequency": "شهري", "tools": "مسدس شحم / مزيتة", "standard": "عدد النقاط: 2"},
+  {"region": "عربة الهيد", "part": "عجل عربة الهيد", "operation": "تزييت", "action": "تشحيم باستخدام Mobil gear 600 XP320", "frequency": "شهري", "tools": "مسدس شحم / مزيتة", "standard": "عدد النقاط: 12"}
+];
+
+let currentClitFilter = 'الكل';
+let currentDocType = '';
+
 window.openJHDocument = async function(type) {
+    currentDocType = type;
     const headerMap = { 
-        'CLIT': '🧹 معايير التنظيف والتزييت والفحص والتربيط (CLIT)',
+        'CLIT': '🧹 خرائط معايير التنظيف والتزييت والفحص (CLIT)',
         'Contamination': '🛢️ حصر مصادر التلوث والتسريبات',
         'SOC': '🧗‍♂️ حصر الأماكن صعبة الوصول (SOC)', 
         'Safety': '⚠️ حصر الأماكن غير الآمنة (Safety Map)', 
@@ -2159,14 +2213,43 @@ window.openJHDocument = async function(type) {
     };
     
     document.getElementById('jhDocHeader').innerText = headerMap[type];
+    
+    // إظهار/إخفاء فلاتر الدورية بناءً على نوع الشاشة
+    const filters = document.getElementById('clitFrequencyFilters');
+    if(filters) filters.style.display = (type === 'CLIT') ? 'flex' : 'none';
+
     renderJHDocForm(type);
     
     showToast('جاري تحميل السجلات... ⏳');
-    const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value');
-    let records = snap.val() ? Object.values(snap.val()) : [];
+    
+    let records = [];
+    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') {
+        records = factoryCLITData; 
+    } else {
+        const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value');
+        records = snap.val() ? Object.values(snap.val()) : [];
+    }
     
     renderJHDocList(type, records);
     showScreen('jhDocumentScreen');
+};
+
+// دالة فلترة المهام في الـ CLIT
+window.filterCLIT = function(freq, btnEl) {
+    currentClitFilter = freq;
+    
+    // تغيير ألوان الأزرار
+    document.querySelectorAll('.clit-filter-btn').forEach(b => {
+        b.classList.remove('active');
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-outline');
+    });
+    btnEl.classList.add('active');
+    btnEl.classList.remove('btn-outline');
+    btnEl.classList.add('btn-primary');
+    
+    let records = (currentJHDept === 'حقن الكابينة' && currentDocType === 'CLIT') ? factoryCLITData : [];
+    renderJHDocList('CLIT', records);
 };
 
 window.renderJHDocForm = function(type) {
@@ -2174,21 +2257,23 @@ window.renderJHDocForm = function(type) {
     
     if(type === 'CLIT') {
         formHtml = `
-            <h4 style="margin:0 0 10px; color:#00BCD4;">تسجيل معيار CLIT جديد</h4>
+            <h4 style="margin:0 0 10px; color:#00BCD4;">تسجيل معيار CLIT إضافي (تحديث الخريطة)</h4>
             <div class="row-flex">
                 <select id="clitType" class="form-control flex-1">
-                    <option value="تنظيف (C)">تنظيف (C)</option>
-                    <option value="تزييت (L)">تزييت (L)</option>
-                    <option value="فحص (I)">فحص (I)</option>
-                    <option value="تربيط (T)">تربيط (T)</option>
+                    <option value="تنظيف">تنظيف (C)</option>
+                    <option value="تزييت">تزييت/تشحيم (L)</option>
+                    <option value="فحص">فحص (I)</option>
+                    <option value="تربيط">تربيط (T)</option>
                 </select>
-                <input type="text" id="clitPart" class="form-control flex-2" placeholder="الجزء (مثال: سير الموتور)">
+                <select id="clitFreq" class="form-control flex-1">
+                    <option value="يومي">يومي</option>
+                    <option value="أسبوعي">أسبوعي</option>
+                    <option value="شهري">شهري</option>
+                </select>
             </div>
-            <div class="row-flex">
-                <input type="text" id="clitStandard" class="form-control flex-2" placeholder="المعيار (مثال: خالي من الأتربة)">
-                <input type="text" id="clitTime" class="form-control flex-1" placeholder="الزمن (مثال: 5 دقائق)">
-            </div>
-            <button class="btn btn-primary full-width" style="background:#00BCD4;" onclick="saveJHRecord('CLIT')">➕ إضافة المعيار</button>
+            <input type="text" id="clitPart" class="form-control" placeholder="الجزء / المنطقة المستهدفة">
+            <input type="text" id="clitStandard" class="form-control" placeholder="الإجراء (مثال: تنظيف وتأكد من عدم التسريب)">
+            <button class="btn btn-primary full-width" style="background:#00BCD4;" onclick="saveJHRecord('CLIT')">➕ إضافة لخريطة القسم</button>
         `;
     } else if(type === 'Contamination') {
         formHtml = `
@@ -2225,6 +2310,83 @@ window.renderJHDocForm = function(type) {
     document.getElementById('jhDocActionArea').innerHTML = formHtml;
 };
 
+// دالة العرض الخرافية اللي بتلون حسب نوع العملية
+window.renderJHDocList = function(type, records) {
+    let filteredRecords = records;
+    
+    // فلترة لو إحنا في خريطة الـ CLIT
+    if(type === 'CLIT' && currentClitFilter !== 'الكل') {
+        filteredRecords = records.filter(r => r.frequency && r.frequency.includes(currentClitFilter));
+    }
+
+    let html = filteredRecords.map((r, index) => {
+        let content = '';
+        let borderColor = 'var(--gold)';
+        let bgGlow = '';
+
+        if(type === 'CLIT') {
+            // تحديد اللون والأيقونة بناءً على نوع العملية
+            let op = r.operation || r.clitType || '';
+            let icon = '⚙️';
+            if(op.includes('تنظيف') || op.includes('تنطيف')) { borderColor = '#3b82f6'; icon = '🧹'; bgGlow = 'rgba(59, 130, 246, 0.05)'; }
+            else if(op.includes('تزييت') || op.includes('تشحيم')) { borderColor = '#f97316'; icon = '🛢️'; bgGlow = 'rgba(249, 115, 22, 0.05)'; }
+            else if(op.includes('فحص')) { borderColor = '#22c55e'; icon = '🔍'; bgGlow = 'rgba(34, 197, 94, 0.05)'; }
+            else if(op.includes('تربيط') || op.includes('ربط')) { borderColor = '#ef4444'; icon = '🔧'; bgGlow = 'rgba(239, 68, 68, 0.05)'; }
+
+            content = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                    <b style="color:var(--text-main); font-size:14px;">${icon} ${r.region} ${r.part ? ' - ' + r.part : ''}</b>
+                    <span style="font-size:10px; background:${borderColor}; color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${r.frequency || 'دوري'}</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px; line-height:1.5;">
+                    <span style="color:${borderColor}; font-weight:bold;">الإجراء:</span> ${r.action || r.standard}
+                </div>
+                <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor};">
+                    <b>🎯 المعيار المقبول/الخطر:</b> ${r.standard || 'حسب المواصفة'}<br>
+                    <b>🛠️ الأدوات:</b> ${r.tools || 'يدوي'}
+                </div>
+            `;
+        } 
+        else if(type === 'Contamination') {
+            borderColor = '#795548'; bgGlow = 'rgba(121, 85, 72, 0.05)';
+            content = `<b>📍 ${r.location}</b><br><small style="color:#795548;">التلوث: ${r.typeDesc}</small>`;
+        } else if(type === 'SOC') {
+            borderColor = 'var(--warning)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
+            content = `<b>🚧 ${r.location}</b><br><small style="color:var(--warning);">السبب: ${r.reason}</small>`;
+        } else if(type === 'Safety') {
+            borderColor = 'var(--danger)'; bgGlow = 'rgba(244, 67, 54, 0.05)';
+            content = `<b>${r.level==='high'?'🔴':'🟡'} ${r.hazard}</b>`;
+        } else {
+            borderColor = 'var(--gold)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
+            content = `<b>⚙️ ${r.name}</b><br><small style="color:var(--gold);">${r.desc}</small>`;
+        }
+
+        let deleteBtn = '';
+        if(hasRole('admin') && r.id) { 
+            deleteBtn = `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️ حذف</button>`;
+        }
+
+        return `
+        <div class="card glass-card" style="border-right:5px solid ${borderColor}; background:${bgGlow}; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="flex:1;">
+                ${content}
+            </div>
+            ${r.date ? `
+            <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
+                <small style="font-size:9px; color:var(--text-muted);">${r.date}</small><br>
+                <small style="font-size:10px; color:var(--text-main);">${r.user}</small><br>
+                ${deleteBtn}
+            </div>` : `
+            <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
+                <small style="font-size:9px; color:var(--gold); font-weight:bold;">معيار المصنع 🏭</small>
+            </div>
+            `}
+        </div>`;
+    }).join('');
+    
+    document.getElementById('jhDocListContainer').innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted); font-weight:bold;">لا توجد مهام مطابقة للفلتر 📭</div>';
+};
+
 window.saveJHRecord = async function(type) {
     let data = { id: uniqueNumericId().toString(), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
     
@@ -2232,7 +2394,7 @@ window.saveJHRecord = async function(type) {
         data.clitType = document.getElementById('clitType').value;
         data.part = document.getElementById('clitPart').value;
         data.standard = document.getElementById('clitStandard').value;
-        data.time = document.getElementById('clitTime').value;
+        data.frequency = document.getElementById('clitFreq').value;
         if(!data.part || !data.standard) return showToast('أكمل البيانات المطلوبة');
     } else if(type === 'Contamination') {
         data.location = document.getElementById('contLocation').value;
@@ -2253,48 +2415,8 @@ window.saveJHRecord = async function(type) {
     }
 
     await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data);
-    showToast('تم تحديث السجل الفني بنجاح ✅');
+    showToast('تم إضافة المعيار/السجل بنجاح ✅');
     openJHDocument(type); 
-};
-
-window.renderJHDocList = function(type, records) {
-    let html = records.reverse().map(r => {
-        let content = '';
-        if(type === 'CLIT') {
-            content = `<b>[${r.clitType}] ${r.part}</b><br><small style="color:var(--success);">المعيار: ${r.standard} | ⏱️ ${r.time}</small>`;
-        } else if(type === 'Contamination') {
-            content = `<b>📍 ${r.location}</b><br><small style="color:#795548;">التلوث: ${r.typeDesc}</small>`;
-        } else if(type === 'SOC') {
-            content = `<b>🚧 ${r.location}</b><br><small style="color:var(--warning);">السبب: ${r.reason}</small>`;
-        } else if(type === 'Safety') {
-            content = `<b>${r.level==='high'?'🔴':'🟡'} ${r.hazard}</b>`;
-        } else {
-            content = `<b>⚙️ ${r.name}</b><br><small style="color:var(--gold);">${r.desc}</small>`;
-        }
-
-        let borderColor = type === 'Safety' ? 'var(--danger)' : (type === 'CLIT' ? '#00BCD4' : (type === 'Contamination' ? '#795548' : 'var(--gold)'));
-
-        return `
-        <div class="card glass-card" style="border-right:4px solid ${borderColor}; padding:10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-            <div style="flex:1;">
-                ${content}
-            </div>
-            <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
-                <small style="font-size:9px; color:var(--text-muted);">${r.date}</small><br>
-                <small style="font-size:10px; color:var(--text-main);">${r.user}</small><br>
-                ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️</button>` : ''}
-            </div>
-        </div>`;
-    }).join('');
-    
-    document.getElementById('jhDocListContainer').innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted);">لا توجد سجلات مسجلة لهذا القسم 📭</div>';
-};
-
-window.deleteJHRecord = async function(type, id) {
-    if(confirm('هل أنت متأكد من حذف هذا السجل؟')) {
-        await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).remove();
-        openJHDocument(type);
-    }
 };
 // ==========================================
 // 🚀 المستشار الذكي وعقل المصنع (الإصدار المستقر والمفصل)

@@ -846,7 +846,25 @@
                         <div class="stat-label">تحسينات الكايزن</div>
                     </div>
                 </div>
+<div class="card glass-card" style="padding:15px; margin-bottom:20px; border-top:4px solid var(--primary);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h4 style="margin:0; color:var(--gold); font-size:14px;">📅 السجل الميداني (CLIT Calendar)</h4>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <button class="btn btn-sm btn-outline" onclick="changeCalendarMonth(-1)">◀️ السابق</button>
+                            <b id="currentCalendarMonth" style="color:var(--text-main); font-size:12px;">شهر / سنة</b>
+                            <button class="btn btn-sm btn-outline" onclick="changeCalendarMonth(1)">التالي ▶️</button>
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex; justify-content:center; gap:15px; margin-bottom:15px; font-size:10px; font-weight:bold;">
+                        <span style="color:var(--text-muted);">⬜ لم يُنفذ</span>
+                        <span style="color:var(--success);">🟩 مُنفذ بالكامل</span>
+                        <span style="color:var(--warning);">🟨 منفذ (توجد تاجات مفتوحة)</span>
+                    </div>
 
+                    <div id="jhCalendarGrid" style="display:grid; grid-template-columns: repeat(7, 1fr); gap:5px; text-align:center;">
+                        </div>
+                </div>
                 <!-- 2. التحليل المرئي المتقدم (Visual Analytics) -->
                 <div class="row-flex" style="flex-wrap: wrap; gap: 15px; margin-bottom:25px;">
                     <!-- منحنى المراجعات -->
@@ -1103,13 +1121,18 @@
     </div>
 
 <div class="container screen" id="clitChecklistScreen">
-        <div class="sticky-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid rgba(0, 188, 212, 0.3);">
-            <div style="display:flex; gap:10px; align-items:center;">
-                <button class="btn btn-sm btn-outline" onclick="showScreen('jhDocumentScreen')">⬅️ إلغاء</button>
-                <h2 style="color:#00BCD4; margin:0; font-size:16px;">قائمة الفحص: <span id="activeChecklistFreq"></span></h2>
+    <div class="sticky-header" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid rgba(0, 188, 212, 0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button class="btn btn-sm btn-outline" onclick="showScreen('jhDocumentScreen')">⬅️ إلغاء</button>
+                    <h2 style="color:#00BCD4; margin:0; font-size:16px;">قائمة الفحص: <span id="activeChecklistFreq"></span></h2>
+                </div>
+                <div style="font-size:12px; font-weight:bold; color:var(--text-muted);">
+                    إنجاز: <span id="checklistProgress" style="color:var(--success);">0</span> / <span id="checklistTotal">0</span>
+                </div>
             </div>
-            <div style="font-size:12px; font-weight:bold; color:var(--text-muted);">
-                إنجاز: <span id="checklistProgress" style="color:var(--success);">0</span> / <span id="checklistTotal">0</span>
+            <div style="font-size:11px; font-weight:bold; color:var(--gold); text-align:right;">
+                📅 تاريخ التنفيذ المُسجل: <span id="checklistCurrentDate"></span>
             </div>
         </div>
         <div class="progress-track" style="height:6px; background:rgba(255,255,255,0.1); border-radius:10px; margin-bottom:20px;">
@@ -1138,7 +1161,15 @@
             </div>
         </div>
     </div>
-    
+    <div class="modal-overlay" id="clitHistoryModal">
+        <div class="modal-content" style="max-width:600px; max-height:85vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; border-bottom: 2px solid var(--primary); padding-bottom:10px; margin-bottom:15px;">
+                <h3 class="card-title" style="margin:0; color:var(--primary);">📜 أرشيف التنفيذ: <span id="historyModalDate"></span></h3>
+                <button class="btn btn-sm btn-danger" style="width:auto; margin:0;" onclick="document.getElementById('clitHistoryModal').style.display='none'">X</button>
+            </div>
+            <div id="historyModalContent" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+    </div>
     <script type="module" src="js/main.js"></script>
     <script src="app.js" defer></script>  
 </body>

@@ -907,7 +907,9 @@
         </div>
       <!-- منطقة الإجراءات والفلاتر العلوية -->
         <div id="jhDocActionArea" class="card glass-card btn-role-auditor" style="padding:15px; margin-bottom:15px;"></div>
-        
+        <div id="startChecklistBtnContainer" style="display:none; margin-bottom:15px;">
+    <button class="btn btn-success full-width shadow-btn" style="font-size:16px; font-weight:900; padding:15px; border-radius:12px;" onclick="startCLITChecklist()">📋 بدء تنفيذ قائمة الفحص (Checklist)</button>
+</div>
         <!-- فلاتر الدورية (تظهر فقط في خريطة الـ CLIT) -->
         <div id="clitFrequencyFilters" style="display:none; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
             <button class="btn btn-sm clit-filter-btn active" style="border-radius:20px; padding:5px 15px;" onclick="filterCLIT('الكل', this)">الكل 📋</button>
@@ -1099,6 +1101,47 @@
             </div>
         </div>
     </div>
+
+<div class="container screen" id="clitChecklistScreen">
+        <div class="sticky-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid rgba(0, 188, 212, 0.3);">
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button class="btn btn-sm btn-outline" onclick="showScreen('jhDocumentScreen')">⬅️ إلغاء</button>
+                <h2 style="color:#00BCD4; margin:0; font-size:16px;">قائمة الفحص: <span id="activeChecklistFreq"></span></h2>
+            </div>
+            <div style="font-size:12px; font-weight:bold; color:var(--text-muted);">
+                إنجاز: <span id="checklistProgress" style="color:var(--success);">0</span> / <span id="checklistTotal">0</span>
+            </div>
+        </div>
+
+        <div class="progress-track" style="height:6px; background:rgba(255,255,255,0.1); border-radius:10px; margin-bottom:20px;">
+            <div class="progress-fill" id="checklistProgressBar" style="height:100%; background:#00BCD4; width:0%; transition:0.3s;"></div>
+        </div>
+
+        <div id="checklistItemsContainer" style="margin-bottom:80px; display:flex; flex-direction:column; gap:10px;"></div>
+
+        <div style="position:fixed; bottom:20px; left:20px; right:20px; z-index:100;">
+            <button class="btn btn-primary full-width shadow-btn" style="padding:15px; font-size:16px; font-weight:900; border-radius:15px; background:linear-gradient(135deg, #00BCD4, #0288D1); border:none;" onclick="submitFinalChecklist()">💾 حفظ وإرسال قائمة الفحص للإدارة</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="clitTagModal">
+        <div class="modal-content">
+            <h3 class="card-title" style="color:var(--danger); border-color:var(--danger);">🚨 الإبلاغ عن ظاهرة غير طبيعية</h3>
+            <div style="background:rgba(198,40,40,0.1); padding:10px; border-radius:8px; margin-bottom:15px; font-size:11px; color:var(--text-muted);">
+                <b>البند:</b> <span id="clitTagItemName"></span><br>
+                <b>حالة التدهور المتوقعة:</b> <span id="clitTagDegradation" style="color:var(--danger);"></span>
+            </div>
+            <div class="form-group">
+                <label>وصف المشكلة الفعلي:</label>
+                <textarea id="clitTagDesc" class="form-control" rows="3" placeholder="اشرح المشكلة التي وجدتها (تسريب، كسر، حرارة عالية...)" style="border-color:var(--danger);"></textarea>
+            </div>
+            <div class="row-flex">
+                <button class="btn btn-danger flex-2 shadow-btn" onclick="submitCLITTag()">إصدار التاج 🚨</button>
+                <button class="btn btn-outline flex-1" onclick="document.getElementById('clitTagModal').style.display='none'">إلغاء</button>
+            </div>
+        </div>
+    </div>
+    
     <script type="module" src="js/main.js"></script>
     <script src="app.js" defer></script>  
 </body>

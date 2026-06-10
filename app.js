@@ -2404,8 +2404,66 @@ function generateCLITCard(r, type) {
 }
 
 // ==========================================
-// 📂 فتح المستندات والتحكم بالفلاتر
+// 📂 فتح المستندات والتحكم بالفلاتر والتوليد المعماري
 // ==========================================
+let clitSelectedZone = 'الكل';
+let clitSelectedOp = 'الكل';
+let clitSelectedFreq = 'الكل';
+let currentDocType = '';
+
+// دالة توليد كارت الخريطة الملون
+function generateCLITCard(r, type) {
+    let content = ''; let borderColor = 'var(--gold)'; let bgGlow = '';
+
+    if(type === 'CLIT') {
+        let op = r.operation || r.clitType || '';
+        let icon = '⚙️';
+        if(op.includes('تنظيف') || op.includes('تنطيف')) { borderColor = '#3b82f6'; icon = '🧹'; bgGlow = 'rgba(59, 130, 246, 0.05)'; }
+        else if(op.includes('تزييت') || op.includes('تشحيم')) { borderColor = '#f97316'; icon = '🛢️'; bgGlow = 'rgba(249, 115, 22, 0.05)'; }
+        else if(op.includes('فحص')) { borderColor = '#22c55e'; icon = '🔍'; bgGlow = 'rgba(34, 197, 94, 0.05)'; }
+        else if(op.includes('تربيط') || op.includes('ربط')) { borderColor = '#ef4444'; icon = '🔧'; bgGlow = 'rgba(239, 68, 68, 0.05)'; }
+
+        content = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <b style="color:var(--text-main); font-size:14px;">${icon} [${r.region}] ${r.part ? ' - ' + r.part : ''}</b>
+                <span style="font-size:10px; background:${borderColor}; color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${r.frequency || 'دوري'}</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px; line-height:1.5;">
+                <span style="color:${borderColor}; font-weight:bold;">الإجراء:</span> ${r.action || r.standard}
+            </div>
+            <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor}; line-height:1.6;">
+                <b>🎯 المعيار / الحالة المثلى:</b> ${r.optimalState || r.standard || 'حسب المواصفة'}<br>
+                ${r.degradation ? `<b>⚠️ حالة التدهور المتوقعة:</b> <span style="color:var(--danger);">${r.degradation}</span><br>` : ''}
+                <b>🛠️ الأدوات وموقف الماكينة:</b> ${r.tools || 'يدوي'} | <span style="color:var(--warning); font-weight:bold;">${r.machineState || 'مجهول'}</span><br>
+                <b>⏱️ الزمن (قبل/بعد):</b> ${r.timeBefore || '-'} / <span style="color:var(--success); font-weight:bold;">${r.timeAfter || '-'}</span>
+            </div>
+        `;
+    } 
+    else if(type === 'Contamination') {
+        borderColor = '#795548'; bgGlow = 'rgba(121, 85, 72, 0.05)';
+        content = `<b>📍 ${r.location}</b><br><small style="color:#795548;">التلوث: ${r.typeDesc}</small>`;
+    } else if(type === 'SOC') {
+        borderColor = 'var(--warning)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
+        content = `<b>🚧 ${r.location}</b><br><small style="color:var(--warning);">السبب: ${r.reason}</small>`;
+    } else if(type === 'Safety') {
+        borderColor = 'var(--danger)'; bgGlow = 'rgba(244, 67, 54, 0.05)';
+        content = `<b>${r.level==='high'?'🔴':'🟡'} ${r.hazard}</b>`;
+    } else {
+        borderColor = 'var(--gold)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
+        content = `<b>⚙️ ${r.name}</b><br><small style="color:var(--gold);">${r.desc}</small>`;
+    }
+
+    let deleteBtn = (hasRole('admin') && r.id && !r.region) ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️ حذف</button>` : '';
+    
+    return `<div class="card glass-card" style="border-right:5px solid ${borderColor}; background:${bgGlow}; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="flex:1;">${content}</div>
+        <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
+            <small style="font-size:9px; color:var(--gold); font-weight:bold;">معيار المصنع 🏭</small>
+            ${deleteBtn}
+        </div>
+    </div>`;
+}
+
 window.openJHDocument = async function(type) {
     currentDocType = type;
     const headerMap = { 
@@ -2754,6 +2812,9 @@ window.startCLITChecklist = function() {
             let matchFreq = (item.frequency && item.frequency.includes(clitSelectedFreq));
             return matchZone && matchOp && matchFreq;
         });
+    } else {
+       // للمستقبل لو ضفت أقسام تانية
+       return showToast('لا توجد مهام مطابقة للفلتر الحالي لبدء الفحص.');
     }
 
     if(recordsToExecute.length === 0) return showToast('لا توجد مهام مطابقة للفلتر الحالي لبدء الفحص.');
@@ -2866,6 +2927,116 @@ window.submitFinalChecklist = async function() {
     showToast('تم حفظ دورة الصيانة بنجاح ✅');
     showScreen('jhDocumentScreen');
 };
+// ==========================================
+// 📅 محرك الـ Calendar والسجلات (Execution Engine)
+// ==========================================
+let currentJHExecutions = [];
+let viewingMonth = new Date().getMonth();
+let viewingYear = new Date().getFullYear();
+
+const originalSelectJHDept = window.selectJHDept;
+window.selectJHDept = function(dept) {
+    if(typeof originalSelectJHDept === 'function') originalSelectJHDept(dept);
+    
+    if(isOnline) {
+        db.ref(`tpm_system/clit_executions/${dept}`).on('value', snap => {
+            currentJHExecutions = snap.val() ? Object.values(snap.val()) : [];
+            renderJHCalendar(); 
+        });
+    }
+};
+
+window.changeCalendarMonth = function(dir) {
+    viewingMonth += dir;
+    if(viewingMonth > 11) { viewingMonth = 0; viewingYear++; }
+    else if(viewingMonth < 0) { viewingMonth = 11; viewingYear--; }
+    renderJHCalendar();
+};
+
+window.renderJHCalendar = function() {
+    const grid = document.getElementById('jhCalendarGrid');
+    if(!grid) return;
+
+    const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+    document.getElementById('currentCalendarMonth').innerText = `${monthNames[viewingMonth]} ${viewingYear}`;
+
+    let daysInMonth = new Date(viewingYear, viewingMonth + 1, 0).getDate();
+    let html = '';
+    
+    for(let d = 1; d <= daysInMonth; d++) {
+        let checkDateStr = new Date(viewingYear, viewingMonth, d).toLocaleDateString('ar-EG');
+        let dayExecs = currentJHExecutions.filter(ex => ex.date === checkDateStr);
+        
+        let bgColor = 'rgba(255,255,255,0.05)'; 
+        let border = '1px solid rgba(255,255,255,0.1)';
+        let cursor = 'default';
+        let clickAction = '';
+
+        if(dayExecs.length > 0) {
+            cursor = 'pointer';
+            clickAction = `onclick="viewDayExecutions('${checkDateStr}')"`;
+            
+            let hasOpenTags = false;
+            dayExecs.forEach(ex => {
+                ex.tasks.forEach(t => {
+                    if(t.status === 'issue' && t.tagId) {
+                        let globalTag = tagsData.find(tg => tg.id === t.tagId);
+                        if(globalTag && globalTag.status !== 'closed' && globalTag.status !== 'done') {
+                            hasOpenTags = true;
+                        }
+                    }
+                });
+            });
+
+            if(hasOpenTags) {
+                bgColor = 'rgba(234, 179, 8, 0.2)'; 
+                border = '2px solid var(--warning)';
+            } else {
+                bgColor = 'rgba(34, 197, 94, 0.2)'; 
+                border = '2px solid var(--success)';
+            }
+        }
+
+        html += `<div style="background:${bgColor}; border:${border}; padding:10px 0; border-radius:8px; cursor:${cursor}; font-weight:bold; font-size:12px;" ${clickAction} title="${checkDateStr}">${d}</div>`;
+    }
+    grid.innerHTML = html;
+};
+
+window.viewDayExecutions = function(dateStr) {
+    let dayExecs = currentJHExecutions.filter(ex => ex.date === dateStr);
+    let html = dayExecs.map(ex => {
+        let issues = ex.tasks.filter(t => t.status === 'issue').length;
+        let done = ex.tasks.filter(t => t.status === 'done').length;
+        let total = ex.tasks.length;
+        let borderColor = issues > 0 ? 'var(--warning)' : 'var(--success)';
+        
+        let detailsHtml = ex.tasks.map(t => {
+            let icon = t.status === 'done' ? '✅' : '❌';
+            let color = t.status === 'done' ? 'var(--success)' : 'var(--danger)';
+            return `<div style="font-size:11px; padding:3px 0; border-bottom:1px dashed rgba(255,255,255,0.05); color:${color};">${icon} ${t.region} - ${t.part || t.action}</div>`;
+        }).join('');
+
+        return `
+        <div class="card glass-card" style="border-right:4px solid ${borderColor}; padding:10px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <b style="color:var(--text-main); font-size:13px;">دورية: ${ex.frequency}</b>
+                <span style="font-size:10px; color:var(--text-muted);">👤 ${ex.user} | ⏰ ${ex.time}</span>
+            </div>
+            <div style="font-size:11px; font-weight:bold; margin-bottom:10px;">
+                النتيجة: إنجاز <span style="color:var(--success);">${done}</span> | مشاكل <span style="color:var(--danger);">${issues}</span> من أصل ${total}
+            </div>
+            <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; max-height:100px; overflow-y:auto;">
+                ${detailsHtml}
+            </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('historyModalDate').innerText = dateStr;
+    document.getElementById('historyModalContent').innerHTML = html;
+    document.getElementById('clitHistoryModal').style.display = 'flex';
+};
+
+
 // ==========================================
 // 🚀 المستشار الذكي وعقل المصنع (الإصدار المستقر والمفصل)
 // ==========================================

@@ -482,3 +482,82 @@ img, canvas, video { filter: none !important; }
 
 .divider { margin: 25px 0 15px; position: relative; border-top: 1px solid #e2e8f0; }
 .divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #ffffff; padding: 0 15px; font-size: 12px; color: var(--text-muted); border-radius: 10px; font-weight: bold; border: 1px solid #e2e8f0; }
+
+
+/* ========================================== */
+/* 📱 كبسولة التوافق مع شاشات الموبايل (Mobile Responsiveness) */
+/* ========================================== */
+
+@media screen and (max-width: 768px) {
+    /* 1. تصغير الخطوط العامة لمنع تكسير الكلام */
+    body { font-size: 12px !important; }
+    h2, .tpm-title { font-size: 16px !important; }
+    h3, .section-title { font-size: 14px !important; padding: 5px !important; }
+    h4 { font-size: 12px !important; }
+
+    /* 2. تحويل أي صف (Row) لعمود (Column) عشان العناصر تنزل تحت بعضها بدل ما تنعصر */
+    .row-flex { 
+        flex-direction: column !important; 
+        gap: 10px !important; 
+    }
+    .row-flex > * { width: 100% !important; margin: 0 !important; }
+
+    /* 3. تظبيط الكروت والمسافات الداخلية */
+    .card, .glass-card { padding: 12px !important; margin-bottom: 10px !important; }
+    
+    /* 4. لوحة الإحصائيات (Stats) - كارتين في الصف بدل 4 */
+    .modern-stats { 
+        display: grid !important; 
+        grid-template-columns: 1fr 1fr !important; 
+        gap: 10px !important; 
+    }
+    .stat-value { font-size: 18px !important; }
+    .stat-label { font-size: 10px !important; }
+
+    /* 5. شبكة الأزرار (Grid Layout) - عمودين في الموبايل */
+    .grid-layout { 
+        grid-template-columns: 1fr 1fr !important; 
+        gap: 10px !important; 
+    }
+
+    /* 6. فلاتر الـ CLIT الذكية (شريط تمرير أفقي لمنع التكسير) */
+    #clitZoneFilters, #clitOpFilters, #clitFrequencyFilters {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        justify-content: flex-start !important;
+        padding-bottom: 8px !important;
+        -webkit-overflow-scrolling: touch; /* لتنعيم السحب في الايفون */
+    }
+    
+    /* تصغير زراير الفلاتر ومنع نزول الكلمة على سطرين */
+    .clit-zone-btn, .clit-op-btn, .clit-freq-btn { 
+        font-size: 11px !important; 
+        padding: 6px 12px !important; 
+        white-space: nowrap !important; 
+        flex-shrink: 0 !important;
+    }
+
+    /* 7. تصغير الأزرار العامة */
+    .btn { font-size: 13px !important; padding: 10px !important; }
+    .btn-sm { font-size: 11px !important; padding: 6px 10px !important; }
+
+    /* 8. تظبيط النوافذ المنبثقة (Modals) */
+    .modal-content {
+        width: 95% !important;
+        padding: 15px !important;
+        margin: 10px auto !important;
+    }
+
+    /* 9. شريط التقدم والتواريخ */
+    .sticky-header { padding: 10px !important; }
+    #checklistCurrentDate { display: block; margin-top: 5px; text-align: left; }
+}
+
+/* ========================================== */
+/* 📱 للموبايلات الصغيرة جداً (أقل من 400 بيكسل) */
+/* ========================================== */
+@media screen and (max-width: 400px) {
+    .modern-stats { grid-template-columns: 1fr !important; } /* كارت واحد في الصف */
+    .grid-layout { grid-template-columns: 1fr !important; }
+}

@@ -2149,32 +2149,138 @@ window.startNewAuditFlowFromPortal = function() {
     startNewAuditFlow();
 };
 
+
 // ==========================================
 // 📚 قاعدة بيانات الـ CLIT الحقيقية (من ملفات الـ Excel)
 // ==========================================
-// بيانات الـ CLIT الخاصة بقسم حقن الكابينة من ملفات الإكسيل
 const factoryCLITData = [
-  {"id": "CLIT_1", "region": "الهد", "part": "النزول هد 1", "operation": "تنظيف", "action": "تنظيف الـ nozzle للايزو خاص هد 1", "frequency": "شهري", "tools": "هواء مضغوط", "machineState": "لا تعمل", "optimalState": "النزول نظيف ولا يوجد ما يعوق المادة", "degradation": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
-  {"id": "CLIT_2", "region": "الهد", "part": "النزول هد 1", "operation": "تنظيف", "action": "تنظيف الـ nozzle البولو خاص هد 1", "frequency": "شهري", "tools": "هواء مضغوط", "machineState": "لا تعمل", "optimalState": "النزول نظيف ولا يوجد ما يعوق المادة", "degradation": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
-  {"id": "CLIT_3", "region": "الهد", "part": "النزول هد 2", "operation": "تنظيف", "action": "تنظيف الـ nozzle للايزو خاص هد 2", "frequency": "شهري", "tools": "هواء مضغوط", "machineState": "لا تعمل", "optimalState": "النزول نظيف ولا يوجد ما يعوق المادة", "degradation": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
-  {"id": "CLIT_4", "region": "الهد", "part": "النزول هد 2", "operation": "تنظيف", "action": "تنظيف الـ nozzle البولو خاص هد 2", "frequency": "شهري", "tools": "هواء مضغوط", "machineState": "لا تعمل", "optimalState": "النزول نظيف ولا يوجد ما يعوق المادة", "degradation": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
-  {"id": "CLIT_5", "region": "الهد", "part": "الخراطيم المثبتة على هد 1", "operation": "فحص", "action": "مراجعة ربط اللاكور الخراطيم المثبتة على هد 1", "frequency": "أسبوعي", "tools": "مفاتيح والن الربط", "machineState": "لا تعمل", "optimalState": "كل اللاكور مربوطين جيدا", "degradation": "عدم الربط الجيد في الوصلات قد يؤدي الي تسريب"},
-  {"id": "CLIT_6", "region": "الهد", "part": "الخراطيم المثبتة على هد 2", "operation": "فحص", "action": "مراجعة ربط اللاكور الخراطيم المثبتة على هد 2", "frequency": "أسبوعي", "tools": "مفاتيح والن الربط", "machineState": "لا تعمل", "optimalState": "كل اللاكور مربوطين جيدا", "degradation": "عدم الربط الجيد في الوصلات قد يؤدي الي تسريب"},
-  {"id": "CLIT_7", "region": "الهد", "part": "خراطيم هد 1 الواصلة من البلوكة", "operation": "فحص", "action": "فحص خراطيم هد 1 الواصلة من البلوكة الى الهد من التآكل وتثبيتها", "frequency": "أسبوعي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "الخراطيم جميعها سليم", "degradation": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
-  {"id": "CLIT_8", "region": "الهد", "part": "خراطيم هد 2 الواصلة من البلوكة", "operation": "فحص", "action": "فحص خراطيم هد 2 الواصلة من البلوكة الى الهد من التآكل وتثبيتها", "frequency": "أسبوعي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "الخراطيم جميعها سليم", "degradation": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
-  {"id": "CLIT_9", "region": "الهد", "part": "كبات التزييت", "operation": "فحص", "action": "التأكد من مستوى زيت التزييت فى جميع كبات التزييت ألا يقل عن 50%", "frequency": "أسبوعي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "مستوي الزيت مناسب في كبات التزييت", "degradation": "نقص مستوي الزيت يودي تلف الموتور"},
-  {"id": "CLIT_10", "region": "عربة الهيد", "part": "الموتور الخاص بالحركة في اتجاة X", "operation": "تنطيف", "action": "تنظيف الموتور الخاص بالحركة في اتجاة X", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "machineState": "لا تعمل", "optimalState": "الموتور نظيف", "degradation": "تراكم الاوساخ يودي الي ارتفاع حرارة الموتور او تلفة"},
-  {"id": "CLIT_11", "region": "عربة الهيد", "part": "الموتور الخاص بالحركة في اتجاةY", "operation": "تنطيف", "action": "تنظيف الموتور الخاص بالحركة في اتجاة Y", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "machineState": "لا تعمل", "optimalState": "الموتور نظيف", "degradation": "تراكم الاوساخ يودي الي ارتفاع حرارة الموتور او تلفة"},
-  {"id": "CLIT_12", "region": "عربة الهيد", "part": "موتور عربة الهد اتجاة X", "operation": "فحص", "action": "فحص صوت موتور عربة الهد اتجاة X", "frequency": "شهري", "tools": "بالاذن", "machineState": "تعمل", "optimalState": "صوت الموتور طبيعى", "degradation": "تلف البلى وتلف الملفات الداخلية للموتور"},
-  {"id": "CLIT_13", "region": "عربة الهيد", "part": "موتور عربة الهد اتجاة Y", "operation": "فحص", "action": "فحص صوت موتور عربة الهد اتجاة Y", "frequency": "شهري", "tools": "بالاذن", "machineState": "تعمل", "optimalState": "صوت الموتور طبيعى", "degradation": "تلف البلى وتلف الملفات الداخلية للموتور"},
-  {"id": "CLIT_14", "region": "بلوكات الهيدروليك", "part": "Stream Distribution", "operation": "فحص", "action": "فحص ال كامات stream الخاص بالهد 1 وتغيرها", "frequency": "شهري", "tools": "N فحص بالعين واليد", "machineState": "تعمل", "optimalState": "الكامة تعمل مع فتح  Stream Distribution", "degradation": "يمكن ان تسبب عدم الحقن في حالة عدم فتحها"},
-  {"id": "CLIT_15", "region": "بلوكات الهيدروليك", "part": "Stream Distribution", "operation": "تنظيف", "action": "Stream Distribution تنظيف الخاص بالهد 1", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "machineState": "لا تعمل", "optimalState": "نظيف ولا يعوق الحركة", "degradation": "تراكم الاوساخ قد يسبب خلل في حركتة"},
-  {"id": "CLIT_16", "region": "HEATING SYSTEM", "part": "خراطيم التسخين", "operation": "فحص", "action": "مراجعة سلامة خراطيم التسخين وتغيير ما يلزم", "frequency": "يومي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "الخراطيم جميعها سليم", "degradation": "تلف في احد الخراطيم يودي الي تسريب ونقص حرارة"},
-  {"id": "CLIT_17", "region": "HEATING SYSTEM", "part": "وصلات التسخين والغلايات", "operation": "فحص", "action": "معالجة أي تسريب في وصلات التسخين", "frequency": "يومي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "الوصلات كلها سليمة", "degradation": "عدم وصول الزيت الى البلانسرات وحدوث تآكل"},
-  {"id": "CLIT_18", "region": "HEATING SYSTEM", "part": "وحدة التسخين", "operation": "تنظيف", "action": "تنظيف وحدة التسخين كاملة", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "machineState": "لا تعمل", "optimalState": "الوحدة نظيفة", "degradation": "انخفاض جودة التسخين"},
-  {"id": "CLIT_19", "region": "HEATING SYSTEM", "part": "عداد الحرارة", "operation": "فحص", "action": "التحقق من درجة الحرارة", "frequency": "يومي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "درجة الحرارة طبيعية بين 30:50 درجة", "degradation": "ارتفاع او انخفاض الحرارة يقلل من جودة الحقن"}
+  {"region": "منطقة الجيكات", "part": "اسفل الJIG", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "فحص الBotom", "operation": "تنظيف", "action": "ازالة الفوم من على البوتوم", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "فحص دائرة الBotom", "operation": "تنظيف", "action": "التاكد من سريان المياه المراجعة على المحابس", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "فحص Limit switsh", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "موتور جيربوكس حركة الكابينة", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "مروحة بلاورات ال JIG", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "غطاء الفتايل", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "40s", "timeAfter": "40s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "فحص الفتايل اعلى واسفل", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "جوانب جسم الـــ JIG", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "سقف الــ  JIG من الخلف", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "قاعدة الــ JIG من الخلف", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "شفاط خلف الماكينة", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "فحص موتور حركة قالب الـ JIG", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "قواعد الــ JIG", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "40s", "timeAfter": "40s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "عمود حامل الــ JIG", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "غطاء جنازير اسفل الـ JIG", "operation": "تنظيف", "action": "ازالة الاتربة والشحومات", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "40s", "timeAfter": "40s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "الارضية خلف الجيك", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "خراطيم مياه تسخين الجوانب", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "تراى خراطيم الغلاية", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "لوحة تشغيل الــ JIG", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "بكر الجيك", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "صندوق الفوم بالــ JIG", "operation": "تنظيف", "action": "تجميع الفوم والتخلص منه", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "فرن تسخين القوالب", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء مضغوط+ قماش+ ماء", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "اسفل الJIG", "operation": "فحص", "action": "ازالة الزيوت والاتربة", "tools": "النظر واللمس", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء تعمل بكفاءة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "فحص الBotom", "operation": "فحص", "action": "ازالة الفوم من على البوتوم", "tools": "النظر واللمس", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء تعمل بكفاءة", "degradation": ""},
+  {"region": "منطقة الجيكات", "part": "موتور جيربوكس حركة الكابينة", "operation": "فحص", "action": "ازالة الزيوت والاتربة", "tools": "النظر واللمس", "frequency": "يومي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء تعمل بكفاءة", "degradation": ""},
+  {"region": "الجيكات", "part": "ترس موتور ادخال الثلاجة", "operation": "تزييت", "action": "تزييت باستخدام Mobil gear 600xp220", "tools": "المزيتة اليدوى", "frequency": "شهري", "timeBefore": "-", "timeAfter": "-", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 7", "degradation": ""},
+  {"region": "الجيكات", "part": "جنزير تغيير عرض ال JIG", "operation": "تزييت", "action": "تزييت باستخدام Mobil gear 600xp320", "tools": "المزيتة اليدوى", "frequency": "شهري", "timeBefore": "-", "timeAfter": "-", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 14", "degradation": ""},
+  {"region": "الجيكات", "part": "جنزير فتايل صعود وهبوط ال JIG", "operation": "تزييت", "action": "تزييت باستخدام Mobil gear 600xp320", "tools": "المزيتة اليدوى", "frequency": "شهري", "timeBefore": "-", "timeAfter": "-", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 7", "degradation": ""},
+  {"region": "الجيكات", "part": "جسم فتايل صعود وهبوط الجيك", "operation": "تشحيم", "action": "تشحيم باستخدام Mobil gear 600 XP320", "tools": "المشحمة اليدوى", "frequency": "شهري", "timeBefore": "30", "timeAfter": "25", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 56", "degradation": ""},
+  {"region": "الجيكات", "part": "فتايل ضبط عرض الجيك", "operation": "تشحيم", "action": "تشحيم باستخدام Mobilux ep - 0", "tools": "المشحمة اليدوى", "frequency": "شهري", "timeBefore": "25", "timeAfter": "6", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 28", "degradation": ""},
+  {"region": "الجيكات", "part": "مسامير ثثبيت موتور حركة الــ  JIG", "operation": "تربيط", "action": "تربيط مسامير ثثبيت موتور حركة الــ  JIGاعلى واسفل", "tools": "مفتاح 19", "frequency": "شهري", "timeBefore": "60s", "timeAfter": "40s", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 4", "degradation": ""},
+  {"region": "منطقة الهيد", "part": "اعلى جيكات الحقن", "operation": "تنظيف", "action": "ازالة الفوم والاتربة", "tools": "هواء مضغوط قماش- ماء", "frequency": "يومي", "timeBefore": "30", "timeAfter": "28", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الهيد", "part": "فحص مجموعة صمامات هيد 1", "operation": "تنظيف", "action": "ازالة الفوم والزيوت", "tools": "هواء مضغوط قماش- ماء", "frequency": "يومي", "timeBefore": "4", "timeAfter": "2", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الهيد", "part": "فحص مجموعة صمامات هيد 2", "operation": "تنظيف", "action": "ازالة الفوم والزيوت", "tools": "هواء مضغوط قماش- ماء", "frequency": "يومي", "timeBefore": "4", "timeAfter": "3", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الهيد", "part": "فحص مسار حركة محور Y", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط قماش- ماء", "frequency": "يومي", "timeBefore": "2", "timeAfter": "2", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الهيد", "part": "فحص دلائل حركة محور X", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط قماش- ماء", "frequency": "يومي", "timeBefore": "2", "timeAfter": "1", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الهيد", "part": "فحص LIMITE SWITCH", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط قماش- ماء", "frequency": "يومي", "timeBefore": "9", "timeAfter": "7", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "منطقة الهيد", "part": "تراى هيد 1", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط قماش- ماء", "frequency": "يومي", "timeBefore": "40", "timeAfter": "30", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "عربة الهد", "part": "ترس موتور محور X", "operation": "تزييت", "action": "تزييت باستخدام Mobil gear 600xp150", "tools": "المزيتة اليدوى", "frequency": "شهري", "timeBefore": "-", "timeAfter": "-", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 1", "degradation": ""},
+  {"region": "عربة الهد", "part": "كب تزييت الايزو والبولو", "operation": "تزييت", "action": "تزييت باستخدام Whiterx", "tools": "المزيتة اليدوى", "frequency": "أسبوعي", "timeBefore": "-", "timeAfter": "-", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 2", "degradation": ""},
+  {"region": "عربة الهيد", "part": "قضيب حركة عربة الهيد اعلى الماكينة", "operation": "تشحيم", "action": "تشحيم باستخدام Mobilux ep - 0", "tools": "المشحمة اليدوى", "frequency": "شهري", "timeBefore": "10", "timeAfter": "6", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 2", "degradation": ""},
+  {"region": "عربة الهيد", "part": "جريدة حركة عربة الهيد", "operation": "تشحيم", "action": "تشحيم باستخدام Mobil gear 600 XP320", "tools": "المشحمة اليدوى", "frequency": "شهري", "timeBefore": "3", "timeAfter": "2", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 2", "degradation": ""},
+  {"region": "الهيد", "part": "مسامير تثبيت افيز هيد 1 بالبالتة", "operation": "تربيط", "action": "تربيط مسامير تثبيت افيز هيد 1 بالبالتة", "tools": "مفتاح بلدى", "frequency": "شهري", "timeBefore": "3", "timeAfter": "2", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 4", "degradation": ""},
+  {"region": "الهيد", "part": "مسامير تثبيت موتور محور X", "operation": "تربيط", "action": "تربيط مسامير تثبيت موتور محور X", "tools": "مفتاح بلدى", "frequency": "شهري", "timeBefore": "3", "timeAfter": "2", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 3", "degradation": ""},
+  {"region": "الفرن", "part": "رولات الفرن رقم 1", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء قماش", "frequency": "يومي", "timeBefore": "5", "timeAfter": "4", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "الفرن", "part": "ماتور المروحة  العلوية رقم 1", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء قماش", "frequency": "يومي", "timeBefore": "1", "timeAfter": "40s", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "الفرن", "part": "رولات الفرن رقم 1", "operation": "فحص", "action": "ازالة الاتربة", "tools": "النظر والسمع", "frequency": "يومي", "timeBefore": "5", "timeAfter": "4", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء تعمل بكفاءة", "degradation": ""},
+  {"region": "الفرن", "part": "ترس موتور رولات ادخال الثلاجة اللى الفرن رقم 1", "operation": "تزييت", "action": "تزييت باستخدام Mobil gear 600xp320", "tools": "المزيتة اليدوى", "frequency": "شهري", "timeBefore": "-", "timeAfter": "-", "machineState": "لا تعمل", "optimalState": "عدد النقاط: 1", "degradation": ""},
+  {"region": "الفرن", "part": "جنازير رولات الفرن رقم 1", "operation": "تزييت", "action": "تزييت باستخدام Mobil gear 600xp320", "tools": "المزيتة اليدوى", "frequency": "شهري", "timeBefore": "-", "timeAfter": "-", "machineState": "لا تعمل", "optimalState": "عدد النقاط: 6", "degradation": ""},
+  {"region": "الفرن", "part": "مسامير تثبيت موتور طلمبة البولو الخام", "operation": "تربيط", "action": "تربيط مسامير تثبيت موتور طلمبة البولو الخام", "tools": "مفتاح بلدى", "frequency": "شهري", "timeBefore": "1", "timeAfter": "1", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 4", "degradation": ""},
+  {"region": "مدخل الحقن", "part": "ماتور وجيريبوكس سير مدخل الفرن", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "قماش + هواء", "frequency": "أسبوعي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "مدخل الحقن", "part": "سير وبستم المدخل", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "قماش + هواء", "frequency": "أسبوعي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "مخرج الحقن", "part": "رولات سير المخرج رقم 1", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "قماش +لصق", "frequency": "أسبوعي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "مخرج الحقن", "part": "لوحة تشغيل الماكينة", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "قماش + هواء", "frequency": "أسبوعي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "مدخل ومخرج الحقن", "part": "جنزير نقل الحركة لدرافيل للفرن", "operation": "تزييت", "action": "تزييت باستخدام Mobil gear 600xp320", "tools": "شهرى", "frequency": "شهري", "timeBefore": "-", "timeAfter": "-", "machineState": "تعمل", "optimalState": "عدد النقاط: 1", "degradation": ""},
+  {"region": "مدخل ومخرج الحقن", "part": "ماتور وجيريبوكس سير مدخل الفرن", "operation": "تربيط", "action": "تربيط ماتور وجيريبوكس سير مدخل الفرن", "tools": "مفتاح بلدى", "frequency": "شهري", "timeBefore": "60S", "timeAfter": "40s", "machineState": "لاتعمل", "optimalState": "عدد النقاط: 4", "degradation": ""},
+  {"region": "عربة حاملة الكابينة", "part": "موتور اخراج الكابينة من القالب فى عربة LOAD&UNLOAD", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء مضغوط قماش", "frequency": "يومي", "timeBefore": "1m", "timeAfter": "40s", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "عربة حاملة الكابينة", "part": "ارضية عربة الـ LOAD &UNLOAD", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "صابون + مياه", "frequency": "يومي", "timeBefore": "8m", "timeAfter": "8m", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "عربة حاملة الكابينة", "part": "تراى العربة", "operation": "تنظيف", "action": "التخلص من الفوم والاتربة", "tools": "هواء مضغوط قماش-صابون", "frequency": "يومي", "timeBefore": "16m", "timeAfter": "15m", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "عربة حاملة الكابينة", "part": "جسم العربة", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء مضغوط قماش+ ماء", "frequency": "يومي", "timeBefore": "20m", "timeAfter": "15m", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "تجهيزة مدخل الحقن", "part": "رولات التجهيزة", "operation": "تنظيف", "action": "ازالة الاتربة", "tools": "هواء مضغوط قماش", "frequency": "أسبوعي", "timeBefore": "30S", "timeAfter": "30S", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "تجهيزة مدخل الحقن", "part": "بالتة صعود ونزول الثلاجة", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط قماش", "frequency": "أسبوعي", "timeBefore": "30S", "timeAfter": "30S", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "تجهيزة مدخل الحقن", "part": "بستم حركة السير", "operation": "تنظيف", "action": "ازالة الزيوت والاتربة", "tools": "هواء مضغوط قماش", "frequency": "أسبوعي", "timeBefore": "30S", "timeAfter": "30S", "machineState": "لاتعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "تنك البولو الخام", "part": "جسم وارضية التنك", "operation": "تنظيف", "action": "ازالة الاتربة والتسريبات", "tools": "هواء مضغوط قماش", "frequency": "أسبوعي", "timeBefore": "20sec", "timeAfter": "20sec", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "تنك البولو الخام", "part": "طلمبة سحب البولو الخام", "operation": "تنظيف", "action": "ازالة الاتربة والتسريبات", "tools": "هواء مضغوط قماش", "frequency": "أسبوعي", "timeBefore": "30s", "timeAfter": "30s", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""},
+  {"region": "تنك الــ POLO +C5", "part": "موتور القلاب", "operation": "تنظيف", "action": "ازالة الاتربة والتسريبات", "tools": "هواء مضغوط قماش", "frequency": "أسبوعي", "timeBefore": "20sec", "timeAfter": "20sec", "machineState": "تعمل", "optimalState": "جميع الاجزاء نظيفة", "degradation": ""}
 ];
+
 let currentClitFilter = 'الكل';
+
+// ==========================================
+// 🧠 محرك العرض وتوليد كروت الخرائط
+// ==========================================
+function generateCLITCard(r, type) {
+    let content = ''; let borderColor = 'var(--gold)'; let bgGlow = '';
+
+    if(type === 'CLIT') {
+        let op = r.operation || r.clitType || '';
+        let icon = '⚙️';
+        if(op.includes('تنظيف') || op.includes('تنطيف')) { borderColor = '#3b82f6'; icon = '🧹'; bgGlow = 'rgba(59, 130, 246, 0.05)'; }
+        else if(op.includes('تزييت') || op.includes('تشحيم')) { borderColor = '#f97316'; icon = '🛢️'; bgGlow = 'rgba(249, 115, 22, 0.05)'; }
+        else if(op.includes('فحص')) { borderColor = '#22c55e'; icon = '🔍'; bgGlow = 'rgba(34, 197, 94, 0.05)'; }
+        else if(op.includes('تربيط') || op.includes('ربط')) { borderColor = '#ef4444'; icon = '🔧'; bgGlow = 'rgba(239, 68, 68, 0.05)'; }
+
+        // هنا عرضنا كل الأوقات والتفاصيل اللي استخرجناها!
+        content = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <b style="color:var(--text-main); font-size:14px;">${icon} ${r.region} ${r.part ? ' - ' + r.part : ''}</b>
+                <span style="font-size:10px; background:${borderColor}; color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${r.frequency || 'دوري'}</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px; line-height:1.5;">
+                <span style="color:${borderColor}; font-weight:bold;">الإجراء:</span> ${r.action || r.standard}
+            </div>
+            <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor};">
+                <b>🎯 المعيار / الحالة المثلى:</b> ${r.optimalState || r.standard || 'حسب المواصفة'}<br>
+                ${r.degradation ? `<b>⚠️ حالة التدهور المتوقعة:</b> <span style="color:var(--danger);">${r.degradation}</span><br>` : ''}
+                <b>🛠️ الأدوات وموقف الماكينة:</b> ${r.tools || 'يدوي'} | <span style="color:var(--warning); font-weight:bold;">${r.machineState || 'مجهول'}</span><br>
+                <b>⏱️ الزمن المطلوب (قبل/بعد التحسين):</b> ${r.timeBefore || '-'} / <span style="color:var(--success); font-weight:bold;">${r.timeAfter || '-'}</span>
+            </div>
+        `;
+    } 
+    // باقي التصنيفات (تلوث، أمان، الخ..)
+    else if(type === 'Contamination') {
+        borderColor = '#795548'; bgGlow = 'rgba(121, 85, 72, 0.05)';
+        content = `<b>📍 ${r.location}</b><br><small style="color:#795548;">التلوث: ${r.typeDesc}</small>`;
+    } else if(type === 'SOC') {
+        borderColor = 'var(--warning)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
+        content = `<b>🚧 ${r.location}</b><br><small style="color:var(--warning);">السبب: ${r.reason}</small>`;
+    } else if(type === 'Safety') {
+        borderColor = 'var(--danger)'; bgGlow = 'rgba(244, 67, 54, 0.05)';
+        content = `<b>${r.level==='high'?'🔴':'🟡'} ${r.hazard}</b>`;
+    } else {
+        borderColor = 'var(--gold)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
+        content = `<b>⚙️ ${r.name}</b><br><small style="color:var(--gold);">${r.desc}</small>`;
+    }
+
+    let deleteBtn = (hasRole('admin') && r.id && !r.region) ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️ حذف</button>` : '';
+    
+    return `<div class="card glass-card" style="border-right:5px solid ${borderColor}; background:${bgGlow}; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="flex:1;">${content}</div>
+        <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
+            <small style="font-size:9px; color:var(--gold); font-weight:bold;">معيار المصنع 🏭</small>
+            ${deleteBtn}
+        </div>
+    </div>`;
+}
 let currentDocType = '';
 
 let activeChecklistTasks = [];
@@ -2324,42 +2430,6 @@ window.renderJHDocList = function(type, records) {
     }
 };
 
-// دالة مساعدة لتوليد كارت الـ CLIT لتنظيف الكود
-function generateCLITCard(r, type) {
-    let content = ''; let borderColor = 'var(--gold)'; let bgGlow = '';
-    if(type === 'CLIT') {
-        let op = r.operation || r.clitType || '';
-        if(op.includes('تنظيف') || op.includes('تنطيف')) { borderColor = '#3b82f6'; bgGlow = 'rgba(59, 130, 246, 0.05)'; }
-        else if(op.includes('تزييت') || op.includes('تشحيم')) { borderColor = '#f97316'; bgGlow = 'rgba(249, 115, 22, 0.05)'; }
-        else if(op.includes('فحص')) { borderColor = '#22c55e'; bgGlow = 'rgba(34, 197, 94, 0.05)'; }
-        else if(op.includes('تربيط') || op.includes('ربط')) { borderColor = '#ef4444'; bgGlow = 'rgba(239, 68, 68, 0.05)'; }
-
-        content = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                <b style="color:var(--text-main); font-size:14px;">${r.region} ${r.part ? ' - ' + r.part : ''}</b>
-                <span style="font-size:10px; background:${borderColor}; color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${r.frequency || 'دوري'}</span>
-            </div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px; line-height:1.5;">
-                <span style="color:${borderColor}; font-weight:bold;">الإجراء:</span> ${r.action || r.standard}
-            </div>
-            <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor};">
-                <b>🎯 المعيار المقبول/الخطر:</b> ${r.optimalState || r.standard || 'حسب المواصفة'}<br>
-                <b>⚠️ حالة التدهور:</b> <span style="color:var(--danger);">${r.degradation || 'غير مسجل'}</span><br>
-                <b>🛠️ الأدوات وموقف الماكينة:</b> ${r.tools || 'يدوي'} | ${r.machineState || 'مجهول'}
-            </div>
-        `;
-    } 
-    // ... (باقي الأنواع زي التلوث والأمان زي ما هي)
-    let deleteBtn = (hasRole('admin') && r.id && !r.region) ? `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️ حذف</button>` : '';
-    
-    return `<div class="card glass-card" style="border-right:5px solid ${borderColor}; background:${bgGlow}; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="flex:1;">${content}</div>
-        <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
-            <small style="font-size:9px; color:var(--gold); font-weight:bold;">معيار المصنع 🏭</small>
-            ${deleteBtn}
-        </div>
-    </div>`;
-}
 
 // ==========================================
 // 📅 محرك الـ Calendar والسجلات (Execution Engine)

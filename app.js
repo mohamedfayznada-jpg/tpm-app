@@ -2152,55 +2152,32 @@ window.startNewAuditFlowFromPortal = function() {
 // ==========================================
 // 📚 قاعدة بيانات الـ CLIT الحقيقية (من ملفات الـ Excel)
 // ==========================================
+// بيانات الـ CLIT الخاصة بقسم حقن الكابينة من ملفات الإكسيل
 const factoryCLITData = [
-  {"region": "الهد", "part": "", "operation": "تنظيف", "action": "تنظيف الـ nozzle للايزو خاص هد 1", "frequency": "شهري", "tools": "هواء مضغوط", "standard": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
-  {"region": "الهد", "part": "", "operation": "تنظيف", "action": "تنظيف الـ nozzle البولو خاص هد 1", "frequency": "شهري", "tools": "هواء مضغوط", "standard": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
-  {"region": "الهد", "part": "", "operation": "تنظيف", "action": "تنظيف الـ nozzle للايزو خاص هد 2", "frequency": "شهري", "tools": "هواء مضغوط", "standard": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
-  {"region": "الهد", "part": "", "operation": "تنظيف", "action": "تنظيف الـ nozzle البولو خاص هد 2", "frequency": "شهري", "tools": "هواء مضغوط", "standard": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
-  {"region": "الهد", "part": "الهد", "operation": "فحص", "action": "مراجعة ربط اللاكور الخراطيم المثبتة على هد 1", "frequency": "أسبوعي", "tools": "مفاتيح والن الربط", "standard": "عدم الربط الجيد في الوصلات قد يؤدي الي تسريب"},
-  {"region": "الهد", "part": "", "operation": "فحص", "action": "مراجعة ربط اللاكور الخراطيم المثبتة على هد 2", "frequency": "أسبوعي", "tools": "مفاتيح والن الربط", "standard": "عدم الربط الجيد في الوصلات قد يؤدي الي تسريب"},
-  {"region": "الهد", "part": "", "operation": "فحص", "action": "فحص خراطيم هد 1 الواصلة من البلوكة الى الهد من التآكل وتثبيتها", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
-  {"region": "الهد", "part": "", "operation": "فحص", "action": "فحص خراطيم هد 2 الواصلة من البلوكة الى الهد من التآكل وتثبيتها", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
-  {"region": "الهد", "part": "", "operation": "فحص", "action": "التأكد من مستوى زيت التزييت فى جميع كبات التزييت ألا يقل عن 50%", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "نقص مستوي الزيت يودي تلف الموتور"},
-  {"region": "الهد", "part": "", "operation": "فحص", "action": "وصلات الايزو والبولو والهيدروليك", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
-  {"region": "الموتور الخاص بالحركة في اتجاة X", "part": "", "operation": "تنطيف", "action": "تنظيف الموتور الخاص بالحركة في اتجاة X", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاوساخ يودي الي ارتفاع حرارة الموتور او تلفة"},
-  {"region": "الموتور الخاص بالحركة في اتجاةY", "part": "", "operation": "تنطيف", "action": "تنظيف الموتور الخاص بالحركة في اتجاة Y", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاوساخ يودي الي ارتفاع حرارة الموتور او تلفة"},
-  {"region": "موتور عربة الهد اتجاة X", "part": "", "operation": "فحص", "action": "موتور عربة الهد اتجاة X", "frequency": "شهري", "tools": "بالاذن", "standard": "تلف البلى وتلف الملفات الداخلية للموتور"},
-  {"region": "موتور عربة الهد اتجاة", "part": "", "operation": "فحص", "action": "موتور عربة الهد اتجاة Y", "frequency": "شهري", "tools": "بالاذن", "standard": "تلف البلى وتلف الملفات الداخلية للموتور"},
-  {"region": "وصلات الهواء الخاصة ببستم طلوع ونزول هد 1", "part": "عربة الهد", "operation": "فحص", "action": "التأكد من عدم وجود تسريب في وصلات الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين والاذن", "standard": "تسريب في البستم ويمكن عدم حركنة"},
-  {"region": "وصلات الهواء الخاصة ببستم طلوع ونزول هد 2", "part": "", "operation": "فحص", "action": "التأكد من عدم وجود تسريب في وصلات الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين والاذن", "standard": "تسريب في البستم ويمكن عدم حركنة"},
-  {"region": "بلف الهواء المتحكم فى بستم هد 1", "part": "", "operation": "فحص", "action": "التأكد من عدم وجود تسريب هواء فى بلف الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين والاذن", "standard": "يمكن ان يتسبب في عدم حركة البستم او بطئة"},
-  {"region": "بلف الهواء المتحكم فى بستم هد 2", "part": "", "operation": "فحص", "action": "التأكد من عدم وجود تسريب هواء فى بلف الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين والاذن", "standard": "يمكن ان يتسبب في عدم حركة البستم او بطئة"},
-  {"region": "السير المسنن الخاص بحركة عربة الهد", "part": "", "operation": "فحص", "action": "السير المسنن الخاص بحركة عربة الهد", "frequency": "شهري", "tools": "N فحص بالعين واليد", "standard": "يمكن حدوث مشكله في عربة الهيد وحدوث دقره"},
-  {"region": "الترس الخاص بحركة عربة الهد من التآكل او البوش", "part": "", "operation": "فحص", "action": "فحص الترس الخاص بحركة عربة الهد من التآكل", "frequency": "شهري", "tools": "N فحص بالعين واليد", "standard": "يمكن حدوث مشكله في عربة الهيد وحدوث دقره"},
-  {"region": "ترس والجريدة المسننة خاص الموتور المتحكم فى محور Y", "part": "", "operation": "فحص", "action": "فحص ترس والجريدة المسننة خاص الموتور", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "حدوث مشكله في حركة عربة الهيد في محور Y"},
-  {"region": "Stream Distribution", "part": "Stream Distribution", "operation": "فحص", "action": "فحص ال كامات stream الخاص بالهد 1 وتغيرها", "frequency": "شهري", "tools": "N فحص بالعين واليد", "standard": "يمكن ان تسبب عدم الحقن في حالة عدم فتحها"},
-  {"region": "Stream Distribution", "part": "", "operation": "تنظيف", "action": "Stream Distribution تنظيف الخاص بالهد 1", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاوساخ قد يسبب خلل في حركتة"},
-  {"region": "Stream Distribution", "part": "", "operation": "تنظيف", "action": "Stream Distribution تنظيف الخاص بالهد 2", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاوساخ قد يسبب خلل في حركتة"},
-  {"region": "Stream Distribution", "part": "", "operation": "فحص", "action": "فحص ال كامات stream الخاص بالهد 2 وتغيرها", "frequency": "شهري", "tools": "N فحص بالعين واليد", "standard": "يمكن ان تسبب عدم الحقن في حالة عدم فتحها"},
-  {"region": "Stream Distribution", "part": "", "operation": "تزييت", "action": "التأكد من تزييت الــ Stream Distribution", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تلف الاستريم"},
-  {"region": "Stream Distribution", "part": "", "operation": "تزييت", "action": "التأكد من تزييت الــ Stream Distribution لهد 2", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "تلف الاستريم"},
-  {"region": "Stream Distribution", "part": "بلوكات الهيدروليك", "operation": "فحص", "action": "بلوكة البلفات الخاص بالهد1", "frequency": "شهري", "tools": "N فحص بالعين", "standard": "حدوث تسريب في احد البلوكات"},
-  {"region": "Stream Distribution", "part": "", "operation": "تنظيف", "action": "تنظيف بلوكات الهيدروليك الخاص بالهد 1", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاتربة والاوساخ قد يمنع اكتشاف التسريبات"},
-  {"region": "Stream Distribution", "part": "", "operation": "تنظيف", "action": "تنظيف بلوكات الهيدروليك الخاص بالهد 2", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "تراكم الاتربة والاوساخ قد يمنع اكتشاف التسريبات"},
-  {"region": "Stream Distribution", "part": "", "operation": "فحص", "action": "بلوكة البلفات الخاص بالهد2", "frequency": "شهري", "tools": "N فحص بالعين", "standard": "حدوث تسريب في احد البلوكات"},
-  {"region": "HEATING SYSTEM", "part": "خراطيم التسخين", "operation": "فحص", "action": "مراجعة سلامة خراطيم التسخين وتغيير ما يلزم", "frequency": "يومي", "tools": "N فحص بالعين", "standard": "تلف في احد الخراطيم يودي الي تسريب"},
-  {"region": "HEATING SYSTEM", "part": "وصلات التسخين والغلايات", "operation": "فحص", "action": "معالجة أي تسريب في وصلات التسخين", "frequency": "يومي", "tools": "N فحص بالعين", "standard": "عدم وصول الزيت الى البلانسرات وحدوث تآكل"},
-  {"region": "HEATING SYSTEM", "part": "وحدة التسخين", "operation": "تنظيف", "action": "تنظيف وحدة التسخين كاملة", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "standard": "انخفاض جودة التسخين"},
-  {"region": "HEATING SYSTEM", "part": "عداد الحرارة", "operation": "فحص", "action": "التحقق من درجة الحرارة", "frequency": "يومي", "tools": "N فحص بالعين", "standard": "ارتفاع او انخفاض الحرارة يقلل من جودة الحقن"},
-  {"region": "HEATING SYSTEM", "part": "مياة الغلايات فحص وتغيير", "operation": "تزويد مياة الغلاية او تغييرة في حالة الحاجة", "action": "", "frequency": "أسبوعي", "tools": "", "standard": "انخفاض جودة التسخين"},
-  {"region": "HEATING SYSTEM", "part": "الوصلات", "operation": "تربيط", "action": "مراجعة ربط جميع الوصلات عند عزم معين", "frequency": "يومي", "tools": "بالعدد والان المناسب", "standard": "حدوث تسريب في الوصلات"},
-  {"region": "HEATING SYSTEM", "part": "البستم", "operation": "فحص", "action": "التأكد من ربط البستم فى الونش وسلامة الحركة", "frequency": "أسبوعي", "tools": "بالعدد والان المناسب", "standard": "حدوث خلل في حركة البستم وتلف الحشوة"},
-  {"region": "HEATING SYSTEM", "part": "", "operation": "تشحيم", "action": "تشحيم دلاليل حركة البستم بشحم Mobliux EP -2", "frequency": "شهري", "tools": "", "standard": "تأكل في دلايل الحركة وتلفها"},
-  {"region": "HEATING SYSTEM", "part": "السيور", "operation": "فحص", "action": "فحص السيور الخاصة بدخول الثلاجة للفرن", "frequency": "أسبوعي", "tools": "N فحص بالعين واليد", "standard": "تلف السير وعدم حركة الثلاجة"},
-  {"region": "HEATING SYSTEM", "part": "وصلات الهواء والبلف", "operation": "فحص", "action": "التأكد من عدم وجود تسريب في وصلات الهواء", "frequency": "أسبوعي", "tools": "N فحص بالعين", "standard": "عدم حركة البستم بسبب التسريب"},
-  {"region": "JIG", "part": "جسم فتايل صعود وهبوط الجيك", "operation": "تزييت", "action": "تشحيم باستخدام Mobil gear 600 XP320", "frequency": "شهري", "tools": "مسدس شحم / مزيتة", "standard": "عدد النقاط: 56"},
-  {"region": "عربة الهيد", "part": "قضيب حركة عربة الهيد اعلى الماكينة", "operation": "تزييت", "action": "تشحيم باستخدام Mobilux ep - 0", "frequency": "شهري", "tools": "مسدس شحم / مزيتة", "standard": "عدد النقاط: 2"},
-  {"region": "عربة الهيد", "part": "عجل عربة الهيد", "operation": "تزييت", "action": "تشحيم باستخدام Mobil gear 600 XP320", "frequency": "شهري", "tools": "مسدس شحم / مزيتة", "standard": "عدد النقاط: 12"}
+  {"id": "CLIT_1", "region": "الهد", "part": "النزول هد 1", "operation": "تنظيف", "action": "تنظيف الـ nozzle للايزو خاص هد 1", "frequency": "شهري", "tools": "هواء مضغوط", "machineState": "لا تعمل", "optimalState": "النزول نظيف ولا يوجد ما يعوق المادة", "degradation": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
+  {"id": "CLIT_2", "region": "الهد", "part": "النزول هد 1", "operation": "تنظيف", "action": "تنظيف الـ nozzle البولو خاص هد 1", "frequency": "شهري", "tools": "هواء مضغوط", "machineState": "لا تعمل", "optimalState": "النزول نظيف ولا يوجد ما يعوق المادة", "degradation": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
+  {"id": "CLIT_3", "region": "الهد", "part": "النزول هد 2", "operation": "تنظيف", "action": "تنظيف الـ nozzle للايزو خاص هد 2", "frequency": "شهري", "tools": "هواء مضغوط", "machineState": "لا تعمل", "optimalState": "النزول نظيف ولا يوجد ما يعوق المادة", "degradation": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
+  {"id": "CLIT_4", "region": "الهد", "part": "النزول هد 2", "operation": "تنظيف", "action": "تنظيف الـ nozzle البولو خاص هد 2", "frequency": "شهري", "tools": "هواء مضغوط", "machineState": "لا تعمل", "optimalState": "النزول نظيف ولا يوجد ما يعوق المادة", "degradation": "عدم نظافة النزول قد يودي اي انسدادة وتلفة"},
+  {"id": "CLIT_5", "region": "الهد", "part": "الخراطيم المثبتة على هد 1", "operation": "فحص", "action": "مراجعة ربط اللاكور الخراطيم المثبتة على هد 1", "frequency": "أسبوعي", "tools": "مفاتيح والن الربط", "machineState": "لا تعمل", "optimalState": "كل اللاكور مربوطين جيدا", "degradation": "عدم الربط الجيد في الوصلات قد يؤدي الي تسريب"},
+  {"id": "CLIT_6", "region": "الهد", "part": "الخراطيم المثبتة على هد 2", "operation": "فحص", "action": "مراجعة ربط اللاكور الخراطيم المثبتة على هد 2", "frequency": "أسبوعي", "tools": "مفاتيح والن الربط", "machineState": "لا تعمل", "optimalState": "كل اللاكور مربوطين جيدا", "degradation": "عدم الربط الجيد في الوصلات قد يؤدي الي تسريب"},
+  {"id": "CLIT_7", "region": "الهد", "part": "خراطيم هد 1 الواصلة من البلوكة", "operation": "فحص", "action": "فحص خراطيم هد 1 الواصلة من البلوكة الى الهد من التآكل وتثبيتها", "frequency": "أسبوعي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "الخراطيم جميعها سليم", "degradation": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
+  {"id": "CLIT_8", "region": "الهد", "part": "خراطيم هد 2 الواصلة من البلوكة", "operation": "فحص", "action": "فحص خراطيم هد 2 الواصلة من البلوكة الى الهد من التآكل وتثبيتها", "frequency": "أسبوعي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "الخراطيم جميعها سليم", "degradation": "تسريب في احد الخراطيم او انقطاعة وبالتالي توقف الحقن"},
+  {"id": "CLIT_9", "region": "الهد", "part": "كبات التزييت", "operation": "فحص", "action": "التأكد من مستوى زيت التزييت فى جميع كبات التزييت ألا يقل عن 50%", "frequency": "أسبوعي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "مستوي الزيت مناسب في كبات التزييت", "degradation": "نقص مستوي الزيت يودي تلف الموتور"},
+  {"id": "CLIT_10", "region": "عربة الهيد", "part": "الموتور الخاص بالحركة في اتجاة X", "operation": "تنطيف", "action": "تنظيف الموتور الخاص بالحركة في اتجاة X", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "machineState": "لا تعمل", "optimalState": "الموتور نظيف", "degradation": "تراكم الاوساخ يودي الي ارتفاع حرارة الموتور او تلفة"},
+  {"id": "CLIT_11", "region": "عربة الهيد", "part": "الموتور الخاص بالحركة في اتجاةY", "operation": "تنطيف", "action": "تنظيف الموتور الخاص بالحركة في اتجاة Y", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "machineState": "لا تعمل", "optimalState": "الموتور نظيف", "degradation": "تراكم الاوساخ يودي الي ارتفاع حرارة الموتور او تلفة"},
+  {"id": "CLIT_12", "region": "عربة الهيد", "part": "موتور عربة الهد اتجاة X", "operation": "فحص", "action": "فحص صوت موتور عربة الهد اتجاة X", "frequency": "شهري", "tools": "بالاذن", "machineState": "تعمل", "optimalState": "صوت الموتور طبيعى", "degradation": "تلف البلى وتلف الملفات الداخلية للموتور"},
+  {"id": "CLIT_13", "region": "عربة الهيد", "part": "موتور عربة الهد اتجاة Y", "operation": "فحص", "action": "فحص صوت موتور عربة الهد اتجاة Y", "frequency": "شهري", "tools": "بالاذن", "machineState": "تعمل", "optimalState": "صوت الموتور طبيعى", "degradation": "تلف البلى وتلف الملفات الداخلية للموتور"},
+  {"id": "CLIT_14", "region": "بلوكات الهيدروليك", "part": "Stream Distribution", "operation": "فحص", "action": "فحص ال كامات stream الخاص بالهد 1 وتغيرها", "frequency": "شهري", "tools": "N فحص بالعين واليد", "machineState": "تعمل", "optimalState": "الكامة تعمل مع فتح  Stream Distribution", "degradation": "يمكن ان تسبب عدم الحقن في حالة عدم فتحها"},
+  {"id": "CLIT_15", "region": "بلوكات الهيدروليك", "part": "Stream Distribution", "operation": "تنظيف", "action": "Stream Distribution تنظيف الخاص بالهد 1", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "machineState": "لا تعمل", "optimalState": "نظيف ولا يعوق الحركة", "degradation": "تراكم الاوساخ قد يسبب خلل في حركتة"},
+  {"id": "CLIT_16", "region": "HEATING SYSTEM", "part": "خراطيم التسخين", "operation": "فحص", "action": "مراجعة سلامة خراطيم التسخين وتغيير ما يلزم", "frequency": "يومي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "الخراطيم جميعها سليم", "degradation": "تلف في احد الخراطيم يودي الي تسريب ونقص حرارة"},
+  {"id": "CLIT_17", "region": "HEATING SYSTEM", "part": "وصلات التسخين والغلايات", "operation": "فحص", "action": "معالجة أي تسريب في وصلات التسخين", "frequency": "يومي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "الوصلات كلها سليمة", "degradation": "عدم وصول الزيت الى البلانسرات وحدوث تآكل"},
+  {"id": "CLIT_18", "region": "HEATING SYSTEM", "part": "وحدة التسخين", "operation": "تنظيف", "action": "تنظيف وحدة التسخين كاملة", "frequency": "أسبوعي", "tools": "بالهواد المضغوط وقطعة قماش", "machineState": "لا تعمل", "optimalState": "الوحدة نظيفة", "degradation": "انخفاض جودة التسخين"},
+  {"id": "CLIT_19", "region": "HEATING SYSTEM", "part": "عداد الحرارة", "operation": "فحص", "action": "التحقق من درجة الحرارة", "frequency": "يومي", "tools": "N فحص بالعين", "machineState": "تعمل", "optimalState": "درجة الحرارة طبيعية بين 30:50 درجة", "degradation": "ارتفاع او انخفاض الحرارة يقلل من جودة الحقن"}
 ];
-
 let currentClitFilter = 'الكل';
 let currentDocType = '';
+
+let activeChecklistTasks = [];
 
 window.openJHDocument = async function(type) {
     currentDocType = type;
@@ -2214,12 +2191,17 @@ window.openJHDocument = async function(type) {
     
     document.getElementById('jhDocHeader').innerText = headerMap[type];
     
-    // إظهار/إخفاء فلاتر الدورية بناءً على نوع الشاشة
     const filters = document.getElementById('clitFrequencyFilters');
-    if(filters) filters.style.display = (type === 'CLIT') ? 'flex' : 'none';
+    const startBtn = document.getElementById('startChecklistBtnContainer');
+    if(type === 'CLIT') {
+        if(filters) filters.style.display = 'flex';
+        if(startBtn) startBtn.style.display = 'block';
+    } else {
+        if(filters) filters.style.display = 'none';
+        if(startBtn) startBtn.style.display = 'none';
+    }
 
     renderJHDocForm(type);
-    
     showToast('جاري تحميل السجلات... ⏳');
     
     let records = [];
@@ -2234,19 +2216,12 @@ window.openJHDocument = async function(type) {
     showScreen('jhDocumentScreen');
 };
 
-// دالة فلترة المهام في الـ CLIT
 window.filterCLIT = function(freq, btnEl) {
     currentClitFilter = freq;
-    
-    // تغيير ألوان الأزرار
     document.querySelectorAll('.clit-filter-btn').forEach(b => {
-        b.classList.remove('active');
-        b.classList.remove('btn-primary');
-        b.classList.add('btn-outline');
+        b.classList.remove('active'); b.classList.remove('btn-primary'); b.classList.add('btn-outline');
     });
-    btnEl.classList.add('active');
-    btnEl.classList.remove('btn-outline');
-    btnEl.classList.add('btn-primary');
+    btnEl.classList.add('active'); btnEl.classList.remove('btn-outline'); btnEl.classList.add('btn-primary');
     
     let records = (currentJHDept === 'حقن الكابينة' && currentDocType === 'CLIT') ? factoryCLITData : [];
     renderJHDocList('CLIT', records);
@@ -2310,22 +2285,16 @@ window.renderJHDocForm = function(type) {
     document.getElementById('jhDocActionArea').innerHTML = formHtml;
 };
 
-// دالة العرض الخرافية اللي بتلون حسب نوع العملية
 window.renderJHDocList = function(type, records) {
     let filteredRecords = records;
-    
-    // فلترة لو إحنا في خريطة الـ CLIT
     if(type === 'CLIT' && currentClitFilter !== 'الكل') {
         filteredRecords = records.filter(r => r.frequency && r.frequency.includes(currentClitFilter));
     }
 
     let html = filteredRecords.map((r, index) => {
-        let content = '';
-        let borderColor = 'var(--gold)';
-        let bgGlow = '';
+        let content = ''; let borderColor = 'var(--gold)'; let bgGlow = '';
 
         if(type === 'CLIT') {
-            // تحديد اللون والأيقونة بناءً على نوع العملية
             let op = r.operation || r.clitType || '';
             let icon = '⚙️';
             if(op.includes('تنظيف') || op.includes('تنطيف')) { borderColor = '#3b82f6'; icon = '🧹'; bgGlow = 'rgba(59, 130, 246, 0.05)'; }
@@ -2342,8 +2311,9 @@ window.renderJHDocList = function(type, records) {
                     <span style="color:${borderColor}; font-weight:bold;">الإجراء:</span> ${r.action || r.standard}
                 </div>
                 <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor};">
-                    <b>🎯 المعيار المقبول/الخطر:</b> ${r.standard || 'حسب المواصفة'}<br>
-                    <b>🛠️ الأدوات:</b> ${r.tools || 'يدوي'}
+                    <b>🎯 المعيار المقبول/الخطر:</b> ${r.optimalState || r.standard || 'حسب المواصفة'}<br>
+                    <b>⚠️ حالة التدهور:</b> <span style="color:var(--danger);">${r.degradation || 'غير مسجل'}</span><br>
+                    <b>🛠️ الأدوات وموقف الماكينة:</b> ${r.tools || 'يدوي'} | ${r.machineState || 'مجهول'}
                 </div>
             `;
         } 
@@ -2362,7 +2332,7 @@ window.renderJHDocList = function(type, records) {
         }
 
         let deleteBtn = '';
-        if(hasRole('admin') && r.id) { 
+        if(hasRole('admin') && r.id && !r.region) { 
             deleteBtn = `<button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️ حذف</button>`;
         }
 
@@ -2389,7 +2359,6 @@ window.renderJHDocList = function(type, records) {
 
 window.saveJHRecord = async function(type) {
     let data = { id: uniqueNumericId().toString(), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
-    
     if(type === 'CLIT') {
         data.clitType = document.getElementById('clitType').value;
         data.part = document.getElementById('clitPart').value;
@@ -2417,6 +2386,130 @@ window.saveJHRecord = async function(type) {
     await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data);
     showToast('تم إضافة المعيار/السجل بنجاح ✅');
     openJHDocument(type); 
+};
+window.deleteJHRecord = async function(type, id) {
+    if(confirm('هل أنت متأكد من حذف هذا السجل؟')) {
+        await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).remove();
+        openJHDocument(type);
+    }
+};
+
+// --- محرك قائمة الفحص التفاعلية (Checklist Engine) ---
+
+window.startCLITChecklist = function() {
+    if (currentClitFilter === 'الكل') return showToast('⚠️ يرجى اختيار دورية محددة (يومي، أسبوعي..) لبدء الفحص.');
+    
+    let recordsToExecute = (currentJHDept === 'حقن الكابينة') ? factoryCLITData.filter(r => r.frequency && r.frequency.includes(currentClitFilter)) : [];
+    
+    if(recordsToExecute.length === 0) return showToast('لا توجد مهام لهذه الدورية.');
+
+    // بناء مصفوفة التنفيذ
+    activeChecklistTasks = recordsToExecute.map(r => ({ ...r, status: 'pending', tagId: null }));
+
+    document.getElementById('activeChecklistFreq').innerText = `${currentClitFilter} - ${currentJHDept}`;
+    renderChecklistUI();
+    showScreen('clitChecklistScreen');
+};
+
+window.renderChecklistUI = function() {
+    let container = document.getElementById('checklistItemsContainer');
+    let completedCount = activeChecklistTasks.filter(t => t.status !== 'pending').length;
+    let totalCount = activeChecklistTasks.length;
+    
+    document.getElementById('checklistProgress').innerText = completedCount;
+    document.getElementById('checklistTotal').innerText = totalCount;
+    document.getElementById('checklistProgressBar').style.width = `${(completedCount / totalCount) * 100}%`;
+
+    container.innerHTML = activeChecklistTasks.map((t, idx) => {
+        let isDone = t.status === 'done';
+        let isIssue = t.status === 'issue';
+        
+        let op = t.operation || '';
+        let icon = '⚙️'; let colorTheme = 'var(--primary)';
+        if(op.includes('تنظيف')) { icon = '🧹'; colorTheme = '#3b82f6'; }
+        else if(op.includes('تزييت') || op.includes('تشحيم')) { icon = '🛢️'; colorTheme = '#f97316'; }
+        else if(op.includes('فحص')) { icon = '🔍'; colorTheme = '#22c55e'; }
+        else if(op.includes('تربيط')) { icon = '🔧'; colorTheme = '#ef4444'; }
+
+        let cardStyle = isDone ? 'border-color:var(--success); background:rgba(46,125,50,0.05); opacity:0.8;' 
+                      : (isIssue ? 'border-color:var(--danger); background:rgba(198,40,40,0.05);' 
+                      : `border-left:5px solid ${colorTheme};`);
+
+        let tagBadge = t.tagId ? `<div style="margin-top:10px; padding:5px; background:var(--danger); color:white; border-radius:5px; font-size:11px; text-align:center; font-weight:bold; cursor:pointer;" onclick="showScreen('tagsScreen'); document.getElementById('filterTagMachine').value='${t.part || t.region}'; renderTags();">🚨 تم إصدار تاج للمشكلة (اضغط للعرض)</div>` : '';
+
+        return `
+        <div class="card glass-card" style="padding:15px; transition:0.3s; ${cardStyle}">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <b style="font-size:13px; color:var(--text-main);">${idx+1}. ${icon} ${t.region} ${t.part ? ' - ' + t.part : ''}</b>
+                <span style="font-size:10px; background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px;">${t.machineState || 'تعمل'}</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px;"><b>الإجراء:</b> ${t.action}</div>
+            <div style="font-size:11px; color:${colorTheme}; margin-bottom:15px;"><b>المعيار 🎯:</b> ${t.optimalState || t.standard}</div>
+            
+            <div class="row-flex" style="gap:10px;">
+                <button class="btn btn-sm ${isDone ? 'btn-success' : 'btn-outline'} flex-1" style="border-radius:20px; font-weight:bold;" onclick="markChecklistItem(${idx}, 'done')">✅ سليم (تم)</button>
+                <button class="btn btn-sm ${isIssue ? 'btn-danger' : 'btn-outline'} flex-1" style="border-radius:20px; font-weight:bold;" onclick="openCLITIssueModal(${idx})">❌ مشكلة (عطل)</button>
+            </div>
+            ${tagBadge}
+        </div>`;
+    }).join('');
+};
+
+window.markChecklistItem = function(idx, status) {
+    activeChecklistTasks[idx].status = status;
+    renderChecklistUI();
+};
+
+let currentTaggingChecklistIdx = null;
+
+window.openCLITIssueModal = function(idx) {
+    let t = activeChecklistTasks[idx];
+    currentTaggingChecklistIdx = idx;
+    document.getElementById('clitTagItemName').innerText = `${t.region} - ${t.part || t.action}`;
+    document.getElementById('clitTagDegradation').innerText = t.degradation || 'ظاهرة غير طبيعية';
+    document.getElementById('clitTagDesc').value = '';
+    document.getElementById('clitTagModal').style.display = 'flex';
+};
+
+window.submitCLITTag = async function() {
+    let desc = document.getElementById('clitTagDesc').value.trim();
+    if(!desc) return showToast('⚠️ يرجى كتابة وصف المشكلة التي وجدتها.');
+    
+    let t = activeChecklistTasks[currentTaggingChecklistIdx];
+    let fullDesc = `[مكتشف بالصيانة الذاتية]: ${desc} \n(المنطقة: ${t.region} - ${t.part})`;
+    let tId = uniqueNumericId().toString();
+    
+    let newTag = {
+        id: tId, desc: fullDesc, color: 'red', dept: currentJHDept, machine: t.part || t.region,
+        status: 'open', auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'), timestamp: Date.now()
+    };
+    
+    syncRecord('tags/' + tId, newTag);
+    t.status = 'issue'; t.tagId = tId;
+    
+    document.getElementById('clitTagModal').style.display = 'none';
+    awardPoints(15, 'اكتشاف عطل أثناء الصيانة الذاتية');
+    showToast('🚨 تم إصدار التاج وربطه بقائمة الفحص بنجاح!');
+    renderChecklistUI(); 
+};
+
+window.submitFinalChecklist = async function() {
+    let pending = activeChecklistTasks.filter(t => t.status === 'pending').length;
+    if(pending > 0) {
+        if(!confirm(`⚠️ يتبقى ${pending} مهام لم يتم فحصها! هل تريد حفظ القائمة على أي حال؟`)) return;
+    }
+    
+    showToast('جاري أرشفة القائمة في السجل الذكي... ⏳');
+    let executionObj = {
+        id: uniqueNumericId().toString(), dept: currentJHDept, frequency: currentClitFilter,
+        date: new Date().toLocaleDateString('ar-EG'), time: new Date().toLocaleTimeString('ar-EG'),
+        user: currentUser.name, tasks: activeChecklistTasks
+    };
+    
+    await db.ref(`tpm_system/clit_executions/${currentJHDept}/${executionObj.id}`).set(executionObj);
+    awardPoints(30, `تنفيذ دورة صيانة ذاتية (${currentClitFilter})`);
+    showToast('تم حفظ دورة الصيانة بنجاح ✅');
+    showScreen('jhDocumentScreen');
 };
 // ==========================================
 // 🚀 المستشار الذكي وعقل المصنع (الإصدار المستقر والمفصل)
@@ -2857,7 +2950,6 @@ window.renderKKDashboard = function() {
 };
 
 // 3. دالة إنشاء مشروع PDCA جديد
-// 3. دالة إنشاء مشروع PDCA جديد (وتصفير الخانات)
 window.createNewPDCA = function() {
     let opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
     document.getElementById('pdcaDept').innerHTML = opts;
@@ -2865,21 +2957,20 @@ window.createNewPDCA = function() {
     let filterEl = document.getElementById('kkGlobalDeptFilter');
     if(filterEl && filterEl.value !== 'الكل') document.getElementById('pdcaDept').value = filterEl.value;
 
-    // تصفير جميع الخانات بما فيها الـ Check والـ Act
     document.getElementById('pdcaTitle').value = '';
     document.getElementById('pdcaBefore').value = '';
     document.getElementById('pdcaAfter').value = '';
     document.getElementById('pdcaUnit').value = '';
     document.getElementById('pdcaPlan').value = '';
     document.getElementById('pdcaDo').value = '';
-    document.getElementById('pdcaCheck').value = '';
-    document.getElementById('pdcaAct').value = '';
+    document.getElementById('pdcaCheck').value = ''; // تم إضافة الفحص
+    document.getElementById('pdcaAct').value = '';   // تم إضافة الاعتماد
     currentPDCAImg = null;
     document.getElementById('pdcaImgPreview').innerHTML = '';
 
     document.getElementById('pdcaCreateModal').style.display = 'flex';
 };
-// التعامل مع صورة المشروع
+
 window.handlePDCAImage = function(e) {
     const f = e.target.files[0]; if(!f) return;
     showToast('جاري تحضير الصورة...');
@@ -2889,14 +2980,13 @@ window.handlePDCAImage = function(e) {
     });
 };
 
-// حفظ مشروع الـ PDCA الكامل
 window.saveNewPDCA = async function() {
     let t = document.getElementById('pdcaTitle').value;
     let b = parseFloat(document.getElementById('pdcaBefore').value) || 0;
     let a = parseFloat(document.getElementById('pdcaAfter').value) || 0;
     let unit = document.getElementById('pdcaUnit').value || 'وحدة';
     
-    if(!t) return showToast('⚠️ عنوان المشروع (المشكلة) مطلوب!');
+    if(!t) return showToast('⚠️ عنوان المشروع مطلوب!');
 
     let uploadedUrl = null;
     if (currentPDCAImg) {
@@ -2904,7 +2994,6 @@ window.saveNewPDCA = async function() {
         uploadedUrl = await uploadImageToStorage(currentPDCAImg);
     }
 
-    // سحب البيانات من كل الخانات
     let pdcaObj = {
         id: uniqueNumericId().toString(),
         title: sanitizeInput(t),
@@ -2915,30 +3004,27 @@ window.saveNewPDCA = async function() {
         unit: sanitizeInput(unit),
         planText: sanitizeInput(document.getElementById('pdcaPlan').value),
         doText: sanitizeInput(document.getElementById('pdcaDo').value),
-        checkText: sanitizeInput(document.getElementById('pdcaCheck').value), // سحب نص الـ Check
-        actText: sanitizeInput(document.getElementById('pdcaAct').value),     // سحب نص الـ Act
+        checkText: sanitizeInput(document.getElementById('pdcaCheck').value),
+        actText: sanitizeInput(document.getElementById('pdcaAct').value),
         image: uploadedUrl,
-        status: 'Closed', // ممكن نخليها Plan كبداية، أو Closed لو المشروع خلصان
+        status: 'Plan',
         owner: currentUser.name || 'مجهول',
         date: new Date().toLocaleDateString('ar-EG')
     };
 
-    // لو المستخدم كتب حاجة في Act معناه إن المشروع خلصان وتم اعتماده
     if (pdcaObj.actText !== '') pdcaObj.status = 'Closed';
     else if (pdcaObj.checkText !== '') pdcaObj.status = 'Check';
     else if (pdcaObj.doText !== '') pdcaObj.status = 'Do';
-    else pdcaObj.status = 'Plan';
 
     pdcaData.push(pdcaObj);
     renderKKDashboard();
     syncRecord('pdca/' + pdcaObj.id, pdcaObj);
     
     document.getElementById('pdcaCreateModal').style.display = 'none';
-    awardPoints(25, 'إطلاق/تسجيل A3 PDCA متكامل');
-    showToast('تم حفظ المشروع بنجاح 🚀');
+    awardPoints(25, 'إطلاق A3 PDCA متكامل');
+    showToast('تم إطلاق المشروع بنجاح 🚀');
 };
 
-// عرض المشروع (A3 Dashboard View)
 window.viewPDCADetails = function(id) {
     let p = pdcaData.find(x => x.id == id);
     if(!p) return;
@@ -2962,7 +3048,6 @@ window.viewPDCADetails = function(id) {
         document.getElementById('viewPdcaImgContainer').style.display = 'none';
     }
 
-    // رسم Chart.js (Before vs After)
     const ctx = document.getElementById('pdcaChart');
     if (pdcaChartInstance) pdcaChartInstance.destroy(); 
     
@@ -2975,8 +3060,7 @@ window.viewPDCADetails = function(id) {
                 data: [p.beforeVal, p.afterVal],
                 backgroundColor: ['rgba(239, 68, 68, 0.8)', 'rgba(34, 197, 94, 0.8)'],
                 borderColor: ['#ef4444', '#22c55e'],
-                borderWidth: 1,
-                borderRadius: 5
+                borderWidth: 1, borderRadius: 5
             }]
         },
         options: {

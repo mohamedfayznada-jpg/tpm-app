@@ -800,65 +800,102 @@
         <div id="myActivityTimeline" style="padding-bottom:100px;"></div>
     </div>
 
+   <!-- ========================================== -->
+    <!-- 👷‍♂️ بوابة الصيانة الذاتية (Jishu Hozen Portal) -->
+    <!-- ========================================== -->
     <div class="container screen" id="jhPortalScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="color:#4CAF50; margin:0; font-size:18px;">👷‍♂️ بوابة الصيانة الذاتية</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
+                <h2 style="color:#4CAF50; margin:0; font-size:18px;">👷‍♂️ غرفة عمليات الصيانة الذاتية (JH)</h2>
+            </div>
+            <button class="btn btn-sm btn-outline btn-role-admin" style="width:auto; margin:0;" onclick="setDeptGoal()">🎯 ضبط المستهدف</button>
         </div>
-        <h3 class="section-title">📂 اختر القسم للمتابعة</h3>
+
+        <!-- اختيار القسم -->
+        <h3 class="section-title" style="margin-top:0;">📂 اختر القسم للمتابعة:</h3>
         <div id="jhDeptGrid" class="grid-layout" style="margin-bottom:30px;"></div>
+
+        <!-- مساحة العمل للقسم المختار -->
         <div id="jhToolbox" style="display:none; animation: fadeIn 0.5s;">
-            <div id="jhDeptDashboard" class="card glass-card" style="border-top: 4px solid var(--gold); padding:15px; margin-bottom:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 id="selectedJHDeptTitle" style="color:var(--gold); margin:0;">اسم القسم</h3>
-                    <button class="btn btn-sm btn-outline btn-role-admin" style="width:auto; margin:0;" onclick="setDeptGoal()">🎯 المستهدف</button>
-                </div>
-                <div id="deptGoalDisplay" style="background:rgba(46, 125, 50, 0.1); border:1px dashed var(--success); padding:8px; border-radius:8px; margin-bottom:15px; font-size:12px; color:var(--success); text-align:center; display:none;">
-                    المستهدف المطلوب: <b>85%</b>
-                </div>
-                <div class="dashboard-stats modern-stats" style="margin-bottom:15px;">
-                    <div class="card stat-card glass-card" style="border-color:var(--gold); padding:5px;">
-                        <div class="stat-value" id="deptAuditScore" style="font-size:18px !important;">0%</div>
-                        <div class="stat-label">مراجعة JH</div>
-                    </div>
-                    <div class="card stat-card glass-card" style="border-color:#00BCD4; padding:5px; background:linear-gradient(180deg, rgba(0, 188, 212, 0.1), transparent);">
-                        <div class="stat-value" id="deptOEE" style="font-size:18px !important; color:#00BCD4;">0%</div>
-                        <div class="stat-label">مؤشر OEE</div>
-                    </div>
-                    <div class="card stat-card glass-card" style="border-color:var(--danger); padding:5px;">
-                        <div class="stat-value danger-text" id="deptOpenTags" style="font-size:18px !important;">0</div>
-                        <div class="stat-label">تاجات مفتوحة</div>
-                    </div>
-                    <div class="card stat-card glass-card" style="border-color:var(--success); padding:5px;">
-                        <div class="stat-value" id="deptKaizens" style="font-size:18px !important;">0</div>
-                        <div class="stat-label">كايزن منفذ</div>
+            <div id="jhDeptDashboard" class="card glass-card" style="border-top: 4px solid var(--success); padding:15px; margin-bottom:20px;">
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(76, 175, 80, 0.3); padding-bottom:10px; margin-bottom:15px;">
+                    <h3 id="selectedJHDeptTitle" style="color:var(--success); font-weight:900; margin:0; font-size:20px;">اسم القسم</h3>
+                    <div id="deptGoalDisplay" style="background:rgba(46, 125, 50, 0.1); border:1px dashed var(--success); padding:5px 10px; border-radius:8px; font-size:12px; color:var(--success); font-weight:bold; display:none;">
+                        المستهدف: <b>85%</b>
                     </div>
                 </div>
-                <div style="display:flex; flex-direction:column; gap:20px; margin-top:15px; margin-bottom:20px;">
-                    <div style="background:var(--bg-color); border-radius:12px; padding:20px; border:1px solid var(--card-border); width:100%;">
-                        <h4 style="font-size:13px; color:var(--text-muted); margin:0 0 15px 0; text-align:center;">📈 تطور أداء القسم (آخر 5 مراجعات)</h4>
-                        <div style="position: relative; height: 200px; width: 100%;">
-                            <canvas id="jhMiniTrendChart"></canvas>
-                        </div>
+
+                <!-- 1. مؤشرات الأداء الحيوية (KPIs) -->
+                <div class="dashboard-stats modern-stats" style="margin-bottom:20px;">
+                    <div class="card stat-card glass-card" style="border-color:var(--success); padding:10px;">
+                        <div class="stat-value success-text" id="deptAuditScore" style="font-size:22px !important;">0%</div>
+                        <div class="stat-label">نتيجة المراجعة (Audit)</div>
                     </div>
-                    <div style="background:var(--bg-color); border-radius:12px; padding:20px; border:1px solid var(--card-border); width:100%;">
-                        <h4 style="font-size:14px; color:var(--primary); margin:0 0 15px 0; text-align:center;">🏆 أبطال القسم</h4>
-                        <div id="deptInternalLeaderboard" style="display:flex; flex-direction:column; gap:10px;"></div>
+                    <div class="card stat-card glass-card" style="border-color:#00BCD4; padding:10px; background:linear-gradient(180deg, rgba(0, 188, 212, 0.1), transparent);">
+                        <div class="stat-value" id="deptOEE" style="font-size:22px !important; color:#00BCD4;">0%</div>
+                        <div class="stat-label">مؤشر الكفاءة (OEE)</div>
+                    </div>
+                    <div class="card stat-card glass-card" style="border-color:var(--danger); padding:10px;">
+                        <div class="stat-value danger-text" id="deptOpenTags" style="font-size:22px !important;">0</div>
+                        <div class="stat-label">التاجات المفتوحة</div>
+                    </div>
+                    <div class="card stat-card glass-card" style="border-color:var(--gold); padding:10px;">
+                        <div class="stat-value" id="deptKaizens" style="font-size:22px !important; color:var(--gold);">0</div>
+                        <div class="stat-label">تحسينات الكايزن</div>
                     </div>
                 </div>
-                <div class="grid-layout">
-                    <div class="card glass-card text-center" onclick="startNewAuditFlowFromPortal()" style="border-top:4px solid var(--success); cursor:pointer;">
-                        <div style="font-size:24px;">📝</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مراجعة JH</div>
+
+                <!-- 2. التحليل المرئي المتقدم (Visual Analytics) -->
+                <div class="row-flex" style="flex-wrap: wrap; gap: 15px; margin-bottom:25px;">
+                    <!-- منحنى المراجعات -->
+                    <div class="card glass-card flex-1" style="min-width:280px; padding:15px; background:rgba(0,0,0,0.2);">
+                        <h4 style="font-size:12px; color:var(--gold); margin:0 0 10px 0; text-align:center;">📈 التطور التاريخي للمراجعات (آخر 5)</h4>
+                        <div style="position: relative; height: 180px; width: 100%;"><canvas id="jhMiniTrendChart"></canvas></div>
                     </div>
-                    <div class="card glass-card text-center" onclick="openJHDocument('SOC')" style="border-top:4px solid var(--warning); cursor:pointer;">
-                        <div style="font-size:24px;">🧗‍♂️</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">خريطة SOC</div>
+                    <!-- تحليل أزمنة الصيانة الذاتية -->
+                    <div class="card glass-card flex-1" style="min-width:280px; padding:15px; background:rgba(0,0,0,0.2);">
+                        <h4 style="font-size:12px; color:#00BCD4; margin:0 0 10px 0; text-align:center;">⏱️ تحليل أزمنة الصيانة (دقائق/أسبوع)</h4>
+                        <div style="position: relative; height: 180px; width: 100%;"><canvas id="jhTimeChart"></canvas></div>
                     </div>
-                    <div class="card glass-card text-center" onclick="openJHDocument('Safety')" style="border-top:4px solid var(--danger); cursor:pointer;">
-                        <div style="font-size:24px;">⚠️</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مخاطر الأمان</div>
+                    <!-- مصفوفة التاجات -->
+                    <div class="card glass-card flex-1" style="min-width:280px; padding:15px; background:rgba(0,0,0,0.2);">
+                        <h4 style="font-size:12px; color:var(--danger); margin:0 0 10px 0; text-align:center;">🏷️ مصفوفة التاجات (صيانة / إنتاج)</h4>
+                        <div style="position: relative; height: 180px; width: 100%;"><canvas id="jhTagMatrixChart"></canvas></div>
                     </div>
-                    <div class="card glass-card text-center" onclick="openJHDocument('Anatomy')" style="border-top:4px solid var(--gold); cursor:pointer;">
+                </div>
+
+                <!-- 3. ترسانة الصيانة الذاتية (JH Pillar Toolkit) -->
+                <h3 class="section-title" style="color:var(--success); border-color:var(--success); font-size:14px;">🛠️ أدوات وسجلات الصيانة الذاتية (خطوات 0 إلى 7)</h3>
+                
+                <div class="grid-layout" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:10px; margin-bottom:20px;">
+                    <div class="card glass-card text-center" onclick="startNewAuditFlowFromPortal()" style="border-top:3px solid var(--primary); cursor:pointer; padding:10px;">
+                        <div style="font-size:24px;">📝</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مراجعة (Audit)</div>
+                    </div>
+                    <div class="card glass-card text-center" onclick="openJHDocument('CLIT')" style="border-top:3px solid #00BCD4; cursor:pointer; padding:10px;">
+                        <div style="font-size:24px;">🧹</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">معايير التنظيف (CLIT)</div>
+                    </div>
+                    <div class="card glass-card text-center" onclick="openJHDocument('Contamination')" style="border-top:3px solid #795548; cursor:pointer; padding:10px;">
+                        <div style="font-size:24px;">🛢️</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">مصادر التلوث</div>
+                    </div>
+                    <div class="card glass-card text-center" onclick="openJHDocument('SOC')" style="border-top:3px solid var(--warning); cursor:pointer; padding:10px;">
+                        <div style="font-size:24px;">🧗‍♂️</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">خريطة (SOC)</div>
+                    </div>
+                    <div class="card glass-card text-center" onclick="openJHDocument('Anatomy')" style="border-top:3px solid var(--gold); cursor:pointer; padding:10px;">
                         <div style="font-size:24px;">⚙️</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">تشريح المعدة</div>
                     </div>
+                    <div class="card glass-card text-center" onclick="openJHDocument('Safety')" style="border-top:3px solid var(--danger); cursor:pointer; padding:10px;">
+                        <div style="font-size:24px;">⚠️</div><div style="font-size:11px; font-weight:bold; margin-top:5px;">خريطة الأمان</div>
+                    </div>
                 </div>
+
+                <!-- 4. أبطال القسم -->
+                <div style="background:rgba(255,255,255,0.02); border-radius:12px; padding:15px; border:1px solid rgba(255,255,255,0.05);">
+                    <h4 style="font-size:13px; color:var(--primary); margin:0 0 10px 0; text-align:center;">🏆 أبطال الجودة بالقسم</h4>
+                    <div id="deptInternalLeaderboard" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+
             </div>
         </div>
     </div>

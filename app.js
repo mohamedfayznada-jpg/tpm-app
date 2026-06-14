@@ -3344,3 +3344,142 @@ window.updateDeptDropdown = function() {
         kkGlobalFilter.value = currentVal || 'الكل'; 
     }
 };
+// ==========================================
+// 📊 محرك حساب وعرض مؤشرات أداء الـ JH KPIs
+// ==========================================
+let currentKPIDept = 'حقن الكابينة'; // القسم الافتراضي
+let kpiDataStore = {}; // لتخزين البيانات اليدوية المؤقتة
+
+window.openJHKPIsScreen = function() {
+    showScreen('jhKPIsScreen');
+    renderKPIDeptTabs();
+    loadKPIsForDepartment(currentKPIDept);
+    calculateGlobalKPIs();
+};
+
+window.renderKPIDeptTabs = function() {
+    const depts = ['حقن الكابينة', 'حقن الباب', 'التشكيل', 'التجميع'];
+    let html = depts.map(d => `
+        <button class="btn btn-sm ${d === currentKPIDept ? 'btn-primary active' : 'btn-outline'}" 
+                style="white-space: nowrap; border-radius: 20px;" 
+                onclick="changeKPIDept('${d}')">
+            ${d}
+        </button>
+    `).join('');
+    document.getElementById('kpiDeptTabs').innerHTML = html;
+};
+
+window.changeKPIDept = function(dept) {
+    currentKPIDept = dept;
+    renderKPIDeptTabs();
+    loadKPIsForDepartment(dept);
+};
+
+window.loadKPIsForDepartment = async function(dept) {
+    document.getElementById('kpiCurrentDeptTitle').innerText = `القسم: ${dept}`;
+    showToast('جاري حساب المؤشرات... ⏳');
+    
+    // سحب الداتا اليدوية المخزنة من الفايربيز (لشهر الحالي كمثال)
+    let currentMonth = new Date().toISOString().slice(0, 7); // 2026-06
+    const snap = await db.ref(`tpm_system/jh_kpis/${currentMonth}/${dept}`).once('value');
+    kpiDataStore = snap.val() || {};
+
+    let tableHtml = '';
+    
+    JH_KPI_MASTER_LIST.forEach(kpi => {
+        let val = 0;
+        let sourceBadge = '';
+        
+        // --- محرك الحساب الآلي (Auto-Calculations) ---
+        if(kpi.type === 'manual') {
+            val = kpiDataStore[kpi.id] || 0;
+            sourceBadge = '<span style="color:var(--warning); font-size:10px;">✍️ يدوي</span>';
+        } else {
+            sourceBadge = '<span style="color:var(--success); font-size:10px;">🤖 آلي</span>';
+            
+            // حساب التاجات (أمثلة تقريبية تعتمد على مصفوفة التاجات لديك)
+            if(kpi.type === 'auto_tag_blue_open') {
+                val = tagsData.filter(t => t.dept === dept && t.color === 'blue' && t.status !== 'closed').length;
+            } else if (kpi.type === 'auto_tag_red_open') {
+                val = tagsData.filter(t => t.dept === dept && t.color === 'red' && t.status !== 'closed').length;
+            } else if (kpi.type === 'auto_clit_count') {
+                // سحب من مصفوفة currentJHExecutions اللي برمجناها المرة اللي فاتت
+                val = currentJHExecutions.length; 
+            }
+            // يمكن استكمال باقي الحسابات الآلية (Safety, Kaizen) بنفس المنطق حسب الداتا المخزنة لديك
+        }
+
+        tableHtml += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="color:var(--gold); font-weight:bold;">${kpi.id}</td>
+                <td>${kpi.name}</td>
+                <td style="color:var(--text-muted);">${kpi.unit}</td>
+                <td style="font-weight:bold; font-size:14px; color: ${val > 0 ? 'white' : 'var(--text-muted)'};">${val}</td>
+                <td>${sourceBadge}</td>
+            </tr>
+        `;
+    });
+
+    document.getElementById('kpiTableBody').innerHTML = tableHtml;
+};
+
+// 🌐 حساب وتحديث العدادات العلوية للمصنع كله
+window.calculateGlobalKPIs = function() {
+    // هنا بنجمع داتا كل الأقسام (كمثال توضيحي بنجمع التاجات العامة)
+    let totalOpenRed = tagsData.filter(t => t.color === 'red' && t.status !== 'closed').length;
+    let totalOpenBlue = tagsData.filter(t => t.color === 'blue' && t.status !== 'closed').length;
+    let totalKaizens = 12; // مثال لرقم يسحب من الكايزن
+    let totalDryMachines = 4; // مثال
+
+    document.getElementById('globalKPIStats').innerHTML = `
+        <div class="stat-card" style="border-bottom: 2px solid var(--danger);">
+            <div class="stat-value">${totalOpenRed}</div>
+            <div class="stat-label">تاجات حمراء (المصنع)</div>
+        </div>
+        <div class="stat-card" style="border-bottom: 2px solid var(--primary);">
+            <div class="stat-value">${totalOpenBlue}</div>
+            <div class="stat-label">تاجات زرقاء (المصنع)</div>
+        </div>
+        <div class="stat-card" style="border-bottom: 2px solid var(--success);">
+            <div class="stat-value">${totalKaizens}</div>
+            <div class="stat-label">كايزن منفذ</div>
+        </div>
+        <div class="stat-card" style="border-bottom: 2px solid var(--gold);">
+            <div class="stat-value">${totalDryMachines}</div>
+            <div class="stat-label">ماكينات بلا تسريب</div>
+        </div>
+    `;
+};
+
+// ✍️ فتح نافذة إدخال المؤشرات اليدوية
+window.openKPIEntryModal = function() {
+    document.getElementById('manualKPIDeptName').innerText = `إدخال بيانات قسم: ${currentKPIDept}`;
+    
+    let fieldsHtml = JH_KPI_MASTER_LIST.filter(k => k.type === 'manual').map(kpi => `
+        <div class="form-group">
+            <label style="font-size:11px;">${kpi.id}. ${kpi.name} (${kpi.unit})</label>
+            <input type="number" id="manual_kpi_${kpi.id}" class="form-control" value="${kpiDataStore[kpi.id] || 0}">
+        </div>
+    `).join('');
+
+    document.getElementById('manualKPIFields').innerHTML = fieldsHtml;
+    document.getElementById('manualKPIModal').style.display = 'flex';
+};
+
+// 💾 حفظ المؤشرات اليدوية في الفايربيز
+window.saveManualKPIs = async function() {
+    showToast('جاري الحفظ... ⏳');
+    let currentMonth = new Date().toISOString().slice(0, 7);
+    
+    let updates = {};
+    JH_KPI_MASTER_LIST.filter(k => k.type === 'manual').forEach(kpi => {
+        let val = document.getElementById(`manual_kpi_${kpi.id}`).value;
+        updates[kpi.id] = parseInt(val) || 0;
+    });
+
+    await db.ref(`tpm_system/jh_kpis/${currentMonth}/${currentKPIDept}`).set(updates);
+    
+    document.getElementById('manualKPIModal').style.display = 'none';
+    showToast('تم حفظ المؤشرات بنجاح ✅');
+    loadKPIsForDepartment(currentKPIDept); // إعادة تحميل الجدول
+};

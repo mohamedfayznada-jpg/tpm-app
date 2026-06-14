@@ -263,3 +263,28 @@ const factoryCLITData = rawCLITData.split('\n').filter(line => line.trim() !== '
         optimalState: p[9], degradation: p[10]
     };
 });
+// ==========================================
+// 📊 قائمة مؤشرات الصيانة الذاتية (JH 20 KPIs Indices)
+// ==========================================
+const JH_KPI_MASTER_LIST = [
+    { id: 1, name: "Failures due to poor JH (أعطال بسبب سوء الفحص)", unit: "Numbers", type: "manual" },
+    { id: 2, name: "Spill-over of Products (انسكاب المنتجات)", unit: "Numbers", type: "manual" },
+    { id: 3, name: "No. of Dry-Machines (ماكينات خالية من التسريب)", unit: "Numbers", type: "manual" },
+    { id: 4, name: "Total No. of JH activity (مرات تنفيذ الـ CLIT)", unit: "Numbers", type: "auto_clit_count" },
+    { id: 5, name: "Total time for JH activity (وقت تنفيذ الـ CLIT)", unit: "Minutes", type: "auto_clit_time" },
+    { id: 6, name: "Defects Identified by Operators (تاجات زرقاء مفتوحة)", unit: "Numbers", type: "auto_tag_blue_open" },
+    { id: 7, name: "Defects Rectified by Operators (تاجات زرقاء مغلقة)", unit: "Numbers", type: "auto_tag_blue_closed" },
+    { id: 8, name: "Defects Identified (تاجات حمراء مفتوحة)", unit: "Numbers", type: "auto_tag_red_open" },
+    { id: 9, name: "Defects Rectified (تاجات حمراء مغلقة)", unit: "Numbers", type: "auto_tag_red_closed" },
+    { id: 10, name: "Circle Meetings conducted (اجتماعات الدوائر)", unit: "Numbers", type: "manual" },
+    { id: 11, name: "Time Utilised for Circle Meetings (وقت الاجتماعات)", unit: "Hrs.", type: "manual" },
+    { id: 12, name: "Quality defects due to poor JH (عيوب جودة بسبب JH)", unit: "Numbers", type: "manual" },
+    { id: 13, name: "Accidents due to poor JH (حوادث بسبب JH)", unit: "Numbers", type: "manual" },
+    { id: 14, name: "Unsafe places found (أماكن خطرة مكتشفة)", unit: "Numbers", type: "auto_safety_found" },
+    { id: 15, name: "Unsafe places rectified (أماكن خطرة تم حلها)", unit: "Numbers", type: "manual" },
+    { id: 16, name: "JH One Point Lessons implemented (دروس OPL)", unit: "Numbers", type: "manual" },
+    { id: 17, name: "JH Training Sessions conducted (دورات تدريبية)", unit: "Numbers", type: "manual" },
+    { id: 18, name: "Time Utilised for Training (ساعات التدريب)", unit: "Hrs.", type: "manual" },
+    { id: 19, name: "JH Kaizens registered (كايزن مسجل)", unit: "Numbers", type: "auto_kaizen_open" },
+    { id: 20, name: "JH Kaizens implemented (كايزن منفذ)", unit: "Numbers", type: "auto_kaizen_closed" }
+];

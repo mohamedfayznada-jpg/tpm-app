@@ -1154,6 +1154,69 @@
         </div>
     </div>
 
+<!-- ========================================== -->
+<!-- 📊 شاشة مؤشرات نضج الصيانة الذاتية (JH KPIs) -->
+<!-- ========================================== -->
+<div id="jhKPIsScreen" class="screen" style="display:none;">
+    <div class="sticky-header">
+        <button class="btn btn-sm btn-outline" onclick="showScreen('jhCommandCenter')">🔙 لوحة القيادة</button>
+        <h3 class="section-title">📊 مؤشرات نضج الصيانة الذاتية (KPIs)</h3>
+    </div>
+
+    <!-- 🌐 لوحة المؤشرات العامة للمصنع (إجمالي) -->
+    <div class="card glass-card" style="border-top: 4px solid var(--gold); margin-bottom: 15px;">
+        <h4 style="text-align: center; color: var(--gold); margin-bottom: 15px; font-size: 14px;">🏭 نظرة عامة على المصنع (الشهر الحالي)</h4>
+        <div class="modern-stats" id="globalKPIStats">
+            <!-- سيتم حقن العدادات الإجمالية هنا -->
+        </div>
+    </div>
+
+    <!-- 🏢 تابات الأقسام (قابلة للسحب على الموبايل) -->
+    <div id="kpiDeptTabs" style="display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px; -webkit-overflow-scrolling: touch;">
+        <!-- سيتم حقن زراير الأقسام هنا -->
+    </div>
+
+    <!-- 📋 تفاصيل القسم المختار -->
+    <div class="card glass-card" id="deptKPIContainer" style="border-top: 4px solid var(--primary);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 id="kpiCurrentDeptTitle" style="color: var(--primary); font-size: 14px;">القسم: --</h4>
+            <button class="btn btn-sm btn-warning" onclick="openKPIEntryModal()">✍️ إدخال يدوي</button>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="tpm-table" style="font-size: 11px;">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 50%;">المؤشر (Index)</th>
+                        <th style="width: 15%;">الوحدة</th>
+                        <th style="width: 15%;">القيمة</th>
+                        <th style="width: 15%;">المصدر</th>
+                    </tr>
+                </thead>
+                <tbody id="kpiTableBody">
+                    <!-- سيتم حقن الـ 20 مؤشر هنا -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ✍️ نافذة الإدخال اليدوي للمؤشرات -->
+<div id="manualKPIModal" class="modal">
+    <div class="modal-content glass-card">
+        <h3 style="color: var(--gold); margin-bottom: 15px;">إدخال المؤشرات اليدوية</h3>
+        <p id="manualKPIDeptName" style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;"></p>
+        <div id="manualKPIFields" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+            <!-- حقول الإدخال -->
+        </div>
+        <div class="row-flex" style="margin-top: 15px;">
+            <button class="btn btn-success flex-1" onclick="saveManualKPIs()">💾 حفظ</button>
+            <button class="btn btn-danger flex-1" onclick="document.getElementById('manualKPIModal').style.display='none'">❌ إلغاء</button>
+        </div>
+    </div>
+</div>
+    
 <div class="container screen" id="clitChecklistScreen">
     <div class="sticky-header" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid rgba(0, 188, 212, 0.3);">
             <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">

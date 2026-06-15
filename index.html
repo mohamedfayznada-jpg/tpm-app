@@ -1163,51 +1163,99 @@
     </div>
 
 <!-- ========================================== -->
-<!-- 📊 شاشة مؤشرات نضج الصيانة الذاتية (JH KPIs) -->
+<!-- 📊 شاشة مؤشرات نضج الصيانة الذاتية (Enterprise JH KPIs) -->
 <!-- ========================================== -->
 <div class="container screen" id="jhKPIsScreen">
-    <div class="sticky-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid rgba(212,175,55,0.3);">
-        <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">🔙 لوحة القيادة</button>
-        <h3 class="section-title" style="margin:0; border:none;">📊 مؤشرات نضج الصيانة الذاتية (KPIs)</h3>
-    </div>
-
-    <!-- 🌐 لوحة المؤشرات العامة للمصنع (إجمالي) -->
-    <div class="card glass-card" style="border-top: 4px solid var(--gold); margin-bottom: 15px;">
-        <h4 style="text-align: center; color: var(--gold); margin-bottom: 15px; font-size: 14px;">🏭 نظرة عامة على المصنع (الشهر الحالي)</h4>
-        <div class="modern-stats" id="globalKPIStats">
-            <!-- سيتم حقن العدادات الإجمالية هنا -->
-        </div>
-    </div>
-
-    <!-- 🏢 تابات الأقسام (قابلة للسحب على الموبايل) -->
-    <div id="kpiDeptTabs" style="display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px; -webkit-overflow-scrolling: touch;">
-        <!-- سيتم حقن زراير الأقسام هنا -->
-    </div>
-
-    <!-- 📋 تفاصيل القسم المختار -->
-    <div class="card glass-card" id="deptKPIContainer" style="border-top: 4px solid var(--primary);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h4 id="kpiCurrentDeptTitle" style="color: var(--primary); font-size: 14px;">القسم: --</h4>
-            <button class="btn btn-sm btn-warning" onclick="openKPIEntryModal()">✍️ إدخال يدوي</button>
+    <!-- الهيدر والتحكم الزمني -->
+    <div class="sticky-header" style="background: rgba(17, 29, 51, 0.95); backdrop-filter: blur(10px); padding-bottom: 15px; border-bottom: 1px solid var(--gold);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">🔙 غرفة العمليات</button>
+            <h2 style="margin:0; color:var(--gold); font-size:18px;">المركز الاستراتيجي للمؤشرات</h2>
+            <button class="btn btn-sm btn-success" onclick="exportKPIsToExcel()">📥 Excel</button>
         </div>
         
-        <div class="table-responsive">
-            <table class="tpm-table" style="font-size: 11px;">
-                <thead>
-                    <tr>
-                        <th style="width: 5%;">#</th>
-                        <th style="width: 50%;">المؤشر (Index)</th>
-                        <th style="width: 15%;">الوحدة</th>
-                        <th style="width: 15%;">القيمة</th>
-                        <th style="width: 15%;">المصدر</th>
-                    </tr>
-                </thead>
-                <tbody id="kpiTableBody">
-                    <!-- سيتم حقن الـ 20 مؤشر هنا -->
-                </tbody>
-            </table>
+        <!-- فلتر ذكي للوقت والقسم -->
+        <div class="row-flex" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px;">
+            <select id="kpiMonthFilter" class="form-control flex-1" style="margin:0; border-color:var(--primary);" onchange="reloadEnterpriseKPIs()"></select>
+            <select id="kpiDeptFilter" class="form-control flex-1" style="margin:0; border-color:var(--gold);" onchange="reloadEnterpriseKPIs()">
+                <option value="factory">🏭 المصنع بالكامل (إجمالي)</option>
+                <!-- سيتم حقن الأقسام هنا -->
+            </select>
         </div>
     </div>
+
+    <!-- 1. بطاقات النبض السريع (Pulse Cards) -->
+    <div class="grid-layout" style="grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px;">
+        <div class="card glass-card" style="padding: 15px; border-top: 3px solid #00BCD4; text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted);">معدل كفاءة المعدات (OEE)</div>
+            <div style="font-size: 24px; font-weight: 900; color: #00BCD4;" id="kpiDashOEE">0%</div>
+            <div style="font-size: 10px; color: var(--success);" id="kpiTrendOEE">▲ +2.1% عن الشهر السابق</div>
+        </div>
+        <div class="card glass-card" style="padding: 15px; border-top: 3px solid var(--success); text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted);">نضج الصيانة الذاتية (Audit)</div>
+            <div style="font-size: 24px; font-weight: 900; color: var(--success);" id="kpiDashAudit">0%</div>
+            <div style="font-size: 10px; color: var(--danger);" id="kpiTrendAudit">▼ -1.5% عن الشهر السابق</div>
+        </div>
+        <div class="card glass-card" style="padding: 15px; border-top: 3px solid var(--danger); text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted);">إغلاق تاجات الصيانة (MTTR)</div>
+            <div style="font-size: 24px; font-weight: 900; color: var(--danger);" id="kpiDashTags">0/0</div>
+            <div style="font-size: 10px; color: var(--success);" id="kpiTrendTags">▲ أسرع بـ 12 ساعة</div>
+        </div>
+        <div class="card glass-card" style="padding: 15px; border-top: 3px solid var(--gold); text-align: center;">
+            <div style="font-size: 11px; color: var(--text-muted);">اقتراحات كايزن المطبقة</div>
+            <div style="font-size: 24px; font-weight: 900; color: var(--gold);" id="kpiDashKaizen">0</div>
+            <div style="font-size: 10px; color: var(--success);" id="kpiTrendKaizen">▲ +5 أفكار جديدة</div>
+        </div>
+    </div>
+
+    <!-- 2. منطقة التحليل المرئي (الرسومات البيانية) -->
+    <div class="row-flex" style="flex-wrap: wrap; margin-top: 15px;">
+        <div class="card glass-card flex-1" style="min-width: 100%; padding: 15px;">
+            <h4 style="margin: 0 0 10px; font-size: 13px; color: var(--gold); text-align: center;">🕸️ رادار نضج الـ TPM (مقارنة بالهدف)</h4>
+            <div style="height: 250px; width: 100%;"><canvas id="kpiMaturityRadar"></canvas></div>
+        </div>
+        <div class="card glass-card flex-1" style="min-width: 100%; padding: 15px; margin-top:10px;">
+            <h4 style="margin: 0 0 10px; font-size: 13px; color: var(--primary); text-align: center;">📈 تريند أداء الـ OEE (آخر 6 شهور)</h4>
+            <div style="height: 200px; width: 100%;"><canvas id="kpiTrendLine"></canvas></div>
+        </div>
+    </div>
+
+    <!-- 3. تصنيف الـ PQCDSM العالمي للـ TPM -->
+    <h3 class="section-title" style="margin-top: 25px; border-color: var(--gold);">📋 التفاصيل الدقيقة للمؤشرات (PQCDSM)</h3>
+    
+    <!-- تابات التصنيف -->
+    <div style="display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 5px; -webkit-overflow-scrolling: touch;">
+        <button class="btn btn-sm btn-primary" style="border-radius: 20px; white-space: nowrap;" onclick="filterKPITable('All')">الكل 🌐</button>
+        <button class="btn btn-sm btn-outline" style="border-radius: 20px; white-space: nowrap; border-color:#3b82f6; color:#3b82f6;" onclick="filterKPITable('P')">إنتاجية (P) ⚙️</button>
+        <button class="btn btn-sm btn-outline" style="border-radius: 20px; white-space: nowrap; border-color:#22c55e; color:#22c55e;" onclick="filterKPITable('Q')">جودة (Q) ✨</button>
+        <button class="btn btn-sm btn-outline" style="border-radius: 20px; white-space: nowrap; border-color:#eab308; color:#eab308;" onclick="filterKPITable('C')">تكلفة (C) 💰</button>
+        <button class="btn btn-sm btn-outline" style="border-radius: 20px; white-space: nowrap; border-color:#f97316; color:#f97316;" onclick="filterKPITable('D')">تسليم (D) 🚚</button>
+        <button class="btn btn-sm btn-outline" style="border-radius: 20px; white-space: nowrap; border-color:#ef4444; color:#ef4444;" onclick="filterKPITable('S')">سلامة (S) ⚠️</button>
+        <button class="btn btn-sm btn-outline" style="border-radius: 20px; white-space: nowrap; border-color:#a855f7; color:#a855f7;" onclick="filterKPITable('M')">معنويات (M) 👥</button>
+    </div>
+
+    <!-- الجدول الاحترافي -->
+    <div class="card glass-card" style="padding: 0; overflow: hidden;">
+        <table class="tpm-table" style="font-size: 12px; margin: 0;">
+            <thead style="background: rgba(30, 58, 138, 0.5);">
+                <tr>
+                    <th style="width: 10%; text-align: center;">الفئة</th>
+                    <th style="width: 45%;">اسم المؤشر (KPI)</th>
+                    <th style="width: 15%; text-align: center;">الهدف</th>
+                    <th style="width: 15%; text-align: center;">الفعلي</th>
+                    <th style="width: 15%; text-align: center;">الحالة</th>
+                </tr>
+            </thead>
+            <tbody id="enterpriseKPITableBody">
+                <!-- سيتم حقن الـ 20 مؤشر هنا بالداتا الحقيقية -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- زر الإدخال السريع (يطفو في الأسفل) -->
+    <button class="btn-role-admin" style="position: fixed; bottom: 20px; left: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--gold); color: #000; font-size: 24px; border: none; box-shadow: 0 10px 25px rgba(212,175,55,0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100;" onclick="openKPIEntryModal()">
+        ✍️
+    </button>
 </div>
 
     

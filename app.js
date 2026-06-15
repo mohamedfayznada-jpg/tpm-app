@@ -3473,8 +3473,11 @@ window.saveManualKPIs = async function() {
     
     let updates = {};
     JH_KPI_MASTER_LIST.filter(k => k.type === 'manual').forEach(kpi => {
-        let val = document.getElementById(`manual_kpi_${kpi.id}`).value;
-        updates[kpi.id] = parseInt(val) || 0;
+        let inputElement = document.getElementById(`manual_kpi_${kpi.id}`);
+        // سطر الحماية: تأكد أن الحقل موجود فعلاً قبل قراءة قيمته
+        if (inputElement) { 
+            updates[kpi.id] = parseInt(inputElement.value) || 0;
+        }
     });
 
     await db.ref(`tpm_system/jh_kpis/${currentMonth}/${currentKPIDept}`).set(updates);

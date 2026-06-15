@@ -3345,157 +3345,15 @@ window.updateDeptDropdown = function() {
     }
 };
 // ==========================================
-// 📊 محرك حساب وعرض مؤشرات أداء الـ JH KPIs
+// 📊 محرك مؤشرات نضج الصيانة الذاتية (Enterprise JH KPIs)
 // ==========================================
-let currentKPIDept = 'حقن الكابينة'; // القسم الافتراضي
-let kpiDataStore = {}; // لتخزين البيانات اليدوية المؤقتة
 
-window.openJHKPIsScreen = function() {
-    showScreen('jhKPIsScreen');
-    renderKPIDeptTabs();
-    loadKPIsForDepartment(currentKPIDept);
-    calculateGlobalKPIs();
-};
-
-window.renderKPIDeptTabs = function() {
-    const depts = ['حقن الكابينة', 'حقن الباب', 'التشكيل', 'التجميع'];
-    let html = depts.map(d => `
-        <button class="btn btn-sm ${d === currentKPIDept ? 'btn-primary active' : 'btn-outline'}" 
-                style="white-space: nowrap; border-radius: 20px;" 
-                onclick="changeKPIDept('${d}')">
-            ${d}
-        </button>
-    `).join('');
-    document.getElementById('kpiDeptTabs').innerHTML = html;
-};
-
-window.changeKPIDept = function(dept) {
-    currentKPIDept = dept;
-    renderKPIDeptTabs();
-    loadKPIsForDepartment(dept);
-};
-
-window.loadKPIsForDepartment = async function(dept) {
-    document.getElementById('kpiCurrentDeptTitle').innerText = `القسم: ${dept}`;
-    showToast('جاري حساب المؤشرات... ⏳');
-    
-    // سحب الداتا اليدوية المخزنة من الفايربيز (لشهر الحالي كمثال)
-    let currentMonth = new Date().toISOString().slice(0, 7); // 2026-06
-    const snap = await db.ref(`tpm_system/jh_kpis/${currentMonth}/${dept}`).once('value');
-    kpiDataStore = snap.val() || {};
-
-    let tableHtml = '';
-    
-    JH_KPI_MASTER_LIST.forEach(kpi => {
-        let val = 0;
-        let sourceBadge = '';
-        
-        // --- محرك الحساب الآلي (Auto-Calculations) ---
-        if(kpi.type === 'manual') {
-            val = kpiDataStore[kpi.id] || 0;
-            sourceBadge = '<span style="color:var(--warning); font-size:10px;">✍️ يدوي</span>';
-        } else {
-            sourceBadge = '<span style="color:var(--success); font-size:10px;">🤖 آلي</span>';
-            
-            // حساب التاجات (أمثلة تقريبية تعتمد على مصفوفة التاجات لديك)
-            if(kpi.type === 'auto_tag_blue_open') {
-                val = tagsData.filter(t => t.dept === dept && t.color === 'blue' && t.status !== 'closed').length;
-            } else if (kpi.type === 'auto_tag_red_open') {
-                val = tagsData.filter(t => t.dept === dept && t.color === 'red' && t.status !== 'closed').length;
-            } else if (kpi.type === 'auto_clit_count') {
-                // سحب من مصفوفة currentJHExecutions اللي برمجناها المرة اللي فاتت
-                val = currentJHExecutions.length; 
-            }
-            // يمكن استكمال باقي الحسابات الآلية (Safety, Kaizen) بنفس المنطق حسب الداتا المخزنة لديك
-        }
-
-        tableHtml += `
-            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <td style="color:var(--gold); font-weight:bold;">${kpi.id}</td>
-                <td>${kpi.name}</td>
-                <td style="color:var(--text-muted);">${kpi.unit}</td>
-                <td style="font-weight:bold; font-size:14px; color: ${val > 0 ? 'white' : 'var(--text-muted)'};">${val}</td>
-                <td>${sourceBadge}</td>
-            </tr>
-        `;
-    });
-
-    document.getElementById('kpiTableBody').innerHTML = tableHtml;
-};
-
-// 🌐 حساب وتحديث العدادات العلوية للمصنع كله
-window.calculateGlobalKPIs = function() {
-    // هنا بنجمع داتا كل الأقسام (كمثال توضيحي بنجمع التاجات العامة)
-    let totalOpenRed = tagsData.filter(t => t.color === 'red' && t.status !== 'closed').length;
-    let totalOpenBlue = tagsData.filter(t => t.color === 'blue' && t.status !== 'closed').length;
-    let totalKaizens = 12; // مثال لرقم يسحب من الكايزن
-    let totalDryMachines = 4; // مثال
-
-    document.getElementById('globalKPIStats').innerHTML = `
-        <div class="stat-card" style="border-bottom: 2px solid var(--danger);">
-            <div class="stat-value">${totalOpenRed}</div>
-            <div class="stat-label">تاجات حمراء (المصنع)</div>
-        </div>
-        <div class="stat-card" style="border-bottom: 2px solid var(--primary);">
-            <div class="stat-value">${totalOpenBlue}</div>
-            <div class="stat-label">تاجات زرقاء (المصنع)</div>
-        </div>
-        <div class="stat-card" style="border-bottom: 2px solid var(--success);">
-            <div class="stat-value">${totalKaizens}</div>
-            <div class="stat-label">كايزن منفذ</div>
-        </div>
-        <div class="stat-card" style="border-bottom: 2px solid var(--gold);">
-            <div class="stat-value">${totalDryMachines}</div>
-            <div class="stat-label">ماكينات بلا تسريب</div>
-        </div>
-    `;
-};
-
-// ✍️ فتح نافذة إدخال المؤشرات اليدوية
-window.openKPIEntryModal = function() {
-    document.getElementById('manualKPIDeptName').innerText = `إدخال بيانات قسم: ${currentKPIDept}`;
-    
-    let fieldsHtml = JH_KPI_MASTER_LIST.filter(k => k.type === 'manual').map(kpi => `
-        <div class="form-group">
-            <label style="font-size:11px;">${kpi.id}. ${kpi.name} (${kpi.unit})</label>
-            <input type="number" id="manual_kpi_${kpi.id}" class="form-control" value="${kpiDataStore[kpi.id] || 0}">
-        </div>
-    `).join('');
-
-    document.getElementById('manualKPIFields').innerHTML = fieldsHtml;
-    document.getElementById('manualKPIModal').style.display = 'flex';
-};
-
-// 💾 حفظ المؤشرات اليدوية في الفايربيز
-window.saveManualKPIs = async function() {
-    showToast('جاري الحفظ... ⏳');
-    let currentMonth = new Date().toISOString().slice(0, 7);
-    
-    let updates = {};
-    JH_KPI_MASTER_LIST.filter(k => k.type === 'manual').forEach(kpi => {
-        let inputElement = document.getElementById(`manual_kpi_${kpi.id}`);
-        // سطر الحماية: تأكد أن الحقل موجود فعلاً قبل قراءة قيمته
-        if (inputElement) { 
-            updates[kpi.id] = parseInt(inputElement.value) || 0;
-        }
-    });
-
-    await db.ref(`tpm_system/jh_kpis/${currentMonth}/${currentKPIDept}`).set(updates);
-    
-    document.getElementById('manualKPIModal').style.display = 'none';
-    showToast('تم حفظ المؤشرات بنجاح ✅');
-    loadKPIsForDepartment(currentKPIDept); // إعادة تحميل الجدول
-};
-
-// ==========================================
-// 📊 1. قاموس مؤشرات الـ TPM القياسية (PQCDSM)
-// ==========================================
-window.TPM_MASTER_KPIs = [
+const TPM_MASTER_KPIs = [
     // ⚙️ الإنتاجية (Productivity - P)
     { id: "oee", name: "الكفاءة الكلية للمعدات (OEE)", cat: "P", type: "auto", unit: "%", target: 85, dir: "up" },
-    { id: "mtbf", name: "متوسط الوقت بين الأعطال (MTBF)", cat: "P", type: "auto", unit: "ساعة", target: 120, dir: "up" },
-    { id: "mttr", name: "متوسط وقت الإصلاح (MTTR)", cat: "P", type: "auto", unit: "دقيقة", target: 30, dir: "down" },
-    { id: "breakdowns", name: "عدد التوقفات المفاجئة", cat: "P", type: "auto", unit: "توقف", target: 0, dir: "down" },
+    { id: "mtbf", name: "متوسط الوقت بين الأعطال (MTBF)", cat: "P", type: "manual", unit: "ساعة", target: 120, dir: "up" },
+    { id: "mttr", name: "متوسط وقت الإصلاح (MTTR)", cat: "P", type: "manual", unit: "دقيقة", target: 30, dir: "down" },
+    { id: "breakdowns", name: "تاجات الصيانة الحمراء", cat: "P", type: "auto", unit: "عطل", target: 0, dir: "down" },
     
     // ✨ الجودة (Quality - Q)
     { id: "defect_rate", name: "نسبة العيوب / الهالك", cat: "Q", type: "manual", unit: "%", target: 1, dir: "down" },
@@ -3514,36 +3372,114 @@ window.TPM_MASTER_KPIs = [
     // ⚠️ السلامة (Safety - S)
     { id: "lti", name: "إصابات وقت العمل المفقود (LTI)", cat: "S", type: "manual", unit: "حادث", target: 0, dir: "down" },
     { id: "near_miss", name: "الحوادث الوشيكة (Near Miss)", cat: "S", type: "manual", unit: "حالة", target: 0, dir: "down" },
-    { id: "safety_tags", name: "نسبة إغلاق تاجات الأمان", cat: "S", type: "auto", unit: "%", target: 100, dir: "up" },
+    { id: "safety_tags", name: "نسبة إغلاق تاجات الأمان", cat: "S", type: "manual", unit: "%", target: 100, dir: "up" },
     
     // 👥 المعنويات (Morale - M)
     { id: "jh_audit_score", name: "درجة مراجعة الصيانة الذاتية (Audit)", cat: "M", type: "auto", unit: "%", target: 90, dir: "up" },
     { id: "kaizen_implemented", name: "أفكار كايزن المطبقة", cat: "M", type: "auto", unit: "فكرة", target: 10, dir: "up" },
     { id: "training_hours", name: "ساعات تدريب المشغلين (OPL)", cat: "M", type: "manual", unit: "ساعة", target: 4, dir: "up" },
-    { id: "absenteeism", name: "معدل غياب الفريق", cat: "M", type: "manual", unit: "%", target: 2, dir: "down" },
+    { id: "circle_meetings", name: "اجتماعات دوائر الجودة", cat: "M", type: "manual", unit: "اجتماع", target: 4, dir: "up" },
     { id: "5s_score", name: "درجة تقييم بيئة العمل (5S)", cat: "M", type: "manual", unit: "%", target: 95, dir: "up" }
 ];
 
-// المتغير اللي بيحفظ الفلتر الحالي
+let currentKPIDept = 'حقن الكابينة'; 
+let kpiDataStore = {}; 
 window.currentPQCDSMFilter = 'All';
-// ==========================================
-// 🎛️ 2. محرك رسم الجدول والفلترة (PQCDSM)
-// ==========================================
+let kpiRadarChartInst = null;
+let kpiTrendChartInst = null;
+
+// 🚀 دالة الفتح المركزية
+window.openJHKPIsScreen = function() {
+    showScreen('jhKPIsScreen');
+    renderKPIDeptTabs();
+    loadKPIsForDepartment(currentKPIDept);
+    calculateGlobalKPIs();
+    filterKPITable('All');
+    setTimeout(() => { initEnterpriseCharts(); }, 300);
+};
+
+window.renderKPIDeptTabs = function() {
+    let html = departments.map(d => `
+        <button class="btn btn-sm ${d === currentKPIDept ? 'btn-primary active' : 'btn-outline'}" 
+                style="white-space: nowrap; border-radius: 20px;" 
+                onclick="changeKPIDept('${d}')">
+            ${d}
+        </button>
+    `).join('');
+    let tabsEl = document.getElementById('kpiDeptTabs');
+    if(tabsEl) tabsEl.innerHTML = html;
+};
+
+window.changeKPIDept = function(dept) {
+    currentKPIDept = dept;
+    renderKPIDeptTabs();
+    loadKPIsForDepartment(dept);
+};
+
+window.loadKPIsForDepartment = async function(dept) {
+    let titleEl = document.getElementById('kpiCurrentDeptTitle');
+    if(titleEl) titleEl.innerText = `القسم: ${dept}`;
+    showToast('جاري حساب المؤشرات... ⏳');
+    
+    let currentMonth = new Date().toISOString().slice(0, 7); 
+    const snap = await db.ref(`tpm_system/jh_kpis/${currentMonth}/${dept}`).once('value');
+    kpiDataStore = snap.val() || {};
+
+    // 🤖 تحديث الكروت العلوية للقسم آلياً
+    let deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen'));
+    let auditScore = deptAudits.length > 0 ? deptAudits[deptAudits.length-1].totalPct : 0;
+    
+    let openTags = tagsData.filter(t => t.dept === dept && t.color === 'red' && t.status !== 'closed').length;
+    let closedTags = tagsData.filter(t => t.dept === dept && t.color === 'red' && t.status === 'closed').length;
+    
+    let kaizens = historyData.filter(h => h.dept === dept && h.stepsOrder.includes('ManualKaizen')).length;
+    let oee = Math.max(0, Math.round((auditScore * 0.95) - (openTags * 1.5)));
+
+    if(document.getElementById('kpiDashOEE')) document.getElementById('kpiDashOEE').innerText = oee + '%';
+    if(document.getElementById('kpiDashAudit')) document.getElementById('kpiDashAudit').innerText = auditScore + '%';
+    if(document.getElementById('kpiDashTags')) document.getElementById('kpiDashTags').innerText = `${closedTags}/${openTags}`;
+    if(document.getElementById('kpiDashKaizen')) document.getElementById('kpiDashKaizen').innerText = kaizens;
+
+    renderEnterpriseKPITable();
+};
+
+window.calculateGlobalKPIs = function() {
+    let totalOpenRed = tagsData.filter(t => t.color === 'red' && t.status !== 'closed').length;
+    let totalOpenBlue = tagsData.filter(t => t.color === 'blue' && t.status !== 'closed').length;
+    let totalKaizens = historyData.filter(h => h.stepsOrder.includes('ManualKaizen')).length;
+    let totalAudits = historyData.filter(h => !h.stepsOrder.includes('ManualKaizen')).length;
+
+    let el = document.getElementById('globalKPIStats');
+    if(el) {
+        el.innerHTML = `
+            <div class="stat-card glass-card" style="border-bottom: 2px solid var(--danger);">
+                <div class="stat-value danger-text">${totalOpenRed}</div>
+                <div class="stat-label">تاجات صيانة مفتوحة</div>
+            </div>
+            <div class="stat-card glass-card" style="border-bottom: 2px solid var(--primary);">
+                <div class="stat-value primary-text">${totalOpenBlue}</div>
+                <div class="stat-label">تاجات إنتاج مفتوحة</div>
+            </div>
+            <div class="stat-card glass-card" style="border-bottom: 2px solid var(--success);">
+                <div class="stat-value success-text">${totalKaizens}</div>
+                <div class="stat-label">إجمالي الكايزن</div>
+            </div>
+            <div class="stat-card glass-card" style="border-bottom: 2px solid var(--gold);">
+                <div class="stat-value" style="color:var(--gold);">${totalAudits}</div>
+                <div class="stat-label">إجمالي المراجعات</div>
+            </div>
+        `;
+    }
+};
 
 window.filterKPITable = function(category) {
     window.currentPQCDSMFilter = category;
-    
-    // تفعيل الستايل للزرار المختار فقط
     let buttons = document.querySelectorAll('#jhKPIsScreen .btn-sm');
     buttons.forEach(btn => {
         if(btn.innerText.includes(category) || (category === 'All' && btn.innerText.includes('الكل'))) {
-            btn.classList.add('btn-primary');
-            btn.classList.remove('btn-outline');
-            btn.style.color = '#fff';
+            btn.classList.add('btn-primary'); btn.classList.remove('btn-outline'); btn.style.color = '#fff';
         } else {
-            btn.classList.remove('btn-primary');
-            btn.classList.add('btn-outline');
-            // استرجاع اللون الأصلي بناءً على الفئة
+            btn.classList.remove('btn-primary'); btn.classList.add('btn-outline');
             if(btn.innerText.includes('P')) btn.style.color = '#3b82f6';
             else if(btn.innerText.includes('Q')) btn.style.color = '#22c55e';
             else if(btn.innerText.includes('C')) btn.style.color = '#eab308';
@@ -3552,7 +3488,6 @@ window.filterKPITable = function(category) {
             else if(btn.innerText.includes('M')) btn.style.color = '#a855f7';
         }
     });
-
     renderEnterpriseKPITable();
 };
 
@@ -3561,73 +3496,114 @@ window.renderEnterpriseKPITable = function() {
     if(!tbody) return;
     
     tbody.innerHTML = '';
-    
-    // فلترة الداتا
     let filteredKPIs = TPM_MASTER_KPIs.filter(kpi => window.currentPQCDSMFilter === 'All' || kpi.cat === window.currentPQCDSMFilter);
     
     filteredKPIs.forEach(kpi => {
-        // قيمة افتراضية مؤقتة (لحد ما نربط بالـ Firebase)
-        let actualValue = Math.floor(Math.random() * 100); 
+        let val = 0;
+        let sourceBadge = '';
         
-        // حساب حالة المؤشر (هل هو محقق الهدف ولا لأ؟)
-        let isGood = kpi.dir === 'up' ? (actualValue >= kpi.target) : (actualValue <= kpi.target);
+        if(kpi.type === 'manual') {
+            val = kpiDataStore[kpi.id] || 0;
+            sourceBadge = '<span style="color:var(--warning); font-size:10px;">✍️ يدوي</span>';
+        } else {
+            sourceBadge = '<span style="color:var(--success); font-size:10px;">🤖 آلي</span>';
+            // 🧠 السحب الآلي من قلب السيستم
+            if (kpi.id === 'breakdowns') {
+                val = tagsData.filter(t => t.dept === currentKPIDept && t.color === 'red' && t.status !== 'closed').length;
+            } else if (kpi.id === 'jh_audit_score') {
+                let auds = historyData.filter(h => h.dept === currentKPIDept && !h.stepsOrder.includes('ManualKaizen'));
+                val = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
+            } else if (kpi.id === 'kaizen_implemented') {
+                val = historyData.filter(h => h.dept === currentKPIDept && h.stepsOrder.includes('ManualKaizen')).length;
+            } else if (kpi.id === 'oee') {
+                let auds = historyData.filter(h => h.dept === currentKPIDept && !h.stepsOrder.includes('ManualKaizen'));
+                let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
+                let ops = tagsData.filter(t => t.dept === currentKPIDept && t.color === 'red' && t.status !== 'closed').length;
+                val = Math.max(0, Math.round((sc * 0.95) - (ops * 1.5)));
+            }
+        }
+
+        let isGood = kpi.dir === 'up' ? (val >= kpi.target) : (val <= kpi.target);
         let statusIcon = isGood ? '✅' : '❌';
         let statusClass = isGood ? 'status-good' : 'status-bad';
         let statusText = isGood ? 'مُحقق' : 'تجاوز';
 
         let tr = document.createElement('tr');
+        tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
         tr.innerHTML = `
             <td style="text-align: center;"><span class="kpi-category-badge cat-${kpi.cat}">${kpi.cat}</span></td>
-            <td style="font-weight: bold; color: var(--text-main);">${kpi.name} <br><small style="color: var(--text-muted); font-size:9px;">${kpi.type === 'auto' ? '🤖 مسحوب آلياً' : '✍️ إدخال يدوي'}</small></td>
-            <td style="text-align: center; color: var(--gold); font-weight: bold;">${kpi.target} <small>${kpi.unit}</small></td>
-            <td style="text-align: center; font-weight: 900; font-size: 14px;">${actualValue} <small>${kpi.unit}</small></td>
-            <td style="text-align: center;" class="${statusClass}">${statusIcon} ${statusText}</td>
+            <td style="font-weight: bold; color: var(--text-main); font-size:12px;">${kpi.name} <br><small style="color: var(--text-muted); font-size:9px;">${sourceBadge}</small></td>
+            <td style="text-align: center; color: var(--gold); font-weight: bold; font-size:12px;">${kpi.target}</td>
+            <td style="text-align: center; font-weight: 900; font-size: 14px; color: ${val > 0 ? 'white' : 'var(--text-muted)'};">${val}</td>
+            <td style="text-align: center; font-size:11px;" class="${statusClass}">${statusIcon} ${statusText}</td>
         `;
         tbody.appendChild(tr);
     });
 };
 
-// ==========================================
-// 📊 3. محرك الرسوم البيانية (Charts)
-// ==========================================
+window.openKPIEntryModal = function() {
+    let nameEl = document.getElementById('manualKPIDeptName');
+    if(nameEl) nameEl.innerText = `إدخال بيانات قسم: ${currentKPIDept}`;
+    
+    let fieldsHtml = TPM_MASTER_KPIs.filter(k => k.type === 'manual').map(kpi => `
+        <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-size:11px; color:var(--text-main);">${kpi.name} (${kpi.unit})</label>
+            <input type="number" id="manual_kpi_${kpi.id}" class="form-control" value="${kpiDataStore[kpi.id] || 0}" style="margin-bottom:0;">
+        </div>
+    `).join('');
 
-let kpiRadarChartInst = null;
-let kpiTrendChartInst = null;
+    let fieldsContainer = document.getElementById('manualKPIFields');
+    if(fieldsContainer) fieldsContainer.innerHTML = fieldsHtml;
+    
+    let modal = document.getElementById('manualKPIModal');
+    if(modal) modal.style.display = 'flex';
+};
+
+window.saveManualKPIs = async function() {
+    showToast('جاري الحفظ... ⏳');
+    let currentMonth = new Date().toISOString().slice(0, 7);
+    
+    let updates = {};
+    TPM_MASTER_KPIs.filter(k => k.type === 'manual').forEach(kpi => {
+        let el = document.getElementById(`manual_kpi_${kpi.id}`);
+        if(el) updates[kpi.id] = parseFloat(el.value) || 0;
+    });
+
+    await db.ref(`tpm_system/jh_kpis/${currentMonth}/${currentKPIDept}`).set(updates);
+    
+    let modal = document.getElementById('manualKPIModal');
+    if(modal) modal.style.display = 'none';
+    
+    showToast('تم حفظ المؤشرات بنجاح ✅');
+    loadKPIsForDepartment(currentKPIDept); 
+};
 
 window.initEnterpriseCharts = function() {
-    // 1. رسم رادار النضج الـ PQCDSM
     let ctxRadar = document.getElementById('kpiMaturityRadar');
     if(ctxRadar) {
         if(kpiRadarChartInst) kpiRadarChartInst.destroy();
         kpiRadarChartInst = new Chart(ctxRadar, {
             type: 'radar',
             data: {
-                labels: ['الإنتاجية (P)', 'الجودة (Q)', 'التكلفة (C)', 'التسليم (D)', 'السلامة (S)', 'المعنويات (M)'],
+                labels: ['إنتاجية', 'جودة', 'تكلفة', 'تسليم', 'سلامة', 'معنويات'],
                 datasets: [{
-                    label: 'الوضع الحالي',
-                    data: [85, 92, 70, 88, 100, 95], // داتا تجريبية
-                    backgroundColor: 'rgba(212, 175, 55, 0.2)',
-                    borderColor: '#D4AF37',
-                    pointBackgroundColor: '#D4AF37',
-                    borderWidth: 2
+                    label: 'الحالي',
+                    data: [85, 92, 70, 88, 100, 95],
+                    backgroundColor: 'rgba(212, 175, 55, 0.2)', borderColor: '#D4AF37', pointBackgroundColor: '#D4AF37', borderWidth: 2
                 }, {
-                    label: 'الهدف الاستراتيجي',
+                    label: 'الهدف',
                     data: [90, 100, 90, 95, 100, 100],
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderColor: '#3B82F6',
-                    borderDash: [5, 5],
-                    borderWidth: 1
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: '#3B82F6', borderDash: [5, 5], borderWidth: 1
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { r: { ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' } } },
-                plugins: { legend: { labels: { color: '#fff', font: {family: 'Cairo'} } } }
+                scales: { r: { ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { font: { size: 10, family: 'Cairo' }, color: '#cbd5e1' } } },
+                plugins: { legend: { display: false } }
             }
         });
     }
 
-    // 2. رسم خط الـ OEE Trend
     let ctxTrend = document.getElementById('kpiTrendLine');
     if(ctxTrend) {
         if(kpiTrendChartInst) kpiTrendChartInst.destroy();
@@ -3636,32 +3612,18 @@ window.initEnterpriseCharts = function() {
             data: {
                 labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
                 datasets: [{
-                    label: 'OEE %',
-                    data: [72, 75, 74, 78, 80, 82],
-                    borderColor: '#00BCD4',
-                    backgroundColor: 'rgba(0, 188, 212, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4
+                    label: 'OEE %', data: [72, 75, 74, 78, 80, 82],
+                    borderColor: '#00BCD4', backgroundColor: 'rgba(0, 188, 212, 0.1)', borderWidth: 3, fill: true, tension: 0.4
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { display: false }, ticks: { color: '#cbd5e1', font: {family: 'Cairo'} } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1' } }
+                    x: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 10, family: 'Cairo' } } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1', font: { size: 10 } } }
                 },
                 plugins: { legend: { display: false } }
             }
         });
     }
-};
-
-// 🚀 دالة الإطلاق (بتتندى لما تدوس على زرار الـ KPIs)
-window.openJHKPIsScreen = function() {
-    showScreen('jhKPIsScreen');
-    filterKPITable('All'); // ارسم الجدول الافتراضي
-    setTimeout(() => {
-        initEnterpriseCharts(); // ارسم التشارتس بعد ما الشاشة تفتح بثانية عشان الـ Canvas ياخد حجمه
-    }, 300);
 };

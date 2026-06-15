@@ -3486,3 +3486,182 @@ window.saveManualKPIs = async function() {
     showToast('تم حفظ المؤشرات بنجاح ✅');
     loadKPIsForDepartment(currentKPIDept); // إعادة تحميل الجدول
 };
+
+// ==========================================
+// 📊 1. قاموس مؤشرات الـ TPM القياسية (PQCDSM)
+// ==========================================
+window.TPM_MASTER_KPIs = [
+    // ⚙️ الإنتاجية (Productivity - P)
+    { id: "oee", name: "الكفاءة الكلية للمعدات (OEE)", cat: "P", type: "auto", unit: "%", target: 85, dir: "up" },
+    { id: "mtbf", name: "متوسط الوقت بين الأعطال (MTBF)", cat: "P", type: "auto", unit: "ساعة", target: 120, dir: "up" },
+    { id: "mttr", name: "متوسط وقت الإصلاح (MTTR)", cat: "P", type: "auto", unit: "دقيقة", target: 30, dir: "down" },
+    { id: "breakdowns", name: "عدد التوقفات المفاجئة", cat: "P", type: "auto", unit: "توقف", target: 0, dir: "down" },
+    
+    // ✨ الجودة (Quality - Q)
+    { id: "defect_rate", name: "نسبة العيوب / الهالك", cat: "Q", type: "manual", unit: "%", target: 1, dir: "down" },
+    { id: "customer_complaints", name: "شكاوى العملاء (بسبب القسم)", cat: "Q", type: "manual", unit: "شكوى", target: 0, dir: "down" },
+    { id: "rework", name: "معدل إعادة العمل (Rework)", cat: "Q", type: "manual", unit: "%", target: 0.5, dir: "down" },
+    
+    // 💰 التكلفة (Cost - C)
+    { id: "maintenance_cost", name: "تكلفة الصيانة (قطع غيار ومواد)", cat: "C", type: "manual", unit: "جنيه", target: 5000, dir: "down" },
+    { id: "energy_consump", name: "استهلاك الطاقة الفاقدة", cat: "C", type: "manual", unit: "kW", target: 100, dir: "down" },
+    { id: "oil_leakage", name: "كمية تسريب الزيوت", cat: "C", type: "manual", unit: "لتر", target: 0, dir: "down" },
+    
+    // 🚚 التسليم (Delivery - D)
+    { id: "plan_achievement", name: "نسبة تحقيق خطة الإنتاج", cat: "D", type: "manual", unit: "%", target: 98, dir: "up" },
+    { id: "changeover_time", name: "زمن تغيير المنتج (SMED)", cat: "D", type: "manual", unit: "دقيقة", target: 15, dir: "down" },
+    
+    // ⚠️ السلامة (Safety - S)
+    { id: "lti", name: "إصابات وقت العمل المفقود (LTI)", cat: "S", type: "manual", unit: "حادث", target: 0, dir: "down" },
+    { id: "near_miss", name: "الحوادث الوشيكة (Near Miss)", cat: "S", type: "manual", unit: "حالة", target: 0, dir: "down" },
+    { id: "safety_tags", name: "نسبة إغلاق تاجات الأمان", cat: "S", type: "auto", unit: "%", target: 100, dir: "up" },
+    
+    // 👥 المعنويات (Morale - M)
+    { id: "jh_audit_score", name: "درجة مراجعة الصيانة الذاتية (Audit)", cat: "M", type: "auto", unit: "%", target: 90, dir: "up" },
+    { id: "kaizen_implemented", name: "أفكار كايزن المطبقة", cat: "M", type: "auto", unit: "فكرة", target: 10, dir: "up" },
+    { id: "training_hours", name: "ساعات تدريب المشغلين (OPL)", cat: "M", type: "manual", unit: "ساعة", target: 4, dir: "up" },
+    { id: "absenteeism", name: "معدل غياب الفريق", cat: "M", type: "manual", unit: "%", target: 2, dir: "down" },
+    { id: "5s_score", name: "درجة تقييم بيئة العمل (5S)", cat: "M", type: "manual", unit: "%", target: 95, dir: "up" }
+];
+
+// المتغير اللي بيحفظ الفلتر الحالي
+window.currentPQCDSMFilter = 'All';
+// ==========================================
+// 🎛️ 2. محرك رسم الجدول والفلترة (PQCDSM)
+// ==========================================
+
+window.filterKPITable = function(category) {
+    window.currentPQCDSMFilter = category;
+    
+    // تفعيل الستايل للزرار المختار فقط
+    let buttons = document.querySelectorAll('#jhKPIsScreen .btn-sm');
+    buttons.forEach(btn => {
+        if(btn.innerText.includes(category) || (category === 'All' && btn.innerText.includes('الكل'))) {
+            btn.classList.add('btn-primary');
+            btn.classList.remove('btn-outline');
+            btn.style.color = '#fff';
+        } else {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline');
+            // استرجاع اللون الأصلي بناءً على الفئة
+            if(btn.innerText.includes('P')) btn.style.color = '#3b82f6';
+            else if(btn.innerText.includes('Q')) btn.style.color = '#22c55e';
+            else if(btn.innerText.includes('C')) btn.style.color = '#eab308';
+            else if(btn.innerText.includes('D')) btn.style.color = '#f97316';
+            else if(btn.innerText.includes('S')) btn.style.color = '#ef4444';
+            else if(btn.innerText.includes('M')) btn.style.color = '#a855f7';
+        }
+    });
+
+    renderEnterpriseKPITable();
+};
+
+window.renderEnterpriseKPITable = function() {
+    let tbody = document.getElementById('enterpriseKPITableBody');
+    if(!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // فلترة الداتا
+    let filteredKPIs = TPM_MASTER_KPIs.filter(kpi => window.currentPQCDSMFilter === 'All' || kpi.cat === window.currentPQCDSMFilter);
+    
+    filteredKPIs.forEach(kpi => {
+        // قيمة افتراضية مؤقتة (لحد ما نربط بالـ Firebase)
+        let actualValue = Math.floor(Math.random() * 100); 
+        
+        // حساب حالة المؤشر (هل هو محقق الهدف ولا لأ؟)
+        let isGood = kpi.dir === 'up' ? (actualValue >= kpi.target) : (actualValue <= kpi.target);
+        let statusIcon = isGood ? '✅' : '❌';
+        let statusClass = isGood ? 'status-good' : 'status-bad';
+        let statusText = isGood ? 'مُحقق' : 'تجاوز';
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="text-align: center;"><span class="kpi-category-badge cat-${kpi.cat}">${kpi.cat}</span></td>
+            <td style="font-weight: bold; color: var(--text-main);">${kpi.name} <br><small style="color: var(--text-muted); font-size:9px;">${kpi.type === 'auto' ? '🤖 مسحوب آلياً' : '✍️ إدخال يدوي'}</small></td>
+            <td style="text-align: center; color: var(--gold); font-weight: bold;">${kpi.target} <small>${kpi.unit}</small></td>
+            <td style="text-align: center; font-weight: 900; font-size: 14px;">${actualValue} <small>${kpi.unit}</small></td>
+            <td style="text-align: center;" class="${statusClass}">${statusIcon} ${statusText}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+};
+
+// ==========================================
+// 📊 3. محرك الرسوم البيانية (Charts)
+// ==========================================
+
+let kpiRadarChartInst = null;
+let kpiTrendChartInst = null;
+
+window.initEnterpriseCharts = function() {
+    // 1. رسم رادار النضج الـ PQCDSM
+    let ctxRadar = document.getElementById('kpiMaturityRadar');
+    if(ctxRadar) {
+        if(kpiRadarChartInst) kpiRadarChartInst.destroy();
+        kpiRadarChartInst = new Chart(ctxRadar, {
+            type: 'radar',
+            data: {
+                labels: ['الإنتاجية (P)', 'الجودة (Q)', 'التكلفة (C)', 'التسليم (D)', 'السلامة (S)', 'المعنويات (M)'],
+                datasets: [{
+                    label: 'الوضع الحالي',
+                    data: [85, 92, 70, 88, 100, 95], // داتا تجريبية
+                    backgroundColor: 'rgba(212, 175, 55, 0.2)',
+                    borderColor: '#D4AF37',
+                    pointBackgroundColor: '#D4AF37',
+                    borderWidth: 2
+                }, {
+                    label: 'الهدف الاستراتيجي',
+                    data: [90, 100, 90, 95, 100, 100],
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: '#3B82F6',
+                    borderDash: [5, 5],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { r: { ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' } } },
+                plugins: { legend: { labels: { color: '#fff', font: {family: 'Cairo'} } } }
+            }
+        });
+    }
+
+    // 2. رسم خط الـ OEE Trend
+    let ctxTrend = document.getElementById('kpiTrendLine');
+    if(ctxTrend) {
+        if(kpiTrendChartInst) kpiTrendChartInst.destroy();
+        kpiTrendChartInst = new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+                datasets: [{
+                    label: 'OEE %',
+                    data: [72, 75, 74, 78, 80, 82],
+                    borderColor: '#00BCD4',
+                    backgroundColor: 'rgba(0, 188, 212, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#cbd5e1', font: {family: 'Cairo'} } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+};
+
+// 🚀 دالة الإطلاق (بتتندى لما تدوس على زرار الـ KPIs)
+window.openJHKPIsScreen = function() {
+    showScreen('jhKPIsScreen');
+    filterKPITable('All'); // ارسم الجدول الافتراضي
+    setTimeout(() => {
+        initEnterpriseCharts(); // ارسم التشارتس بعد ما الشاشة تفتح بثانية عشان الـ Canvas ياخد حجمه
+    }, 300);
+};

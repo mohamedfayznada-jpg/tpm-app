@@ -803,19 +803,27 @@
    <!-- ========================================== -->
     <!-- 👷‍♂️ بوابة الصيانة الذاتية (Jishu Hozen Portal) -->
     <!-- ========================================== -->
-    <div class="container screen" id="jhPortalScreen">
+<div class="container screen" id="jhPortalScreen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <div style="display:flex; gap:10px; align-items:center;">
                 <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
-                <h2 style="color:#4CAF50; margin:0; font-size:18px;">👷‍♂️ غرفة عمليات الصيانة الذاتية (JH)</h2>
+                <h2 style="color:#4CAF50; margin:0; font-size:18px;">👷‍♂️ غرفة عمليات (JH)</h2>
             </div>
-            <button class="btn btn-sm btn-outline btn-role-admin" style="width:auto; margin:0;" onclick="setDeptGoal()">🎯 ضبط المستهدف</button>
+            <button class="btn btn-sm btn-outline btn-role-admin" style="width:auto; margin:0;" onclick="setDeptGoal()">🎯 المستهدف</button>
         </div>
 
-        <!-- اختيار القسم -->
+        <button class="btn full-width shadow-btn btn-role-admin" 
+                style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
+                       border: 1px solid var(--gold); color: white; margin-bottom: 25px; 
+                       padding: 12px 15px; border-radius: 12px; font-size: 14px; 
+                       display: flex; justify-content: space-between; align-items: center;" 
+                onclick="openJHKPIsScreen()">
+            <span style="font-weight: 900;">📊 لوحة مؤشرات النضج للركيزة (JH KPIs)</span>
+            <span style="background: var(--gold); color: #000; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight:bold;">إدارة عليا</span>
+        </button>
+
         <h3 class="section-title" style="margin-top:0;">📂 اختر القسم للمتابعة:</h3>
         <div id="jhDeptGrid" class="grid-layout" style="margin-bottom:30px;"></div>
-
         <!-- مساحة العمل للقسم المختار -->
         <div id="jhToolbox" style="display:none; animation: fadeIn 0.5s;">
             <div id="jhDeptDashboard" class="card glass-card" style="border-top: 4px solid var(--success); padding:15px; margin-bottom:20px;">
@@ -1157,6 +1165,7 @@
 <!-- ========================================== -->
 <!-- 📊 شاشة مؤشرات نضج الصيانة الذاتية (JH KPIs) -->
 <!-- ========================================== -->
+    <div id="jhKPIsScreen" class="container screen" style="display:none;">
 <div id="jhKPIsScreen" class="screen" style="display:none;">
     <div class="sticky-header">
         <button class="btn btn-sm btn-outline" onclick="showScreen('jhCommandCenter')">🔙 لوحة القيادة</button>
@@ -1217,20 +1226,7 @@
     </div>
 </div>
 
-<!-- ✍️ نافذة الإدخال اليدوي للمؤشرات -->
-<div class="modal-overlay" id="manualKPIModal" style="display:none;">
-    <div class="modal-content glass-card">
-        <h3 style="color: var(--gold); margin-bottom: 15px;">إدخال المؤشرات اليدوية</h3>
-        <p id="manualKPIDeptName" style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;"></p>
-        <div id="manualKPIFields" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
-            <!-- حقول الإدخال -->
-        </div>
-        <div class="row-flex" style="margin-top: 15px;">
-            <button class="btn btn-success flex-1" onclick="saveManualKPIs()">💾 حفظ</button>
-            <button class="btn btn-danger flex-1" onclick="document.getElementById('manualKPIModal').style.display='none'">❌ إلغاء</button>
-        </div>
-    </div>
-</div>
+
     
 <div class="container screen" id="clitChecklistScreen">
     <div class="sticky-header" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid rgba(0, 188, 212, 0.3);">

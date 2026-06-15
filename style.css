@@ -561,3 +561,24 @@ img, canvas, video { filter: none !important; }
     .modern-stats { grid-template-columns: 1fr !important; } /* كارت واحد في الصف */
     .grid-layout { grid-template-columns: 1fr !important; }
 }
+
+
+/* تنسيقات شاشة הـ KPIs الـ Enterprise */
+.kpi-category-badge {
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-weight: 900;
+    font-size: 10px;
+    display: inline-block;
+    text-align: center;
+}
+.cat-P { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid #3b82f6; }
+.cat-Q { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+.cat-C { background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid #eab308; }
+.cat-D { background: rgba(249, 115, 22, 0.2); color: #f97316; border: 1px solid #f97316; }
+.cat-S { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+.cat-M { background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid #a855f7; }
+
+.status-good { color: var(--success); font-weight: bold; }
+.status-bad { color: var(--danger); font-weight: bold; }
+.status-warn { color: var(--warning); font-weight: bold; }

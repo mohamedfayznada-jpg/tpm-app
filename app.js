@@ -22,64 +22,17 @@ let deptGoalsData = {};
 
 
 
-function showScreen(screenId) {
-    // 1. حماية الصلاحيات أولاً
-    if (screenId !== 'loginScreen' && screenId !== 'signupScreen' && !canAccess(screenId)) {
-        return showToast("عذراً، لا تملك صلاحية الدخول لهذه الصفحة.");
-    }
-    
-    // 2. تسجيل مسار التصفح عشان زرار "الرجوع" يشتغل صح
-    if (screenHistory[screenHistory.length - 1] !== screenId) {
-        screenHistory.push(screenId);
-    }
-    
-    // 3. عرض الشاشة
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    let target = document.getElementById(screenId);
-    if(target) target.classList.add('active');
-    window.scrollTo(0,0);
-}
 
-function goBack() {
-    if (screenHistory.length > 1) {
-        screenHistory.pop(); // مسح الشاشة الحالية
-        let lastScreen = screenHistory[screenHistory.length - 1];
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        let target = document.getElementById(lastScreen);
-        if(target) target.classList.add('active');
-        window.scrollTo(0,0);
-    } else {
-        showScreen('homeScreen'); // لو مفيش تاريخ، نرجع للرئيسية
-    }
-}
 // ------------------------------------------
 // 🛡️ أدوات النظام والتنبيهات (Utilities)
 // ------------------------------------------
 function hasRole(...allowed) { return currentUser && currentUser.role && allowed.includes(currentUser.role); }
 // 🛡️ دالة التعقيم المحسنة (لمنع الاختراق)
-function sanitizeInput(val) { 
-    if (!val) return '';
-    const div = document.createElement('div');
-    div.appendChild(document.createTextNode(val));
-    return div.innerHTML.trim(); 
-}
-function uniqueNumericId() { return (Date.now() * 1000) + Math.floor(Math.random() * 1000); }
+
 function safeUrl(url) { const val = String(url || '').trim(); return (val.startsWith('https://') || val.startsWith('http://') || val.startsWith('data:image/')) ? val : ''; }
 function nl2brSafe(text) { return sanitizeInput(text).replace(/\n/g, '<br>'); }
 
-function showToast(msg) {
-    let c = document.getElementById('toast-container');
-    if(!c) { c = document.createElement('div'); c.id = 'toast-container'; document.body.appendChild(c); }
-    let t = document.createElement('div'); t.className = 'toast-msg'; t.innerHTML = msg;
-    c.appendChild(t);
-    setTimeout(() => { t.style.animation = 'fadeOut 0.3s ease-out forwards'; setTimeout(() => t.remove(), 300); }, 3000);
-}
 
-db.ref('.info/connected').on('value', snap => {
-    isOnline = snap.val() === true;
-    const el = document.getElementById('cloudStatus');
-    if(el) { el.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل بالسيرفر"; el.style.color = isOnline ? "var(--success)" : "var(--danger)"; }
-});
 // ------------------------------------------
 // 🔄 محرك المزامنة الذكي والصاروخي
 // ------------------------------------------
@@ -192,74 +145,8 @@ dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {
         showScreen('loginScreen');
     }
 });
-// 🔐 تسجيل الدخول (للمسجلين)
-async function login() {
-    const username = sanitizeInput(document.getElementById('loginUsername').value).toLowerCase();
-    const password = document.getElementById('loginPassword').value.trim();
-    if(!username || !password) return showToast('برجاء كتابة اسم المستخدم وكلمة المرور');
-    document.getElementById('cloudStatus').innerHTML = "جاري الدخول...";
-    
-    if(document.getElementById('rememberMe') && document.getElementById('rememberMe').checked) { 
-        localStorage.setItem('tpm_username', username); 
-    }
-    
-    try { 
-        await firebase.auth().signInWithEmailAndPassword(username + "@tpm.app", password); 
-    } catch (e) { 
-        showToast('بيانات الدخول غير صحيحة'); 
-        document.getElementById('cloudStatus').innerHTML = "غير متصل";
-    }
-}
 
-// 📝 إنشاء حساب جديد (بوضع الانتظار Pending)
-async function signup() {
-    const fullName = sanitizeInput(document.getElementById('signupFullName').value);
-    const user = sanitizeInput(document.getElementById('signupUsername').value).toLowerCase().trim();
-    const pass = document.getElementById('signupPassword').value.trim();
-    const requestedRole = document.getElementById('signupRole').value;
 
-    if(!user || !pass || !fullName) return showToast("برجاء إكمال كافة البيانات");
-
-    try {
-        showToast("جاري إرسال طلب الانضمام...");
-        const res = await firebase.auth().createUserWithEmailAndPassword(user + "@tpm.app", pass);
-        
-        // هيكل بيانات المستخدم الجديد (حالة معلقة + أذونات افتراضية)
-        const newUserObj = {
-            name: fullName,
-            username: user,
-            requestedRole: requestedRole,
-            role: 'viewer', // صلاحية مشاهد فقط لحين القبول
-            status: 'pending', // حالة الانتظار
-            // مصفوفة الأذونات لكل صفحة (view = رؤية فقط، edit = تعديل، none = مخفية)
-            permissions: {
-                homeScreen: 'view',
-                tasksScreen: 'none',
-                historyScreen: 'none',
-                kaizenScreen: 'view',
-                tagsScreen: 'none',
-                knowledgeScreen: 'none'
-            }
-        };
-
-        await db.ref('tpm_system/users/' + res.user.uid).set(newUserObj);
-        
-        showToast("تم إرسال طلبك للمدير mfayez بنجاح! يرجى انتظار الموافقة.");
-        setTimeout(() => firebase.auth().signOut().then(() => window.location.reload()), 2000);
-    } catch (e) {
-        showToast("خطأ: اسم المستخدم محجوز أو البيانات غير صحيحة");
-    }
-}
-
-// 🚪 تسجيل الخروج والدخول السريع
-function logout() { firebase.auth().signOut().then(() => { localStorage.clear(); window.location.reload(); }); }
-
-function biometricLogin() {
-    const u = localStorage.getItem('tpm_username');
-    if(!u) return showToast('سجل دخولك يدوياً أول مرة لتفعيل الدخول السريع'); 
-    document.getElementById('loginUsername').value = u;
-    showToast('تم استدعاء بياناتك، أدخل كلمة المرور فقط');
-}
 // ------------------------------------------
 // 🔄 محرك المزامنة الذري (Atomic Sync Engine)
 // ------------------------------------------
@@ -428,16 +315,6 @@ function processAndEnhanceImage(file, callback) {
 // ------------------------------------------
 // 📱 التحكم بالشاشات والقائمة الجانبية
 // ------------------------------------------
-function toggleSidebar() {
-    const sb = document.getElementById('mainSidebar');
-    const ov = document.getElementById('sidebarOverlay');
-    if(!sb) return;
-    if(sb.classList.contains('open')) {
-        sb.classList.remove('open'); ov.style.display = 'none';
-    } else {
-        sb.classList.add('open'); ov.style.display = 'block';
-    }
-}
 
 
 // 🏆 نظام النقاط والرتب المطور (Enterprise Elite)
@@ -1637,24 +1514,7 @@ async function explainItem(t) {
 // إعدادات أخرى
 // ------------------------------------------
 // Architected by م.مُحَمَّد فَايِز - Native Theme Switcher
-function toggleDarkMode() {
-    const body = document.body;
-    body.classList.toggle('light-theme');
-    
-    // حفظ اختيار المستخدم
-    const isLight = body.classList.contains('light-theme');
-    localStorage.setItem('tpm_theme', isLight ? 'light' : 'dark');
-    
-    // تغيير شكل الزرار (اختياري) وإظهار رسالة
-    showToast(isLight ? 'تم تفعيل وضع النهار ☀️' : 'تم تفعيل وضع الليل 🌙');
-}
 
-// تطبيق الثيم المحفوظ تلقائياً عند فتح التطبيق
-window.addEventListener('DOMContentLoaded', () => {
-    if(localStorage.getItem('tpm_theme') === 'light') {
-        document.body.classList.add('light-theme');
-    }
-});
 function updateDeptDropdown() { let opts = departments.map(d=>`<option value="${d}">${d}</option>`).join(''); document.querySelectorAll('select').forEach(s => {if(s.id.includes('Dept')) s.innerHTML=opts;}); }
 function updateDeptListUI() { }
 function addOrUpdateDept() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); syncRecord('departments', departments); updateDeptDropdown(); showToast('تم الحفظ'); } }

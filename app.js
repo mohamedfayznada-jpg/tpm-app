@@ -147,70 +147,7 @@ dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {
 });
 
 
-// ------------------------------------------
-// 🔄 محرك المزامنة الذري (Atomic Sync Engine)
-// ------------------------------------------
-// تم إلغاء المسح الشامل، كل دالة تحفظ مسارها فقط لحماية البيانات من الـ Race Conditions
 
-async function scanBarcodeFromImage(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    showToast('جاري قراءة الباركود... 🔍');
-    const html5QrCode = new Html5Qrcode("searchResults"); 
-    
-    try {
-        const decodedText = await html5QrCode.scanFile(file, true);
-        
-        // التحقق من التكرار (الرفض الافتراضي)
-        if (sessionScannedBarcodes.has(decodedText)) {
-            showToast('⚠️ تحذير: تم مسح هذا الباركود مسبقاً!');
-            document.getElementById('searchResults').style.display = 'block';
-            document.getElementById('searchResults').innerHTML = `
-                <div style="padding:20px; background:rgba(198,40,40,0.1); border:1px solid var(--danger); border-radius:15px; text-align:center;">
-                    <div style="font-size:30px; margin-bottom:10px;">🛑</div>
-                    <b class="danger-text" style="font-size:16px;">باركود مكرر (مرفوض)</b><br>
-                    <div style="margin-top:10px; font-size:12px; color:var(--text-muted);">
-                        البيانات: ${decodedText}
-                    </div>
-                    <div class="row-flex" style="margin-top:15px; justify-content:center;">
-                        <button class="btn btn-sm btn-danger flex-1" onclick="document.getElementById('searchResults').style.display='none'">إلغاء</button>
-                        <button class="btn btn-sm btn-warning flex-1" onclick="forceAcceptBarcode('${decodedText.replace(/'/g, "\\'")}')">تخطي وتسجيل</button>
-                    </div>
-                </div>
-            `;
-            return; // نوقف التنفيذ هنا وميتمش التسجيل
-        }
-
-        // لو الباركود جديد، نقبله ونحفظه
-        processValidBarcode(decodedText);
-
-    } catch (err) {
-        showToast('تعذرت قراءة الباركود، تأكد من وضوح الصورة.');
-    }
-}
-
-function processValidBarcode(decodedText) {
-    sessionScannedBarcodes.add(decodedText);
-    showToast('تمت القراءة بنجاح!');
-    
-    document.getElementById('searchResults').style.display = 'block';
-    document.getElementById('searchResults').innerHTML = `
-        <div style="padding:20px; background:rgba(46,125,50,0.1); border:1px solid var(--success); border-radius:15px; text-align:center;">
-            <div style="font-size:30px; margin-bottom:10px;">✅</div>
-            <b class="success-text" style="font-size:16px;">تم تسجيل البيانات:</b><br>
-            <div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; color:var(--text-main); word-break: break-all; font-family:monospace;">
-                ${decodedText}
-            </div>
-            <button class="btn btn-sm btn-outline" style="margin-top:15px; width:auto;" onclick="document.getElementById('searchResults').style.display='none'">إغلاق</button>
-        </div>
-    `;
-}
-
-function forceAcceptBarcode(decodedText) {
-    showToast('تم تخطي الحماية وتأكيد التسجيل يدوياً ⚠️');
-    processValidBarcode(decodedText);
-}
 
 
 // ------------------------------------------

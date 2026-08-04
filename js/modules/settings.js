@@ -4,17 +4,21 @@ import { UI } from '../utils/ui.js';
 import { Services } from '../core/services.js';
 
 export const Settings = {
-    renderProfileAndSettings() {
+    async renderProfileAndSettings() {
         UI.showScreen('settingsScreen');
         
-        const uid = auth.currentUser ? auth.currentUser.uid : null;
-        if (!uid) return;
+        const user = auth.currentUser;
+        if (!user) return;
 
-        // سحب البيانات من المتغيرات العامة (مؤقتاً لحين استكمال النقل)
-        let u = window.usersData[uid] || window.currentUser;
+        // 1. سحب بياناتك فوراً ومباشرة من قاعدة البيانات (لضمان الاستقلالية التامة)
+        const snap = await db.ref(`tpm_system/users/${user.uid}`).once('value');
+        let u = snap.val() || {};
+        
+        // حماية إضافية لو الاسم لسه محملش
+        if (!u.name) u.name = localStorage.getItem('tpm_user') || 'مستخدم مجهول';
 
         const nameEl = document.getElementById('profileName');
-        if(nameEl) nameEl.innerText = u.name || 'مستخدم مجهول';
+        if(nameEl) nameEl.innerText = u.name;
         
         const roleEl = document.getElementById('profileRoleBadge');
         if(roleEl) {
@@ -23,40 +27,49 @@ export const Settings = {
         }
         
         const avatarEl = document.getElementById('profileAvatar');
-        if(avatarEl) avatarEl.src = u.avatar || `https://ui-avatars.com/api/?name=${u.name || 'User'}&background=1E3A8A&color=ffffff`;
+        if(avatarEl) avatarEl.src = u.avatar || `https://ui-avatars.com/api/?name=${u.name}&background=1E3A8A&color=ffffff`;
 
-        // حساب التفاعلات
-        let myAuditsCount = window.historyData.filter(h => h.auditor === u.name && !h.stepsOrder.includes('ManualKaizen')).length;
-        let myTagsCount = window.tagsData.filter(t => t.auditor === u.name).length;
-        let myKaizensCount = window.historyData.filter(h => h.auditor === u.name && h.stepsOrder.includes('ManualKaizen')).length;
+        // 2. تحديث إحصائياتك بأمان
+        const histData = window.historyData || [];
+        const tgData = window.tagsData || [];
+
+        let myAuditsCount = histData.filter(h => h.auditor === u.name && !h.stepsOrder.includes('ManualKaizen')).length;
+        let myTagsCount = tgData.filter(t => t.auditor === u.name).length;
+        let myKaizensCount = histData.filter(h => h.auditor === u.name && h.stepsOrder.includes('ManualKaizen')).length;
 
         if(document.getElementById('myAudits')) document.getElementById('myAudits').innerText = myAuditsCount;
         if(document.getElementById('myTags')) document.getElementById('myTags').innerText = myTagsCount;
         if(document.getElementById('myKaizens')) document.getElementById('myKaizens').innerText = myKaizensCount;
 
-        // 🔐 حماية الصلاحيات (إخفاء التابات عن غير المديرين)
+        // 3. حماية التابات الإدارية (تظهر ليك كمدير فقط)
         document.querySelectorAll('.btn-role-admin').forEach(el => {
             el.style.display = u.role === 'admin' ? 'inline-block' : 'none';
         });
 
+        // 4. إظهار محتوى التابات بأمان تام
         this.switchSettingsTab('my-activity');
     },
 
     switchSettingsTab(tabId) {
+        // إخفاء كل المحتوى
         document.querySelectorAll('.settings-tab-content').forEach(c => {
             c.classList.remove('active');
             c.style.display = 'none';
         });
+        // إزالة التظليل من كل الأزرار
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         
+        // إظهار التابة المستهدفة
         const targetTab = document.getElementById('tab-' + tabId);
         if(targetTab) {
             targetTab.classList.add('active');
             targetTab.style.display = 'block';
         }
         
-        if(window.event && window.event.currentTarget) {
-            window.event.currentTarget.classList.add('active');
+        // تظليل الزرار الصحيح بدون الاعتماد على المتصفح
+        const activeBtn = document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+        if(activeBtn) {
+            activeBtn.classList.add('active');
         }
     },
 
@@ -88,8 +101,8 @@ export const Settings = {
         }
     },
 
-    // دوال المفاتيح (API Keys)
     saveApiKeys() {
+        if(!window.globalApiKeys) window.globalApiKeys = {};
         window.globalApiKeys.imgbb = document.getElementById('imgbbKeyInput').value.trim();
         window.globalApiKeys.gemini = document.getElementById('geminiKeyInput').value.trim();
         document.getElementById('imgbbKeyInput').disabled = true; 

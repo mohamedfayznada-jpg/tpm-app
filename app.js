@@ -59,7 +59,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
         const kSnap = await db.ref('tpm_system/api_keys').once('value');
         globalApiKeys = kSnap.val() || { imgbb: "", gemini: "" };
-
+window.globalApiKeys = globalApiKeys;
         // تحديد الهوية
         const userEmail = user.email ? user.email.toLowerCase() : '';
      // Architected by م.مُحَمَّد فَايِز - Strict Admin Authentication

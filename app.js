@@ -1215,16 +1215,6 @@ function updateTagState(id, st) { let t=tagsData.find(x=>x.id==id); if(t) {t.sta
 function deleteTag(id) { if(confirm('تأكيد حذف التاج نهائياً؟')) { deleteRecord('tags/' + id); showToast('تم الحذف'); } }
 function editTag(id) { let t=tagsData.find(x=>x.id==id); if(!t) return; let v=prompt('تعديل وصف المشكلة:', t.desc); if(v) { t.desc=sanitizeInput(v); syncRecord('tags/' + id, t); showToast('تم التعديل'); } }
 
-// ------------------------------------------
-// ⚙️ إعدادات الـ API
-// ------------------------------------------
-function saveApiKeys() {
-    globalApiKeys.imgbb = document.getElementById('imgbbKeyInput').value.trim();
-    globalApiKeys.gemini = document.getElementById('geminiKeyInput').value.trim();
-    document.getElementById('imgbbKeyInput').disabled = true; document.getElementById('geminiKeyInput').disabled = true;
-    syncRecord('api_keys', globalApiKeys); showToast('تم حفظ وتأمين المفاتيح المركزية');
-}
-function enableApiKeysEdit() { document.getElementById('imgbbKeyInput').disabled = false; document.getElementById('geminiKeyInput').disabled = false; showToast('الحقول جاهزة للتعديل'); }
 
 // ------------------------------------------
 // 🤖 المستشار الذكي وعقل المصنع (AI) - الإصدار النهائي والمستقر
@@ -2603,106 +2593,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ==========================================
-// ⚙️ محرك مركز القيادة المتقدم (Advanced Settings Engine)
-// ==========================================
 
-// 1. الدالة الرئيسية لفتح الشاشة (المسؤولة عن منع الشاشة البيضاء)
-window.renderProfileAndSettings = function() {
-    showScreen('settingsScreen');
-    
-    // سحب بيانات المستخدم الحالي
-    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
-    let u = usersData[uid] || currentUser;
-
-    // حقن البيانات في الهيكل الخاص بك
-    const nameEl = document.getElementById('profileName');
-    if(nameEl) nameEl.innerText = u.name || 'مستخدم مجهول';
-    
-    const roleEl = document.getElementById('profileRoleBadge');
-    if(roleEl) {
-        let roleName = u.role === 'admin' ? 'مدير المصنع (Admin)' : (u.role === 'auditor' ? 'مراجع TPM' : 'فني صيانة');
-        roleEl.innerText = `الرتبة: ${roleName}`;
-    }
-    
-    const avatarEl = document.getElementById('profileAvatar');
-    if(avatarEl) avatarEl.src = u.avatar || `https://ui-avatars.com/api/?name=${u.name || 'User'}&background=1E3A8A&color=ffffff`;
-
-    // 📊 حساب تفاعلات المستخدم (TPM Metrics)
-    // بنفلتر الداتا مجاناً في المتصفح (Client-side) بدون أي تكلفة على السيرفر
-    let myAuditsCount = historyData.filter(h => h.auditor === u.name && !h.stepsOrder.includes('ManualKaizen')).length;
-    let myTagsCount = tagsData.filter(t => t.auditor === u.name).length;
-    let myKaizensCount = historyData.filter(h => h.auditor === u.name && h.stepsOrder.includes('ManualKaizen')).length;
-
-    if(document.getElementById('myAudits')) document.getElementById('myAudits').innerText = myAuditsCount;
-    if(document.getElementById('myTags')) document.getElementById('myTags').innerText = myTagsCount;
-    if(document.getElementById('myKaizens')) document.getElementById('myKaizens').innerText = myKaizensCount;
-
-    // 🔐 حماية الصلاحيات (إخفاء التابات الإدارية عن العمال العاديين)
-    document.querySelectorAll('.btn-role-admin').forEach(el => {
-        el.style.display = u.role === 'admin' ? 'inline-block' : 'none';
-    });
-
-    // تشغيل التابة الأولى افتراضياً
-    if(typeof switchSettingsTab === 'function') {
-        switchSettingsTab('my-activity');
-    }
-};
-
-// 2. دالة التبديل بين التابات (Tabs Navigation)
-window.switchSettingsTab = function(tabId) {
-    // إخفاء كل المحتوى
-    document.querySelectorAll('.settings-tab-content').forEach(c => {
-        c.classList.remove('active');
-        c.style.display = 'none'; // تأكيد الإخفاء
-    });
-    // إزالة اللون من كل الأزرار
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    
-    // إظهار التابة المطلوبة
-    const targetTab = document.getElementById('tab-' + tabId);
-    if(targetTab) {
-        targetTab.classList.add('active');
-        targetTab.style.display = 'block';
-    }
-    
-    // تلوين الزرار المضغوط
-    if(event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
-    }
-};
-
-// 3. دالة زر "دخول مركز القيادة الشخصي"
-window.openMyFullProfile = function() {
-    // توجيه ذكي لنفس الشاشة لضمان تحديث البيانات
-    renderProfileAndSettings();
-    showToast('تم فتح مركز القيادة بنجاح 🛡️');
-};
-
-// 4. دالة تغيير الصورة الشخصية (مضادة للأعطال)
-window.updateProfilePic = async function(event) {
-    const file = event.target.files[0];
-    if(!file) return;
-    
-    showToast('جاري تحديث الصورة... ⏳');
-    try {
-        // نستخدم الدالة المجانية بتاعتنا لضغط ورفع الصورة
-        processAndEnhanceImage(file, async function(dataUrl) {
-            const url = await uploadImageToStorage(dataUrl); // ترسل لـ Vercel
-            if(url) {
-                const uid = firebase.auth().currentUser.uid;
-                await db.ref(`tpm_system/users/${uid}`).update({ avatar: url });
-                document.getElementById('profileAvatar').src = url;
-                showToast('تم تحديث الصورة ✅');
-            } else {
-                showToast('⚠️ فشل رفع الصورة');
-            }
-        });
-    } catch(e) {
-        console.error(e);
-        showToast('حدث خطأ أثناء الرفع');
-    }
-};
 // ==========================================
 // 📉 محرك ركيزة التحسين المستمر المطور (KK Pillar Engine)
 // ==========================================

@@ -151,18 +151,6 @@ dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {
 // 🔄 محرك المزامنة الذري (Atomic Sync Engine)
 // ------------------------------------------
 // تم إلغاء المسح الشامل، كل دالة تحفظ مسارها فقط لحماية البيانات من الـ Race Conditions
-function syncRecord(path, data) { if (isOnline && firebase.auth().currentUser) db.ref('tpm_system/' + path).set(data); }
-function deleteRecord(path) { if (isOnline && firebase.auth().currentUser) db.ref('tpm_system/' + path).remove(); }
-
-function logAction(act) { 
-    if(!currentUser.name) return;
-    let logObj = {id: uniqueNumericId().toString(), user:currentUser.name, action:act, time:new Date().toLocaleTimeString('ar-EG')};
-    syncRecord('logs/' + logObj.id, logObj);
-}
-
-
-// Architected by م.مُحَمَّد فَايِز - Duplicate Scan Rejection Logic
-let sessionScannedBarcodes = new Set(); // ذاكرة مؤقتة للباركودات الممسوحة
 
 async function scanBarcodeFromImage(event) {
     const file = event.target.files[0];
@@ -224,93 +212,6 @@ function forceAcceptBarcode(decodedText) {
     processValidBarcode(decodedText);
 }
 
-// ==========================================
-// Architected by م.مُحَمَّد فَايِز - 100% Free ImgBB Engine
-// ==========================================
-async function uploadImageToStorage(fileOrDataUrl) {
-    try {
-        let base64Data = fileOrDataUrl;
-        if (typeof fileOrDataUrl !== 'string') {
-            const reader = new FileReader();
-            base64Data = await new Promise((resolve) => {
-                reader.readAsDataURL(fileOrDataUrl);
-                reader.onload = () => resolve(reader.result);
-            });
-        }
-        const b64 = base64Data.split(',')[1];
-        
-        // الاتصال الآمن بسيرفر Vercel
-        const response = await fetch('/api/imgbb', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: b64 }) 
-        });
-        
-        const data = await response.json();
-        if(data.success) return data.data.url;
-        return null;
-    } catch(e) {
-        console.error("ImgBB Error:", e);
-        showToast('⚠️ فشل الرفع عبر السيرفر');
-        return null;
-    }
-}
-// محرك ضغط الصور لتوفير المساحة المجانية 100%
-function compressImageProcess(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800; // أقصى عرض للصورة
-                const MAX_HEIGHT = 800;
-                let width = img.width;
-                let height = img.height;
-
-                // حساب الأبعاد الجديدة مع الحفاظ على نسبة العرض للطول
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                // تحويل الصورة إلى Blob بجودة 60% (حجم صغير جداً مع وضوح ممتاز للعين)
-                canvas.toBlob((blob) => {
-                    resolve(blob);
-                }, 'image/jpeg', 0.6);
-            };
-        };
-    });
-}
-
-function processAndEnhanceImage(file, callback) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-            const MAX_WIDTH = 800; let width = img.width; let height = img.height;
-            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-            canvas.width = width; canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            callback(canvas.toDataURL('image/jpeg', 0.8));
-        }; img.src = e.target.result;
-    }; reader.readAsDataURL(file);
-}
 
 // ------------------------------------------
 // 📱 التحكم بالشاشات والقائمة الجانبية
@@ -2574,32 +2475,6 @@ setInterval(() => {
     document.querySelectorAll('.sos-btn').forEach(btn => btn.remove());
 }, 1000);
 
-// 🧠 محرك جوجل الآمن (يتخطى حظر الموديلات)
-window.fetchGeminiAPI = async function(promptText, pdfBase64 = null) {
-    let b64 = null;
-    if (pdfBase64) {
-        b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
-    }
-
-    try {
-        const response = await fetch('/api/gemini', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: promptText, imageBase64: b64 })
-        });
-        
-        const j = await response.json();
-        if(j.error) throw new Error(j.error);
-        if(!j.candidates || j.candidates.length === 0 || !j.candidates[0].content) {
-            throw new Error("جوجل رفضت الإجابة بسبب قيود الأمان. جرب صياغة أخرى.");
-        }
-        
-        let text = j.candidates[0].content.parts[0].text;
-        return text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "").trim();
-    } catch (e) {
-        throw e;
-    }
-};
 
 // 🎯 دالة الشرح المطورة (خطوات عملية مفصلة 1, 2, 3)
 window.explainItem = async function(t) {

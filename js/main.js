@@ -5,8 +5,15 @@ import { UI } from './utils/ui.js';
 import { Auth } from './auth/auth.js';
 import { Services } from './core/services.js'; // ⬅️ الإضافة الجديدة
 import { Scanner } from './modules/scanner.js';
+import { Settings } from './modules/settings.js';
 console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} ARCHITECTURE LOADED`);
-
+// 🌐 ربط دوال الإعدادات والملف الشخصي
+window.renderProfileAndSettings = () => Settings.renderProfileAndSettings();
+window.switchSettingsTab = (id) => Settings.switchSettingsTab(id);
+window.openMyFullProfile = () => Settings.openMyFullProfile();
+window.updateProfilePic = (e) => Settings.updateProfilePic(e);
+window.saveApiKeys = () => Settings.saveApiKeys();
+window.enableApiKeysEdit = () => Settings.enableApiKeysEdit();
 // 🌐 ربط دوال الواجهة
 window.showScreen = (id) => UI.showScreen(id);
 window.goBack = () => UI.goBack();

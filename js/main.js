@@ -4,7 +4,7 @@ import { db, auth } from './core/firebase-init.js';
 import { UI } from './utils/ui.js';
 import { Auth } from './auth/auth.js';
 import { Services } from './core/services.js'; // ⬅️ الإضافة الجديدة
-
+import { Scanner } from './modules/scanner.js';
 console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} ARCHITECTURE LOADED`);
 
 // 🌐 ربط دوال الواجهة
@@ -21,7 +21,9 @@ window.login = () => Auth.login();
 window.signup = () => Auth.signup();
 window.logout = () => Auth.logout();
 window.biometricLogin = () => Auth.biometricLogin();
-
+// 🌐 ربط محرك الباركود
+window.scanBarcodeFromImage = (e) => Scanner.scanBarcodeFromImage(e);
+window.forceAcceptBarcode = (text) => Scanner.forceAcceptBarcode(text);
 // 🌐 ربط دوال الخدمات (قاعدة البيانات والـ API)
 window.syncRecord = (path, data) => Services.syncRecord(path, data);
 window.deleteRecord = (path) => Services.deleteRecord(path);

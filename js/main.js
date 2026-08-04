@@ -1,20 +1,28 @@
-// js/main.js
+// مسار الملف: js/main.js
 import { ENV } from './config/env.js';
 import { db, auth } from './core/firebase-init.js';
-import { Validator } from './utils/validator.js'; // ⬅️ أضف هذا السطر
-console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} INITIALIZED`);
+import { UI } from './utils/ui.js';
+import { Auth } from './auth/auth.js';
 
-// مراقبة حالة الاتصال بالسيرفر
-db.ref('.info/connected').on('value', snap => {
-    const isOnline = snap.val() === true;
-    const cloudStatusEl = document.getElementById('cloudStatus');
-    if (cloudStatusEl) {
-        cloudStatusEl.innerHTML = isOnline ? "متصل بقاعدة البيانات" : "غير متصل بالسيرفر";
-        cloudStatusEl.style.color = isOnline ? "var(--success)" : "var(--danger)";
+console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} ARCHITECTURE LOADED`);
+
+// 🌐 ربط الدوال بكائن Window عشان ملف index.html يقدر يشوفها (مرحلة انتقالية)
+window.showScreen = (id) => UI.showScreen(id);
+window.goBack = () => UI.goBack();
+window.showToast = (msg) => UI.showToast(msg);
+window.toggleSidebar = () => UI.toggleSidebar();
+window.toggleDarkMode = () => UI.toggleDarkMode();
+window.sanitizeInput = (val) => UI.sanitizeInput(val);
+window.uniqueNumericId = () => UI.uniqueNumericId();
+
+window.login = () => Auth.login();
+window.signup = () => Auth.signup();
+window.logout = () => Auth.logout();
+window.biometricLogin = () => Auth.biometricLogin();
+
+// تطبيق الثيم المحفوظ
+window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('tpm_theme') === 'light') {
+        document.body.classList.add('light-theme');
     }
 });
-
-// إتاحة المتغيرات مؤقتاً للـ window عشان app.js القديم يشتغل
-window.db = db;
-window.auth = auth;           // ⬅️ أضف هذا السطر
-window.Validator = Validator;

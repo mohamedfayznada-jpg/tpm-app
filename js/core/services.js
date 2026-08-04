@@ -27,7 +27,7 @@ export const Services = {
         this.syncRecord('logs/' + logObj.id, logObj);
     },
 
-    // 2. محرك رفع الصور (ImgBB)
+   // 2. محرك رفع الصور (ImgBB) مع الدعم الاحتياطي الذكي
     async uploadImageToStorage(fileOrDataUrl) {
         try {
             let base64Data = fileOrDataUrl;
@@ -40,22 +40,39 @@ export const Services = {
             }
             const b64 = base64Data.split(',')[1];
             
-            const response = await fetch('/api/imgbb', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: b64 }) 
-            });
-            
-            const data = await response.json();
-            if(data.success) return data.data.url;
-            return null;
+            // المحاولة الأولى: عبر السيرفر الآمن (Vercel)
+            try {
+                const response = await fetch('/api/imgbb', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: b64 }) 
+                });
+                const data = await response.json();
+                if(data && data.success) return data.data.url;
+            } catch (err) {
+                console.warn("Vercel ImgBB Failed, switching to Client Fallback...");
+            }
+
+            // المحاولة الثانية: الاحتياطية (لو السيرفر فشل، نسحب المفتاح من إعدادات السيستم)
+            if (window.globalApiKeys && window.globalApiKeys.imgbb) {
+                const formData = new URLSearchParams();
+                formData.append('image', b64);
+                const fbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${window.globalApiKeys.imgbb}`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+                const fbData = await fbResponse.json();
+                if(fbData.success) return fbData.data.url;
+            }
+
+            throw new Error("لا يوجد مفتاح صالح للرفع.");
         } catch(e) {
             console.error("ImgBB Error:", e);
-            UI.showToast('⚠️ فشل الرفع عبر السيرفر');
+            UI.showToast('⚠️ فشل الرفع: تأكد من مفتاح ImgBB في الإعدادات');
             return null;
         }
     },
-
     processAndEnhanceImage(file, callback) {
         const reader = new FileReader();
         reader.onload = function(e) {

@@ -10,12 +10,16 @@ export const Settings = {
         const user = auth.currentUser;
         if (!user) return;
 
-        // 1. سحب بياناتك فوراً ومباشرة من قاعدة البيانات (لضمان الاستقلالية التامة)
+        // 1. سحب بياناتك فوراً ومباشرة من قاعدة البيانات
         const snap = await db.ref(`tpm_system/users/${user.uid}`).once('value');
         let u = snap.val() || {};
         
-        // حماية إضافية لو الاسم لسه محملش
-        if (!u.name) u.name = localStorage.getItem('tpm_user') || 'مستخدم مجهول';
+        // 🚀 السر هنا: دمج بيانات القاعدة مع صلاحية الجلسة الحالية (عشان المدير العام)
+        if (window.currentUser) {
+            u.name = u.name || window.currentUser.name || localStorage.getItem('tpm_user') || 'مستخدم مجهول';
+            // لو الجلسة بتقول إنك أدمن (Master Admin)، يبقى إنت أدمن غصب عن أي حاجة في الداتا بيز
+            if (window.currentUser.role === 'admin') u.role = 'admin';
+        }
 
         const nameEl = document.getElementById('profileName');
         if(nameEl) nameEl.innerText = u.name;
@@ -43,7 +47,8 @@ export const Settings = {
 
         // 3. حماية التابات الإدارية (تظهر ليك كمدير فقط)
         document.querySelectorAll('.btn-role-admin').forEach(el => {
-            el.style.display = u.role === 'admin' ? 'inline-block' : 'none';
+            // شلنا inline-block عشان التابات تفضل واخدة شكلها الطبيعي (Flexbox) 
+            el.style.display = u.role === 'admin' ? '' : 'none';
         });
 
         // 4. إظهار محتوى التابات بأمان تام
@@ -51,22 +56,18 @@ export const Settings = {
     },
 
     switchSettingsTab(tabId) {
-        // إخفاء كل المحتوى
         document.querySelectorAll('.settings-tab-content').forEach(c => {
             c.classList.remove('active');
             c.style.display = 'none';
         });
-        // إزالة التظليل من كل الأزرار
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         
-        // إظهار التابة المستهدفة
         const targetTab = document.getElementById('tab-' + tabId);
         if(targetTab) {
             targetTab.classList.add('active');
             targetTab.style.display = 'block';
         }
         
-        // تظليل الزرار الصحيح بدون الاعتماد على المتصفح
         const activeBtn = document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
         if(activeBtn) {
             activeBtn.classList.add('active');

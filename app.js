@@ -72,6 +72,7 @@ const isMasterAdmin = userEmail === 'mfayez@tpm.app';
         if (isMasterAdmin) {
             role = 'admin';
             currentUser = { name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
+            window.currentUser = currentUser; // ⬅️ الإضافة هنا
             localStorage.setItem('tpm_username', 'mfayez'); 
             
             let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
@@ -92,6 +93,7 @@ const isMasterAdmin = userEmail === 'mfayez@tpm.app';
             if (typeof uData === 'string') { role = uData; } 
             else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
             currentUser = { name: savedName, username: finalUsername, role: role, status: status };
+            window.currentUser = currentUser; // ⬅️ الإضافة هنا
         }
 
         document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = currentUser.role === 'admin' ? 'block' : 'none');
@@ -109,6 +111,7 @@ const isMasterAdmin = userEmail === 'mfayez@tpm.app';
         dbListeners.tags = db.ref('tpm_system/tags').orderByChild('id').limitToLast(100).on('value', snap => {
             let data = snap.val() || {};
             tagsData = Object.values(data).filter(x => x && x.id).sort((a,b)=>b.id-a.id);
+            window.tagsData = tagsData; // ⬅️ الإضافة هنا
             renderTags(); if(currentUser.role) updateHomeDashboard();
         });
 
@@ -121,6 +124,7 @@ const isMasterAdmin = userEmail === 'mfayez@tpm.app';
         dbListeners.history = db.ref('tpm_system/history').orderByChild('id').limitToLast(100).on('value', snap => {
             let data = snap.val() || {};
             historyData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id);
+            window.historyData = historyData; // ⬅️ الإضافة هنا
             renderHistory(); renderKaizenFeed(); if(currentUser.role) updateHomeDashboard();
         });
     

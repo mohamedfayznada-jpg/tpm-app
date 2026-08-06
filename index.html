@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FACTORY OS | V5.0</title>
     
-    <!-- خطوط جوجل -->
+    <!-- خطوط جوجل الاحترافية -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
     
-    <!-- مكتبة الأيقونات الاحترافية (بديل الإيموجي) -->
+    <!-- مكتبة الأيقونات (Boxicons) -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     
-    <!-- ملف التنسيق الأساسي -->
+    <!-- التنسيق الأساسي -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -25,27 +26,23 @@
                 <i class='bx bx-cog bx-spin' style="color: var(--gold);"></i> FACTORY OS
             </div>
 
-            <!-- أزرار القائمة بأيقونات عصرية -->
             <div class="nav-btn active" onclick="showScreen('homeScreen'); setActive(this)">
                 <i class='bx bx-grid-alt'></i> لوحة القيادة
             </div>
-            <div class="nav-btn" onclick="showJHPortal(); setActive(this)">
+            <div class="nav-btn" onclick="showScreen('jhPortalScreen'); setActive(this)">
                 <i class='bx bx-wrench'></i> الصيانة الذاتية
             </div>
-            <div class="nav-btn" onclick="showScreen('tagsScreen'); renderTags(); setActive(this)">
+            <div class="nav-btn" onclick="showScreen('tagsScreen'); setActive(this)">
                 <i class='bx bx-purchase-tag-alt'></i> التاجات والمشكلات
             </div>
-            <div class="nav-btn" onclick="showScreen('tasksScreen'); renderTasks(); setActive(this)">
+            <div class="nav-btn" onclick="showScreen('tasksScreen'); setActive(this)">
                 <i class='bx bx-task'></i> المهام والتحسين
             </div>
-            <div class="nav-btn" onclick="showScreen('kkScreen'); renderKKDashboard(); setActive(this)">
+            <div class="nav-btn" onclick="showScreen('kkScreen'); setActive(this)">
                 <i class='bx bx-trending-down'></i> شجرة الفواقد
             </div>
-            <div class="nav-btn" onclick="showScreen('knowledgeScreen'); renderKnowledgeShelves(); setActive(this)">
-                <i class='bx bx-brain'></i> عقل المصنع
-            </div>
             
-            <div style="flex:1;"></div> <!-- مسافة لدفع الإعدادات للأسفل -->
+            <div style="flex:1;"></div>
             
             <div class="nav-btn" onclick="openMyFullProfile(); setActive(this)">
                 <i class='bx bx-user-circle'></i> مركزي الشخصي
@@ -53,40 +50,71 @@
             <div class="nav-btn" onclick="toggleDarkMode()">
                 <i class='bx bx-moon'></i> المظهر
             </div>
+            <div class="nav-btn" style="color: var(--danger);" onclick="logout()">
+                <i class='bx bx-log-out'></i> تسجيل خروج
+            </div>
         </nav>
 
         <!-- منطقة العرض الرئيسية -->
         <main class="main-content">
             
-            <!-- شاشة 1: لوحة القيادة الرئيسية (Dashboard) -->
-            <div id="homeScreen" class="screen active">
-                <div class="glass-card">
-                    <h2 style="color: var(--gold); margin-bottom: 20px;">
-                        <i class='bx bx-bar-chart-square'></i> النظرة العامة للمصنع
-                    </h2>
-                    <!-- هنا سيتم حقن الـ Grid الخاص بالأقسام من الجافاسكريبت -->
-                    <div id="homeDeptGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;"></div>
-                </div>
-            </div>
-
-            <!-- شاشة 2: تسجيل الدخول (Login) -->
+            <!-- شاشة 1: تسجيل الدخول (مخفية افتراضياً حتى يقرر Auth.js إظهارها) -->
             <div id="loginScreen" class="screen">
-                <div class="glass-card" style="max-width: 400px; margin: 10vh auto; text-align: center;">
-                    <i class='bx bx-fingerprint' style="font-size: 60px; color: var(--gold); margin-bottom: 15px;"></i>
-                    <h2 style="margin-bottom: 20px;">بوابة الدخول الآمنة</h2>
-                    <input type="text" id="loginUsername" class="form-control" placeholder="اسم المستخدم">
-                    <input type="password" id="loginPassword" class="form-control" placeholder="كلمة المرور">
-                    <button class="btn btn-primary" style="width: 100%;" onclick="login()">دخول للنظام <i class='bx bx-log-in-circle'></i></button>
-                    <p id="cloudStatus" style="margin-top: 15px; font-size: 12px; color: var(--text-muted);"></p>
+                <div class="login-wrapper">
+                    <div class="glass-card login-card">
+                        <i class='bx bx-fingerprint' style="font-size: 70px; color: var(--gold); margin-bottom: 20px;"></i>
+                        <h2 style="margin-bottom: 25px; color: var(--text-main);">بوابة الدخول الآمنة</h2>
+                        <input type="text" id="loginUsername" class="form-control" placeholder="اسم المستخدم (بدون @tpm.app)">
+                        <input type="password" id="loginPassword" class="form-control" placeholder="كلمة المرور">
+                        
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; color: var(--text-muted); font-size: 14px;">
+                            <input type="checkbox" id="rememberMe">
+                            <label for="rememberMe">تذكرني للدخول السريع</label>
+                        </div>
+
+                        <button class="btn btn-primary" style="width: 100%;" onclick="login()">دخول للنظام <i class='bx bx-log-in-circle'></i></button>
+                        <p id="cloudStatus" style="margin-top: 15px; font-size: 13px; color: var(--text-muted);"></p>
+                    </div>
                 </div>
             </div>
 
-            <!-- باقي الشاشات سيتم بناؤها تباعاً بنفس النمط... -->
-            
+            <!-- شاشة 2: لوحة القيادة الرئيسية -->
+            <div id="homeScreen" class="screen active">
+                <div class="dashboard-header">
+                    <h2 style="color: var(--gold);"><i class='bx bx-bar-chart-square'></i> النظرة العامة للمصنع</h2>
+                    <div class="dashboard-stats">
+                        <div class="stat-badge">المتوسط: <span id="homeAvgScore" class="success-text">0%</span></div>
+                        <div class="stat-badge">تاجات مفتوحة: <span id="homeOpenTags" class="danger-text">0</span></div>
+                    </div>
+                </div>
+                
+                <!-- شبكة الأقسام (تُحقن من الجافاسكريبت) -->
+                <div id="homeDeptGrid" class="grid-layout"></div>
+
+                <div class="glass-card" style="margin-top: 20px; height: 300px;">
+                    <canvas id="mainDashboardChart"></canvas>
+                </div>
+            </div>
+
+            <!-- الحاوية المخصصة للإشعارات (Toast) -->
+            <div id="toast-container"></div>
+
         </main>
     </div>
 
-    <!-- كود بسيط لتغيير حالة زر القائمة النشط -->
+    <!-- مكاتب Firebase الأساسية (نسخة التوافق Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    
+    <!-- مكتبة الرسم البياني -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- ملفات النظام البرمجية الخاصة بك -->
+    <script type="module" src="js/main.js"></script>
+    <script src="app.js"></script>
+
     <script>
         function setActive(element) {
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));

@@ -13,14 +13,212 @@
     <!-- مكتبة الأيقونات (Boxicons) -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     
-    <!-- التنسيق الأساسي -->
-    <link rel="stylesheet" href="css/styles.css">
+    <!-- التنسيق المدمج (Bulletproof CSS) لضمان العمل فوراً -->
+    <style>
+        /* ==========================================
+           🚀 FACTORY OS - V5.0 UI/UX DESIGN SYSTEM
+           ========================================== */
+
+        :root {
+            --bg-main: #0B1120; 
+            --bg-surface: rgba(30, 41, 59, 0.6); 
+            --bg-surface-hover: rgba(51, 65, 85, 0.8);
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --primary: #3B82F6;
+            --gold: #F59E0B;
+            --gold-glow: rgba(245, 158, 11, 0.25);
+            --success: #10B981;
+            --danger: #EF4444;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.light-theme {
+            --bg-main: #F1F5F9;
+            --bg-surface: rgba(255, 255, 255, 0.8);
+            --bg-surface-hover: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --gold-glow: rgba(245, 158, 11, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            direction: rtl;
+            overflow-x: hidden;
+            transition: background-color 0.4s ease;
+        }
+        
+        h1, h2, h3, h4 { font-family: 'Tajawal', sans-serif; }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-left: 1px solid var(--border-color);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .sidebar-header {
+            font-family: 'Tajawal', sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--gold);
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .nav-btn i { font-size: 22px; }
+        
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--bg-surface-hover);
+            color: var(--gold);
+            box-shadow: 0 4px 15px var(--gold-glow);
+            transform: translateX(-5px);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* التحكم في الشاشات (هذا ما سيخفي الفوضى ويعرض شاشة واحدة فقط) */
+        .screen { display: none; animation: fadeIn 0.4s ease forwards; }
+        .screen.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+        }
+        
+        .glass-card:hover { border-color: rgba(245, 158, 11, 0.3); }
+
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+        }
+        
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            padding: 40px 30px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-main);
+            font-family: 'Cairo', sans-serif;
+            font-size: 15px;
+            margin-bottom: 16px;
+            transition: var(--transition);
+        }
+        
+        body.light-theme .form-control { background: #fff; border-color: #CBD5E1; }
+        .form-control:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow); }
+
+        .btn {
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            border: none;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), #D97706);
+            color: #fff;
+            box-shadow: 0 4px 15px var(--gold-glow);
+        }
+        
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5); }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .dashboard-stats { display: flex; gap: 15px; }
+        
+        .stat-badge {
+            background: rgba(0,0,0,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            border: 1px solid var(--border-color);
+        }
+
+        .success-text { color: var(--success); font-weight: bold; }
+        .danger-text { color: var(--danger); font-weight: bold; }
+    </style>
 </head>
 <body>
 
     <div class="app-container">
         
-        <!-- القائمة الجانبية (Sidebar) -->
+        <!-- القائمة الجانبية -->
         <nav class="sidebar" id="mainSidebar">
             <div class="sidebar-header">
                 <i class='bx bx-cog bx-spin' style="color: var(--gold);"></i> FACTORY OS
@@ -58,7 +256,7 @@
         <!-- منطقة العرض الرئيسية -->
         <main class="main-content">
             
-            <!-- شاشة 1: تسجيل الدخول (مخفية افتراضياً حتى يقرر Auth.js إظهارها) -->
+            <!-- شاشة 1: تسجيل الدخول -->
             <div id="loginScreen" class="screen">
                 <div class="login-wrapper">
                     <div class="glass-card login-card">
@@ -78,7 +276,7 @@
                 </div>
             </div>
 
-            <!-- شاشة 2: لوحة القيادة الرئيسية -->
+            <!-- شاشة 2: لوحة القيادة -->
             <div id="homeScreen" class="screen active">
                 <div class="dashboard-header">
                     <h2 style="color: var(--gold);"><i class='bx bx-bar-chart-square'></i> النظرة العامة للمصنع</h2>
@@ -88,30 +286,25 @@
                     </div>
                 </div>
                 
-                <!-- شبكة الأقسام (تُحقن من الجافاسكريبت) -->
-                <div id="homeDeptGrid" class="grid-layout"></div>
+                <div id="homeDeptGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 20px;"></div>
 
                 <div class="glass-card" style="margin-top: 20px; height: 300px;">
                     <canvas id="mainDashboardChart"></canvas>
                 </div>
             </div>
 
-            <!-- الحاوية المخصصة للإشعارات (Toast) -->
-            <div id="toast-container"></div>
-
         </main>
     </div>
 
-    <!-- مكاتب Firebase الأساسية (نسخة التوافق Compat) -->
+    <!-- Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
     
-    <!-- مكتبة الرسم البياني -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- ملفات النظام البرمجية الخاصة بك -->
+    <!-- ملفاتك -->
     <script type="module" src="js/main.js"></script>
     <script src="app.js"></script>
 

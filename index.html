@@ -710,7 +710,7 @@
         </div>
     </div>
 
-    <!-- شاشة الإعدادات -->
+  <!-- شاشة الإعدادات -->
     <div class="container screen" id="settingsScreen">
         <button class="btn btn-primary full-width" style="padding:20px; font-size:18px; border-radius:16px; margin-bottom: 30px;" onclick="openMyFullProfile()">
             🛡️ دخول مركز القيادة الشخصي
@@ -730,7 +730,8 @@
             <button class="btn flex-1 btn-outline btn-role-admin" style="border: none;" onclick="switchSettingsTab('system-admin')">⚙️ السيستم</button>
         </div>
 
-        <div id="tab-my-activity" class="active">
+        <!-- تابة النشاط -->
+        <div id="tab-my-activity" class="settings-tab-content active">
             <div class="dashboard-stats">
                 <div class="stat-card" style="border-color:var(--gold);"><div class="stat-value" id="myAudits">0</div><div class="stat-label">مراجعاتي</div></div>
                 <div class="stat-card" style="border-color:var(--danger);"><div class="stat-value" id="myTags">0</div><div class="stat-label">تاجاتي</div></div>
@@ -739,9 +740,50 @@
             <button class="btn btn-outline full-width" onclick="toggleDarkMode()">🌗 تفعيل وضع النهار المشرق</button>
         </div>
 
+        <!-- تابة الإدارة -->
+        <div id="tab-factory-manage" class="settings-tab-content" style="display:none;">
+            <h4 class="section-title" style="color:var(--gold);">🏗️ هيكل الأقسام</h4>
+            <div class="card glass-card">
+                <div class="row-flex" style="margin-bottom:15px;">
+                    <input type="text" id="newDeptInput" class="form-control flex-2" placeholder="اسم القسم الجديد" style="margin:0;">
+                    <button class="btn btn-primary flex-1" onclick="addOrUpdateDept()">➕ إضافة</button>
+                </div>
+                <div id="managedDeptsList" style="max-height:200px; overflow-y:auto;"></div>
+            </div>
+
+            <h4 class="section-title" style="color:var(--warning);">🛠️ فريق الصيانة</h4>
+            <div class="card glass-card">
+                <div class="row-flex" style="margin-bottom:10px;">
+                    <input type="text" id="newEngName" class="form-control flex-1" placeholder="الاسم" style="margin:0;">
+                    <input type="tel" id="newEngPhone" class="form-control flex-1" placeholder="واتساب" style="margin:0;">
+                    <button class="btn btn-warning" onclick="addEngineer()">➕</button>
+                </div>
+                <div id="managedEngsList" style="max-height:200px; overflow-y:auto;"></div>
+            </div>
+        </div>
+
+        <!-- تابة السيستم (التي تسببت في الخطأ) -->
+        <div id="tab-system-admin" class="settings-tab-content" style="display:none;">
+            <h4 class="section-title" style="color:var(--danger);">🔑 مفاتيح العقل الإلكتروني</h4>
+            <div class="card glass-card">
+                <input type="password" id="imgbbKeyInput" class="form-control" placeholder="مفتاح ImgBB">
+                <input type="password" id="geminiKeyInput" class="form-control" placeholder="مفتاح Gemini AI">
+                <div class="row-flex">
+                    <button class="btn btn-primary flex-2" onclick="saveApiKeys()">💾 حفظ</button>
+                    <button class="btn btn-outline flex-1" onclick="enableApiKeysEdit()">✏️ تعديل</button>
+                </div>
+            </div>
+
+            <h4 class="section-title">👥 إدارة المستخدمين</h4>
+            <!-- 🛡️ هذا هو العنصر المفقود الذي دمر النظام -->
+            <div id="usersListContainer"></div>
+
+            <h4 class="section-title">📂 البيانات والنسخ</h4>
+            <button class="btn btn-success full-width" onclick="exportToCSV()">📊 تصدير Excel كامل</button>
+        </div>
+
         <button class="btn btn-danger full-width" style="margin-top:30px; padding: 16px;" onclick="logout()">تسجيل الخروج 🚪</button>
     </div>
-
     <!-- إضافة السكربتات الخاصة بك -->
     <script type="module" src="js/main.js"></script>
     <script src="tpm_data.js" defer></script>

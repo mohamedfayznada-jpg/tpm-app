@@ -1358,6 +1358,7 @@ function renderUserManagement() {
     if (currentUser.username !== 'mfayez') return;
     
     const container = document.getElementById('usersListContainer');
+    if (!container) return;
     let html = '<h4 style="color:var(--gold); margin:10px 0;">إدارة المستخدمين والصلاحيات</h4>';
     
     // تحويل الكائن إلى مصفوفة للفحص

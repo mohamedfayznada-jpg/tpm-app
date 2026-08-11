@@ -1320,3 +1320,168 @@ window.submitFinalChecklist = async function() {
     let executionObj = { id: window.uniqueNumericId().toString(), dept: currentJHDept, frequency: clitSelectedFreq, date: new Date().toLocaleDateString('ar-EG'), time: new Date().toLocaleTimeString('ar-EG'), user: currentUser.name, tasks: activeChecklistTasks };
     await db.ref(`tpm_system/clit_executions/${currentJHDept}/${executionObj.id}`).set(executionObj); window.awardPoints(30, `تنفيذ قائمة فحص (${clitSelectedFreq})`); showToast('تم حفظ دورة الصيانة بنجاح ✅'); showScreen('jhDocumentScreen');
 };
+// ==========================================
+// 🏭 محرك بوابة الصيانة الذاتية (JH Portal Engine)
+// ==========================================
+window.showJHPortal = function() {
+    currentJHDept = null;
+    const toolbox = document.getElementById('jhToolbox');
+    if (toolbox) toolbox.style.display = 'none';
+    
+    let grid = departments.map(d => `
+        <div class="card glass-card" style="padding:20px; text-align:center; cursor:pointer; border-right:4px solid var(--success); transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="selectJHDept('${d}')">
+            <b style="color:var(--success); font-size:16px;"><i class='bx bx-buildings'></i> ${d}</b>
+        </div>
+    `).join('');
+    
+    const gridEl = document.getElementById('jhDeptGrid');
+    if (gridEl) gridEl.innerHTML = grid;
+    
+    showScreen('jhPortalScreen');
+};
+
+window.selectJHDept = function(dept) {
+    currentJHDept = dept;
+    const titleEl = document.getElementById('selectedJHDeptTitle');
+    if(titleEl) titleEl.innerHTML = `<i class='bx bx-radar'></i> داشبورد: ${dept}`;
+    
+    const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen')).sort((a,b) => new Date(a.date) - new Date(b.date));
+    const deptTags = tagsData.filter(t => t.dept === dept && t.status === 'open');
+    const lastAudit = deptAudits[deptAudits.length-1];
+    
+    if(document.getElementById('deptAuditScore')) document.getElementById('deptAuditScore').innerText = lastAudit ? lastAudit.totalPct + '%' : '0%';
+    if(document.getElementById('deptOpenTags')) document.getElementById('deptOpenTags').innerText = deptTags.length;
+    
+    const deptKaizens = historyData.filter(h => h.dept === dept && h.stepsOrder.includes('ManualKaizen')).length;
+    if(document.getElementById('deptKaizens')) document.getElementById('deptKaizens').innerText = deptKaizens;
+    
+    let auditScoreVal = lastAudit ? lastAudit.totalPct : 0;
+    let calculatedOEE = Math.max(0, Math.round((auditScoreVal * 0.95) - (deptTags.length * 1.5)));
+    const oeeEl = document.getElementById('deptOEE');
+    if(oeeEl) oeeEl.innerText = calculatedOEE + '%';
+
+    const goalEl = document.getElementById('deptGoalDisplay');
+    if (deptGoalsData[dept]) {
+        if(goalEl) { goalEl.style.display = 'inline-block'; goalEl.innerHTML = `المستهدف: <b>${deptGoalsData[dept]}%</b>`; }
+        if(oeeEl) oeeEl.style.color = calculatedOEE >= deptGoalsData[dept] ? 'var(--success)' : '#00BCD4';
+    } else {
+        if(goalEl) goalEl.style.display = 'none';
+        if(oeeEl) oeeEl.style.color = '#00BCD4';
+    }
+
+    try {
+        const ctxTrend = document.getElementById('jhMiniTrendChart');
+        if (ctxTrend && typeof Chart !== 'undefined') {
+            if (jhMiniChartInstance) jhMiniChartInstance.destroy();
+            let last5Audits = deptAudits.slice(-5);
+            jhMiniChartInstance = new Chart(ctxTrend, { 
+                type: 'line', 
+                data: { 
+                    labels: last5Audits.map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]), 
+                    datasets: [{ label: 'كفاءة JH %', data: last5Audits.map(a => a.totalPct), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3 }] 
+                }, 
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, min: 0, max: 100 }, x: { ticks: { color: '#cbd5e1', font: {size: 9} }, grid: {display: false} } }, plugins: { legend: { display: false } } } 
+            });
+        }
+    } catch(e) {}
+
+    if(window.renderInternalDeptLeaderboard) window.renderInternalDeptLeaderboard(dept);
+    
+    const toolbox = document.getElementById('jhToolbox');
+    if(toolbox) {
+        toolbox.style.display = 'block';
+        window.scrollTo({ top: toolbox.offsetTop - 20, behavior: 'smooth' });
+    }
+};
+
+window.setDeptGoal = function() {
+    if(!currentJHDept) return showToast('⚠️ يرجى اختيار القسم أولاً');
+    let currentGoal = deptGoalsData[currentJHDept] || 85;
+    let newGoal = prompt(`أدخل النسبة المئوية للمستهدف (Target OEE) لقسم ${currentJHDept}:\n(مثال: 85)`, currentGoal);
+    if (newGoal && !isNaN(newGoal) && newGoal > 0 && newGoal <= 100) {
+        window.syncRecord(`dept_goals/${currentJHDept}`, parseInt(newGoal));
+        showToast('تم تحديث المستهدف بنجاح 🎯');
+    }
+};
+
+window.renderInternalDeptLeaderboard = function(dept) {
+    const container = document.getElementById('deptInternalLeaderboard'); if(!container) return;
+    let deptUsers = [];
+    for (let uid in usersData) { if(usersData[uid].dept === dept) { deptUsers.push({ name: usersData[uid].name, points: userPoints[uid] || 0, avatar: usersData[uid].avatar }); } }
+    deptUsers.sort((a,b) => b.points - a.points);
+    container.innerHTML = deptUsers.slice(0, 3).map((u, idx) => { 
+        let medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : '🥉'); 
+        return `<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:8px 10px; border-radius:8px; border-right:3px solid var(--gold); margin-bottom:8px;"><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:16px;">${medal}</span><img src="${u.avatar || 'https://ui-avatars.com/api/?name='+u.name+'&background=1e293b&color=3b82f6'}" style="width:24px; height:24px; border-radius:50%;"><span style="font-size:12px; font-weight:bold; color:var(--text-main);">${u.name}</span></div><span style="font-size:12px; font-weight:bold; color:var(--success);">${u.points} <small>نقطة</small></span></div>`; 
+    }).join('') || '<div style="font-size:11px; color:var(--text-muted); text-align:center;">لا يوجد أبطال مسجلين بهذا القسم بعد 🚀</div>';
+};
+
+// ==========================================
+// ✨ محرك المطابقة لبيئة العمل (5S Visual Engine)
+// ==========================================
+window.load5SImage = function(event, type) {
+    const file = event.target.files[0];
+    if(!file) return;
+    showToast('جاري رفع الصورة... ⏳');
+    
+    if (typeof processAndEnhanceImage === 'function') {
+        processAndEnhanceImage(file, function(dataUrl) { window.finalize5SImage(dataUrl, type); });
+    } else {
+        const reader = new FileReader();
+        reader.onload = function(e) { window.finalize5SImage(e.target.result, type); };
+        reader.readAsDataURL(file);
+    }
+};
+
+window.finalize5SImage = function(dataUrl, type) {
+    document.getElementById(type === 'standard' ? 'imgStandard' : 'imgCurrent').src = dataUrl;
+    showToast('تم إرفاق الصورة بنجاح ✅');
+    
+    const stdSrc = document.getElementById('imgStandard').src;
+    const curSrc = document.getElementById('imgCurrent').src;
+    if(stdSrc && curSrc && stdSrc !== window.location.href && curSrc !== window.location.href) {
+        document.getElementById('fiveSSliderContainer').style.display = 'block';
+        window.init5SSlider();
+    }
+};
+
+window.init5SSlider = function() {
+    const container = document.getElementById('fiveSSliderContainer');
+    const overlay = document.getElementById('sliderOverlay');
+    const handle = document.getElementById('sliderHandle');
+    let isSliding = false;
+
+    const slide = (e) => {
+        if(!isSliding) return;
+        let rect = container.getBoundingClientRect();
+        let clientX = e.type.includes('mouse') ? e.clientX : (e.touches ? e.touches[0].clientX : 0);
+        let x = clientX - rect.left;
+        if(x < 0) x = 0; if(x > rect.width) x = rect.width;
+        let pct = (x / rect.width) * 100;
+        overlay.style.width = pct + '%';
+        handle.style.left = pct + '%';
+    };
+
+    handle.onmousedown = () => isSliding = true;
+    container.onmouseup = () => isSliding = false;
+    container.onmouseleave = () => isSliding = false;
+    container.onmousemove = slide;
+
+    handle.ontouchstart = () => isSliding = true;
+    container.ontouchend = () => isSliding = false;
+    container.ontouchmove = slide;
+};
+
+window.generate5STask = function() {
+    if(!departments || departments.length === 0) return showToast('لا توجد أقسام مسجلة');
+    let dept = prompt('لأي قسم تريد تسجيل عدم المطابقة؟\n' + departments.join(' - '), departments[0]);
+    if(!dept || !departments.includes(dept)) return showToast('قسم غير صالح');
+    let desc = prompt('اكتب وصف المشكلة (عدم المطابقة في 5S):');
+    if(!desc) return;
+    
+    let id = window.uniqueNumericId().toString();
+    window.syncRecord('tasks/' + id, {
+        id: id, task: '[5S] ' + window.sanitizeInput(desc), dept: dept, status: 'pending'
+    });
+    window.awardPoints(10, 'تسجيل عدم مطابقة 5S');
+    showToast('تم تحويل عدم المطابقة إلى مهمة صيانة/تنظيم 🚀');
+};

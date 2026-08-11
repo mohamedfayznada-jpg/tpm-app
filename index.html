@@ -414,11 +414,125 @@
             </div>
         </div>
 
-        <div class="card" style="margin-top:20px;">
-            <h3 class="card-title" style="text-align:center;"><i class='bx bx-trophy'></i> لوحة أبطال الجودة</h3>
-            <div id="usersLeaderboardContainer" class="grid-layout"></div>
-        </div>
-    </div>
+      /* ==========================================
+           🏆 8. لوحة الأبطال - منصة التتويج (Neumorphic Podium)
+           ========================================== */
+        
+        /* 1. الحاوية الرئيسية للمنصة */
+        #usersLeaderboardContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end; /* محاذاة الكروت من الأسفل لعمل شكل المنصة */
+            gap: 15px;
+            padding-top: 40px; /* مسافة للتاج العلوي */
+        }
+
+        /* 2. الهيكل الأساسي للكارت */
+        .elite-card { 
+            background: var(--surface-raised); 
+            border: 1px solid var(--border-glass); 
+            border-radius: var(--radius-lg); 
+            padding: 20px 10px; 
+            display: flex; 
+            transition: var(--transition-smooth); 
+            box-shadow: var(--shadow-raised);
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* 3. هندسة منصة التتويج (المراكز الـ 3 الأولى) */
+        .elite-card:nth-child(1), 
+        .elite-card:nth-child(2), 
+        .elite-card:nth-child(3) {
+            flex-direction: column; /* ترتيب رأسي */
+            align-items: center;
+            text-align: center;
+            width: 30%; /* أخذ ثلث المساحة */
+            min-width: 100px;
+        }
+
+        /* المركز الأول (في المنتصف ومرفوع للأعلى) */
+        .elite-card:nth-child(1) { 
+            order: 2; 
+            transform: translateY(-25px); 
+            border-color: var(--glow-gold); 
+            box-shadow: 0 0 20px rgba(212,175,55,0.15), var(--shadow-raised); 
+            z-index: 3;
+        }
+        
+        /* المركز الثاني (على اليمين) */
+        .elite-card:nth-child(2) { 
+            order: 1; 
+            border-color: #cbd5e1; /* فضي */
+            height: 90%;
+        }
+        
+        /* المركز الثالث (على اليسار) */
+        .elite-card:nth-child(3) { 
+            order: 3; 
+            border-color: #b45309; /* برونزي */
+            height: 80%;
+        }
+
+        /* 4. هندسة القائمة (من المركز الـ 4 فما تحت) */
+        .elite-card:nth-child(n+4) {
+            order: 4; /* إجبارهم على النزول تحت المنصة */
+            flex-direction: row; /* ترتيب أفقي كجدول */
+            width: 100%;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        /* 5. التحكم الصارم في الصورة (لحل مشكلة الانفجار) */
+        .elite-avatar { 
+            width: 65px !important; 
+            height: 65px !important; 
+            border-radius: 50% !important; 
+            object-fit: cover !important; 
+            border: 3px solid var(--surface-inset) !important; 
+            box-shadow: var(--shadow-pressed) !important;
+            margin-bottom: 15px;
+        }
+        
+        /* تصغير الصورة في القائمة السفلية */
+        .elite-card:nth-child(n+4) .elite-avatar {
+            width: 45px !important;
+            height: 45px !important;
+            margin-bottom: 0;
+            margin-left: 15px;
+        }
+
+        /* 6. التاج / أيقونة المركز */
+        .elite-rank {
+            position: absolute;
+            top: -20px;
+            background: var(--surface-inset);
+            width: 35px; height: 35px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 18px;
+            box-shadow: var(--shadow-raised);
+            border: 1px solid var(--border-glass);
+            z-index: 10;
+        }
+        
+        /* إزالة البروز للتاج في القائمة السفلية */
+        .elite-card:nth-child(n+4) .elite-rank {
+            position: static;
+            background: transparent;
+            box-shadow: none; border: none;
+            margin-left: 15px; font-size: 16px; color: var(--text-muted);
+        }
+
+        /* 7. البيانات والنقاط */
+        .elite-info { flex: 1; }
+        .elite-name { font-weight: 900; font-size: 14px; color: var(--text-main); line-height: 1.2;}
+        .elite-level { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+        
+        .elite-score { display: flex; flex-direction: column; align-items: center; margin-top: 10px;}
+        .elite-card:nth-child(n+4) .elite-score { flex-direction: row; gap: 5px; margin-top: 0;}
+        .pts-val { font-size: 22px; font-weight: 900; color: var(--glow-gold); text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
 
     <!-- ==========================================
          🏢 PILLARS SCREENS (JH, 5S, PM, KK, ET)

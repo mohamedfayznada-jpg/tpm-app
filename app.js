@@ -1,10 +1,9 @@
 // ==========================================
-// 🚀 FACTORY OS - V5.0 (INDUSTRIAL GRADE)
+// 🚀 FACTORY OS - V5.0 (ENTERPRISE GRADE ARCHITECTURE)
 // ==========================================
-// جلب الاتصال بقاعدة البيانات مباشرة من مكتبة فايربيز لتجنب تداخل الـ HTML
+
 const db = firebase.database();
 const auth = firebase.auth();
-
 
 let tpmSystemRef = null, tpmSystemListener = null;
 let globalApiKeys = { imgbb: "", gemini: "" };
@@ -19,22 +18,15 @@ let screenHistory = ['homeScreen'];
 let jhMiniChartInstance = null;
 let deptGoalsData = {};
 
-
-
-
-
 // ------------------------------------------
 // 🛡️ أدوات النظام والتنبيهات (Utilities)
 // ------------------------------------------
 function hasRole(...allowed) { return currentUser && currentUser.role && allowed.includes(currentUser.role); }
-// 🛡️ دالة التعقيم المحسنة (لمنع الاختراق)
-
 function safeUrl(url) { const val = String(url || '').trim(); return (val.startsWith('https://') || val.startsWith('http://') || val.startsWith('data:image/')) ? val : ''; }
 function nl2brSafe(text) { return sanitizeInput(text).replace(/\n/g, '<br>'); }
 
-
 // ------------------------------------------
-// 🔄 محرك المزامنة الذكي والصاروخي
+// 🔄 محرك المزامنة الذكي (Real-time Sync Engine)
 // ------------------------------------------
 let dbListeners = {};
 function clearAllListeners() {
@@ -45,16 +37,13 @@ function clearAllListeners() {
 function renderProductionDashboard() {} function renderMasterData() {} function renderUsersPanel() {}
 
 firebase.auth().onAuthStateChanged(async user => {
-    // 1. التقاط الهيكل العام للتطبيق
     const mainHeader = document.getElementById('mainHeader');
     
     if (user) {
         isDataLoaded = true;
-        
-        // 🛡️ السماح بظهور الهيدر والقوائم لأن المستخدم موثق
         if (mainHeader) mainHeader.style.display = 'flex';
 
-        // 🚀 السحب الذكي: هنسحب الأساسيات بس عشان الشاشة تفتح في ثانية
+        // 🚀 السحب الذكي للبيانات الأساسية
         const dSnap = await db.ref('tpm_system/departments').once('value');
         departments = dSnap.val() || ['إنتاج', 'صيانة'];
 
@@ -63,12 +52,11 @@ firebase.auth().onAuthStateChanged(async user => {
 
         const kSnap = await db.ref('tpm_system/api_keys').once('value');
         globalApiKeys = kSnap.val() || { imgbb: "", gemini: "" };
-window.globalApiKeys = globalApiKeys;
-        // تحديد الهوية
+        window.globalApiKeys = globalApiKeys;
+        
         const userEmail = user.email ? user.email.toLowerCase() : '';
-     // Architected by م.مُحَمَّد فَايِز - Strict Admin Authentication
-const isMasterAdmin = userEmail === 'mfayez@tpm.app';
-   const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
+        const isMasterAdmin = userEmail === 'mfayez@tpm.app';
+        const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
         const finalUsername = isMasterAdmin ? 'mfayez' : (localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
 
         let role = 'viewer'; let status = 'active';
@@ -76,7 +64,7 @@ const isMasterAdmin = userEmail === 'mfayez@tpm.app';
         if (isMasterAdmin) {
             role = 'admin';
             currentUser = { name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
-            window.currentUser = currentUser; // ⬅️ الإضافة هنا
+            window.currentUser = currentUser; 
             localStorage.setItem('tpm_username', 'mfayez'); 
             
             let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
@@ -84,7 +72,6 @@ const isMasterAdmin = userEmail === 'mfayez@tpm.app';
             if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
             renderUserManagement(); 
             
-            // مراقبة المستخدمين الجدد
             dbListeners.users = db.ref('tpm_system/users').on('value', snap => {
                 usersData = snap.val() || {};
                 let pendingLive = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
@@ -97,12 +84,11 @@ const isMasterAdmin = userEmail === 'mfayez@tpm.app';
             if (typeof uData === 'string') { role = uData; } 
             else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
             currentUser = { name: savedName, username: finalUsername, role: role, status: status };
-            window.currentUser = currentUser; // ⬅️ الإضافة هنا
+            window.currentUser = currentUser;
         }
 
         document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = currentUser.role === 'admin' ? 'block' : 'none');
         document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? 'block' : 'none');
-        
         
         if (currentUser.status === 'pending') {
             showToast("حسابك قيد المراجعة. يرجى انتظار موافقة الإدارة.");
@@ -110,12 +96,12 @@ const isMasterAdmin = userEmail === 'mfayez@tpm.app';
         } else { showScreen('homeScreen'); }
 
         updateDeptDropdown();
-// 📡 تشغيل قنوات المراقبة الحية (نسخة الأداء الفائق - بتسحب آخر 100 سجل فقط)
-        // Architected by م.مُحَمَّد فَايِز
+
+        // 📡 تشغيل قنوات المراقبة الحية
         dbListeners.tags = db.ref('tpm_system/tags').orderByChild('id').limitToLast(100).on('value', snap => {
             let data = snap.val() || {};
             tagsData = Object.values(data).filter(x => x && x.id).sort((a,b)=>b.id-a.id);
-            window.tagsData = tagsData; // ⬅️ الإضافة هنا
+            window.tagsData = tagsData; 
             renderTags(); if(currentUser.role) updateHomeDashboard();
         });
 
@@ -128,63 +114,47 @@ const isMasterAdmin = userEmail === 'mfayez@tpm.app';
         dbListeners.history = db.ref('tpm_system/history').orderByChild('id').limitToLast(100).on('value', snap => {
             let data = snap.val() || {};
             historyData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id);
-            window.historyData = historyData; // ⬅️ الإضافة هنا
+            window.historyData = historyData; 
             renderHistory(); renderKaizenFeed(); if(currentUser.role) updateHomeDashboard();
         });
     
-dbListeners.goals = db.ref('tpm_system/dept_goals').on('value', snap => { 
+        dbListeners.goals = db.ref('tpm_system/dept_goals').on('value', snap => { 
             deptGoalsData = snap.val() || {}; 
             if(currentJHDept && document.getElementById('jhPortalScreen').classList.contains('active')) selectJHDept(currentJHDept); 
         });
       
-dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {
+        dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {
             registeredLosses = snap.val() ? Object.values(snap.val()) : [];
             if(document.getElementById('kkScreen').classList.contains('active')) renderKKDashboard();
         });
-       dbListeners.points = db.ref('tpm_system/points').on('value', snap => { userPoints = snap.val() || {}; updateUsersLeaderboard(); });
+        
+        dbListeners.points = db.ref('tpm_system/points').on('value', snap => { userPoints = snap.val() || {}; updateUsersLeaderboard(); });
         
         dbListeners.knowledgeBase = db.ref('tpm_system/knowledgeBase').on('value', snap => { 
             knowledgeBaseData = snap.val() ? Object.values(snap.val()) : []; 
             if(document.getElementById('knowledgeScreen').classList.contains('active')) renderKnowledgeBase(); 
         });
         
- } else {
-        isInitialLoad = true; 
-        isDataLoaded = false; 
-        
-        // 🛡️ إخفاء الهيدر والقوائم تماماً (حجر صحي)
-        if (mainHeader) mainHeader.style.display = 'none';
-        
+    } else {
+        isInitialLoad = true; isDataLoaded = false; 
+        if (mainHeader) mainHeader.style.display = 'none'; // 🛡️ حجر صحي
         showScreen('loginScreen');
     }
 });
 
-
-
-
-
 // ------------------------------------------
-// 📱 التحكم بالشاشات والقائمة الجانبية
+// 🏆 نظام النقاط والرتب (Enterprise Elite)
 // ------------------------------------------
-
-
-// 🏆 نظام النقاط والرتب المطور (Enterprise Elite)
 function awardPoints(pts, reason) {
     const uid = firebase.auth().currentUser.uid;
     if(!uid) return;
     
-    // حفظ النقاط بالـ UID لضمان عدم ضياعها عند تغيير الاسم
     let currentPts = (userPoints[uid] || 0) + pts;
     syncRecord('points/' + uid, currentPts);
     
-    // تسجيل الإنجاز في سجل النشاط العام (للمدير)
     let achievementId = uniqueNumericId();
     syncRecord('global_achievements/' + achievementId, {
-        user: currentUser.name,
-        uid: uid,
-        reason: reason,
-        points: pts,
-        date: new Date().toLocaleString('ar-EG')
+        user: currentUser.name, uid: uid, reason: reason, points: pts, date: new Date().toLocaleString('ar-EG')
     });
 
     showToast(`🎖️ حصلت على ${pts} نقطة إضافية: ${reason}`);
@@ -194,83 +164,67 @@ function updateUsersLeaderboard() {
     const lc = document.getElementById('usersLeaderboardContainer');
     if(!lc) return;
 
-    // 1. تجميع البيانات
     let sortable = [];
     for (let uid in userPoints) {
         let uInfo = usersData[uid] || { name: "مستخدم مجهول" };
         sortable.push({ uid: uid, name: uInfo.name, avatar: uInfo.avatar, points: userPoints[uid] });
     }
-    
-    // 2. الترتيب التنازلي السريع
     sortable.sort((a, b) => b.points - a.points);
 
     if(sortable.length === 0) { 
-        lc.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:20px;">المصنع بانتظار أول بطل... 🚀</div>'; 
+        lc.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:20px; width:100%;">المصنع بانتظار أول بطل... 🚀</div>'; 
         return; 
     }
 
-    // 🚀 التحسين المعماري: أخذ أول 20 مستخدم فقط للرسم لتخفيف الـ DOM
     const topLimit = 20;
     const topUsers = sortable.slice(0, topLimit);
-
-    // 3. رسم كروت الأوائل
     let html = topUsers.map((item, idx) => generateEliteCardHTML(item, idx)).join('');
 
-    // 🚀 التحسين الذكي: إيجاد المستخدم الحالي وإظهار ترتيبه إذا كان خارج التوب 20
     const myUid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
     const myRankIndex = sortable.findIndex(u => u.uid === myUid);
 
     if (myUid && myRankIndex >= topLimit) {
         let myData = sortable[myRankIndex];
-        html += `
-            <div style="text-align:center; color:var(--gold); margin: 15px 0 5px; font-size:10px; font-weight:bold;">
-                🔻 مركزك الحالي 🔻
-            </div>
-        `;
-        html += generateEliteCardHTML(myData, myRankIndex); // رسم كارت المستخدم بترتيبه الحقيقي
+        html += `<div style="width:100%; text-align:center; color:var(--gold); margin: 15px 0 5px; font-size:12px; font-weight:bold;">🔻 مركزك الحالي 🔻</div>`;
+        html += generateEliteCardHTML(myData, myRankIndex); 
     }
 
     lc.innerHTML = html;
 }
 
-// دالة مساعدة لتوليد كود الـ HTML لمنع التكرار (Clean Code)
 function generateEliteCardHTML(item, idx) {
     let rankClass = (idx === 0) ? 'gold-glow' : (idx === 1 ? 'silver-glow' : (idx === 2 ? 'bronze-glow' : ''));
-    let rankIcon = (idx === 0) ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : idx + 1));
+    let rankIcon = (idx === 0) ? '<i class="bx bxs-medal"></i>' : (idx === 1 ? '<i class="bx bx-medal"></i>' : (idx === 2 ? '<i class="bx bx-award"></i>' : idx + 1));
     
-    let rankTitle = "مبتدئ تقني";
-    let rankColor = "var(--text-muted)";
-    if(item.points > 1500) { rankTitle = "أسطورة المصنع 🎖️"; rankColor = "var(--gold)"; }
-    else if(item.points > 800) { rankTitle = "خبير TPM سينيور 💎"; rankColor = "#00d4ff"; }
-    else if(item.points > 300) { rankTitle = "تقني محترف 🔥"; rankColor = "var(--success)"; }
+    let rankTitle = "مبتدئ تقني"; let rankColor = "var(--text-muted)";
+    if(item.points > 1500) { rankTitle = "أسطورة المصنع"; rankColor = "var(--gold)"; }
+    else if(item.points > 800) { rankTitle = "خبير TPM سينيور"; rankColor = "var(--primary)"; }
+    else if(item.points > 300) { rankTitle = "تقني محترف"; rankColor = "var(--success)"; }
 
     return `
     <div class="elite-card ${rankClass}" onclick="viewOtherUserProfile('${item.uid}')">
         <div class="elite-rank">${rankIcon}</div>
-        <img class="elite-avatar" src="${item.avatar || 'https://ui-avatars.com/api/?name='+item.name+'&background=1b2a47&color=d4af37'}">
+        <img class="elite-avatar" src="${item.avatar || 'https://ui-avatars.com/api/?name='+item.name+'&background=1e293b&color=3b82f6'}">
         <div class="elite-info">
             <div class="elite-name">${item.name}</div>
             <div class="elite-level" style="color:${rankColor}; font-weight:900;">${rankTitle}</div>
         </div>
         <div class="elite-score">
             <span class="pts-val">${item.points}</span>
-            <small>نقطة</small>
+            <small style="color:var(--text-muted); font-size:10px;">نقطة</small>
         </div>
     </div>`;
 }
 
-// 👤 محرك مركز القيادة الشخصي (النسخة النهائية الذكية)
+// 👤 محرك مركز القيادة الشخصي
 async function openMyFullProfile() {
     const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
     if(!uid || !usersData[uid]) return showToast('خطأ في جلب بيانات المستخدم');
     
     const u = usersData[uid];
-    
-    // 🚀 السر هنا: الاعتماد على الاسم الفعلي اللي السيستم حفظ بيه التاجات والمراجعات
     const activeName = currentUser.name; 
 
-    // 1. تعبئة البيانات الأساسية
-    document.getElementById('myBigAvatar').src = u.avatar || `https://ui-avatars.com/api/?name=${u.name}&background=1b2a47&color=d4af37`;
+    document.getElementById('myBigAvatar').src = u.avatar || `https://ui-avatars.com/api/?name=${u.name}&background=1e293b&color=3b82f6`;
     document.getElementById('myDisplayName').innerText = u.name;
     document.getElementById('editName').value = u.name;
     document.getElementById('editPhone').value = u.phone || '';
@@ -278,16 +232,13 @@ async function openMyFullProfile() {
     const pts = userPoints[uid] || 0;
     document.getElementById('myDisplayRank').innerText = `الرصيد المعرفي: ${pts} نقطة`;
     
-    // تحديث قائمة الأقسام
     let opts = departments.map(d=>`<option value="${d}" ${u.dept===d?'selected':''}>${d}</option>`).join('');
     document.getElementById('editDept').innerHTML = opts;
 
-    // 2. تجميع الإنجازات (Timeline) بالاعتماد على activeName
     const myAudits = historyData.filter(h => h.auditor === activeName && !h.stepsOrder.includes('ManualKaizen'));
     const myTags = tagsData.filter(t => t.auditor === activeName);
     const myKaizens = historyData.filter(h => h.auditor === activeName && h.stepsOrder.includes('ManualKaizen'));
 
-    // دمج كل التحركات في شريط واحد مرتب زمنياً
     let allActivity = [
         ...myAudits.map(a => ({ type: 'audit', text: `📝 مراجعة قسم ${a.dept} (${a.totalPct}%)`, date: a.date })),
         ...myTags.map(t => ({ type: 'tag', text: `🚨 أصدرت تاج ${t.color==='red'?'صيانة':'إنتاج'}: ${t.desc}`, date: t.date })),
@@ -295,196 +246,128 @@ async function openMyFullProfile() {
     ].reverse().slice(0, 10); 
 
     let timelineHtml = allActivity.map(item => `
-        <div class="item-row" style="border-right-color: ${item.type === 'tag' ? 'var(--danger)' : (item.type === 'kaizen' ? 'var(--success)' : 'var(--gold)')};">
+        <div class="item-row" style="border-right-color: ${item.type === 'tag' ? 'var(--danger)' : (item.type === 'kaizen' ? 'var(--success)' : 'var(--primary)')};">
             <span style="flex:1;">${item.text}</span>
             <small style="color:var(--text-muted); font-size:10px; margin-right:10px;">${item.date}</small>
         </div>
     `).join('');
 
-    // 3. تحديث شاشة العرض
-    document.getElementById('myActivityTimeline').innerHTML = `
-        <div class="dashboard-stats" style="margin-bottom:20px;">
-            <div class="card stat-card glass-card" style="border-color:var(--gold);"><div class="stat-value">${myAudits.length}</div><div class="stat-label">مراجعة</div></div>
-            <div class="card stat-card glass-card" style="border-color:var(--danger);"><div class="stat-value">${myTags.length}</div><div class="stat-label">تاج</div></div>
-            <div class="card stat-card glass-card" style="border-color:var(--success);"><div class="stat-value">${myKaizens.length}</div><div class="stat-label">كايزن</div></div>
-        </div>
-        <h4 style="color:var(--gold); border-bottom:1px solid rgba(212,175,55,0.2); padding-bottom:5px;">آخر التحركات الميدانية:</h4>
-        ${timelineHtml || '<div style="text-align:center; padding:10px; font-size:11px; color:var(--text-muted);">لم يتم رصد أي نشاط ميداني لاسمك الحالي بعد 🚀</div>'}
-    `;
-
+    const timelineContainer = document.getElementById('myActivityTimeline');
+    if(timelineContainer) {
+        timelineContainer.innerHTML = `
+            <div class="dashboard-stats" style="margin-bottom:20px;">
+                <div class="stat-card" style="border-color:var(--primary);"><div class="stat-value primary-text">${myAudits.length}</div><div class="stat-label">مراجعة</div></div>
+                <div class="stat-card" style="border-color:var(--danger);"><div class="stat-value danger-text">${myTags.length}</div><div class="stat-label">تاج</div></div>
+                <div class="stat-card" style="border-color:var(--success);"><div class="stat-value success-text">${myKaizens.length}</div><div class="stat-label">كايزن</div></div>
+            </div>
+            ${timelineHtml || '<div style="text-align:center; padding:10px; font-size:12px; color:var(--text-muted);">لم يتم رصد أي نشاط ميداني لاسمك الحالي بعد 🚀</div>'}
+        `;
+    }
     showScreen('profileDetailsScreen');
 }
-let mainChartInstance = null; // متغير عام لحفظ الرسم البياني
 
-// 📈 محرك الشاشة الرئيسية (Executive Dashboard)
+let mainChartInstance = null;
+
+// 📈 محرك الشاشة الرئيسية
 function updateHomeDashboard() {
-    let tScore = 0, aCount = 0;
-    let deptLabels = [];
-    let deptScores = [];
+    let tScore = 0, aCount = 0; let deptLabels = [], deptScores = [];
     
-    // 1. تحديث كروت الأقسام وتجهيز بيانات الرسم البياني
     let grid = departments.map(d => {
         let auds = historyData.filter(h => h.dept === d && !h.stepsOrder.includes('ManualKaizen'));
         let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
         if(auds.length > 0) { tScore+=sc; aCount++; }
         let rTags = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
         
-        deptLabels.push(d);
-        deptScores.push(sc);
-
-        return `<div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer;" onclick="openDeptDashboard('${d}')"><div style="font-size:14px; font-weight:bold; color:var(--gold); margin-bottom:10px;">${d}</div><div class="stat-value ${sc>=80?'success-text':(sc>=50?'warning-text':'danger-text')}">${sc}%</div><div style="font-size:10px; color:var(--text-muted); margin-top:5px;">تاجات مفتوحة: ${rTags}</div></div>`;
+        deptLabels.push(d); deptScores.push(sc);
+        let colorClass = sc>=80 ? 'success-text' : (sc>=50 ? 'warning-text' : 'danger-text');
+        
+        return `<div class="card glass-card" style="padding:20px; text-align:center; cursor:pointer; border-bottom:3px solid var(--primary);" onclick="openDeptDashboard('${d}')"><div style="font-size:15px; font-weight:bold; color:var(--text-main); margin-bottom:10px;">${d}</div><div class="stat-value ${colorClass}">${sc}%</div><div style="font-size:11px; color:var(--text-muted); margin-top:8px;">تاجات مفتوحة: <span style="color:var(--danger); font-weight:bold;">${rTags}</span></div></div>`;
     }).join('');
     
-    document.getElementById('homeDeptGrid').innerHTML = grid;
-    document.getElementById('homeAvgScore').innerText = aCount > 0 ? Math.round(tScore/aCount) + '%' : '0%';
-    document.getElementById('homeOpenTags').innerText = tagsData.filter(t => t.status === 'open').length;
-    document.getElementById('homeClosedTags').innerText = tagsData.filter(t => t.status === 'closed').length;
+    const gridEl = document.getElementById('homeDeptGrid'); if(gridEl) gridEl.innerHTML = grid;
+    const avgEl = document.getElementById('homeAvgScore'); if(avgEl) avgEl.innerText = aCount > 0 ? Math.round(tScore/aCount) + '%' : '0%';
+    const openEl = document.getElementById('homeOpenTags'); if(openEl) openEl.innerText = tagsData.filter(t => t.status === 'open').length;
+    const closedEl = document.getElementById('homeClosedTags'); if(closedEl) closedEl.innerText = tagsData.filter(t => t.status === 'closed').length;
     
-    // 2. رسم المخطط البياني (Live Chart)
     const ctx = document.getElementById('mainDashboardChart');
     if (ctx) {
-        if (mainChartInstance) mainChartInstance.destroy(); // تدمير القديم لمنع التداخل
+        if (mainChartInstance) mainChartInstance.destroy(); 
         mainChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: deptLabels,
                 datasets: [{
-                    label: 'كفاءة القسم %',
-                    data: deptScores,
-                    backgroundColor: deptScores.map(s => s >= 80 ? 'rgba(46, 125, 50, 0.7)' : (s >= 50 ? 'rgba(245, 127, 23, 0.7)' : 'rgba(198, 40, 40, 0.7)')),
-                    borderColor: deptScores.map(s => s >= 80 ? '#2e7d32' : (s >= 50 ? '#f57f17' : '#c62828')),
-                    borderWidth: 1,
-                    borderRadius: 5
+                    label: 'كفاءة القسم %', data: deptScores,
+                    backgroundColor: deptScores.map(s => s >= 80 ? 'rgba(16, 185, 129, 0.2)' : (s >= 50 ? 'rgba(249, 115, 22, 0.2)' : 'rgba(239, 68, 68, 0.2)')),
+                    borderColor: deptScores.map(s => s >= 80 ? '#10b981' : (s >= 50 ? '#f97316' : '#ef4444')),
+                    borderWidth: 1, borderRadius: 5
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { 
-                    y: { beginAtZero: true, max: 100, ticks: { color: '#bdae93', font: {family: 'Cairo'} } }, 
-                    x: { ticks: { color: '#d4af37', font: {family: 'Cairo', weight: 'bold'} } } 
-                },
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8', font: {family: 'Cairo'} } }, x: { ticks: { color: '#f8fafc', font: {family: 'Cairo', weight: 'bold'} } } },
                 plugins: { legend: { display: false } }
             }
         });
     }
 
-    // 3. تحديث رادار الأعطال الحرجة (أول 5 تاجات حمراء مفتوحة)
     let criticalTags = tagsData.filter(t => t.status === 'open' && t.color === 'red').slice(0, 5);
     let cTagsHtml = criticalTags.map(t => `
-        <div style="background:rgba(198,40,40,0.1); border-right:3px solid var(--danger); padding:8px; margin-bottom:8px; border-radius:5px; font-size:11px; cursor:pointer;" onclick="showScreen('tagsScreen'); document.getElementById('filterTagDept').value='${t.dept}'; renderTags();">
+        <div style="background:rgba(239, 68, 68, 0.1); border-right:3px solid var(--danger); padding:10px; margin-bottom:10px; border-radius:8px; font-size:12px; cursor:pointer;" onclick="showScreen('tagsScreen'); document.getElementById('filterTagDept').value='${t.dept}'; renderTags();">
             <b style="color:var(--text-main);">${t.desc}</b><br>
-            <span style="color:var(--danger); font-weight:bold;">${t.dept}</span> <span style="color:var(--text-muted);">- ${t.machine||'عام'}</span>
+            <div style="margin-top:5px;"><span style="color:var(--danger); font-weight:bold;">${t.dept}</span> <span style="color:var(--text-muted);">- ${t.machine||'عام'}</span></div>
         </div>
     `).join('');
     
     const critContainer = document.getElementById('criticalTagsList');
-    if(critContainer) critContainer.innerHTML = cTagsHtml || '<div style="text-align:center; color:var(--success); font-size:12px; padding:20px 0;">لا توجد أعطال حرجة 🎉</div>';
-
-    updateUsersLeaderboard();
+    if(critContainer) critContainer.innerHTML = cTagsHtml || '<div style="text-align:center; color:var(--success); font-size:12px; padding:20px 0;"><i class="bx bx-check-shield" style="font-size:30px; display:block; margin-bottom:10px;"></i>لا توجد أعطال حرجة متوقفة 🎉</div>';
 }
-let deptRadarInstance = null;
-let deptTrendInstance = null;
+
+let deptRadarInstance = null; let deptTrendInstance = null;
 
 window.openDeptDashboard = function(dept) {
     currentViewedDept = dept;
-    
-    // 1. (Poka-Yoke): التوجيه أولاً! نظهر الشاشة قبل رسم أي داتا عشان الكانفاس ياخد أبعاد
     showScreen('deptDashboardScreen');
     
-    // 2. تحديث العناوين والأرقام مع حماية ضد غياب العناصر
-    const titleEl = document.getElementById('deptViewTitle');
-    if(titleEl) titleEl.innerText = `لوحة قيادة: ${dept}`;
+    const titleEl = document.getElementById('deptViewTitle'); if(titleEl) titleEl.innerText = `لوحة قيادة: ${dept}`;
     
     const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen')).sort((a,b) => new Date(a.date) - new Date(b.date));
     const deptTags = tagsData.filter(t => t.dept === dept && t.status === 'open');
     const deptTasks = tasksData.filter(t => t.dept === dept && t.status !== 'done');
-    
     const lastAudit = deptAudits[deptAudits.length-1];
     
     if(document.getElementById('deptAvgScore')) document.getElementById('deptAvgScore').innerText = lastAudit ? lastAudit.totalPct + '%' : '0%';
     if(document.getElementById('deptOpenTags')) document.getElementById('deptOpenTags').innerText = deptTags.length;
     if(document.getElementById('deptTasksCount')) document.getElementById('deptTasksCount').innerText = deptTasks.length;
 
-    // 3. رسم رادار خطوات الصيانة الذاتية (Safe Rendering)
     try {
         const steps = ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'];
-        const stepScores = steps.map(s => {
-            if (!lastAudit || !lastAudit.results[s] || lastAudit.results[s].skipped) return 0;
-            return Math.round((lastAudit.results[s].score / lastAudit.results[s].max) * 100);
-        });
-
+        const stepScores = steps.map(s => { if (!lastAudit || !lastAudit.results[s] || lastAudit.results[s].skipped) return 0; return Math.round((lastAudit.results[s].score / lastAudit.results[s].max) * 100); });
         const radarCtx = document.getElementById('deptRadarChart');
         if (radarCtx && typeof Chart !== 'undefined') {
             if (deptRadarInstance) deptRadarInstance.destroy();
-            deptRadarInstance = new Chart(radarCtx, {
-                type: 'radar',
-                data: {
-                    labels: ['التحضيرية', 'الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة'],
-                    datasets: [{
-                        label: 'مستوى التنفيذ %',
-                        data: stepScores,
-                        backgroundColor: 'rgba(212, 175, 55, 0.2)',
-                        borderColor: '#d4af37',
-                        pointBackgroundColor: '#b87333',
-                        borderWidth: 2
-                    }]
-                },
-                options: { scales: { r: { beginAtZero: true, max: 100, ticks: { display: false } } }, plugins: { legend: { display: false } } }
-            });
+            deptRadarInstance = new Chart(radarCtx, { type: 'radar', data: { labels: ['التحضيرية', 'الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة'], datasets: [{ label: 'مستوى التنفيذ %', data: stepScores, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: '#3b82f6', pointBackgroundColor: '#3b82f6', borderWidth: 2 }] }, options: { scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: {color:'rgba(255,255,255,0.1)'}, angleLines: {color:'rgba(255,255,255,0.1)'} } }, plugins: { legend: { display: false } } } });
         }
-    } catch(e) { console.error("Radar Chart Error:", e); }
+    } catch(e) {}
 
-    // 4. رسم منحنى الأداء (Safe Rendering)
     try {
         const trendCtx = document.getElementById('deptTrendChart');
         if (trendCtx && typeof Chart !== 'undefined') {
             if (deptTrendInstance) deptTrendInstance.destroy();
-            deptTrendInstance = new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: deptAudits.slice(-5).map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]),
-                    datasets: [{
-                        label: 'الكفاءة %',
-                        data: deptAudits.slice(-5).map(a => a.totalPct),
-                        borderColor: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.1)', fill: true, tension: 0.4
-                    }]
-                },
-                options: { scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
-            });
+            deptTrendInstance = new Chart(trendCtx, { type: 'line', data: { labels: deptAudits.slice(-5).map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]), datasets: [{ label: 'الكفاءة %', data: deptAudits.slice(-5).map(a => a.totalPct), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4 }] }, options: { scales: { y: { beginAtZero: true, max: 100, grid:{color:'rgba(255,255,255,0.05)'} }, x: {grid:{display:false}} }, plugins: { legend: { display: false } } } });
         }
-    } catch(e) { console.error("Trend Chart Error:", e); }
+    } catch(e) {}
 
-    // 5. تحديث التاجات الحرجة (الأعطال التي تتطلب تدخل فوري)
     const actionItemsEl = document.getElementById('deptActionItems');
     if(actionItemsEl) {
         actionItemsEl.innerHTML = deptTags.slice(0,3).map(t => `
-            <div style="background:rgba(0,0,0,0.2); padding:10px; border-right:4px solid var(--danger); border-radius:5px;">
-                <div style="font-size:12px; font-weight:bold; color:var(--text-main);">${t.desc}</div>
-                <div style="font-size:10px; color:var(--text-muted); margin-top:5px;">⚙️ ${t.machine || 'عام'} | 👤 ${t.auditor}</div>
+            <div style="background:var(--surface-inset); padding:15px; border-right:4px solid var(--danger); border-radius:12px; margin-bottom:10px; border: 1px solid var(--border-glass);">
+                <div style="font-size:13px; font-weight:bold; color:var(--text-main);"><i class='bx bx-error-circle' style="color:var(--danger);"></i> ${t.desc}</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:8px;"><i class='bx bx-cog'></i> ${t.machine || 'عام'} | <i class='bx bx-user'></i> ${t.auditor}</div>
             </div>
-        `).join('') || '<div style="text-align:center; color:var(--success); font-size:12px;">لا توجد أعطال حرجة متوقفة بالقسم 🎉</div>';
+        `).join('') || '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;"><i class="bx bx-check-double" style="font-size:40px; color:var(--success); display:block; margin-bottom:10px;"></i>القسم مستقر ولا توجد أعطال حرجة</div>';
     }
 };
-function updateDeptDashboard() {
-    if(!currentViewedDept) return;
-    let machineFilter = document.getElementById('dashMachineFilter').value.trim().toLowerCase();
-    let dTags = tagsData.filter(t => t.dept === currentViewedDept && t.status !== 'closed' && (machineFilter === '' || (t.machine && t.machine.toLowerCase().includes(machineFilter))));
-    let dTasks = tasksData.filter(t => t.dept === currentViewedDept && (machineFilter === '' || (t.machine && t.machine.toLowerCase().includes(machineFilter))));
-    
-    document.getElementById('deptKpiOpenTags').innerText = dTags.length;
-    document.getElementById('deptKpiTasks').innerText = dTasks.filter(t=>t.status==='pending').length;
-    document.getElementById('deptKpiComp').innerText = dTasks.length===0?0:Math.round((dTasks.filter(t=>t.status==='done').length/dTasks.length)*100)+'%';
-    
-    let auds = historyData.filter(h => h.dept === currentViewedDept && !h.stepsOrder.includes('ManualKaizen') && (machineFilter === '' || (h.machine && h.machine.toLowerCase().includes(machineFilter))));
-    let scArr = [0,0,0,0,0,0,0];
-    if(auds.length > 0) {
-        const last = auds[auds.length - 1];
-        ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'].forEach((k,i) => { if(last.results[k] && !last.results[k].skipped) scArr[i] = Math.round((last.results[k].score/last.results[k].max)*100); });
-    }
-    if(radarChartInstance) radarChartInstance.destroy();
-    if(document.getElementById('radarChart')) radarChartInstance = new Chart(document.getElementById('radarChart'), { type:'radar', data:{labels:['التحضيرية','الاولى','الثانية','الثالثة','الرابعة','الخامسة','السادسة'], datasets:[{label:'الأداء', data:scArr, borderColor:'#b87333', backgroundColor:'rgba(184, 115, 51, 0.2)'}]} });
-}
 
 // ------------------------------------------
 // 📝 المسودات والمراجعات (Audit Engine & Drafts)
@@ -509,9 +392,6 @@ function initAuditSequential() {
     renderCurrentAuditStep();
 }
 
-// ------------------------------------------
-// 📝 محرك المراجعة المطور (Scoring & Points)
-// ------------------------------------------
 function renderCurrentAuditStep() {
     const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; 
     const sd = AUDIT_DATA[k];
@@ -523,90 +403,65 @@ function renderCurrentAuditStep() {
     document.getElementById('stepCounter').innerText = `خطوة ${currentAudit.currentStepIndex + 1} من 7`;
     document.getElementById('auditProgressBar').style.width = `${((currentAudit.currentStepIndex + 1) / 7) * 100}%`;
 
-    document.getElementById('auditItemsContainer').innerHTML = sd.items.map(item => {
-        let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:10px; display:flex; align-items:center; gap:10px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:50px; width:50px; object-fit:cover; border-radius:8px; border:1px solid var(--gold); cursor:pointer;" onclick="window.open('${currentStepImages['img_' + item.id].data}')"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')">🧠 استشارة AI</button></div>` : '';
-        
-        return `
-        <div class="audit-item">
-            <div class="item-header" style="display:flex; flex-direction:column; gap:8px;">
-                <div style="display:flex; align-items:center; gap:10px; width:100%;">
-                    <div class="item-num">${item.id}</div>
-                    <div class="item-title" style="flex:1; font-weight:bold; font-size:14px; color:var(--text-main);">${item.title}</div>
-                    <span class="item-badge-max">من ${item.maxScore} نقطة</span>
-                </div>
-                <div class="row-flex" style="justify-content:flex-end;">
-                    <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 10px;" onclick="explainItem('${item.title}')">❓ شرح البند</button>
-                    <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:10px; padding:2px 10px; color:var(--gold);" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')">📷 إرفاق دليل</button>
-                </div>
-            </div>
+    const container = document.getElementById('auditItemsContainer');
+    if(container) {
+        container.innerHTML = sd.items.map(item => {
+            let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:15px; display:flex; align-items:center; gap:10px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:60px; width:60px; object-fit:cover; border-radius:10px; border:2px solid var(--primary); cursor:pointer;" onclick="window.open('${currentStepImages['img_' + item.id].data}')"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-bot'></i> تحليل بالذكاء الاصطناعي</button></div>` : '';
             
-            <div id="preview_img_${item.id}">${hasImage}</div>
-            
-            <div style="margin-top:15px;">
-                ${item.levels.map(lvl => {
-                    let isSel = (currentStepSelections['item_'+item.id] && currentStepSelections['item_'+item.id].score === lvl.score) ? 'selected' : '';
-                    return `
-                    <div class="level-opt ${isSel}" onclick="selectLevel(${item.id}, ${lvl.score}, ${item.maxScore}, this)">
-                        <div class="score-tag">${lvl.score} نقطة</div>
-                        <div style="flex:1; font-size:11px; line-height:1.4;">${lvl.desc}</div>
-                    </div>`;
-                }).join('')}
-            </div>
-        </div>`;
-    }).join('');
-    
-    currentStepImprovements = []; 
-    showScreen('auditScreen'); 
-    saveAuditDraft();
-updateCumulativeScoreUI();
+            return `
+            <div class="card glass-card" style="padding:20px;">
+                <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px; border-bottom:1px solid var(--border-glass); padding-bottom:15px;">
+                    <div style="display:flex; align-items:flex-start; gap:12px; width:100%;">
+                        <div style="background:var(--primary); color:white; width:35px; height:35px; display:flex; align-items:center; justify-content:center; border-radius:10px; font-weight:900; flex-shrink:0; font-size:16px;">${item.id}</div>
+                        <div style="flex:1; font-weight:bold; font-size:15px; color:var(--text-main); line-height:1.4;">${item.title}</div>
+                        <span style="font-size:11px; background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:20px; white-space:nowrap;">من ${item.maxScore}</span>
+                    </div>
+                    <div class="row-flex" style="justify-content:flex-end;">
+                        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:11px;" onclick="explainItem('${item.title}')"><i class='bx bx-info-circle'></i> شرح البند</button>
+                        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:11px; color:var(--primary); border-color:var(--primary);" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-camera'></i> إرفاق دليل</button>
+                    </div>
+                </div>
+                <div id="preview_img_${item.id}">${hasImage}</div>
+                <div style="margin-top:15px;">
+                    ${item.levels.map(lvl => {
+                        let isSel = (currentStepSelections['item_'+item.id] && currentStepSelections['item_'+item.id].score === lvl.score) ? 'selected' : '';
+                        let selStyle = isSel ? 'background:rgba(16,185,129,0.1); border-color:var(--success); color:var(--success); box-shadow:0 0 15px rgba(16,185,129,0.2);' : 'background:var(--surface-inset); border-color:transparent; color:var(--text-main);';
+                        return `
+                        <div style="padding:15px; border-radius:12px; margin-bottom:10px; cursor:pointer; display:flex; align-items:center; gap:12px; transition:0.3s; border:1px solid var(--border-glass); ${selStyle}" onclick="selectLevel(${item.id}, ${lvl.score}, ${item.maxScore}, this)">
+                            <div style="background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:8px; font-weight:bold; font-size:12px; white-space:nowrap;">${lvl.score} ن</div>
+                            <div style="flex:1; font-size:13px; line-height:1.5;">${lvl.desc}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }).join('');
+    }
+    currentStepImprovements = []; showScreen('auditScreen'); saveAuditDraft(); updateCumulativeScoreUI();
 }
 
 function updateCumulativeScoreUI() {
-    let totalScoreSoFar = 0;
-    let totalMaxSoFar = 0;
-
-    // 1. جمع نقاط المراحل السابقة التي تم حفظها بالفعل
+    let totalScoreSoFar = 0, totalMaxSoFar = 0;
     for (let i = 0; i < currentAudit.currentStepIndex; i++) {
-        let stepKey = currentAudit.stepsOrder[i];
-        let res = currentAudit.results[stepKey];
-        if (res && !res.skipped) {
-            totalScoreSoFar += res.score;
-            totalMaxSoFar += res.max;
-        }
+        let stepKey = currentAudit.stepsOrder[i]; let res = currentAudit.results[stepKey];
+        if (res && !res.skipped) { totalScoreSoFar += res.score; totalMaxSoFar += res.max; }
     }
-
-    // 2. جمع نقاط الاختيارات التي يضغط عليها المستخدم "الآن" في الخطوة الحالية
-    for (let key in currentStepSelections) {
-        totalScoreSoFar += currentStepSelections[key].score;
-        totalMaxSoFar += currentStepSelections[key].max;
-    }
-
-    // 3. الحساب وتحديث الواجهة
+    for (let key in currentStepSelections) { totalScoreSoFar += currentStepSelections[key].score; totalMaxSoFar += currentStepSelections[key].max; }
+    
     const pct = totalMaxSoFar === 0 ? 0 : Math.round((totalScoreSoFar / totalMaxSoFar) * 100);
     const pctEl = document.getElementById('cumulativeScoreText');
     const pointsEl = document.getElementById('cumulativePointsText');
     const barEl = document.getElementById('cumulativeProgressBar');
 
-    if (pctEl) {
-        pctEl.innerText = pct + '%';
-        // إبداع بصري: تغيير لون النص بناءً على الكفاءة
-        pctEl.style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)');
-    }
-    if (pointsEl) pointsEl.innerText = `النقاط: ${totalScoreSoFar} / ${totalMaxSoFar}`;
-    if (barEl) {
-        barEl.style.width = pct + '%';
-        // تغيير لون الشريط ديناميكياً
-        barEl.style.background = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)');
-    }
+    if (pctEl) { pctEl.innerText = pct + '%'; pctEl.style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)'); }
+    if (pointsEl) pointsEl.innerText = `${totalScoreSoFar} / ${totalMaxSoFar}`;
+    if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)'); }
 }
-
 
 function selectLevel(id, score, max, el) { 
     currentStepSelections['item_'+id] = {score, max}; 
-    el.parentElement.querySelectorAll('.level-opt').forEach(o=>o.classList.remove('selected')); 
-    el.classList.add('selected'); 
-    saveAuditDraft();
-updateCumulativeScoreUI();
+    el.parentElement.querySelectorAll('div[onclick]').forEach(o=>{ o.style.background='var(--surface-inset)'; o.style.borderColor='transparent'; o.style.color='var(--text-main)'; o.style.boxShadow='none'; }); 
+    el.style.background='rgba(16,185,129,0.1)'; el.style.borderColor='var(--success)'; el.style.color='var(--success)'; el.style.boxShadow='0 0 15px rgba(16,185,129,0.2)';
+    saveAuditDraft(); updateCumulativeScoreUI();
 }
 
 function openImageSourcePicker(itemId, itemTitle) { currentUploadItemId = itemId; currentUploadItemTitle = itemTitle; document.getElementById('imageSourceModal').style.display = 'flex'; }
@@ -618,65 +473,38 @@ async function handleImageSelection(event) {
     showToast('جاري رفع وتحليل الصورة...');
     processAndEnhanceImage(file, async function(dataUrl) {
         const url = await uploadImageToStorage(dataUrl);
-        if (url) {
-            currentStepImages['img_' + currentUploadItemId] = { title: currentUploadItemTitle, data: url };
-            saveAuditDraft(); renderCurrentAuditStep(); showToast('تم الرفع');
-        } else { showToast('فشل الرفع'); }
+        if (url) { currentStepImages['img_' + currentUploadItemId] = { title: currentUploadItemTitle, data: url }; saveAuditDraft(); renderCurrentAuditStep(); showToast('تم الرفع'); } 
+        else { showToast('فشل الرفع'); }
     });
 }
 
 function finishCurrentStep() {
-    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; 
-    const sd = AUDIT_DATA[k];
+    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; const sd = AUDIT_DATA[k];
+    if(Object.keys(currentStepSelections).length < sd.items.length) { showToast('⚠️ يرجى تقييم جميع البنود قبل الحفظ'); return; }
     
-    // التحقق من أن كل البنود تم تقييمها
-    if(Object.keys(currentStepSelections).length < sd.items.length) { 
-        showToast('⚠️ يرجى تقييم جميع البنود قبل الحفظ'); 
-        return; 
-    }
-    
-    let totalScore = 0, totalMax = 0; 
-    currentStepImprovements = [];
-    
+    let totalScore = 0, totalMax = 0; currentStepImprovements = [];
     for(let key in currentStepSelections) { 
-        let itemData = currentStepSelections[key];
-        totalScore += itemData.score; 
-        totalMax += itemData.max; 
-        
-// إذا كانت الدرجة أقل من النهاية العظمى، نكتب الإجراء المطلوب للوصول للدرجة النهائية!
+        let itemData = currentStepSelections[key]; totalScore += itemData.score; totalMax += itemData.max; 
         if(itemData.score < itemData.max) { 
-            let id = key.split('_')[1]; 
-            let itm = sd.items.find(i=>i.id == id); 
+            let id = key.split('_')[1]; let itm = sd.items.find(i=>i.id == id); 
             if(itm) {
-                // البحث عن الوصف الخاص بالدرجة النهائية
-                let maxLvl = itm.levels.find(l => l.score === itm.maxScore);
-                let targetAction = maxLvl ? maxLvl.desc : "الوصول للمعايير القياسية";
+                let maxLvl = itm.levels.find(l => l.score === itm.maxScore); let targetAction = maxLvl ? maxLvl.desc : "الوصول للمعايير القياسية";
                 currentStepImprovements.push(`[${itm.title}] 🎯 المطلوب: ${targetAction}`); 
             }
         }
     }
     
-    currentAudit.results[k] = { 
-        skipped: false, 
-        score: totalScore, 
-        max: totalMax, 
-        improvements: currentStepImprovements, 
-        selections: currentStepSelections, 
-        images: currentStepImages 
-    };
-    
+    currentAudit.results[k] = { skipped: false, score: totalScore, max: totalMax, improvements: currentStepImprovements, selections: currentStepSelections, images: currentStepImages };
     saveAuditDraft();
     
-    // عرض الملخص المرحلي
     const pct = Math.round((totalScore/totalMax)*100);
-    document.getElementById('summaryPct').innerText = pct + '%';
-    document.getElementById('summaryPct').style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)');
-    document.getElementById('summaryScoreStr').innerText = `المجموع: ${totalScore} من ${totalMax} نقطة`;
+    const sumPctEl = document.getElementById('summaryPct'); if(sumPctEl) { sumPctEl.innerText = pct + '%'; sumPctEl.style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)'); }
+    const sumScoreEl = document.getElementById('summaryScoreStr'); if(sumScoreEl) sumScoreEl.innerText = `المجموع: ${totalScore} من ${totalMax} نقطة`;
     
-    document.getElementById('opportunitiesContainer').innerHTML = currentStepImprovements.length > 0 
-        ? currentStepImprovements.map(i=>`<div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; margin-bottom:8px; border-right:4px solid var(--warning); font-size:12px; text-align:right; color:var(--text-main);">🔹 ${i}</div>`).join('') 
-        : '<div style="color:var(--success); font-weight:bold; text-align:center; padding:20px;">🌟 أداء مثالي، لا توجد ملاحظات</div>';
-    
+    const oppContainer = document.getElementById('opportunitiesContainer');
+    if(oppContainer) {
+        oppContainer.innerHTML = currentStepImprovements.length > 0 ? currentStepImprovements.map(i=>`<div style="background:var(--surface-inset); padding:15px; border-radius:12px; margin-bottom:10px; border-right:4px solid var(--warning); font-size:13px; text-align:right; color:var(--text-main);"><i class='bx bx-info-circle' style="color:var(--warning);"></i> ${i}</div>`).join('') : '<div style="color:var(--success); font-weight:bold; text-align:center; padding:20px;"><i class="bx bx-check-shield" style="font-size:40px; display:block; margin-bottom:10px;"></i> أداء مثالي، لا توجد ملاحظات</div>';
+    }
     showScreen('stepSummaryScreen');
 }
 
@@ -684,58 +512,30 @@ function skipCurrentStep() { currentAudit.results[currentAudit.stepsOrder[curren
 function goToNextStep() { currentAudit.currentStepIndex++; if(currentAudit.currentStepIndex < 7) renderCurrentAuditStep(); else generateFinalReport(); }
 
 function switchSettingsTab(tabId) {
-    document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.settings-tab-content').forEach(c => { c.classList.remove('active'); c.style.display = 'none'; });
+    document.querySelectorAll('#settingsScreen .row-flex .btn').forEach(b => { b.classList.remove('active'); b.style.background='transparent'; b.style.color='var(--text-main)'; });
     
-    document.getElementById('tab-' + tabId).classList.add('active');
-    event.currentTarget.classList.add('active');
+    const targetTab = document.getElementById('tab-' + tabId); if(targetTab) { targetTab.classList.add('active'); targetTab.style.display = 'block'; }
+    const clickedBtn = event.currentTarget; if(clickedBtn) { clickedBtn.classList.add('active'); clickedBtn.style.background='var(--primary)'; clickedBtn.style.color='white'; }
 }
-
-
-
 
 async function savePersonalData() {
     const uid = firebase.auth().currentUser.uid;
-    const newName = document.getElementById('editName').value.trim();
-    const newPhone = document.getElementById('editPhone').value.trim();
-    const newDept = document.getElementById('editDept').value;
-
+    const newName = document.getElementById('editName').value.trim(); const newPhone = document.getElementById('editPhone').value.trim(); const newDept = document.getElementById('editDept').value;
     if(!newName) return showToast('الاسم مطلوب');
-
     showToast('جاري تحديث هويتك... ⏳');
-    await db.ref(`tpm_system/users/${uid}`).update({
-        name: newName,
-        phone: newPhone,
-        dept: newDept
-    });
-
-    currentUser.name = newName; // تحديث الجلسة الحالية
-    localStorage.setItem('tpm_user', newName);
-    
-    showToast('تم تحديث بياناتك بنجاح ✅');
-    renderProfileAndSettings(); // تحديث شاشة الإعدادات
-    showScreen('settingsScreen');
+    await db.ref(`tpm_system/users/${uid}`).update({ name: newName, phone: newPhone, dept: newDept });
+    currentUser.name = newName; localStorage.setItem('tpm_user', newName); showToast('تم تحديث بياناتك بنجاح ✅'); renderProfileAndSettings(); showScreen('settingsScreen');
 }
-// ------------------------------------------
-// ✍️ التوقيع الفائق السرعة (Hardware Accelerated)
-// ------------------------------------------
+
 function initSignaturePad() {
     setTimeout(() => {
         sigCanvas = document.getElementById('signatureCanvas'); if(!sigCanvas) return;
-        sigCtx = sigCanvas.getContext('2d'); sigCtx.lineWidth = 3; sigCtx.strokeStyle = '#b87333'; sigCtx.lineCap = 'round';
-        clearSignature(); 
-        
-        // Caching Client Rect to prevent Layout Thrashing
+        sigCtx = sigCanvas.getContext('2d'); sigCtx.lineWidth = 3; sigCtx.strokeStyle = '#3b82f6'; sigCtx.lineCap = 'round'; clearSignature(); 
         const startDrawing = (x, y) => { isDrawing = true; canvasRect = sigCanvas.getBoundingClientRect(); sigCtx.beginPath(); sigCtx.moveTo(x - canvasRect.left, y - canvasRect.top); };
         const draw = (x, y) => { if(isDrawing) { sigCtx.lineTo(x - canvasRect.left, y - canvasRect.top); sigCtx.stroke(); } };
-        
-        sigCanvas.onmousedown = (e) => startDrawing(e.clientX, e.clientY);
-        sigCanvas.onmousemove = (e) => draw(e.clientX, e.clientY);
-        sigCanvas.onmouseup = () => isDrawing = false;
-        sigCanvas.onmouseleave = () => isDrawing = false;
-        sigCanvas.ontouchstart = (e) => { startDrawing(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); };
-        sigCanvas.ontouchmove = (e) => { draw(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); };
-        sigCanvas.ontouchend = () => isDrawing=false;
+        sigCanvas.onmousedown = (e) => startDrawing(e.clientX, e.clientY); sigCanvas.onmousemove = (e) => draw(e.clientX, e.clientY); sigCanvas.onmouseup = () => isDrawing = false; sigCanvas.onmouseleave = () => isDrawing = false;
+        sigCanvas.ontouchstart = (e) => { startDrawing(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }; sigCanvas.ontouchmove = (e) => { draw(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }; sigCanvas.ontouchend = () => isDrawing=false;
     }, 300); 
 }
 function clearSignature() { if(sigCtx) { sigCtx.fillStyle = "#ffffff"; sigCtx.fillRect(0, 0, sigCanvas.width, sigCanvas.height); } }
@@ -743,185 +543,98 @@ function clearSignature() { if(sigCtx) { sigCtx.fillStyle = "#ffffff"; sigCtx.fi
 function generateFinalReport() {
     let s=0, m=0; currentAudit.stepsOrder.forEach(k=>{if(!currentAudit.results[k].skipped){s+=currentAudit.results[k].score; m+=currentAudit.results[k].max;}});
     let p=m===0?0:Math.round((s/m)*100); currentAudit.totalPct = p;
-    document.getElementById('finalTotalPct').innerText = p+'%'; document.getElementById('finalDeptName').innerText = currentAudit.dept;
-    showScreen('finalReportScreen');
-    initSignaturePad();
+    const finalPctEl = document.getElementById('finalTotalPct'); if(finalPctEl) finalPctEl.innerText = p+'%'; 
+    const finalDeptEl = document.getElementById('finalDeptName'); if(finalDeptEl) finalDeptEl.innerText = currentAudit.dept;
+    showScreen('finalReportScreen'); initSignaturePad();
 }
 
-// ✅ دالة الحفظ النهائي مع التأكيد والانتقال التلقائي
 async function saveFinalAudit() {
     if(!hasRole('auditor', 'admin')) { showToast('غير مصرح بحفظ المراجعات'); return; }
-    
-    // 1. طلب تأكيد من المستخدم قبل الحفظ
     if(!confirm("هل أنت متأكد من اعتماد وحفظ هذه المراجعة؟ سيتم إنشاء قائمة مهام تلقائية بالتحسينات.")) return;
-
     showToast('جاري معالجة البيانات وحفظ التقرير... ⏳');
-
-    // 2. تسجيل التوقيع الرقمي
     if(sigCanvas) currentAudit.signature = sigCanvas.toDataURL('image/jpeg', 0.8);
-    
-    // 3. جمع فرص التحسين لإنشاء "مجلد مهام"
     let allImprovements = [];
-    currentAudit.stepsOrder.forEach(step => {
-        if(currentAudit.results[step] && currentAudit.results[step].improvements) { 
-            allImprovements.push(...currentAudit.results[step].improvements); 
-        }
-    });
-    
+    currentAudit.stepsOrder.forEach(step => { if(currentAudit.results[step] && currentAudit.results[step].improvements) { allImprovements.push(...currentAudit.results[step].improvements); } });
     if(allImprovements.length > 0) {
         let fId = uniqueNumericId().toString();
-        let folderTask = {
-            id: fId, isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام',
-            task: `تحسينات مراجعة (${currentAudit.date})`, subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })), status: 'pending'
-        };
+        let folderTask = { id: fId, isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام', task: `تحسينات مراجعة (${currentAudit.date})`, subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })), status: 'pending' };
         await db.ref('tpm_system/tasks/' + fId).set(folderTask);
     }
-
-    // 4. الحفظ النهائي في الأرشيف ونظام النقاط
-    await db.ref('tpm_system/history/' + currentAudit.id).set(currentAudit);
-    awardPoints(50, 'إتمام مراجعة رسمية');
-    
-    // 5. تنظيف المسودة وإظهار رسالة النجاح
-    clearAuditDraft();
-    showToast('تم حفظ التقرير بنجاح ✅ جاري تحويلك للأرشيف...');
-
-    // 6. الانتقال التلقائي بعد ثانية واحدة (لإعطاء فرصة لقراءة الرسالة)
-    setTimeout(() => {
-        showScreen('historyScreen'); 
-    }, 1500);
+    await db.ref('tpm_system/history/' + currentAudit.id).set(currentAudit); awardPoints(50, 'إتمام مراجعة رسمية'); clearAuditDraft(); showToast('تم حفظ التقرير بنجاح ✅ جاري تحويلك للأرشيف...');
+    setTimeout(() => { showScreen('historyScreen'); }, 1500);
 }
+
 // ------------------------------------------
-// 📊 أرشيف التقارير (History) المطور
+// 📊 أرشيف التقارير (History)
 // ------------------------------------------
 function renderHistory() {
+    const container = document.getElementById('historyListContainer');
+    if (!container) return; // 🛡️ حماية معمارية
+
     let real = historyData.filter(h=>!h.stepsOrder.includes('ManualKaizen')).reverse();
     let html = real.map(a => {
         let controls = (hasRole('admin') || currentUser.name === a.auditor) ? `
-            <div style="margin-top:12px; display:flex; gap:10px; border-top:1px dashed #cbd5e1; padding-top:12px;">
-                <button class="btn btn-sm btn-outline flex-1" style="border-radius:8px; color:var(--primary); border-color:var(--primary);" onclick="event.stopPropagation(); editReport('${a.id}')">✏️ تعديل</button>
-                <button class="btn btn-sm btn-outline flex-1" style="border-radius:8px; color:var(--danger); border-color:var(--danger);" onclick="event.stopPropagation(); deleteReport('${a.id}')">🗑️ حذف</button>
+            <div style="margin-top:15px; display:flex; gap:10px; border-top:1px solid var(--border-glass); padding-top:15px;">
+                <button class="btn btn-sm btn-outline flex-1" onclick="event.stopPropagation(); editReport('${a.id}')"><i class='bx bx-edit'></i> تعديل</button>
+                <button class="btn btn-sm btn-danger flex-1" onclick="event.stopPropagation(); deleteReport('${a.id}')"><i class='bx bx-trash'></i> حذف</button>
             </div>
         ` : '';
-        
-        // تغيير لون الكارت بناءً على التقييم
-        let color = a.totalPct >= 80 ? 'var(--success)' : (a.totalPct >= 50 ? 'var(--warning)' : 'var(--danger)');
+        let colorClass = a.totalPct >= 80 ? 'success' : (a.totalPct >= 50 ? 'warning' : 'danger');
         
         return `
-        <div class="card glass-card" style="cursor:pointer; padding: 20px; border-right: 5px solid ${color}; transition: 0.3s;" onclick="viewDetailedReport('${a.id}')" onmouseover="this.style.transform='translateX(-5px)'" onmouseout="this.style.transform='translateX(0)'">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="card glass-card" style="cursor:pointer; padding: 20px; border-right: 4px solid var(--${colorClass});" onclick="viewDetailedReport('${a.id}')">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                 <div>
-                    <h3 style="color:var(--text-main); font-weight:900; margin:0 0 5px; font-size:16px;">🏭 ${a.dept}</h3>
-                    <div style="font-size:11px; color:var(--text-muted); font-weight:bold;">
-                        <span style="display:inline-block; margin-left:10px;">👤 ${a.auditor}</span>
-                        <span style="display:inline-block; margin-left:10px;">📅 ${a.date}</span>
-                        <span style="display:inline-block;">⚙️ ${a.machine || 'عام'}</span>
+                    <h3 style="color:var(--text-main); font-size:16px; margin:0 0 8px;"><i class='bx bx-buildings'></i> ${a.dept}</h3>
+                    <div style="font-size:12px; color:var(--text-muted); display:flex; flex-direction:column; gap:4px;">
+                        <span><i class='bx bx-user'></i> ${a.auditor}</span>
+                        <span><i class='bx bx-calendar'></i> ${a.date}</span>
+                        <span><i class='bx bx-cog'></i> ${a.machine || 'عام'}</span>
                     </div>
                 </div>
-                <div style="font-size:26px; font-weight:900; color:${color}; background:rgba(0,0,0,0.03); padding:5px 15px; border-radius:12px;">
+                <div style="font-size:26px; font-weight:900; color:var(--${colorClass}); background:rgba(255,255,255,0.05); padding:10px 15px; border-radius:16px; border:1px solid var(--border-glass);">
                     ${a.totalPct}%
                 </div>
             </div>
             ${controls}
         </div>`;
     }).join('');
-    document.getElementById('historyListContainer').innerHTML = html || '<div style="text-align:center; padding:30px; color:var(--text-muted); font-weight:bold;">لا توجد تقارير في الأرشيف حالياً 📭</div>';
+    container.innerHTML = html || '<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:14px; width:100%;"><i class="bx bx-archive" style="font-size:50px; display:block; margin-bottom:10px;"></i> لا توجد تقارير في الأرشيف حالياً</div>';
 }
 
 function deleteReport(id) { if(confirm('تأكيد الحذف النهائي للتقرير؟')) { deleteRecord('history/' + id); showToast('تم الحذف بنجاح'); } }
 function editReport(id) { let rep = historyData.find(h => h.id === id); if(!rep) return; currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; renderCurrentAuditStep(); }
-// ------------------------------------------
-// 📄 محرك استخراج التقارير التفصيلية المطور
-// ------------------------------------------
+
 function viewDetailedReport(id) {
-    let a = historyData.find(h => h.id === id); 
-    if(!a) return;
+    let a = historyData.find(h => h.id === id); if(!a) return;
+    document.getElementById('detDept').innerText = a.dept; document.getElementById('detMachine').innerText = a.machine || 'عام'; document.getElementById('detAuditor').innerText = a.auditor; document.getElementById('detDate').innerText = a.date;
+    const totalPct = a.totalPct || 0; document.getElementById('detPct').innerText = totalPct + '%';
+    let grade = "ضعيف"; if (totalPct >= 90) grade = "ممتاز"; else if (totalPct >= 80) grade = "جيد جداً"; else if (totalPct >= 70) grade = "جيد"; else if (totalPct >= 50) grade = "مقبول";
+    document.getElementById('detGrade').innerText = grade; document.getElementById('detGrade').style.color = totalPct >= 80 ? '#10b981' : (totalPct >= 50 ? '#f59e0b' : '#ef4444');
 
-    // 1. ملء البيانات الأساسية
-    document.getElementById('detDept').innerText = a.dept;
-    document.getElementById('detMachine').innerText = a.machine || 'عام'; 
-    document.getElementById('detAuditor').innerText = a.auditor;
-    document.getElementById('detDate').innerText = a.date;
-    
-    const totalPct = a.totalPct || 0;
-    document.getElementById('detPct').innerText = totalPct + '%';
-
-    // 2. التقييم الوصفي
-    let grade = "ضعيف";
-    if (totalPct >= 90) grade = "ممتاز ⭐";
-    else if (totalPct >= 80) grade = "جيد جداً";
-    else if (totalPct >= 70) grade = "جيد";
-    else if (totalPct >= 50) grade = "مقبول";
-    document.getElementById('detGrade').innerText = grade;
-    document.getElementById('detGrade').style.color = totalPct >= 80 ? '#2e7d32' : (totalPct >= 50 ? '#f57f17' : '#c62828');
-
-// 3. ملء جدول توزيع الدرجات (Breakdown) بخطوط كبيرة وواضحة
-    let tableHtml = '';
-    let detailsHtml = '';
-
+    let tableHtml = ''; let detailsHtml = '';
     a.stepsOrder.forEach(k => {
-        let r = a.results[k];
-        if (!r) return;
-
-        let p = r.skipped ? 0 : Math.round((r.score / r.max) * 100);
-        let statusText = r.skipped ? 'تخطي' : `${r.score} / ${r.max}`;
-        let pColor = p >= 80 ? '#059669' : (p >= 50 ? '#D97706' : '#DC2626');
-        
-        tableHtml += `
-            <tr>
-                <td style="padding: 15px; border: 1px solid #CBD5E1; font-weight: 900; color: #1E3A8A; font-size: 15px;">${k}</td>
-                <td style="padding: 15px; border: 1px solid #CBD5E1; text-align: right; color: #111827; font-size: 15px; font-weight: 800; line-height: 1.6;">${AUDIT_DATA[k] ? AUDIT_DATA[k].name : '---'}</td>
-                <td style="padding: 15px; border: 1px solid #CBD5E1; font-weight: 900; color: #475569; font-size: 15px; font-family: Arial, sans-serif;">${statusText}</td>
-                <td style="padding: 15px; border: 1px solid #CBD5E1; font-weight: 900; color: ${pColor}; font-size: 18px; font-family: Arial, sans-serif;">${p}%</td>
-            </tr>`;
-
+        let r = a.results[k]; if (!r) return;
+        let p = r.skipped ? 0 : Math.round((r.score / r.max) * 100); let statusText = r.skipped ? 'تخطي' : `${r.score} / ${r.max}`; let pColor = p >= 80 ? '#10b981' : (p >= 50 ? '#f59e0b' : '#ef4444');
+        tableHtml += `<tr><td style="padding:12px; border:1px solid #cbd5e1; font-weight:bold; color:#0f172a;">${k}</td><td style="padding:12px; border:1px solid #cbd5e1; font-weight:bold; color:#0f172a;">${statusText}</td><td style="padding:12px; border:1px solid #cbd5e1; font-weight:900; color:${pColor};">${p}%</td></tr>`;
         if (!r.skipped) {
-            let imps = (r.improvements && r.improvements.length > 0) 
-                ? r.improvements.map(i => `<div style="font-size:15px; margin-bottom:8px; color:#111827; padding-right:25px; position:relative; font-weight: 800; line-height: 1.8;"><span style="position:absolute; right:0; color:#D97706; font-size: 14px; top: 4px;">⏺</span>${i}</div>`).join('') 
-                : '<div style="color:#059669; font-weight:900; padding: 15px; background: #D1FAE5; border-radius: 8px; text-align: center; font-size: 15px;">🌟 أداء مثالي، لا توجد ملاحظات تحسينية</div>';
-            
-            let imgsHtml = ''; 
-            if(r.images) { 
-                Object.values(r.images).forEach(img => { 
-                    if (img.data) imgsHtml += `<img src="${img.data}" style="height:120px; width:120px; object-fit:cover; margin:8px; border:2px solid #E2E8F0; border-radius:12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">`; 
-                }); 
-            }
-
-            detailsHtml += `
-                <div style="margin-bottom: 25px; padding: 25px; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 16px; border-right: 5px solid ${pColor}; page-break-inside: avoid; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #CBD5E1; margin-bottom:15px; padding-bottom:12px;">
-                        <b style="font-size:16px; color:#1E3A8A; font-weight: 900;">${k}: ${AUDIT_DATA[k].name}</b>
-                        <b style="font-size:20px; color:${pColor}; background: #ffffff; padding: 6px 16px; border-radius: 10px; border: 1px solid #E2E8F0; font-family: Arial, sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">${p}%</b>
-                    </div>
-                    <div style="margin-bottom:15px; background: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0;">
-                        <h4 style="margin:0 0 12px; color:#64748B; font-size:14px; font-weight: 900;">ملاحظات التدقيق وفرص التحسين:</h4>
-                        ${imps}
-                    </div>
-                    ${imgsHtml ? `<div style="background: #ffffff; padding: 15px; border-radius: 12px; border: 1px solid #E2E8F0; text-align: center;">${imgsHtml}</div>` : ''}
-                </div>`;
+            let imps = (r.improvements && r.improvements.length > 0) ? r.improvements.map(i => `<div style="font-size:14px; margin-bottom:8px; color:#1e293b;"><i class='bx bx-check-circle' style="color:#f59e0b;"></i> ${i}</div>`).join('') : '<div style="color:#10b981; font-weight:bold; text-align:center;">أداء مثالي</div>';
+            let imgsHtml = ''; if(r.images) { Object.values(r.images).forEach(img => { if (img.data) imgsHtml += `<img src="${img.data}" style="height:100px; width:100px; object-fit:cover; margin:5px; border-radius:8px; border:1px solid #cbd5e1;">`; }); }
+            detailsHtml += `<div style="margin-bottom:20px; padding:20px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; border-right:4px solid ${pColor};"><div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px dashed #cbd5e1; padding-bottom:10px;"><b style="color:#0f172a;">${k}</b><b style="color:${pColor};">${p}%</b></div><div style="margin-bottom:15px;">${imps}</div><div style="text-align:center;">${imgsHtml}</div></div>`;
         }
     });
-
-    document.getElementById('detStepsTableBody').innerHTML = tableHtml;
-    document.getElementById('detStepsContainer').innerHTML = detailsHtml;
-    
-    // 4. معالجة التوقيع
+    document.getElementById('detStepsTableBody').innerHTML = tableHtml; document.getElementById('detStepsContainer').innerHTML = detailsHtml;
     const sigDiv = document.getElementById('detSignatureImg');
-    if (a.signature) {
-        sigDiv.innerHTML = `<img src="${a.signature}" style="height:60px; max-width:150px; border-bottom:1px solid #000;">`;
-    } else {
-        sigDiv.innerHTML = '<div style="height:60px; color:#999; font-size:10px; padding-top:40px;">لا يوجد توقيع رقمي</div>';
-    }
-
+    if (a.signature) { sigDiv.innerHTML = `<img src="${a.signature}" style="height:80px; max-width:200px;">`; } else { sigDiv.innerHTML = '<div style="color:#94a3b8; font-size:12px;">لا يوجد توقيع</div>'; }
     showScreen('detailedReportScreen');
 }
 
-function downloadProfessionalPDF() {
-    window.scrollTo(0,0);
-    const btns = document.querySelectorAll('#detailedReportScreen .no-print'); btns.forEach(b => b.style.display = 'none');
-    html2pdf().set({margin:0.2, filename:'تقرير_مراجعة.pdf', image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:'in', format:'a4', orientation:'portrait'}}).from(document.getElementById('printableReportArea')).save().then(()=>{ btns.forEach(b => b.style.display = ''); });
-}
-function shareWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(window.currentReportText)}`); }
+function downloadProfessionalPDF() { window.scrollTo(0,0); const btns = document.querySelectorAll('#detailedReportScreen .row-flex'); btns.forEach(b => b.style.display = 'none'); html2pdf().set({margin:0.2, filename:'تقرير_مراجعة.pdf', image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:'in', format:'a4', orientation:'portrait'}}).from(document.getElementById('printableReportArea')).save().then(()=>{ btns.forEach(b => b.style.display = 'flex'); }); }
+function shareWhatsApp() { showToast("جاري تجهيز النص..."); }
 
+// ------------------------------------------
+// 📋 إدارة المهام (Tasks Kanban)
+// ------------------------------------------
 function renderTasks() {
     let htmlFolders = '';
     const cols = { pending: '', progress: '', done: '' };
@@ -930,24 +643,23 @@ function renderTasks() {
     let currentDeptTasks = tasksData.filter(t => t.dept === currentTaskDept);
 
     currentDeptTasks.forEach(t => {
-        // زر الحذف يظهر للمدير فقط (سواء للمجلدات أو المهام الفردية)
-        let deleteBtnHTML = hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:2px 8px; width:auto; margin:0;" onclick="deleteTask('${t.id}')">حذف 🗑️</button>` : '';
+        let deleteBtnHTML = hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:4px 8px; margin:0;" onclick="deleteTask('${t.id}')"><i class='bx bx-trash'></i></button>` : '';
         
         if(t.isFolder) {
             let total = t.subTasks ? t.subTasks.length : 0; 
             let done = t.subTasks ? t.subTasks.filter(s=>s.status==='done').length : 0;
             htmlFolders += `
-                <div class="card glass-card" style="border-right: 4px solid var(--gold); margin-bottom:15px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <b style="color:var(--gold); font-size:13px;">مجلد: ${t.task}</b>
-                        <div style="display:flex; gap:5px; align-items:center;">
-                            <span class="badge">${done}/${total}</span>
+                <div class="card glass-card" style="border-right: 4px solid var(--gold); margin-bottom:15px; padding:15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--border-glass); padding-bottom:10px;">
+                        <b style="color:var(--gold); font-size:14px;"><i class='bx bx-folder'></i> ${t.task}</b>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span style="background:var(--surface-inset); padding:4px 10px; border-radius:8px; font-size:11px;">${done}/${total}</span>
                             ${deleteBtnHTML}
                         </div>
                     </div>
                     ${t.subTasks ? t.subTasks.map((s,i)=>`
-                        <div style="font-size:12px; padding:5px 0; border-bottom:1px dashed rgba(255,255,255,0.05);">
-                            <label style="cursor:pointer; display:flex; gap:8px; align-items:flex-start; ${s.status==='done'?'text-decoration:line-through; color:var(--text-muted);':''}">
+                        <div style="font-size:13px; padding:8px 0; border-bottom:1px solid var(--border-glass);">
+                            <label style="cursor:pointer; display:flex; gap:10px; align-items:flex-start; ${s.status==='done'?'text-decoration:line-through; color:var(--text-muted);':''}">
                                 <input type="checkbox" style="margin-top:4px;" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask('${t.id}', ${i})"> 
                                 <span style="flex:1; line-height:1.5;">${s.text}</span>
                             </label>
@@ -958,20 +670,18 @@ function renderTasks() {
             counts[status]++;
             
             let actions = '';
-            if(status === 'pending') actions = `<button class="btn btn-sm btn-warning flex-1" onclick="changeTaskStatus('${t.id}', 'progress')">بدء التنفيذ</button>`;
-            else if(status === 'progress') actions = `<button class="btn btn-sm btn-success flex-1" onclick="changeTaskStatus('${t.id}', 'done')">إنجاز</button>`;
-            else if(status === 'done') actions = `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus('${t.id}', 'pending')">إعادة فتح</button>`;
+            if(status === 'pending') actions = `<button class="btn btn-sm btn-warning flex-1" onclick="changeTaskStatus('${t.id}', 'progress')"><i class='bx bx-play'></i> بدء</button>`;
+            else if(status === 'progress') actions = `<button class="btn btn-sm btn-success flex-1" onclick="changeTaskStatus('${t.id}', 'done')"><i class='bx bx-check'></i> إنجاز</button>`;
+            else if(status === 'done') actions = `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus('${t.id}', 'pending')"><i class='bx bx-undo'></i> إعادة</button>`;
 
             cols[status] += `
             <div class="kanban-item">
-                <div style="font-weight:bold; margin-bottom:5px;">${t.task}</div>
-                
-                ${t.image ? `<img src="${t.image}" style="width:100%; border-radius:8px; margin-bottom:8px; cursor:pointer; border:1px solid rgba(255,255,255,0.1);" onclick="window.open('${t.image}')">` : ''}
-                
-                <div style="font-size:10px; color:var(--text-muted);">${t.dept}</div>
-                <div class="kanban-actions">
+                <div style="font-weight:bold; margin-bottom:10px; font-size:14px;">${t.task}</div>
+                ${t.image ? `<img src="${t.image}" style="width:100%; border-radius:10px; margin-bottom:10px; border:1px solid var(--border-glass); cursor:pointer;" onclick="window.open('${t.image}')">` : ''}
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:15px;"><i class='bx bx-buildings'></i> ${t.dept}</div>
+                <div class="row-flex" style="gap:8px;">
                     ${actions}
-                    ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">🗑️</button>` : ''}
+                    ${hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="width:40px; padding:0;" onclick="deleteTask('${t.id}')"><i class='bx bx-trash'></i></button>` : ''}
                 </div>
             </div>`;
         }
@@ -980,33 +690,25 @@ function renderTasks() {
     ['pending', 'progress', 'done'].forEach(s => {
         const listEl = document.getElementById('kanban_' + s);
         const countEl = document.getElementById('count_' + s);
-        if(listEl) listEl.innerHTML = cols[s] || '<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:10px;">لا توجد مهام</div>';
+        if(listEl) listEl.innerHTML = cols[s] || '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:15px;">لا توجد مهام</div>';
         if(countEl) countEl.innerText = counts[s];
     });
 
     let fC = document.getElementById('auditFoldersContainer'); 
-    if(fC) fC.innerHTML = htmlFolders || '<div style="font-size:12px; color:var(--text-muted); text-align:center;">لا توجد مجلدات تحسين</div>';
+    if(fC) fC.innerHTML = htmlFolders || '<div style="font-size:13px; color:var(--text-muted); text-align:center; width:100%; padding:20px;">لا توجد مجلدات تحسين من المراجعات</div>';
     
     updateTasksDeptGrid();
 }
 
-function deleteTask(id) {
-    if(confirm('⚠️ هل أنت متأكد من حذف هذه المهمة / المجلد نهائياً؟')) {
-        deleteRecord('tasks/' + id);
-        showToast('تم الحذف بنجاح 🗑️');
-    }
-}
+function deleteTask(id) { if(confirm('⚠️ هل أنت متأكد من حذف هذه المهمة نهائياً؟')) { deleteRecord('tasks/' + id); showToast('تم الحذف بنجاح 🗑️'); } }
 
 function updateTasksDeptGrid() {
-    let deptStats = {}; 
-    departments.forEach(d => deptStats[d] = { p:0 });
-    
+    let deptStats = {}; departments.forEach(d => deptStats[d] = { p:0 });
     let pendAll=0, progAll=0, doneAll=0;
     
     tasksData.forEach(t => {
         let isDone = t.isFolder ? (t.subTasks && t.subTasks.every(s=>s.status==='done') && t.subTasks.length>0) : (t.status==='done');
         let isProg = t.isFolder ? (t.subTasks && t.subTasks.some(s=>s.status==='done') && !isDone) : (t.status==='progress');
-        
         if(isDone) doneAll++; else if(isProg) progAll++; else pendAll++;
         if(!isDone && t.dept && deptStats[t.dept]) deptStats[t.dept].p++;
     });
@@ -1018,9 +720,9 @@ function updateTasksDeptGrid() {
     let dG = document.getElementById('tasksDeptGrid');
     if(dG) {
         dG.innerHTML = departments.map(d => `
-            <div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer; border-right:4px solid ${deptStats[d].p>0?'var(--danger)':'var(--success)'};" onclick="openTasksDept('${d}')">
-                <h4 style="color:var(--gold); margin:0;">${d}</h4>
-                <div style="font-size:11px; margin-top:5px; color:var(--text-main);">مهام نشطة: <b style="color:var(--danger);">${deptStats[d].p}</b></div>
+            <div class="card glass-card" style="padding:20px; text-align:center; cursor:pointer; border-bottom:3px solid ${deptStats[d].p>0?'var(--danger)':'var(--success)'};" onclick="openTasksDept('${d}')">
+                <h4 style="color:var(--text-main); font-size:16px; margin:0 0 10px;"><i class='bx bx-buildings'></i> ${d}</h4>
+                <div style="font-size:12px; color:var(--text-muted);">مهام نشطة: <b style="color:var(--danger); font-size:16px;">${deptStats[d].p}</b></div>
             </div>`).join('');
     }
 }
@@ -1030,21 +732,21 @@ function closeTasksDept() { currentTaskDept = null; document.getElementById('tas
 function toggleFolderSubTask(fId, sIdx) { let f = tasksData.find(x=>x.id==fId); if(f) { f.subTasks[sIdx].status = f.subTasks[sIdx].status==='done'?'pending':'done'; syncRecord('tasks/' + fId, f); } }
 function changeTaskStatus(id, st) { let t=tasksData.find(x=>x.id==id); if(t) {t.status=st; syncRecord('tasks/' + id, t);} }
 function addManualTaskDept() { let v=document.getElementById('newTaskInput').value; if(v){ let id = uniqueNumericId().toString(); syncRecord('tasks/' + id, {id:id, task:v, dept:currentTaskDept, status:'pending'}); document.getElementById('newTaskInput').value=''; showToast('تمت الإضافة'); } }
+
 // ------------------------------------------
-// 🌐 مجتمع كايزن (الدمج الاحترافي)
+// 💡 مجتمع كايزن (Kaizen Engine)
 // ------------------------------------------
 function handleKaizenImage(e, type) {
     const f=e.target.files[0]; if(!f) return;
     showToast('جاري تحضير الصورة...');
-    processAndEnhanceImage(f, function(dataUrl) { kaizenImgs[type] = dataUrl; document.getElementById(type==='before'?'kaizenBeforePreview':'kaizenAfterPreview').innerHTML=`<span style="color:var(--success); font-size:11px; font-weight:bold;">تم الإرفاق</span>`; });
+    processAndEnhanceImage(f, function(dataUrl) { kaizenImgs[type] = dataUrl; document.getElementById(type==='before'?'kaizenBeforePreview':'kaizenAfterPreview').innerHTML=`<span style="color:var(--success); font-size:12px; font-weight:bold; display:block; margin-top:10px;"><i class='bx bx-check'></i> تم الإرفاق</span>`; });
 }
 
 function submitManualKaizen() {
     let t = document.getElementById('newKaizenTitle').value; let d = document.getElementById('newKaizenDept').value;
-    if(!t || !kaizenImgs.before || !kaizenImgs.after) { showToast('برجاء كتابة الوصف وإرفاق الصورتين'); return; }
+    if(!t || !kaizenImgs.before || !kaizenImgs.after) { showToast('⚠️ برجاء كتابة الوصف وإرفاق الصورتين'); return; }
     
-    document.getElementById('submitKaizenBtn').innerText = "جاري الدمج والرفع...";
-    document.getElementById('submitKaizenBtn').disabled = true;
+    const btn = document.getElementById('submitKaizenBtn'); btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري الدمج..."; btn.disabled = true;
     
     const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
     const imgBefore = new Image(); const imgAfter = new Image();
@@ -1052,15 +754,14 @@ function submitManualKaizen() {
     imgBefore.onload = function() {
         imgAfter.onload = async function() {
             canvas.width = 600; canvas.height = 300;
-            ctx.fillStyle = "#111d33"; ctx.fillRect(0,0,600,300);
-            ctx.drawImage(imgBefore, 0, 0, 295, 300);
-            ctx.drawImage(imgAfter, 305, 0, 295, 300);
+            ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,600,300);
+            ctx.drawImage(imgBefore, 0, 0, 295, 300); ctx.drawImage(imgAfter, 305, 0, 295, 300);
             
-            ctx.fillStyle = "#d4af37"; ctx.beginPath(); ctx.moveTo(280, 150); ctx.lineTo(320, 130); ctx.lineTo(320, 170); ctx.fill();
-            ctx.fillStyle = "rgba(198,40,40,0.85)"; ctx.fillRect(10, 10, 50, 25);
-            ctx.fillStyle = "white"; ctx.font = "bold 14px Cairo"; ctx.fillText("قبل", 22, 27);
-            ctx.fillStyle = "rgba(46,125,50,0.85)"; ctx.fillRect(540, 10, 50, 25);
-            ctx.fillStyle = "white"; ctx.font = "bold 14px Cairo"; ctx.fillText("بعد", 552, 27);
+            ctx.fillStyle = "#f59e0b"; ctx.beginPath(); ctx.moveTo(280, 150); ctx.lineTo(320, 130); ctx.lineTo(320, 170); ctx.fill();
+            ctx.fillStyle = "rgba(239,68,68,0.9)"; ctx.fillRect(10, 10, 60, 30);
+            ctx.fillStyle = "white"; ctx.font = "bold 16px Cairo"; ctx.fillText("قبل", 25, 32);
+            ctx.fillStyle = "rgba(16,185,129,0.9)"; ctx.fillRect(530, 10, 60, 30);
+            ctx.fillStyle = "white"; ctx.font = "bold 16px Cairo"; ctx.fillText("بعد", 545, 32);
             
             const mergedB64 = canvas.toDataURL('image/jpeg', 0.8);
             const uploadedUrl = await uploadImageToStorage(mergedB64);
@@ -1068,16 +769,12 @@ function submitManualKaizen() {
                 let kId = uniqueNumericId().toString();
                 syncRecord('history/' + kId, { id: kId, dept: d, auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'), stepsOrder: ['ManualKaizen'], totalPct: 100, results: { 'ManualKaizen': { images: { 'img_1': { title: t, data: uploadedUrl } } } } });
                 
-                document.getElementById('newKaizenTitle').value = '';
-                document.getElementById('kaizenBeforePreview').innerHTML = ''; document.getElementById('kaizenAfterPreview').innerHTML = '';
-                kaizenImgs = { before: null, after: null };
+                document.getElementById('newKaizenTitle').value = ''; document.getElementById('kaizenBeforePreview').innerHTML = ''; document.getElementById('kaizenAfterPreview').innerHTML = ''; kaizenImgs = { before: null, after: null };
                 document.getElementById('kaizenUploadModal').style.display = 'none';
-                
-                awardPoints(40, 'مشاركة كايزن'); showToast('تم نشر الكايزن بنجاح');
-            } else { showToast('فشل الرفع، راجع مفتاح ImgBB'); }
+                awardPoints(40, 'مشاركة كايزن'); showToast('تم نشر الكايزن بنجاح 🚀');
+            } else { showToast('فشل الرفع'); }
             
-            document.getElementById('submitKaizenBtn').innerText = "دمج واعتماد";
-            document.getElementById('submitKaizenBtn').disabled = false;
+            btn.innerHTML = "اعتماد التحسين"; btn.disabled = false;
         }; imgAfter.src = kaizenImgs.after;
     }; imgBefore.src = kaizenImgs.before;
 }
@@ -1090,31 +787,36 @@ function renderKaizenFeed() {
         let lId = k.id;
         let liked = likesData[lId] && likesData[lId].includes(currentUser.name);
         let canEdit = hasRole('admin') || currentUser.name === k.auditor;
-        let controls = canEdit ? `<button class="btn btn-sm btn-warning flex-1" onclick="editKaizen('${k.id}')">تعديل</button><button class="btn btn-sm btn-danger flex-1" onclick="deleteKaizen('${k.id}')">حذف</button>` : '';
+        let controls = canEdit ? `<button class="btn btn-sm btn-outline flex-1" onclick="editKaizen('${k.id}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger flex-1" onclick="deleteKaizen('${k.id}')"><i class='bx bx-trash'></i> حذف</button>` : '';
         let comments = kaizenComments[lId] || [];
-        let commentsHtml = comments.map(cm => `<div class="comment-box"><b style="color:var(--gold);">${cm.user}:</b> ${cm.text} <span style="font-size:9px; color:var(--text-muted); float:left;">${cm.date}</span></div>`).join('');
+        let commentsHtml = comments.map(cm => `<div style="background:var(--surface-inset); padding:10px 15px; border-radius:10px; margin-bottom:8px; border-right:3px solid var(--primary); font-size:13px;"><b style="color:var(--primary); display:block; margin-bottom:3px;">${cm.user}:</b> ${cm.text} <span style="font-size:10px; color:var(--text-muted); float:left;">${cm.date}</span></div>`).join('');
 
-        return `<div class="kaizen-post">
-            <div style="display:flex; justify-content:space-between;"><b>${k.auditor}</b><span style="font-size:11px; color:var(--text-muted);">${k.dept} | ${k.date}</span></div>
-            <img src="${k.results.ManualKaizen.images.img_1.data}" class="kaizen-img">
-            <b style="font-size:15px;">${k.results.ManualKaizen.images.img_1.title}</b>
-            <div class="row-flex" style="margin-top:10px;">
-                <button class="btn btn-sm ${liked?'btn-success':'btn-outline'} flex-1" onclick="toggleKaizenLike('${lId}')">إعجاب (${likesData[lId]?likesData[lId].length:0})</button>
-                ${controls}
+        return `<div class="card glass-card" style="padding:0; overflow:hidden;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:rgba(0,0,0,0.2); border-bottom:1px solid var(--border-glass);">
+                <div style="display:flex; align-items:center; gap:10px;"><i class='bx bx-user-circle' style="font-size:24px; color:var(--gold);"></i><b style="color:var(--text-main); font-size:15px;">${k.auditor}</b></div>
+                <span style="font-size:12px; color:var(--text-muted); background:var(--surface-inset); padding:4px 10px; border-radius:12px;"><i class='bx bx-buildings'></i> ${k.dept} | ${k.date}</span>
             </div>
-            <div style="margin-top: 15px; border-top: 1px dashed var(--copper); padding-top: 10px;">
-                <div style="max-height: 120px; overflow-y: auto; margin-bottom: 10px;">${commentsHtml || '<div style="font-size:11px; text-align:center; color:var(--text-muted);">لا توجد تعليقات</div>'}</div>
-                <div class="row-flex"><input type="text" id="comment_input_${lId}" class="form-control flex-2" placeholder="اكتب تعليقاً..." style="margin:0;"><button class="btn btn-primary btn-sm flex-1" style="margin:0;" onclick="addKaizenComment('${lId}')">إرسال</button></div>
+            <div style="padding:20px;">
+                <b style="font-size:16px; color:var(--text-main); display:block; margin-bottom:15px;">${k.results.ManualKaizen.images.img_1.title}</b>
+                <img src="${k.results.ManualKaizen.images.img_1.data}" style="width:100%; border-radius:12px; border:1px solid var(--border-glass); margin-bottom:20px; box-shadow:var(--shadow-raised);">
+                <div class="row-flex" style="margin-bottom:20px;">
+                    <button class="btn btn-sm ${liked?'btn-primary':'btn-outline'} flex-1" onclick="toggleKaizenLike('${lId}')"><i class='bx ${liked?'bxs-like':'bx-like'}'></i> إعجاب (${likesData[lId]?likesData[lId].length:0})</button>
+                    ${controls}
+                </div>
+                <div style="border-top: 1px solid var(--border-glass); padding-top: 15px;">
+                    <div style="max-height: 150px; overflow-y: auto; margin-bottom: 15px; padding-right:5px;">${commentsHtml || '<div style="font-size:12px; text-align:center; color:var(--text-muted); padding:10px;">لا توجد تعليقات</div>'}</div>
+                    <div class="row-flex"><input type="text" id="comment_input_${lId}" class="form-control flex-2" placeholder="اكتب تعليقاً..." style="margin:0;"><button class="btn btn-primary btn-sm flex-1" style="margin:0;" onclick="addKaizenComment('${lId}')"><i class='bx bx-send'></i> إرسال</button></div>
+                </div>
             </div>
         </div>`;
     }).join('');
-    c.innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">لا توجد مشاركات</div>';
+    c.innerHTML = html || '<div style="text-align:center; color:var(--text-muted); padding:40px; width:100%;"><i class="bx bx-bulb" style="font-size:50px; display:block; margin-bottom:10px; opacity:0.5;"></i>لا توجد مشاركات مسجلة</div>';
 }
 
 function toggleKaizenLike(id) { if(!likesData[id]) likesData[id]=[]; let i=likesData[id].indexOf(currentUser.name); if(i>-1) likesData[id].splice(i,1); else likesData[id].push(currentUser.name); syncRecord('likes/' + id, likesData[id]); }
 function deleteKaizen(id) { if(confirm('تأكيد مسح الكايزن؟')) { deleteRecord('history/' + id); showToast('تم الحذف'); } }
 function editKaizen(id) { let k=historyData.find(x=>x.id===id); if(!k) return; let v=prompt('تعديل الوصف:', k.results.ManualKaizen.images.img_1.title); if(v) { k.results.ManualKaizen.images.img_1.title=sanitizeInput(v); syncRecord('history/' + id, k); showToast('تم التعديل'); } }
-function addKaizenComment(id) { let el=document.getElementById(`comment_input_${id}`); let txt=sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; kaizenComments[id].push({user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}); syncRecord('kaizenComments/' + id, kaizenComments[id]); el.value=''; awardPoints(2, 'كتابة تعليق'); }
+function addKaizenComment(id) { let el=document.getElementById(`comment_input_${id}`); let txt=sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; kaizenComments[id].push({user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}); syncRecord('kaizenComments/' + id, kaizenComments[id]); el.value=''; awardPoints(2, 'تعليق'); }
 
 // ------------------------------------------
 // 🏷️ التاجات والمشكلات (Tags Engine)
@@ -1122,15 +824,12 @@ function addKaizenComment(id) { let el=document.getElementById(`comment_input_${
 function handleTagImage(e) {
     const f=e.target.files[0]; if(!f) return;
     showToast('جاري تحضير الصورة...');
-    processAndEnhanceImage(f, function(dataUrl) { currentTagImg=dataUrl; document.getElementById('tagImagePreview').innerHTML=`<span style="color:var(--success); font-size:11px; font-weight:bold;">مُجهزة للرفع</span>`; });
+    processAndEnhanceImage(f, function(dataUrl) { currentTagImg=dataUrl; document.getElementById('tagImagePreview').innerHTML=`<span style="color:var(--success); font-size:12px; font-weight:bold;"><i class='bx bx-check'></i> صورة جاهزة</span>`; });
 }
 
-// ------------------------------------------
-// 🏷️ دالة إصدار التاج (محدثة ومضادة للأعطال)
-// ------------------------------------------
 async function addNewTag() {
     let d=document.getElementById('newTagDesc').value, c=document.getElementById('newTagColor').value, dp=document.getElementById('newTagDept').value, m=document.getElementById('newTagMachine').value, sp=document.getElementById('newTagSpareParts').value;
-    if(!d) { showToast('أدخل وصف المشكلة'); return; }
+    if(!d) { showToast('⚠️ أدخل وصف المشكلة'); return; }
     
     let fullDesc = sp ? `${d} [أجزاء: ${sp}]` : d;
     let uploadedUrl = null;
@@ -1138,10 +837,7 @@ async function addNewTag() {
     if (currentTagImg) {
         showToast('جاري رفع التاج والصورة... ⏳');
         uploadedUrl = await uploadImageToStorage(currentTagImg);
-        if(!uploadedUrl) {
-            // بدلاً من إيقاف الكود، سنحفظ التاج بدون صورة مع إعطاء تنبيه
-            showToast('⚠️ فشل رفع الصورة (تأكد من مفتاح ImgBB). سيتم حفظ التاج كنص فقط.');
-        }
+        if(!uploadedUrl) showToast('⚠️ فشل رفع الصورة. سيتم الحفظ كنص.');
     }
     
     let tId = uniqueNumericId().toString();
@@ -1152,67 +848,52 @@ async function addNewTag() {
     
     awardPoints(10, 'إصدار تاج جديد'); 
     if(uploadedUrl || !currentTagImg) showToast('تم إصدار التاج بنجاح ✅');
-    
-    if(c==='red' && document.getElementById('newTagEngineer') && document.getElementById('newTagEngineer').value) window.open(`https://wa.me/${document.getElementById('newTagEngineer').value.replace(/\D/g,'')}?text=${encodeURIComponent(`إشعار عطل (تاج أحمر)\nالقسم: ${dp}\nالماكينة: ${m||'عام'}\nالوصف: ${fullDesc}`)}`);
 }
-// ------------------------------------------
-// 🏷️ التاجات والمشكلات (Ticket System)
-// ------------------------------------------
+
 function renderTags() {
-    let rc = document.getElementById('redTagsContainer'); 
-    let bc = document.getElementById('blueTagsContainer');
-    if(!rc || !bc) return;
+    let rc = document.getElementById('redTagsContainer'); let bc = document.getElementById('blueTagsContainer');
+    if(!rc || !bc) return; // 🛡️ حماية
     
     let fDept = document.getElementById('filterTagDept').value; 
     let fMach = document.getElementById('filterTagMachine').value.trim().toLowerCase();
     let fStatus = document.getElementById('filterTagStatus') ? document.getElementById('filterTagStatus').value : 'active';
     
-    let redHtml = '', blueHtml = '';
-    let currentTime = Date.now();
-    const THREE_DAYS_MS = 259200000; // 3 أيام بالملي ثانية
+    let redHtml = '', blueHtml = ''; let currentTime = Date.now(); const THREE_DAYS_MS = 259200000;
 
     tagsData.forEach(t => {
-        // تطبيق الفلاتر
         if(fDept !== 'الكل' && t.dept !== fDept) return;
         if(fMach !== '' && (!t.machine || !t.machine.toLowerCase().includes(fMach))) return;
-        
         let isClosed = (t.status === 'closed');
         if(fStatus === 'active' && isClosed) return;
         if(fStatus === 'closed' && !isClosed) return;
 
-        // حساب التقادم للتاجات غير المغلقة (إذا عدى 3 أيام)
-        let isAged = false;
-        if(!isClosed && t.timestamp && (currentTime - t.timestamp > THREE_DAYS_MS)) {
-            isAged = true;
-        }
+        let isAged = false; if(!isClosed && t.timestamp && (currentTime - t.timestamp > THREE_DAYS_MS)) isAged = true;
 
         let canEdit = hasRole('admin', 'auditor') || currentUser.name === t.auditor;
         let controls = canEdit ? `
-            <select class="form-control flex-2" style="font-size:11px; padding:4px; margin:0;" onchange="updateTagState('${t.id}', this.value)">
-                <option value="open" ${t.status==='open'?'selected':''}>مفتوح ⏳</option>
-                <option value="progress" ${t.status==='progress'?'selected':''}>جاري 🛠️</option>
-                <option value="review" ${t.status==='review'?'selected':''}>مراجعة 👁️</option>
-                <option value="closed" ${t.status==='closed'?'selected':''}>مغلق ✅</option>
+            <select class="form-control flex-2" style="font-size:12px; padding:8px; margin:0;" onchange="updateTagState('${t.id}', this.value)">
+                <option value="open" ${t.status==='open'?'selected':''}>مفتوح</option>
+                <option value="progress" ${t.status==='progress'?'selected':''}>جاري</option>
+                <option value="review" ${t.status==='review'?'selected':''}>مراجعة</option>
+                <option value="closed" ${t.status==='closed'?'selected':''}>مغلق</option>
             </select>
-            <button class="btn btn-sm btn-outline flex-1" style="margin:0; padding:4px;" onclick="editTag('${t.id}')">تعديل</button>
-            <button class="btn btn-sm btn-danger" style="margin:0; padding:4px; width:auto;" onclick="deleteTag('${t.id}')">🗑️</button>
-        ` : `<span style="font-size:11px; font-weight:bold; color:var(--gold); padding:4px; background:rgba(0,0,0,0.2); border-radius:5px;">الحالة: ${t.status}</span>`;
+            <button class="btn btn-sm btn-outline flex-1" style="margin:0; padding:8px;" onclick="editTag('${t.id}')"><i class='bx bx-edit'></i></button>
+            <button class="btn btn-sm btn-danger" style="margin:0; padding:8px; width:45px;" onclick="deleteTag('${t.id}')"><i class='bx bx-trash'></i></button>
+        ` : `<span style="font-size:12px; font-weight:bold; color:var(--text-main); padding:6px 12px; background:var(--surface-inset); border-radius:8px;">الحالة: ${t.status}</span>`;
         
         let ticketClass = t.color === 'red' ? 'ticket-red' : 'ticket-blue';
-        let warningBadge = isAged ? `<div class="aging-warning">متأخر حرج</div>` : '';
+        let warningBadge = isAged ? `<div style="position:absolute; top:10px; left:-25px; background:var(--danger); color:white; font-size:10px; font-weight:bold; padding:2px 25px; transform:rotate(-45deg);">متأخر</div>` : '';
 
         let cardHtml = `
         <div class="tag-ticket ${ticketClass}">
             ${warningBadge}
-            <div class="ticket-header">
-                <div class="ticket-title">${t.desc}</div>
+            <div style="font-size:14px; font-weight:900; color:var(--text-main); margin-bottom:10px;">${t.desc}</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-bottom:15px; background:rgba(0,0,0,0.2); padding:8px; border-radius:8px;">
+                <i class='bx bx-buildings'></i> ${t.dept} ${t.machine ? ' | <i class="bx bx-cog"></i> ' + t.machine : ''}<br>
+                <i class='bx bx-user'></i> ${t.auditor} | <i class='bx bx-calendar'></i> ${t.date}
             </div>
-            <div class="ticket-meta">
-                🏭 ${t.dept} ${t.machine ? ' | ⚙️ ' + t.machine : ''}<br>
-                👤 ${t.auditor} | 📅 ${t.date}
-            </div>
-            ${t.image ? `<img src="${t.image}" class="ticket-img" title="اضغط لتكبير الصورة" onclick="window.open('${t.image}', '_blank')">` : ''}
-            <div class="row-flex" style="margin-top:10px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px;">
+            ${t.image ? `<img src="${t.image}" style="width:100%; border-radius:10px; margin-bottom:15px; border:1px solid var(--border-glass); cursor:pointer;" onclick="window.open('${t.image}', '_blank')">` : ''}
+            <div class="row-flex" style="border-top:1px solid var(--border-glass); padding-top:15px;">
                 ${controls}
             </div>
         </div>`;
@@ -1220,1260 +901,93 @@ function renderTags() {
         if(t.color === 'red') redHtml += cardHtml; else blueHtml += cardHtml;
     });
 
-    rc.innerHTML = redHtml || '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:15px;">لا توجد تاجات صيانة مطابقة</div>';
-    bc.innerHTML = blueHtml || '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:15px;">لا توجد تاجات إنتاج مطابقة</div>';
+    rc.innerHTML = redHtml || '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">لا توجد تاجات صيانة</div>';
+    bc.innerHTML = blueHtml || '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">لا توجد تاجات إنتاج</div>';
 }
 
 function updateTagState(id, st) { let t=tagsData.find(x=>x.id==id); if(t) {t.status=st; syncRecord('tags/' + id, t); if(st==='closed') awardPoints(20, 'إغلاق تاج');} }
-function deleteTag(id) { if(confirm('تأكيد حذف التاج نهائياً؟')) { deleteRecord('tags/' + id); showToast('تم الحذف'); } }
-function editTag(id) { let t=tagsData.find(x=>x.id==id); if(!t) return; let v=prompt('تعديل وصف المشكلة:', t.desc); if(v) { t.desc=sanitizeInput(v); syncRecord('tags/' + id, t); showToast('تم التعديل'); } }
+function deleteTag(id) { if(confirm('تأكيد الحذف نهائياً؟')) { deleteRecord('tags/' + id); showToast('تم الحذف'); } }
+function editTag(id) { let t=tagsData.find(x=>x.id==id); if(!t) return; let v=prompt('تعديل الوصف:', t.desc); if(v) { t.desc=sanitizeInput(v); syncRecord('tags/' + id, t); showToast('تم التعديل'); } }
 
 
 // ------------------------------------------
-// 🤖 المستشار الذكي وعقل المصنع (AI) - الإصدار النهائي والمستقر
+// 🤖 المستشار الذكي وعقل المصنع (AI)
 // ------------------------------------------
 async function getBase64FromUrl(url) {
     try { 
-        const res = await fetch(url); 
-        const blob = await res.blob(); 
-        return new Promise(resolve => { 
-            const reader = new FileReader(); 
-            reader.onloadend = () => resolve(reader.result.split(',')[1]); 
-            reader.readAsDataURL(blob); 
-        });
+        const res = await fetch(url); const blob = await res.blob(); 
+        return new Promise(resolve => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result.split(',')[1]); reader.readAsDataURL(blob); });
     } catch(e) { 
         return new Promise((resolve, reject) => { 
-            let img = new Image(); 
-            img.crossOrigin = 'Anonymous'; 
-            img.onload = () => { 
-                let canvas = document.createElement('canvas'); 
-                canvas.width = img.width; canvas.height = img.height; 
-                canvas.getContext('2d').drawImage(img, 0, 0); 
-                resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]); 
-            }; 
-            img.onerror = reject; 
-            img.src = url; 
+            let img = new Image(); img.crossOrigin = 'Anonymous'; 
+            img.onload = () => { let canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]); }; 
+            img.onerror = reject; img.src = url; 
         }); 
     }
 }
 
 async function runAIVision(itemId, itemTitle) {
-    let imgObj = currentStepImages['img_' + itemId]; 
-    if(!imgObj) return showToast('لا توجد صورة لفحصها');
-    
-    document.getElementById('aiModalText').innerHTML = "<div style='text-align:center;'>جاري فحص الصورة... ⏳</div>"; 
+    let imgObj = currentStepImages['img_' + itemId]; if(!imgObj) return showToast('لا توجد صورة لفحصها');
+    document.getElementById('aiModalText').innerHTML = "<div style='text-align:center;'><i class='bx bx-loader-alt bx-spin' style='font-size:30px; color:var(--primary);'></i><br>جاري فحص الصورة...</div>"; 
     document.getElementById('aiModal').style.display = 'flex';
     
     try {
         const base64Img = await getBase64FromUrl(imgObj.data);
-        
-        // تجميع النص والكتالوجات
         let fullPrompt = `أنت مهندس صيانة. حلل هذه الصورة بناءً على بند: "${itemTitle}". رد بـ HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع كتابة علامات \`\`\`html نهائياً.\n`;
-        if(knowledgeBaseData && knowledgeBaseData.length > 0) {
-            fullPrompt += "\nكتالوجات المصنع المعتمدة:\n" + knowledgeBaseData.map(kb => `[${kb.title}]: ${kb.content}`).join('\n');
-        }
+        if(knowledgeBaseData && knowledgeBaseData.length > 0) fullPrompt += "\nكتالوجات المصنع المعتمدة:\n" + knowledgeBaseData.map(kb => `[${kb.title}]: ${kb.content}`).join('\n');
         
-        // الاتصال الآمن بالسيرفر
-        const response = await fetch('/api/gemini', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                prompt: fullPrompt,        
-                imageBase64: base64Img      
-            })
-        });
+        const response = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: fullPrompt, imageBase64: base64Img }) });
+        const result = await response.json(); if(result.error) throw new Error(result.error);
         
-        const result = await response.json(); 
-        if(result.error) throw new Error(result.error);
-        
-        let text = result.candidates[0].content.parts[0].text;
-        text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
-        
-        document.getElementById('aiModalText').innerHTML = text; 
-        awardPoints(5, 'فحص بالذكاء الاصطناعي');
-    } catch(e) { 
-        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center;">خطأ في الاتصال: ${e.message}</div>`; 
-    }
+        let text = result.candidates[0].content.parts[0].text; text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
+        document.getElementById('aiModalText').innerHTML = text; awardPoints(5, 'تحليل AI');
+    } catch(e) { document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center;">خطأ في الاتصال: ${e.message}</div>`; }
 }
 
 async function predictMachineFailures() {
-    const r = document.getElementById('aiPredictionResult'); 
-    r.style.display='block'; r.innerText='جاري تحليل البيانات... ⏳';
-    
+    const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerHTML='<i class="bx bx-loader-alt bx-spin"></i> جاري التحليل...';
     try {
         let prompt = "بناءً على التاجات التالية، توقع الماكينات المعرضة للتوقف وقدم نصيحة. أجب بنص عادي أو HTML بسيط بدون علامات \`\`\`html: " + tagsData.map(t=>t.desc).join(',');
-        
-        const response = await fetch('/api/gemini', { 
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ prompt: prompt, imageBase64: null }) 
-        });
-        
-        const j = await response.json(); 
-        if(j.error) throw new Error(j.error);
-        
-        let text = j.candidates[0].content.parts[0].text;
-        text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
-        
+        const response = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt, imageBase64: null }) });
+        const j = await response.json(); if(j.error) throw new Error(j.error);
+        let text = j.candidates[0].content.parts[0].text; text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
         r.innerHTML = text;
-    } catch(e) { 
-        r.innerHTML = `<span style="color:red;">فشل الاتصال: ${e.message}</span>`; 
-    }
+    } catch(e) { r.innerHTML = `<span style="color:var(--danger);"><i class='bx bx-error'></i> فشل الاتصال: ${e.message}</span>`; }
 }
 
 async function explainItem(t) {
     document.getElementById('aiModal').style.display='flex'; 
-    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري استشارة عقل المصنع وتحليل البند... 🧠</h3></div>';
-    
+    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><i class="bx bx-brain" style="font-size:50px; color:var(--primary); animation:pulse 1s infinite;"></i><br>جاري تحضير خطوات العمل...</div>';
     try {
-        let factoryContext = (knowledgeBaseData || []).map(kb => `[مرجع: ${kb.title}]: ${kb.content || ''}`).join('\n\n').substring(0, 10000);
-        let prompt = `أنت الخبير التقني لـ Factory OS. اشرح البند التالي للمراجع الميداني: "${t}". 
-        تحدث بصيغة تعليمية بناء على المراجع إن وجدت.
-        تنبيه صارم جداً: رد بتنسيق HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع منعاً باتاً كتابة علامات الماركداون مثل \`\`\`html.
-        المراجع المتاحة: ${factoryContext}`;
-
-        const response = await fetch('/api/gemini', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-               prompt: prompt,        
-               imageBase64: null      
-            })
-        });
-        
-        const j = await response.json(); 
-        if(j.error) throw new Error(j.error);
-
-        let rawHTML = j.candidates[0].content.parts[0].text;
-        rawHTML = rawHTML.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
-        
-        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8;">${rawHTML}</div>`;
-    } catch(e) { 
-        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ في الاتصال: ${e.message}</div>`; 
-    }
-}
-// ------------------------------------------
-// إعدادات أخرى
-// ------------------------------------------
-// Architected by م.مُحَمَّد فَايِز - Native Theme Switcher
-
-function updateDeptDropdown() { let opts = departments.map(d=>`<option value="${d}">${d}</option>`).join(''); document.querySelectorAll('select').forEach(s => {if(s.id.includes('Dept')) s.innerHTML=opts;}); }
-function updateDeptListUI() { }
-function addOrUpdateDept() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); syncRecord('departments', departments); updateDeptDropdown(); showToast('تم الحفظ'); } }
-function addEngineer() { let n=document.getElementById('newEngName').value, p=document.getElementById('newEngPhone').value; if(n&&p) { maintenanceEngineers.push({name:n, phone:p}); syncRecord('maintenanceEngineers', maintenanceEngineers); document.getElementById('newTagEngineer').innerHTML+=`<option value="${p}">${n}</option>`; showToast('تم الإضافة'); } }
-
-
-// 👑 دالة عرض لوحة التحكم في المستخدمين (للمدير الكبير فقط)
-function renderUserManagement() {
-    if (currentUser.username !== 'mfayez') return;
-    
-    const container = document.getElementById('usersListContainer');
-    if (!container) return;
-    let html = '<h4 style="color:var(--gold); margin:10px 0;">إدارة المستخدمين والصلاحيات</h4>';
-    
-    // تحويل الكائن إلى مصفوفة للفحص
-    Object.keys(usersData).forEach(uid => {
-        const u = usersData[uid];
-        if (typeof u !== 'object') return; // لتجنب البيانات القديمة
-
-        const isPending = u.status === 'pending';
-        html += `
-        <div class="card modern-card" style="margin-bottom:10px; border-right:4px solid ${isPending?'var(--danger)':'var(--success)'}">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="text-align:right;">
-                    <b style="color:var(--gold);">${u.name}</b> <small>(${u.username})</small><br>
-                    <span style="font-size:10px;">المطلوب: ${u.requestedRole} | الحالية: ${u.role}</span>
-                </div>
-                <div>
-                    ${isPending ? `<button class="btn btn-sm btn-success" onclick="approveUser('${uid}')">موافقة</button>` : ''}
-                    <button class="btn btn-sm btn-outline" onclick="openPermissionsModal('${uid}')">الأذونات</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteUser('${uid}')">حذف</button>
-                </div>
-            </div>
-        </div>`;
-    });
-    container.innerHTML = html;
-}
-
-// 🛡️ دالة التحكم في الدخول لكل صفحة (محصنة)
-// 🛡️ دالة التحكم في الدخول لكل صفحة (التحكم الصارم)
-function canAccess(screenId, action = 'view') {
-    // 👑 أنت فقط (mfayez) من يملك الصلاحية المطلقة لتجاوز القواعد
-    if (currentUser.username === 'mfayez') return true; 
-    
-    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
-    if (!uid) return false;
-
-    const uData = usersData[uid];
-    if (!uData || typeof uData === 'string') {
-        return screenId === 'homeScreen' || screenId === 'tasksScreen' || screenId === 'tagsScreen';
-    }
-
-    // الاعتماد الكلي على مصفوفة الأذونات (حتى لو كان المسمى الوظيفي admin)
-    const userPerms = uData.permissions;
-    if (!userPerms || !userPerms[screenId]) return false;
-    
-    if (action === 'edit') return userPerms[screenId] === 'edit';
-    return userPerms[screenId] === 'view' || userPerms[screenId] === 'edit';
-}
-
-
-// ✅ الموافقة على المستخدم مع الحفاظ على الأذونات المخصصة
-async function approveUser(uid) {
-    const u = usersData[uid];
-    
-    // إذا قمت أنت بتعديل الأذونات مسبقاً، النظام سيحتفظ بها، ولن يفرض أذونات افتراضية
-    let finalPerms = u.permissions;
-    
-    await db.ref(`tpm_system/users/${uid}`).update({
-        status: 'active',
-        role: u.requestedRole,
-        permissions: finalPerms
-    });
-    showToast(`تم تفعيل حساب ${u.name} بالصلاحيات المحددة`);
-}
-// 🗑️ دالة حذف المستخدم (رفض الطلب)
-function deleteUser(uid) {
-    if(confirm('هل أنت متأكد من حذف هذا المستخدم/الطلب نهائياً؟')) {
-        db.ref('tpm_system/users/' + uid).remove();
-        showToast('تم حذف المستخدم بنجاح');
-    }
-}
-
-// 🔐 دوال التحكم في نافذة الأذونات المتقدمة
-let editingUserUid = null;
-
-function openPermissionsModal(uid) {
-    const u = usersData[uid];
-    if (!u || !u.permissions) return showToast('لا توجد أذونات قابلة للتعديل لهذا المستخدم (قديم)');
-    
-    editingUserUid = uid;
-    const perms = u.permissions;
-    const container = document.getElementById('permissionsContainer');
-    
-    const pages = {
-        homeScreen: 'الرئيسية (Dashboard)', tasksScreen: 'المهام', historyScreen: 'التقارير (History)',
-        kaizenScreen: 'كايزن', tagsScreen: 'التاجات', knowledgeScreen: 'عقل المصنع'
-    };
-
-    let html = `<div style="margin-bottom:10px; color:var(--gold); font-weight:bold;">المستخدم: ${u.name}</div>`;
-    
-    for (let screen in pages) {
-        let currentPerm = perms[screen] || 'none';
-        html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.1);">
-            <span style="font-size:12px;">${pages[screen]}</span>
-            <select id="perm_${screen}" class="form-control" style="width:auto; padding:2px 5px; margin:0; height:auto; font-size:12px;">
-                <option value="none" ${currentPerm==='none'?'selected':''}>مخفية 🚫</option>
-                <option value="view" ${currentPerm==='view'?'selected':''}>مشاهدة فقط 👁️</option>
-                <option value="edit" ${currentPerm==='edit'?'selected':''}>مشاهدة وتعديل ✍️</option>
-            </select>
-        </div>`;
-    }
-    
-    container.innerHTML = html;
-    document.getElementById('permissionsModal').style.display = 'flex';
-}
-
-
-// ------------------------------------------
-// 📉 محرك التحسين المستمر وشجرة الفواقد (KK Engine)
-// ------------------------------------------
-
-// تصنيفات فواقد الـ TPM العالمية (اخترنا أهم 8 فواقد للمصنع)
-const tpmLosses = [
-    { id: 'L1', name: 'أعطال الماكينات (Breakdowns)', type: 'availability', icon: '🔧' },
-    { id: 'L2', name: 'الإعداد والضبط (Setup & Adj)', type: 'availability', icon: '⚙️' },
-    { id: 'L3', name: 'تغيير أدوات ومقاسات', type: 'availability', icon: '🪚' },
-    { id: 'L4', name: 'بدء التشغيل والتسخين', type: 'availability', icon: '🚀' },
-    { id: 'L5', name: 'التوقفات الصغيرة العابرة', type: 'performance', icon: '⏱️' },
-    { id: 'L6', name: 'انخفاض سرعة الماكينة', type: 'performance', icon: '🐢' },
-    { id: 'L7', name: 'العيوب وإعادة التشغيل', type: 'quality', icon: '❌' },
-    { id: 'L8', name: 'فواقد نقص الخامات', type: 'availability', icon: '📦' }
-];
-
-// مصفوفة مؤقتة لتخزين الفواقد (في التطوير القادم سنربطها بـ Firebase)
-let registeredLosses = []; 
-const COST_PER_MINUTE = 50; // افتراض: دقيقة توقف المصنع تكلف 50 جنيه
-
-function renderKKDashboard() {
-    let container = document.getElementById('kkLossTreeContainer');
-    if(!container) return;
-
-    let html = tpmLosses.map(loss => {
-        // تجميع كل الدقائق المسجلة لهذا الفقد بالذات
-        let currentLossMins = registeredLosses.filter(l => l.lossId === loss.id).reduce((sum, curr) => sum + curr.minutes, 0);
-        let currentLossCost = currentLossMins * COST_PER_MINUTE; 
-        
-        // تغيير لون الكارت بناءً على حجم الخسارة
-        let borderColor = currentLossMins > 60 ? 'var(--danger)' : (currentLossMins > 0 ? 'var(--warning)' : 'rgba(255,255,255,0.1)');
-        let shadowEffect = currentLossMins > 60 ? 'box-shadow: 0 0 15px rgba(198,40,40,0.5);' : '';
-        
-        return `
-        <div class="card glass-card" style="border-top:4px solid ${borderColor}; ${shadowEffect} text-align:center; padding:15px; cursor:pointer;" onclick="openLossRegistration('${loss.id}', '${loss.name}')">
-            <div style="font-size:24px; margin-bottom:5px; filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${loss.icon}</div>
-            <div style="font-size:11px; font-weight:bold; color:var(--text-main); margin-bottom:10px; height:30px;">${loss.name}</div>
-            <div style="background:rgba(0,0,0,0.3); padding:5px; border-radius:5px;">
-                <div style="font-size:11px; color:var(--text-muted);">⏱️ ${currentLossMins} دقيقة</div>
-                <div style="font-size:12px; font-weight:900; color:${currentLossCost > 0 ? 'var(--danger)' : 'var(--success)'}; margin-top:2px;">${currentLossCost.toLocaleString()} ج.م</div>
-            </div>
-        </div>`;
-    }).join('');
-    
-    container.innerHTML = html;
-
-    // تحديث العدادات العلوية الإجمالية
-    let totalMins = registeredLosses.reduce((sum, l) => sum + l.minutes, 0);
-    document.getElementById('kkTotalLossHours').innerText = (totalMins / 60).toFixed(1);
-    document.getElementById('kkTotalLossCost').innerText = (totalMins * COST_PER_MINUTE).toLocaleString() + ' ج';
-}
-
-function openLossRegistration(lossId, lossName) {
-    let mins = prompt(`تسجيل فقد جديد في:\n[ ${lossName} ]\n\nأدخل مدة التوقف (بالدقائق):`);
-    
-    if(mins && !isNaN(mins) && parseInt(mins) > 0) {
-        let parsedMins = parseInt(mins);
-        let lossObj = {
-            id: uniqueNumericId().toString(),
-            lossId: lossId,
-            minutes: parsedMins,
-            date: new Date().toLocaleDateString('ar-EG'),
-            user: currentUser.name
-        };
-        
-        // 🚀 إرسال الفقد فوراً لقاعدة البيانات ليراه الجميع
-        syncRecord('losses/' + lossObj.id, lossObj); 
-        
-        awardPoints(5, 'تسجيل وتحليل فقد توقف');
-        showToast(`تم تسجيل ${parsedMins} دقيقة توقف.. وجاري حساب النزيف المالي! 📉`);
-    } else if (mins) {
-        showToast('يرجى إدخال رقم صحيح للدقائق ⚠️');
-    }
-}
-
-
-async function saveUserPermissions() {
-    if (!editingUserUid) return;
-    const pages = ['homeScreen', 'tasksScreen', 'historyScreen', 'kaizenScreen', 'tagsScreen', 'knowledgeScreen'];
-    let newPerms = {};
-    
-    pages.forEach(p => {
-        let sel = document.getElementById('perm_' + p);
-        if (sel) newPerms[p] = sel.value;
-    });
-
-    await db.ref(`tpm_system/users/${editingUserUid}/permissions`).set(newPerms);
-    showToast('تم تحديث الأذونات بنجاح');
-    document.getElementById('permissionsModal').style.display = 'none';
-}
-let currentKbFilter = 'الكل';
-
-function filterCat(cat, btn) {
-    currentKbFilter = cat;
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderKnowledgeBase();
-}
-
-function filterLibrary() { renderKnowledgeBase(); }
-
-
-// ==========================================
-// 👷‍♂️ محرك بوابة الصيانة الذاتية (JH Portal Engine)
-// ==========================================
-let currentJHDept = null;
-let jhDocumentsData = {};
-let jhTimeChartInstance = null;
-let jhTagMatrixChartInstance = null;
-
-window.showJHPortal = function() {
-    currentJHDept = null;
-    document.getElementById('jhToolbox').style.display = 'none';
-    
-    let grid = departments.map(d => `
-        <div class="card glass-card" style="padding:15px; text-align:center; cursor:pointer; border-right:4px solid var(--success); transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="selectJHDept('${d}')">
-            <b style="color:var(--success); font-size:14px;">🏭 ${d}</b>
-        </div>
-    `).join('');
-    
-    document.getElementById('jhDeptGrid').innerHTML = grid;
-    showScreen('jhPortalScreen');
-};
-
-window.selectJHDept = function(dept) {
-    currentJHDept = dept;
-    document.getElementById('selectedJHDeptTitle').innerText = `داشبورد: ${dept}`;
-    
-    // 1. حساب آخر مراجعة (الجودة والأداء)
-    const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen'));
-    const lastScore = deptAudits.length > 0 ? deptAudits[deptAudits.length - 1].totalPct : 0;
-    document.getElementById('deptAuditScore').innerText = lastScore + '%';
-    
-    // 2. حساب التاجات
-    const deptTags = tagsData.filter(t => t.dept === dept);
-    const openTags = deptTags.filter(t => t.status !== 'done' && t.status !== 'closed').length;
-    document.getElementById('deptOpenTags').innerText = openTags;
-
-    // 3. حساب الكايزن
-    const deptKaizens = historyData.filter(h => h.dept === dept && h.stepsOrder.includes('ManualKaizen')).length;
-    document.getElementById('deptKaizens').innerText = deptKaizens;
-    
-    // 4. محرك حساب الـ OEE الافتراضي
-    let calculatedOEE = Math.max(0, Math.round((lastScore * 0.95) - (openTags * 1.5)));
-    if (deptAudits.length === 0) calculatedOEE = 0;
-    
-    const oeeEl = document.getElementById('deptOEE');
-    oeeEl.innerText = calculatedOEE + '%';
-
-    // 5. نظام المستهدفات
-    const goalEl = document.getElementById('deptGoalDisplay');
-    if (deptGoalsData[dept]) {
-        goalEl.style.display = 'inline-block';
-        goalEl.innerHTML = `المستهدف: <b>${deptGoalsData[dept]}%</b>`;
-        oeeEl.style.color = calculatedOEE >= deptGoalsData[dept] ? 'var(--success)' : '#00BCD4';
-    } else {
-        goalEl.style.display = 'none';
-        oeeEl.style.color = '#00BCD4';
-    }
-
-    // 📈 6. رسم منحنى التطور التاريخي للمراجعات
-    const ctxTrend = document.getElementById('jhMiniTrendChart');
-    if (ctxTrend) {
-        if (jhMiniChartInstance) jhMiniChartInstance.destroy();
-        let last5Audits = deptAudits.slice(-5);
-        let labels = last5Audits.map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]);
-        let data = last5Audits.map(a => a.totalPct);
-        
-        jhMiniChartInstance = new Chart(ctxTrend, {
-            type: 'line',
-            data: {
-                labels: labels.length > 0 ? labels : ['-'],
-                datasets: [{
-                    label: 'كفاءة JH %', data: data.length > 0 ? data : [0],
-                    borderColor: '#d4af37', backgroundColor: 'rgba(212, 175, 55, 0.1)',
-                    borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { y: { display: false, min: 0, max: 100 }, x: { ticks: { color: '#cbd5e1', font: {size: 9} }, grid: {display: false} } },
-                plugins: { legend: { display: false } }
-            }
-        });
-    }
-
-    // ⏱️ 7. رسم تحليل أزمنة الصيانة الذاتية (محاكاة حسابية لانخفاض الوقت)
-    // في الـ TPM، الهدف من الخطوات الأولى تقليل وقت التنظيف. سنرسم منحنى يوضح تحسن الوقت.
-    const ctxTime = document.getElementById('jhTimeChart');
-    if (ctxTime) {
-        if (jhTimeChartInstance) jhTimeChartInstance.destroy();
-        // محاكاة بيانات أزمنة الصيانة (تبدأ عالية وتقل مع التحسينات)
-        let timeData = [120, 105, 90, 75, Math.max(45, 120 - (deptKaizens * 5) - (lastScore / 2))]; 
-        let timeLabels = ['الأسبوع 1', 'الأسبوع 2', 'الأسبوع 3', 'الأسبوع 4', 'الحالي'];
-        
-        jhTimeChartInstance = new Chart(ctxTime, {
-            type: 'bar',
-            data: {
-                labels: timeLabels,
-                datasets: [{
-                    label: 'وقت الصيانة (دقائق)', data: timeData,
-                    backgroundColor: '#00BCD4', borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { y: { ticks: { color: '#cbd5e1', font:{size:9} } }, x: { ticks: { color: '#cbd5e1', font:{size:9} }, grid:{display:false} } },
-                plugins: { legend: { display: false } }
-            }
-        });
-    }
-
-    // 🏷️ 8. رسم مصفوفة التاجات (Tag Matrix)
-    const ctxMatrix = document.getElementById('jhTagMatrixChart');
-    if (ctxMatrix) {
-        if (jhTagMatrixChartInstance) jhTagMatrixChartInstance.destroy();
-        
-        let redOpen = deptTags.filter(t => t.color === 'red' && t.status !== 'closed').length;
-        let redClosed = deptTags.filter(t => t.color === 'red' && t.status === 'closed').length;
-        let blueOpen = deptTags.filter(t => t.color === 'blue' && t.status !== 'closed').length;
-        let blueClosed = deptTags.filter(t => t.color === 'blue' && t.status === 'closed').length;
-
-        jhTagMatrixChartInstance = new Chart(ctxMatrix, {
-            type: 'doughnut',
-            data: {
-                labels: ['صيانة مفتوح', 'صيانة مغلق', 'إنتاج مفتوح', 'إنتاج مغلق'],
-                datasets: [{
-                    data: [redOpen, redClosed, blueOpen, blueClosed],
-                    backgroundColor: ['#ef4444', '#b91c1c', '#3b82f6', '#1d4ed8'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, cutout: '70%',
-                plugins: { legend: { position: 'right', labels: { color: '#cbd5e1', font:{size:10, family:'Cairo'} } } }
-            }
-        });
-    }
-
-    // 🏆 9. تحديث ترتيب الأبطال الداخلي
-    renderInternalDeptLeaderboard(dept);
-
-    document.getElementById('jhToolbox').style.display = 'block';
-    window.scrollTo({ top: document.getElementById('jhToolbox').offsetTop - 20, behavior: 'smooth' });
-};
-
-window.setDeptGoal = function() {
-    if(!currentJHDept) return;
-    let currentGoal = deptGoalsData[currentJHDept] || 85;
-    let newGoal = prompt(`أدخل النسبة المئوية للمستهدف (Target OEE) لقسم ${currentJHDept}:\n(مثال: 85)`, currentGoal);
-    
-    if (newGoal && !isNaN(newGoal) && newGoal > 0 && newGoal <= 100) {
-        syncRecord(`dept_goals/${currentJHDept}`, parseInt(newGoal));
-        showToast('تم تحديث المستهدف بنجاح 🎯 وسينعكس فوراً للجميع.');
-    } else if (newGoal) {
-        showToast('يرجى إدخال رقم صحيح بين 1 و 100');
-    }
-};
-
-window.renderInternalDeptLeaderboard = function(dept) {
-    const container = document.getElementById('deptInternalLeaderboard');
-    if(!container) return;
-
-    let deptUsers = [];
-    for (let uid in usersData) {
-        if(usersData[uid].dept === dept) {
-            deptUsers.push({
-                name: usersData[uid].name,
-                points: userPoints[uid] || 0,
-                avatar: usersData[uid].avatar
-            });
-        }
-    }
-    
-    deptUsers.sort((a,b) => b.points - a.points);
-    
-    container.innerHTML = deptUsers.slice(0, 3).map((u, idx) => {
-        let medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : '🥉');
-        return `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:8px 10px; border-radius:8px; border-right:3px solid var(--gold);">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:16px;">${medal}</span>
-                <img src="${u.avatar || 'https://ui-avatars.com/api/?name='+u.name}" style="width:24px; height:24px; border-radius:50%;">
-                <span style="font-size:12px; font-weight:bold; color:var(--text-main);">${u.name}</span>
-            </div>
-            <span style="font-size:12px; font-weight:bold; color:var(--success);">${u.points} <small>نقطة</small></span>
-        </div>`;
-    }).join('') || '<div style="font-size:11px; color:var(--text-muted); text-align:center;">لا يوجد أبطال مسجلين بهذا القسم بعد 🚀</div>';
-};
-
-window.startNewAuditFlowFromPortal = function() {
-    currentViewedDept = currentJHDept;
-    startNewAuditFlow();
-};
-
-
-
-// ==========================================
-// 🧠 محرك الفلاتر المتداخلة وتوليد الخرائط
-// ==========================================
-let clitSelectedZone = 'الكل';
-let clitSelectedOp = 'الكل';
-let clitSelectedFreq = 'الكل';
-let currentDocType = '';
-
-function generateCLITCard(r, type) {
-    let content = ''; let borderColor = 'var(--gold)'; let bgGlow = '';
-
-    if(type === 'CLIT') {
-        let op = r.operation || r.clitType || '';
-        let icon = '⚙️';
-        if(op.includes('تنظيف') || op.includes('تنطيف')) { borderColor = '#3b82f6'; icon = '🧹'; bgGlow = 'rgba(59, 130, 246, 0.05)'; }
-        else if(op.includes('تزييت') || op.includes('تشحيم')) { borderColor = '#f97316'; icon = '🛢️'; bgGlow = 'rgba(249, 115, 22, 0.05)'; }
-        else if(op.includes('فحص')) { borderColor = '#22c55e'; icon = '🔍'; bgGlow = 'rgba(34, 197, 94, 0.05)'; }
-        else if(op.includes('تربيط') || op.includes('ربط')) { borderColor = '#ef4444'; icon = '🔧'; bgGlow = 'rgba(239, 68, 68, 0.05)'; }
-
-        content = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                <b style="color:var(--text-main); font-size:14px;">${icon} [${r.region}] ${r.part ? ' - ' + r.part : ''}</b>
-                <span style="font-size:10px; background:${borderColor}; color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${r.frequency || 'دوري'}</span>
-            </div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px; line-height:1.5;">
-                <span style="color:${borderColor}; font-weight:bold;">الإجراء:</span> ${r.action || r.standard}
-            </div>
-            <div style="font-size:11px; background:rgba(255,255,255,0.03); padding:5px; border-radius:5px; border:1px dashed ${borderColor}; line-height:1.6;">
-                <b>🎯 المعيار / الحالة المثلى:</b> ${r.optimalState || r.standard || 'حسب المواصفة'}<br>
-                ${r.degradation ? `<b>⚠️ حالة التدهور المتوقعة:</b> <span style="color:var(--danger);">${r.degradation}</span><br>` : ''}
-                <b>🛠️ الأدوات وموقف الماكينة:</b> ${r.tools || 'يدوي'} | <span style="color:var(--warning); font-weight:bold;">${r.machineState || 'مجهول'}</span><br>
-                <b>⏱️ الزمن (قبل/بعد):</b> ${r.timeBefore || '-'} / <span style="color:var(--success); font-weight:bold;">${r.timeAfter || '-'}</span>
-            </div>
-        `;
-    } 
-    else if(type === 'Contamination') {
-        borderColor = '#795548'; bgGlow = 'rgba(121, 85, 72, 0.05)';
-        content = `<b>📍 ${r.location}</b><br><small style="color:#795548;">التلوث: ${r.typeDesc}</small>`;
-    } else if(type === 'SOC') {
-        borderColor = 'var(--warning)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
-        content = `<b>🚧 ${r.location}</b><br><small style="color:var(--warning);">السبب: ${r.reason}</small>`;
-    } else if(type === 'Safety') {
-        borderColor = 'var(--danger)'; bgGlow = 'rgba(244, 67, 54, 0.05)';
-        content = `<b>${r.level==='high'?'🔴':'🟡'} ${r.hazard}</b>`;
-    } else {
-        borderColor = 'var(--gold)'; bgGlow = 'rgba(255, 193, 7, 0.05)';
-        content = `<b>⚙️ ${r.name}</b><br><small style="color:var(--gold);">${r.desc}</small>`;
-    }
-
-    let actionBtns = '';
-    if(hasRole('admin') && r.id) { 
-        actionBtns = `
-            <button class="btn btn-sm btn-warning" style="padding:2px 5px; margin-top:5px; width:100%; color:#000;" onclick="editJHRecord('${type}','${r.id}')">✏️ تعديل</button>
-            <button class="btn btn-sm btn-danger" style="padding:2px 5px; margin-top:5px; width:100%;" onclick="deleteJHRecord('${type}','${r.id}')">🗑️ حذف</button>
-        `;
-    }
-    
-    return `<div class="card glass-card" style="border-right:5px solid ${borderColor}; background:${bgGlow}; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="flex:1;">${content}</div>
-        <div style="text-align:left; border-left:1px dashed rgba(255,255,255,0.1); padding-left:10px; margin-left:10px;">
-            <small style="font-size:9px; color:var(--gold); font-weight:bold;">معيار المصنع 🏭</small><br>
-            ${actionBtns}
-        </div>
-    </div>`;
-}
-
-// ==========================================
-// 📂 فتح المستندات والتحكم بالفلاتر
-// ==========================================
-window.openJHDocument = async function(type) {
-    currentDocType = type;
-    const headerMap = { 
-        'CLIT': '🧹 خرائط معايير التنظيف والتزييت والفحص (CLIT)',
-        'Contamination': '🛢️ حصر مصادر التلوث والتسريبات',
-        'SOC': '🧗‍♂️ حصر الأماكن صعبة الوصول (SOC)', 
-        'Safety': '⚠️ حصر الأماكن غير الآمنة (Safety Map)', 
-        'Anatomy': '⚙️ تشريح وشرح أجزاء الماكينة' 
-    };
-    
-    document.getElementById('jhDocHeader').innerText = headerMap[type];
-    
-    const statsContainer = document.getElementById('clitStatsSummary');
-    const zoneFilters = document.getElementById('clitZoneFilters');
-    const opFilters = document.getElementById('clitOpFilters');
-    const freqFilters = document.getElementById('clitFrequencyFilters');
-    const startBtn = document.getElementById('startChecklistBtnContainer');
-
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') {
-        if(statsContainer) statsContainer.style.display = 'block';
-        if(zoneFilters) zoneFilters.style.display = 'flex';
-        if(opFilters) opFilters.style.display = 'grid';
-        if(freqFilters) freqFilters.style.display = 'flex';
-        if(startBtn) startBtn.style.display = 'block';
-        
-        clitSelectedZone = 'الكل'; clitSelectedOp = 'الكل'; clitSelectedFreq = 'الكل';
-        resetFilterButtonsUI();
-        calculateLiveBadgesAndCounters();
-    } else {
-        if(statsContainer) statsContainer.style.display = 'none';
-        if(zoneFilters) zoneFilters.style.display = 'none';
-        if(opFilters) opFilters.style.display = 'none';
-        if(freqFilters) freqFilters.style.display = 'none';
-        if(startBtn) startBtn.style.display = 'none';
-    }
-
-    renderJHDocForm(type);
-    showToast('جاري تحميل السجلات من السيرفر... ⏳');
-    
-    const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value');
-    let records = snap.val() ? Object.values(snap.val()) : [];
-
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة' && records.length === 0) {
-        showToast('جاري تهيئة قاعدة البيانات بالخرائط القياسية لأول مرة... ⏳');
-        let updates = {};
-        factoryCLITData.forEach(item => { updates[item.id] = item; });
-        await db.ref(`tpm_system/jh_records/حقن الكابينة/CLIT`).set(updates);
-        records = factoryCLITData;
-        showToast('تمت التهيئة بنجاح ✅ يمكنك الآن التعديل عليها!');
-    }
-    
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') {
-        if(document.getElementById('statTotalPoints')) document.getElementById('statTotalPoints').innerText = records.length;
-        const zones = ['الجيكات', 'الهيد', 'الفرن', 'مدخل', 'عربة', 'تجهيزة'];
-        zones.forEach(z => {
-            let count = records.filter(item => item.region && item.region.includes(z)).length;
-            let badge = document.getElementById(`badge-count-${z}`);
-            if(badge) badge.innerText = count;
-        });
-    }
-
-    window.currentLoadedRecords = records;
-    renderJHDocList(type, records);
-    showScreen('jhDocumentScreen');
-};
-
-function calculateLiveBadgesAndCounters() {
-    // Moved logic into openJHDocument for initial load
-}
-
-function resetFilterButtonsUI() {
-    document.querySelectorAll('.clit-zone-btn, .clit-op-btn, .clit-freq-btn').forEach(btn => {
-        btn.classList.remove('active', 'btn-primary', 'btn-success'); btn.classList.add('btn-outline');
-    });
-    document.querySelectorAll('.clit-zone-btn')[0].classList.add('active');
-    document.querySelectorAll('.clit-op-btn')[0].classList.add('active', 'btn-primary');
-    document.querySelectorAll('.clit-freq-btn')[0].classList.add('active');
-}
-
-window.filterCLITZone = function(zone, btnEl) {
-    clitSelectedZone = zone;
-    document.querySelectorAll('.clit-zone-btn').forEach(b => b.classList.remove('active')); btnEl.classList.add('active');
-    renderJHDocList('CLIT', window.currentLoadedRecords);
-};
-
-window.filterCLITOp = function(op, btnEl) {
-    clitSelectedOp = op;
-    document.querySelectorAll('.clit-op-btn').forEach(b => { b.classList.remove('active', 'btn-primary'); b.classList.add('btn-outline'); });
-    btnEl.classList.add('active', 'btn-primary');
-    renderJHDocList('CLIT', window.currentLoadedRecords);
-};
-
-window.filterCLITFreq = function(freq, btnEl) {
-    clitSelectedFreq = freq;
-    document.querySelectorAll('.clit-freq-btn').forEach(b => b.classList.remove('active')); btnEl.classList.add('active');
-    renderJHDocList('CLIT', window.currentLoadedRecords);
-};
-
-window.renderJHDocList = function(type, records) {
-    let container = document.getElementById('jhDocListContainer');
-    if(!container) return;
-
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') {
-        let filtered = records.filter(item => {
-            let matchZone = (clitSelectedZone === 'الكل') || (item.region && item.region.includes(clitSelectedZone));
-            let itemOp = item.operation || '';
-            let matchOp = (clitSelectedOp === 'الكل') || 
-                          (clitSelectedOp === 'تزييت' && (itemOp.includes('تزييت') || itemOp.includes('تشحيم'))) ||
-                          (itemOp.includes(clitSelectedOp));
-            let matchFreq = (clitSelectedFreq === 'الكل') || (item.frequency && item.frequency.includes(clitSelectedFreq));
-            return matchZone && matchOp && matchFreq;
-        });
-
-        if(document.getElementById('statActiveFiltered')) document.getElementById('statActiveFiltered').innerText = filtered.length;
-        if(document.getElementById('statEstimatedTime')) document.getElementById('statEstimatedTime').innerText = Math.round(filtered.length * 1.5) + 'm';
-
-        if(filtered.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;">لا توجد أي نقاط فحص تطابق هذه المصفوفة من الفلاتر حالياً 📭</div>';
-            return;
-        }
-
-        const opGroups = { '🧹 عمليات التنظيف (C)': [], '🛢️ عمليات التزييت والتشحيم (L)': [], '🔍 عمليات الفحص (I)': [], '🔧 عمليات التربيط (T)': [] };
-        
-        filtered.forEach(r => {
-            let op = r.operation || r.clitType || '';
-            if(op.includes('تنظيف') || op.includes('تنطيف')) opGroups['🧹 عمليات التنظيف (C)'].push(r);
-            else if(op.includes('تزييت') || op.includes('تشحيم')) opGroups['🛢️ عمليات التزييت والتشحيم (L)'].push(r);
-            else if(op.includes('فحص')) opGroups['🔍 عمليات الفحص (I)'].push(r);
-            else if(op.includes('تربيط') || op.includes('ربط')) opGroups['🔧 عمليات التربيط (T)'].push(r);
-            else opGroups['🔍 عمليات الفحص (I)'].push(r);
-        });
-
-        let html = '';
-        for (let groupName in opGroups) {
-            if(opGroups[groupName].length > 0) {
-                html += `<h4 style="color:var(--gold); margin:20px 0 10px; border-bottom:2px solid var(--copper); padding-bottom:5px;">${groupName}</h4>`;
-                html += opGroups[groupName].map(r => generateCLITCard(r, type)).join('');
-            }
-        }
-        container.innerHTML = html;
-    } else {
-        let html = records.reverse().map(r => generateCLITCard(r, type)).join('');
-        container.innerHTML = html || '<div style="text-align:center; padding:20px; color:var(--text-muted); font-weight:bold;">لا توجد سجلات مسجلة لهذا القسم 📭</div>';
-    }
-};
-
-window.renderJHDocForm = function(type) {
-    let formHtml = '';
-    if(type === 'CLIT') {
-        formHtml = `
-            <h4 style="margin:0 0 10px; color:#00BCD4;">تسجيل نقطة CLIT جديدة بالخريطة</h4>
-            <div class="row-flex">
-                <select id="clitType" class="form-control flex-1">
-                    <option value="تنظيف">تنظيف (C)</option><option value="تزييت">تزييت/تشحيم (L)</option>
-                    <option value="فحص">فحص (I)</option><option value="تربيط">تربيط (T)</option>
-                </select>
-                <select id="clitFreq" class="form-control flex-1">
-                    <option value="يومي">يومي</option><option value="أسبوعي">أسبوعي</option>
-                    <option value="شهري">شهري</option><option value="سنوي">سنوي</option>
-                </select>
-            </div>
-            <div class="row-flex">
-                <input type="text" id="clitRegion" class="form-control flex-1" placeholder="المنطقة (مثال: الفرن)">
-                <input type="text" id="clitPart" class="form-control flex-1" placeholder="الجزء (مثال: سير الموتور)">
-            </div>
-            <textarea id="clitAction" class="form-control" rows="2" placeholder="الإجراء المطلوب (مثال: تنظيف الأتربة والتأكد من...)"></textarea>
-            <div class="row-flex">
-                <input type="text" id="clitStandard" class="form-control flex-1" placeholder="المعيار / الحالة المثلى">
-                <input type="text" id="clitDegradation" class="form-control flex-1" placeholder="حالة التدهور المتوقعة">
-            </div>
-            <div class="row-flex">
-                <input type="text" id="clitTools" class="form-control flex-1" placeholder="الأدوات المطلوبة">
-                <select id="clitMachineState" class="form-control flex-1">
-                    <option value="لا تعمل">الماكينة لا تعمل</option><option value="تعمل">الماكينة تعمل</option>
-                </select>
-            </div>
-            <div class="row-flex">
-                <input type="text" id="clitTimeBefore" class="form-control flex-1" placeholder="الوقت المعياري قبل (مثال: 5m)">
-                <input type="text" id="clitTimeAfter" class="form-control flex-1" placeholder="الوقت الهدف بعد (مثال: 2m)">
-            </div>
-            <button class="btn btn-primary full-width" style="background:#00BCD4; margin-top:10px;" onclick="saveJHRecord('CLIT')">➕ حفظ في قاعدة البيانات</button>
-        `;
-    } else if(type === 'Contamination') {
-        formHtml = `
-            <h4 style="margin:0 0 10px; color:#795548;">رصد مصدر تلوث وتسريب</h4>
-            <input type="text" id="contLocation" class="form-control" placeholder="مكان التسريب (مثال: أسفل التنك الرئيسي)">
-            <input type="text" id="contType" class="form-control" placeholder="نوع التلوث (زيت، مياه، بودرة، خردة...)">
-            <button class="btn btn-primary full-width" style="background:#795548; color:white;" onclick="saveJHRecord('Contamination')">➕ رصد المصدر</button>
-        `;
-    } else if(type === 'SOC') {
-        formHtml = `
-            <h4 style="margin:0 0 10px; color:var(--warning);">تسجيل مكان صعب جديد</h4>
-            <input type="text" id="socLocation" class="form-control" placeholder="المكان (مثال: خلف الطلمبة 1)">
-            <input type="text" id="socReason" class="form-control" placeholder="سبب الصعوبة (ضيق، حرارة..)">
-            <button class="btn btn-warning full-width" onclick="saveJHRecord('SOC')">➕ إضافة للسجل</button>
-        `;
-    } else if(type === 'Safety') {
-        formHtml = `
-            <h4 style="margin:0 0 10px; color:var(--danger);">تسجيل خطر أمان</h4>
-            <input type="text" id="safeHazard" class="form-control" placeholder="وصف الخطر (سلك مكشوف، مسمار بارز)">
-            <select id="safeLevel" class="form-control"><option value="high">خطر حرج 🔴</option><option value="med">خطر متوسط 🟡</option></select>
-            <button class="btn btn-danger full-width" onclick="saveJHRecord('Safety')">➕ تسجيل الخطر</button>
-        `;
-    } else {
-        formHtml = `
-            <h4 style="margin:0 0 10px; color:var(--gold);">إضافة شرح جزء (Anatomy)</h4>
-            <input type="text" id="partName" class="form-control" placeholder="اسم الجزء">
-            <textarea id="partDesc" class="form-control" placeholder="وظيفة الجزء وكيفية فحصه" rows="2"></textarea>
-            <button class="btn btn-primary full-width" onclick="saveJHRecord('Anatomy')">💾 حفظ البيانات</button>
-        `;
-    }
-    document.getElementById('jhDocActionArea').innerHTML = formHtml;
-};
-
-window.saveJHRecord = async function(type) {
-    let data = { id: uniqueNumericId().toString(), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
-    if(type === 'CLIT') {
-        data.operation = document.getElementById('clitType').value;
-        data.frequency = document.getElementById('clitFreq').value;
-        data.region = document.getElementById('clitRegion').value || 'عام';
-        data.part = document.getElementById('clitPart').value;
-        data.action = document.getElementById('clitAction').value;
-        data.optimalState = document.getElementById('clitStandard').value;
-        data.degradation = document.getElementById('clitDegradation').value;
-        data.tools = document.getElementById('clitTools').value;
-        data.machineState = document.getElementById('clitMachineState').value;
-        data.timeBefore = document.getElementById('clitTimeBefore').value;
-        data.timeAfter = document.getElementById('clitTimeAfter').value;
-        
-        if(!data.action) return showToast('الإجراء المطلوب لتسجيل النقطة');
-    } else if(type === 'Contamination') {
-        data.location = document.getElementById('contLocation').value;
-        data.typeDesc = document.getElementById('contType').value;
-        if(!data.location) return;
-    } else if(type === 'SOC') {
-        data.location = document.getElementById('socLocation').value;
-        data.reason = document.getElementById('socReason').value;
-        if(!data.location) return;
-    } else if(type === 'Safety') {
-        data.hazard = document.getElementById('safeHazard').value;
-        data.level = document.getElementById('safeLevel').value;
-        if(!data.hazard) return;
-    } else {
-        data.name = document.getElementById('partName').value;
-        data.desc = document.getElementById('partDesc').value;
-        if(!data.name) return;
-    }
-
-    await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data);
-    showToast('تم إضافة السجل بنجاح ✅');
-    openJHDocument(type); 
-};
-
-// 🛠️ دوال التعديل والحذف المركزية 
-window.editJHRecord = async function(type, id) {
-    const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).once('value');
-    let r = snap.val();
-    if(!r) return showToast('خطأ: تعذر سحب البيانات');
-    
-    document.getElementById('editJhId').value = id;
-    document.getElementById('editJhType').value = type;
-    
-    let fieldsHtml = '';
-    if(type === 'CLIT') {
-        fieldsHtml = `
-            <div class="row-flex">
-                <div class="form-group flex-1"><label>العملية</label><input type="text" id="ed_clitOp" class="form-control" value="${r.operation||r.clitType||''}"></div>
-                <div class="form-group flex-1"><label>الدورية</label><input type="text" id="ed_clitFreq" class="form-control" value="${r.frequency||''}"></div>
-            </div>
-            <div class="row-flex">
-                <div class="form-group flex-1"><label>المنطقة</label><input type="text" id="ed_clitRegion" class="form-control" value="${r.region||''}"></div>
-                <div class="form-group flex-1"><label>الجزء</label><input type="text" id="ed_clitPart" class="form-control" value="${r.part||''}"></div>
-            </div>
-            <div class="form-group"><label>الإجراء (Action)</label><textarea id="ed_clitAction" class="form-control" rows="2">${r.action||r.standard||''}</textarea></div>
-            <div class="row-flex">
-                <div class="form-group flex-1"><label>الحالة المثلى</label><input type="text" id="ed_clitStandard" class="form-control" value="${r.optimalState||r.standard||''}"></div>
-                <div class="form-group flex-1"><label>التدهور</label><input type="text" id="ed_clitDegradation" class="form-control" value="${r.degradation||''}"></div>
-            </div>
-            <div class="row-flex">
-                <div class="form-group flex-1"><label>الأدوات</label><input type="text" id="ed_clitTools" class="form-control" value="${r.tools||''}"></div>
-                <div class="form-group flex-1"><label>الماكينة (تعمل/لا)</label><input type="text" id="ed_clitMachineState" class="form-control" value="${r.machineState||''}"></div>
-            </div>
-            <div class="row-flex">
-                <div class="form-group flex-1"><label>وقت قبل</label><input type="text" id="ed_clitTimeBefore" class="form-control" value="${r.timeBefore||''}"></div>
-                <div class="form-group flex-1"><label>وقت بعد</label><input type="text" id="ed_clitTimeAfter" class="form-control" value="${r.timeAfter||''}"></div>
-            </div>
-        `;
-    } 
-    document.getElementById('editJhFormFields').innerHTML = fieldsHtml;
-    document.getElementById('editJHRecordModal').style.display = 'flex';
-};
-
-window.updateJHRecordData = async function() {
-    let id = document.getElementById('editJhId').value;
-    let type = document.getElementById('editJhType').value;
-    let updates = {};
-    
-    if(type === 'CLIT') {
-        updates = {
-            operation: document.getElementById('ed_clitOp').value,
-            frequency: document.getElementById('ed_clitFreq').value,
-            region: document.getElementById('ed_clitRegion').value,
-            part: document.getElementById('ed_clitPart').value,
-            action: document.getElementById('ed_clitAction').value,
-            optimalState: document.getElementById('ed_clitStandard').value,
-            degradation: document.getElementById('ed_clitDegradation').value,
-            tools: document.getElementById('ed_clitTools').value,
-            machineState: document.getElementById('ed_clitMachineState').value,
-            timeBefore: document.getElementById('ed_clitTimeBefore').value,
-            timeAfter: document.getElementById('ed_clitTimeAfter').value
-        };
-    }
-    
-    await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).update(updates);
-    showToast('تم حفظ التعديلات بنجاح ✅');
-    document.getElementById('editJHRecordModal').style.display = 'none';
-    openJHDocument(type); 
-};
-
-window.deleteJHRecord = async function(type, id) {
-    if(confirm('هل أنت متأكد من حذف هذا السجل نهائياً؟')) {
-        await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).remove();
-        showToast('تم الحذف بنجاح 🗑️');
-        openJHDocument(type);
-    }
-};
-
-// ==========================================
-// 📅 محرك الـ Calendar والسجلات (Execution Engine)
-// ==========================================
-let currentJHExecutions = [];
-let viewingMonth = new Date().getMonth();
-let viewingYear = new Date().getFullYear();
-
-const originalSelectJHDept = window.selectJHDept;
-window.selectJHDept = function(dept) {
-    if(typeof originalSelectJHDept === 'function') originalSelectJHDept(dept);
-    if(isOnline) {
-        db.ref(`tpm_system/clit_executions/${dept}`).on('value', snap => {
-            currentJHExecutions = snap.val() ? Object.values(snap.val()) : [];
-            renderJHCalendar(); 
-        });
-    }
-};
-
-window.changeCalendarMonth = function(dir) {
-    viewingMonth += dir;
-    if(viewingMonth > 11) { viewingMonth = 0; viewingYear++; }
-    else if(viewingMonth < 0) { viewingMonth = 11; viewingYear--; }
-    renderJHCalendar();
-};
-
-window.renderJHCalendar = function() {
-    const grid = document.getElementById('jhCalendarGrid');
-    if(!grid) return;
-
-    const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-    document.getElementById('currentCalendarMonth').innerText = `${monthNames[viewingMonth]} ${viewingYear}`;
-
-    let daysInMonth = new Date(viewingYear, viewingMonth + 1, 0).getDate();
-    let html = '';
-    
-    for(let d = 1; d <= daysInMonth; d++) {
-        let checkDateStr = new Date(viewingYear, viewingMonth, d).toLocaleDateString('ar-EG');
-        let dayExecs = currentJHExecutions.filter(ex => ex.date === checkDateStr);
-        
-        let bgColor = 'rgba(255,255,255,0.05)'; 
-        let border = '1px solid rgba(255,255,255,0.1)';
-        let cursor = 'default';
-        let clickAction = '';
-
-        if(dayExecs.length > 0) {
-            cursor = 'pointer';
-            clickAction = `onclick="viewDayExecutions('${checkDateStr}')"`;
-            
-            let hasOpenTags = false;
-            dayExecs.forEach(ex => {
-                ex.tasks.forEach(t => {
-                    if(t.status === 'issue' && t.tagId) {
-                        let globalTag = tagsData.find(tg => tg.id === t.tagId);
-                        if(globalTag && globalTag.status !== 'closed' && globalTag.status !== 'done') {
-                            hasOpenTags = true;
-                        }
-                    }
-                });
-            });
-
-            if(hasOpenTags) {
-                bgColor = 'rgba(234, 179, 8, 0.2)'; 
-                border = '2px solid var(--warning)';
-            } else {
-                bgColor = 'rgba(34, 197, 94, 0.2)'; 
-                border = '2px solid var(--success)';
-            }
-        }
-
-        html += `<div style="background:${bgColor}; border:${border}; padding:10px 0; border-radius:8px; cursor:${cursor}; font-weight:bold; font-size:12px;" ${clickAction} title="${checkDateStr}">${d}</div>`;
-    }
-    grid.innerHTML = html;
-};
-
-window.viewDayExecutions = function(dateStr) {
-    let dayExecs = currentJHExecutions.filter(ex => ex.date === dateStr);
-    let html = dayExecs.map(ex => {
-        let issues = ex.tasks.filter(t => t.status === 'issue').length;
-        let done = ex.tasks.filter(t => t.status === 'done').length;
-        let total = ex.tasks.length;
-        let borderColor = issues > 0 ? 'var(--warning)' : 'var(--success)';
-        
-        let detailsHtml = ex.tasks.map(t => {
-            let icon = t.status === 'done' ? '✅' : '❌';
-            let color = t.status === 'done' ? 'var(--success)' : 'var(--danger)';
-            return `<div style="font-size:11px; padding:3px 0; border-bottom:1px dashed rgba(255,255,255,0.05); color:${color};">${icon} ${t.region} - ${t.part || t.action}</div>`;
-        }).join('');
-
-        return `
-        <div class="card glass-card" style="border-right:4px solid ${borderColor}; padding:10px; margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <b style="color:var(--text-main); font-size:13px;">دورية: ${ex.frequency}</b>
-                <span style="font-size:10px; color:var(--text-muted);">👤 ${ex.user} | ⏰ ${ex.time}</span>
-            </div>
-            <div style="font-size:11px; font-weight:bold; margin-bottom:10px;">
-                النتيجة: إنجاز <span style="color:var(--success);">${done}</span> | مشاكل <span style="color:var(--danger);">${issues}</span> من أصل ${total}
-            </div>
-            <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; max-height:100px; overflow-y:auto;">
-                ${detailsHtml}
-            </div>
-        </div>`;
-    }).join('');
-
-    document.getElementById('historyModalDate').innerText = dateStr;
-    document.getElementById('historyModalContent').innerHTML = html;
-    document.getElementById('clitHistoryModal').style.display = 'flex';
-};
-
-// ==========================================
-// 📋 محرك قائمة الفحص التفاعلية (Checklist Engine)
-// ==========================================
-let activeChecklistTasks = [];
-
-window.startCLITChecklist = function() {
-    if (clitSelectedFreq === 'الكل') return showToast('⚠️ يرجى اختيار دورية محددة (يومي، أسبوعي..) لبدء الفحص.');
-    
-    let recordsToExecute = [];
-    if (window.currentLoadedRecords && window.currentLoadedRecords.length > 0) {
-        recordsToExecute = window.currentLoadedRecords.filter(item => {
-            let matchZone = (clitSelectedZone === 'الكل') || (item.region && item.region.includes(clitSelectedZone));
-            let itemOp = item.operation || '';
-            let matchOp = (clitSelectedOp === 'الكل') || 
-                          (clitSelectedOp === 'تزييت' && (itemOp.includes('تزييت') || itemOp.includes('تشحيم'))) ||
-                          (itemOp.includes(clitSelectedOp));
-            let matchFreq = (item.frequency && item.frequency.includes(clitSelectedFreq));
-            return matchZone && matchOp && matchFreq;
-        });
-    }
-
-    if(recordsToExecute.length === 0) return showToast('لا توجد مهام مطابقة للفلتر الحالي لبدء الفحص.');
-
-    document.getElementById('checklistCurrentDate').innerText = new Date().toLocaleDateString('ar-EG');
-    activeChecklistTasks = recordsToExecute.map(r => ({ ...r, status: 'pending', tagId: null }));
-
-    document.getElementById('activeChecklistFreq').innerText = `${clitSelectedFreq} - ${currentJHDept}`;
-    renderChecklistUI();
-    showScreen('clitChecklistScreen');
-};
-
-window.renderChecklistUI = function() {
-    let container = document.getElementById('checklistItemsContainer');
-    let completedCount = activeChecklistTasks.filter(t => t.status !== 'pending').length;
-    let totalCount = activeChecklistTasks.length;
-    
-    document.getElementById('checklistProgress').innerText = completedCount;
-    document.getElementById('checklistTotal').innerText = totalCount;
-    document.getElementById('checklistProgressBar').style.width = `${(completedCount / totalCount) * 100}%`;
-
-    container.innerHTML = activeChecklistTasks.map((t, idx) => {
-        let isDone = t.status === 'done';
-        let isIssue = t.status === 'issue';
-        
-        let op = t.operation || '';
-        let icon = '⚙️'; let colorTheme = 'var(--primary)';
-        if(op.includes('تنظيف') || op.includes('تنطيف')) { icon = '🧹'; colorTheme = '#3b82f6'; }
-        else if(op.includes('تزييت') || op.includes('تشحيم')) { icon = '🛢️'; colorTheme = '#f97316'; }
-        else if(op.includes('فحص')) { icon = '🔍'; colorTheme = '#22c55e'; }
-        else if(op.includes('تربيط') || op.includes('ربط')) { icon = '🔧'; colorTheme = '#ef4444'; }
-
-        let cardStyle = isDone ? 'border-color:var(--success); background:rgba(46,125,50,0.05); opacity:0.8;' 
-                      : (isIssue ? 'border-color:var(--danger); background:rgba(198,40,40,0.05);' 
-                      : `border-left:5px solid ${colorTheme};`);
-
-        let tagBadge = t.tagId ? `<div style="margin-top:10px; padding:5px; background:var(--danger); color:white; border-radius:5px; font-size:11px; text-align:center; font-weight:bold; cursor:pointer;" onclick="showScreen('tagsScreen'); document.getElementById('filterTagMachine').value='${t.part || t.region}'; renderTags();">🚨 تم إصدار تاج للمشكلة برقم [${t.tagId.substring(t.tagId.length - 4)}] (اضغط للعرض)</div>` : '';
-
-        return `
-        <div class="card glass-card" style="padding:15px; transition:0.3s; ${cardStyle}">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <b style="font-size:13px; color:var(--text-main);">${idx+1}. ${icon} [${op}] ${t.region} ${t.part ? ' - ' + t.part : ''}</b>
-                <span style="font-size:10px; background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px;">${t.machineState || 'تعمل'}</span>
-            </div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px;"><b>الإجراء:</b> ${t.action}</div>
-            <div style="font-size:11px; color:${colorTheme}; margin-bottom:15px;"><b>المعيار 🎯:</b> ${t.optimalState || t.standard}</div>
-            
-            <div class="row-flex" style="gap:10px;">
-                <button class="btn btn-sm ${isDone ? 'btn-success' : 'btn-outline'} flex-1" style="border-radius:20px; font-weight:bold;" onclick="markChecklistItem(${idx}, 'done')">✅ سليم (تم)</button>
-                <button class="btn btn-sm ${isIssue ? 'btn-danger' : 'btn-outline'} flex-1" style="border-radius:20px; font-weight:bold;" onclick="openCLITIssueModal(${idx})">❌ مشكلة (عطل)</button>
-            </div>
-            ${tagBadge}
-        </div>`;
-    }).join('');
-};
-
-window.markChecklistItem = function(idx, status) {
-    activeChecklistTasks[idx].status = status;
-    renderChecklistUI();
-};
-
-let currentTaggingChecklistIdx = null;
-
-window.openCLITIssueModal = function(idx) {
-    let t = activeChecklistTasks[idx];
-    currentTaggingChecklistIdx = idx;
-    document.getElementById('clitTagItemName').innerText = `${t.region} - ${t.part || t.action}`;
-    document.getElementById('clitTagDegradation').innerText = t.degradation || 'ظاهرة غير طبيعية';
-    document.getElementById('clitTagDesc').value = '';
-    document.getElementById('clitTagModal').style.display = 'flex';
-};
-
-window.submitCLITTag = async function() {
-    let desc = document.getElementById('clitTagDesc').value.trim();
-    if(!desc) return showToast('⚠️ يرجى كتابة وصف المشكلة التي وجدتها.');
-    
-    let t = activeChecklistTasks[currentTaggingChecklistIdx];
-    let fullDesc = `[مكتشف بالصيانة الذاتية]: ${desc} \n(المنطقة: ${t.region} - ${t.part})`;
-    let tId = uniqueNumericId().toString();
-    
-    let newTag = {
-        id: tId, desc: fullDesc, color: 'red', dept: currentJHDept, machine: t.part || t.region,
-        status: 'open', auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'), timestamp: Date.now()
-    };
-    
-    syncRecord('tags/' + tId, newTag);
-    t.status = 'issue'; t.tagId = tId;
-    
-    document.getElementById('clitTagModal').style.display = 'none';
-    awardPoints(15, 'اكتشاف عطل أثناء الصيانة الذاتية');
-    showToast('🚨 تم إصدار التاج وربطه بقائمة الفحص بنجاح!');
-    renderChecklistUI(); 
-};
-
-window.submitFinalChecklist = async function() {
-    let pending = activeChecklistTasks.filter(t => t.status === 'pending').length;
-    if(pending > 0) {
-        if(!confirm(`⚠️ يتبقى ${pending} مهام لم يتم فحصها! هل تريد حفظ القائمة على أي حال؟`)) return;
-    }
-    
-    showToast('جاري أرشفة القائمة في السجل الذكي... ⏳');
-    let executionObj = {
-        id: uniqueNumericId().toString(), dept: currentJHDept, frequency: clitSelectedFreq,
-        date: new Date().toLocaleDateString('ar-EG'), time: new Date().toLocaleTimeString('ar-EG'),
-        user: currentUser.name, tasks: activeChecklistTasks
-    };
-    
-    await db.ref(`tpm_system/clit_executions/${currentJHDept}/${executionObj.id}`).set(executionObj);
-    awardPoints(30, `تنفيذ دورة صيانة ذاتية (${clitSelectedFreq})`);
-    showToast('تم حفظ دورة الصيانة بنجاح ✅');
-    showScreen('jhDocumentScreen');
-};
-// ==========================================
-// 🚀 المستشار الذكي وعقل المصنع (الإصدار المستقر والمفصل)
-// ==========================================
-
-// 🔫 قاتل الأزرار المكررة (ينظف أي زرار مساعدة قديم)
-setInterval(() => {
-    document.querySelectorAll('.sos-btn').forEach(btn => btn.remove());
-}, 1000);
-
-
-// 🎯 دالة الشرح المطورة (خطوات عملية مفصلة 1, 2, 3)
-window.explainItem = async function(t) {
-    document.getElementById('aiModal').style.display='flex'; 
-    document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><div class="status-dot" style="display:inline-block; background:var(--gold); animation: pulse 1s infinite;"></div><h3 style="color:var(--gold);">جاري تحضير خطوات العمل... 🧠</h3></div>';
-    
-    try {
-        let prompt = `أنت مهندس صيانة خبير ومراجع TPM. المطلوب منك شرح البند التالي للفنيين: "${t}".
-        تنبيه صارم: لا أريد كلاماً عاماً. أريد خطوات عمل محددة ومرقمة (1, 2, 3) توضح *كيفية تنفيذ هذا البند عملياً* في المصنع، وما هي علامات الخطر أو الأعطال التي يجب البحث عنها أثناء الفحص.
-        أجب بنص عادي (Plain Text) فقط، وممنوع استخدام أي أكواد أو علامات HTML أو Markdown نهائياً.`;
-        
+        let prompt = `أنت مهندس صيانة خبير ومراجع TPM. اشرح البند التالي للفنيين: "${t}". رد بخطوات عمل محددة ومرقمة. أجب بنص عادي.`;
         let plainTextResponse = await window.fetchGeminiAPI(prompt);
-        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${plainTextResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--gold);">$1</b>')}</div>`;
-    } catch(e) {
-        document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ خطأ: ${e.message}</div>`;
-    }
-};
-
-// ==========================================
-// 📚 3. ثورة عقل المصنع والمستشار الذكي
-// ==========================================
+        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${plainTextResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--primary);">$1</b>')}</div>`;
+    } catch(e) { document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center;">⚠️ خطأ: ${e.message}</div>`; }
+}
 
 window.askFactoryAI = async function() {
-    const q = document.getElementById('kbSearchInput').value.trim();
-    if(!q) return showToast('اكتب سؤالك أولاً!');
-    
+    const q = document.getElementById('kbSearchInput').value.trim(); if(!q) return showToast('اكتب سؤالك أولاً!');
     document.getElementById('aiSearchResponse').style.display = 'block';
     if(document.getElementById('oplBtnContainer')) document.getElementById('oplBtnContainer').style.display = 'none';
-    document.getElementById('aiResponseText').innerHTML = '<div style="text-align:center; color:var(--gold); font-weight:bold;">جاري استشارة الذكاء الاصطناعي... ⏳</div>';
-    
+    document.getElementById('aiResponseText').innerHTML = '<div style="text-align:center; color:var(--primary);"><i class="bx bx-loader-alt bx-spin"></i> جاري البحث في عقل المصنع...</div>';
     try {
-        let prompt = `أنت مستشار فني في مصنع يطبق نظام TPM. أجب على هذا السؤال من الفنيين بشكل عملي وواضح: "${q}". 
-        تنبيه: أجب بنص عادي فقط بدون أكواد أو HTML.`;
-        
+        let prompt = `أنت مستشار فني في مصنع يطبق نظام TPM. أجب على هذا السؤال من الفنيين بشكل عملي وواضح: "${q}". أجب بنص عادي فقط.`;
         let answer = await window.fetchGeminiAPI(prompt);
-        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">💡 إجابة الخبير:</div>${answer.replace(/\n/g, '<br>')}`;
-        window.lastAIAnswer = answer;
-        if(document.getElementById('oplBtnContainer')) document.getElementById('oplBtnContainer').style.display = 'block';
-    } catch(e) { 
-        document.getElementById('aiResponseText').innerHTML = `<b style="color:var(--danger);">⚠️ ${e.message}</b>`; 
-    }
+        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--primary); font-weight:bold; margin-bottom:10px;"><i class='bx bx-bulb'></i> الإجابة:</div>${answer.replace(/\n/g, '<br>')}`;
+        window.lastAIAnswer = answer; if(document.getElementById('oplBtnContainer')) document.getElementById('oplBtnContainer').style.display = 'block';
+    } catch(e) { document.getElementById('aiResponseText').innerHTML = `<b style="color:var(--danger);"><i class='bx bx-error'></i> ${e.message}</b>`; }
 };
 
 window.generateTPMQuiz = async function() {
-    const topic = prompt("أدخل موضوع الاختبار الفني:");
-    if(!topic) return;
-    
+    const topic = prompt("أدخل موضوع الاختبار الفني:"); if(!topic) return;
     document.getElementById('aiSearchResponse').style.display = 'block';
     if(document.getElementById('oplBtnContainer')) document.getElementById('oplBtnContainer').style.display = 'none';
-    document.getElementById('aiResponseText').innerHTML = '<div style="text-align:center; color:var(--gold); font-weight:bold;">جاري تصميم الاختبار... ⏳</div>';
-    
+    document.getElementById('aiResponseText').innerHTML = '<div style="text-align:center; color:var(--warning);"><i class="bx bx-loader-alt bx-spin"></i> جاري تصميم الاختبار...</div>';
     try {
-        let prompt = `قم بإعداد اختبار فني من 3 أسئلة اختيار من متعدد حول: ${topic}. تنبيه: أجب بنص عادي فقط وبدون أكواد.`;
+        let prompt = `قم بإعداد اختبار فني من 3 أسئلة اختيار من متعدد حول: ${topic}. تنبيه: أجب بنص عادي فقط.`;
         let answer = await window.fetchGeminiAPI(prompt);
-        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">📝 الاختبار الفني:</div>${answer.replace(/\n/g, '<br>')}`;
-    } catch(e) { 
-        document.getElementById('aiResponseText').innerHTML = `<b style="color:var(--danger);">⚠️ ${e.message}</b>`; 
-    }
+        document.getElementById('aiResponseText').innerHTML = `<div style="color:var(--warning); font-weight:bold; margin-bottom:10px;"><i class='bx bx-edit'></i> الاختبار:</div>${answer.replace(/\n/g, '<br>')}`;
+    } catch(e) { document.getElementById('aiResponseText').innerHTML = `<b style="color:var(--danger);"><i class='bx bx-error'></i> ${e.message}</b>`; }
 };
 
 window.convertAIToOPL = function() {
@@ -2483,532 +997,293 @@ window.convertAIToOPL = function() {
     document.getElementById('oplDesc').value = window.lastAIAnswer.replace(/\*/g, '');
 };
 
+// ==========================================
+// 📚 عقل المصنع (Digital Datapads)
+// ==========================================
 let tempBase64Pdf = null;
 window.handleMaterialUpload = function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+    const file = event.target.files[0]; if (!file) return;
     if (file.size > 5 * 1024 * 1024) return alert("⚠️ أقصى حجم للملف 5 ميجابايت.");
-    
-    document.getElementById('pdfExtractStatus').innerText = "جاري التجهيز... ⏳";
+    document.getElementById('pdfExtractStatus').innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري التجهيز...";
     const reader = new FileReader();
-    reader.onload = function(e) {
-        tempBase64Pdf = e.target.result;
-        document.getElementById('pdfExtractStatus').innerHTML = `✅ تم التجهيز: <b style="color:var(--primary);">${file.name}</b>`;
-    };
+    reader.onload = function(e) { tempBase64Pdf = e.target.result; document.getElementById('pdfExtractStatus').innerHTML = `<i class='bx bx-check-circle' style='color:var(--success);'></i> جاهز: <b style="color:var(--text-main);">${file.name}</b>`; };
     reader.readAsDataURL(file);
 };
 
 window.saveNewBook = async function() {
-    const title = document.getElementById('kbTitle').value;
-    if (!title) return showToast("⚠️ يرجى إدخال عنوان المرجع.");
-    
-    let bookId = Date.now().toString();
-    let catEl = document.getElementById('kbCategory');
-    let cat = catEl ? catEl.value : 'TPM';
+    const title = document.getElementById('kbTitle').value; if (!title) return showToast("⚠️ يرجى إدخال عنوان المرجع.");
+    let bookId = Date.now().toString(); let catEl = document.getElementById('kbCategory'); let cat = catEl ? catEl.value : 'JH';
     let newBook = { id: bookId, title: title, category: cat, hasPdf: !!tempBase64Pdf };
     
     if(tempBase64Pdf) {
         showToast("جاري الرفع لقاعدة البيانات... ⏳");
-        try { 
-            await db.ref('tpm_system/pdf_files/' + bookId).set({ base64: tempBase64Pdf }); 
-        } catch(e) { 
-            return alert("⚠️ فشل رفع الملف."); 
-        }
+        try { await db.ref('tpm_system/pdf_files/' + bookId).set({ base64: tempBase64Pdf }); } catch(e) { return alert("⚠️ فشل رفع الملف."); }
     }
     
     let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
-    kbArray.push(newBook);
-    knowledgeBaseData = kbArray;
-    syncRecord('knowledgeBase', knowledgeBaseData);
+    kbArray.push(newBook); knowledgeBaseData = kbArray; syncRecord('knowledgeBase', knowledgeBaseData);
     
-    document.getElementById('addBookModal').style.display = 'none';
-    document.getElementById('kbTitle').value = '';
-    document.getElementById('pdfExtractStatus').innerText = "اضغط هنا لرفع الكتالوج 📄";
-    tempBase64Pdf = null;
-    
-    showToast("✅ تم حفظ المرجع بنجاح!");
-    window.renderKnowledgeShelves();
+    document.getElementById('addBookModal').style.display = 'none'; document.getElementById('kbTitle').value = '';
+    document.getElementById('pdfExtractStatus').innerHTML = "<i class='bx bxs-file-pdf'></i> اختر ملف PDF"; tempBase64Pdf = null;
+    showToast("✅ تم حفظ المرجع بنجاح!"); window.renderKnowledgeBase();
 };
 
-window.renderKnowledgeShelves = function() {
+window.renderKnowledgeBase = function() {
     const container = document.getElementById('knowledgeListContainer');
-    if(!container) return;
+    if(!container) return; // 🛡️ حماية معمارية
     
     let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
     
     if(kbArray.length === 0) {
-        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-weight:bold;">لا توجد مراجع حالياً 📚</div>';
+        container.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:50px 20px; background:var(--surface-inset); border-radius:var(--radius-lg); border:1px dashed var(--border-glass);">
+                <i class='bx bx-ghost' style="font-size:60px; color:var(--text-muted); margin-bottom:15px; display:block;"></i>
+                <h3 style="color:var(--text-main); font-size:16px;">لا توجد مراجع أو كتالوجات في الأرشيف حالياً</h3>
+            </div>`;
         return;
     }
     
-    container.innerHTML = kbArray.map(kb => `
-        <div class="book-cover">
-            <div><div class="book-tag">${kb.category || 'TPM'}</div><div class="book-title-main">${kb.title}</div></div>
-            <div style="display:flex; gap:5px; margin-top:15px;">
-                <button class="btn btn-sm btn-primary" style="flex:2;" onclick="openBookDetail('${kb.id}')">📖 عرض</button>
-                ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="flex:1;" onclick="deleteKnowledgeBook('${kb.id}')">🗑️</button>` : ''}
+    container.innerHTML = kbArray.map(kb => {
+        let badgeColor = 'var(--primary)'; let badgeBg = 'var(--primary-glow)';
+        if(kb.category === 'JH') { badgeColor = 'var(--success)'; badgeBg = 'rgba(16, 185, 129, 0.1)'; }
+        else if(kb.category === 'PM') { badgeColor = 'var(--danger)'; badgeBg = 'rgba(239, 68, 68, 0.1)'; }
+        else if(kb.category === 'SOP') { badgeColor = 'var(--warning)'; badgeBg = 'rgba(249, 115, 22, 0.1)'; }
+
+        return `
+        <div class="card glass-card" style="display:flex; flex-direction:column; justify-content:space-between; height:100%; min-height:200px; padding:20px;">
+            <div style="flex:1;">
+                <span style="display:inline-block; padding:4px 12px; border-radius:8px; font-size:11px; font-weight:900; margin-bottom:15px; background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeColor};">${kb.category || 'عام'}</span>
+                <h4 style="font-size:16px; color:var(--text-main); font-weight:800; line-height:1.4; margin-bottom:10px;">${kb.title}</h4>
+                <div style="display:flex; align-items:center; gap:5px; color:var(--text-muted); font-size:11px;">
+                    <i class='bx bxs-file-pdf' style="color:var(--danger); font-size:16px;"></i> ملف PDF مؤرشف
+                </div>
             </div>
-        </div>
-    `).join('');
+            <div class="row-flex" style="border-top:1px solid var(--border-glass); padding-top:15px; margin-top:15px;">
+                <button class="btn btn-sm btn-primary flex-2" onclick="openBookDetail('${kb.id}')"><i class='bx bx-book-open'></i> عرض المستند</button>
+                ${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-sm btn-danger" style="width:40px; padding:0;" onclick="deleteKnowledgeBook('${kb.id}')"><i class='bx bx-trash'></i></button>` : ''}
+            </div>
+        </div>`;
+    }).join('');
 };
 
 window.openBookDetail = async function(id) {
-    let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
-    let kb = kbArray.find(x => x.id == id);
-    if(!kb) return;
-    
+    let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {}); let kb = kbArray.find(x => x.id == id); if(!kb) return;
     if(kb.hasPdf) {
-        document.getElementById('aiModal').style.display = 'flex';
-        document.getElementById('aiModalText').innerHTML = '<div style="padding:20px; text-align:center; color:var(--gold); font-weight:bold;">جاري جلب الملف من السيرفر... ⏳</div>';
+        document.getElementById('aiModal').style.display = 'flex'; document.getElementById('aiModalText').innerHTML = '<div style="padding:20px; text-align:center; color:var(--primary); font-weight:bold;"><i class="bx bx-loader-alt bx-spin"></i> جاري جلب الملف...</div>';
         try {
             let snap = await db.ref('tpm_system/pdf_files/' + id).once('value');
             if(snap.val() && snap.val().base64) {
-                const b64 = snap.val().base64.split(',')[1] || snap.val().base64;
-                const bin = atob(b64);
-                const arr = new Uint8Array(bin.length);
-                for(let i=0; i<bin.length; i++) arr[i] = bin.charCodeAt(i);
-                const blob = new Blob([arr], {type: 'application/pdf'});
-                const url = URL.createObjectURL(blob);
-                
-                window.open(url, '_blank');
-                document.getElementById('aiModal').style.display = 'none';
-            } else { 
-                alert("الملف غير متوفر حالياً على السيرفر."); 
-                document.getElementById('aiModal').style.display = 'none'; 
-            }
-        } catch(e) { 
-            alert("خطأ في الاتصال بقاعدة البيانات."); 
-            document.getElementById('aiModal').style.display = 'none'; 
-        }
+                const b64 = snap.val().base64.split(',')[1] || snap.val().base64; const bin = atob(b64); const arr = new Uint8Array(bin.length); for(let i=0; i<bin.length; i++) arr[i] = bin.charCodeAt(i);
+                const blob = new Blob([arr], {type: 'application/pdf'}); const url = URL.createObjectURL(blob);
+                window.open(url, '_blank'); document.getElementById('aiModal').style.display = 'none';
+            } else { alert("الملف غير متوفر حالياً على السيرفر."); document.getElementById('aiModal').style.display = 'none'; }
+        } catch(e) { alert("خطأ في الاتصال بقاعدة البيانات."); document.getElementById('aiModal').style.display = 'none'; }
     }
 };
 
 window.deleteKnowledgeBook = async function(id) {
     if(confirm("⚠️ هل أنت متأكد من الحذف النهائي؟")) {
-        let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {});
-        knowledgeBaseData = kbArray.filter(b => b.id != id);
-        syncRecord('knowledgeBase', knowledgeBaseData);
-        try { await db.ref('tpm_system/pdf_files/' + id).remove(); } catch(e){}
-        window.renderKnowledgeShelves();
-        showToast("تم الحذف بنجاح 🗑️");
+        let kbArray = Array.isArray(knowledgeBaseData) ? knowledgeBaseData : Object.values(knowledgeBaseData || {}); knowledgeBaseData = kbArray.filter(b => b.id != id); syncRecord('knowledgeBase', knowledgeBaseData);
+        try { await db.ref('tpm_system/pdf_files/' + id).remove(); } catch(e){} window.renderKnowledgeBase(); showToast("تم الحذف 🗑️");
     }
 };
 
-// تسجيل الـ Service Worker لتشغيل التطبيق أوفلاين
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('Service Worker Registered Successfully!', registration.scope);
-      })
-      .catch((error) => {
-        console.log('Service Worker Registration Failed:', error);
-      });
-  });
-}
+// ------------------------------------------
+// إعدادات أخرى
+// ------------------------------------------
+function updateDeptDropdown() { let opts = departments.map(d=>`<option value="${d}">${d}</option>`).join(''); document.querySelectorAll('select').forEach(s => {if(s.id.includes('Dept')) s.innerHTML=opts;}); }
+function updateDeptListUI() { }
+function addOrUpdateDept() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); syncRecord('departments', departments); updateDeptDropdown(); showToast('تم الحفظ'); } }
+function addEngineer() { let n=document.getElementById('newEngName').value, p=document.getElementById('newEngPhone').value; if(n&&p) { maintenanceEngineers.push({name:n, phone:p}); syncRecord('maintenanceEngineers', maintenanceEngineers); document.getElementById('newTagEngineer').innerHTML+=`<option value="${p}">${n}</option>`; showToast('تم الإضافة'); } }
 
+// ------------------------------------------
+// 📉 محرك التحسين المستمر وشجرة الفواقد (KK Engine)
+// ------------------------------------------
+const tpmLosses = [
+    { id: 'L1', name: 'أعطال الماكينات', type: 'availability', icon: 'bx bx-wrench', color: '--danger' },
+    { id: 'L2', name: 'الإعداد والضبط', type: 'availability', icon: 'bx bx-cog', color: '--warning' },
+    { id: 'L3', name: 'تغيير أدوات ومقاسات', type: 'availability', icon: 'bx bx-cut', color: '--warning' },
+    { id: 'L4', name: 'بدء التشغيل', type: 'availability', icon: 'bx bx-power-off', color: '--primary' },
+    { id: 'L5', name: 'توقفات صغيرة عابرة', type: 'performance', icon: 'bx bx-time', color: '--gold' },
+    { id: 'L6', name: 'انخفاض السرعة', type: 'performance', icon: 'bx bx-tachometer', color: '--gold' },
+    { id: 'L7', name: 'العيوب وإعادة العمل', type: 'quality', icon: 'bx bx-error', color: '--danger' },
+    { id: 'L8', name: 'نقص الخامات', type: 'availability', icon: 'bx bx-package', color: '--text-muted' }
+];
 
-// ==========================================
-// 📉 محرك ركيزة التحسين المستمر المطور (KK Pillar Engine)
-// ==========================================
+let registeredLosses = []; const COST_PER_MINUTE = 50;
+let pdcaData = []; let isPdcaListenerActive = false; let currentPDCAImg = null; let pdcaChartInstance = null;
 
-let pdcaData = [];
-let isPdcaListenerActive = false;
-let currentPDCAImg = null;
-let pdcaChartInstance = null;
-
-// 1. دالة التبديل بين شاشات الـ KK
 window.switchKKTab = function(tabId, btnElement) {
     document.querySelectorAll('.kk-tab-content').forEach(c => c.style.display = 'none');
-    document.querySelectorAll('.kk-nav-btn').forEach(b => b.style.opacity = '0.5');
-    
-    const targetTab = document.getElementById('kkTab-' + tabId);
-    if(targetTab) targetTab.style.display = 'block';
-    if(btnElement) btnElement.style.opacity = '1';
+    document.querySelectorAll('#kkScreen .row-flex .btn').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-outline'); b.style.border = 'none'; });
+    const targetTab = document.getElementById('kkTab-' + tabId); if(targetTab) targetTab.style.display = 'block';
+    if(btnElement) { btnElement.classList.add('btn-primary'); btnElement.classList.remove('btn-outline'); }
 };
 
-// 2. المحرك المركزي للوحة الـ KK (شجرة الفواقد والـ PDCA)
 window.renderKKDashboard = function() {
-    // تشغيل المراقبة الحية لمشاريع الـ PDCA (مرة واحدة فقط)
+    const lossContainer = document.getElementById('kkLossTreeContainer');
+    const pdcaContainer = document.getElementById('kkPdcaContainer');
+    if (!lossContainer || !pdcaContainer) return; // 🛡️ حماية معمارية
+
     if(!isPdcaListenerActive && isOnline && firebase.auth().currentUser) {
-        db.ref('tpm_system/pdca').on('value', snap => {
-            pdcaData = snap.val() ? Object.values(snap.val()) : [];
-            renderKKDashboard(); // إعادة الرسم عند وصول البيانات
-        });
+        db.ref('tpm_system/pdca').on('value', snap => { pdcaData = snap.val() ? Object.values(snap.val()) : []; renderKKDashboard(); });
         isPdcaListenerActive = true;
     }
 
-    // قراءة القسم المحدد من الفلتر المركزي
-    let filterEl = document.getElementById('kkGlobalDeptFilter');
-    let selectedDept = filterEl ? filterEl.value : 'الكل';
-    
-    // --- تصفية الفواقد (Losses) ورسم الشجرة ---
-    let filteredLosses = registeredLosses;
-    if (selectedDept !== 'الكل') {
-        filteredLosses = registeredLosses.filter(l => l.dept === selectedDept);
-    }
+    let filterEl = document.getElementById('kkGlobalDeptFilter'); let selectedDept = filterEl ? filterEl.value : 'الكل';
+    let filteredLosses = registeredLosses; if (selectedDept !== 'الكل') filteredLosses = registeredLosses.filter(l => l.dept === selectedDept);
 
-    let lossContainer = document.getElementById('kkLossTreeContainer');
-    if(lossContainer) {
-        lossContainer.innerHTML = tpmLosses.map(loss => {
-            let currentLossMins = filteredLosses.filter(l => l.lossId === loss.id).reduce((sum, curr) => sum + curr.minutes, 0);
-            let currentLossCost = currentLossMins * COST_PER_MINUTE; 
-            
-            let borderColor = currentLossMins > 60 ? 'var(--danger)' : (currentLossMins > 0 ? 'var(--warning)' : 'rgba(255,255,255,0.1)');
-            let shadowEffect = currentLossMins > 60 ? 'box-shadow: 0 0 15px rgba(198,40,40,0.5);' : '';
-            
-            return `
-            <div class="card glass-card" style="border-top:4px solid ${borderColor}; ${shadowEffect} text-align:center; padding:15px; cursor:pointer; transition: transform 0.2s;" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'" onclick="openLossRegistration('${loss.id}', '${loss.name}')">
-                <div style="font-size:24px; margin-bottom:5px; filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${loss.icon}</div>
-                <div style="font-size:11px; font-weight:bold; color:var(--text-main); margin-bottom:10px; height:30px;">${loss.name}</div>
-                <div style="background:rgba(0,0,0,0.3); padding:5px; border-radius:5px;">
-                    <div style="font-size:11px; color:var(--text-muted);">⏱️ ${currentLossMins} دقيقة</div>
-                    <div style="font-size:12px; font-weight:900; color:${currentLossCost > 0 ? 'var(--danger)' : 'var(--success)'}; margin-top:2px;">${currentLossCost.toLocaleString()} ج.م</div>
-                </div>
-            </div>`;
-        }).join('');
-    }
+    lossContainer.innerHTML = tpmLosses.map(loss => {
+        let currentLossMins = filteredLosses.filter(l => l.lossId === loss.id).reduce((sum, curr) => sum + curr.minutes, 0);
+        let currentLossCost = currentLossMins * COST_PER_MINUTE; 
+        let borderColor = currentLossMins > 60 ? 'var(--danger)' : (currentLossMins > 0 ? 'var(--warning)' : 'var(--border-glass)');
+        
+        return `
+        <div class="card glass-card" style="border-top:4px solid ${borderColor}; text-align:center; padding:20px; cursor:pointer;" onclick="openLossRegistration('${loss.id}', '${loss.name}')">
+            <i class='${loss.icon}' style="font-size:36px; color:var(${loss.color}); margin-bottom:10px; display:block;"></i>
+            <div style="font-size:13px; font-weight:bold; color:var(--text-main); margin-bottom:15px;">${loss.name}</div>
+            <div style="background:var(--surface-inset); padding:10px; border-radius:10px; border:1px solid var(--border-glass);">
+                <div style="font-size:12px; color:var(--text-muted);"><i class='bx bx-time'></i> ${currentLossMins} دقيقة</div>
+                <div style="font-size:14px; font-weight:900; color:${currentLossCost > 0 ? 'var(--danger)' : 'var(--success)'}; margin-top:5px;">${currentLossCost.toLocaleString()} ج.م</div>
+            </div>
+        </div>`;
+    }).join('');
 
-    // --- تحديث العدادات العلوية ---
     let totalMins = filteredLosses.reduce((sum, l) => sum + l.minutes, 0);
     if(document.getElementById('kkTotalLossHours')) document.getElementById('kkTotalLossHours').innerText = (totalMins / 60).toFixed(1);
     if(document.getElementById('kkTotalLossCost')) document.getElementById('kkTotalLossCost').innerText = (totalMins * COST_PER_MINUTE).toLocaleString();
 
-    // --- تصفية ورسم مشاريع الـ PDCA ---
-    let filteredPDCA = pdcaData;
-    if (selectedDept !== 'الكل') {
-        filteredPDCA = pdcaData.filter(p => p.dept === selectedDept);
-    }
-    
-    // تحديث عداد الـ PDCA (للمشاريع النشطة فقط غير المغلقة)
+    let filteredPDCA = pdcaData; if (selectedDept !== 'الكل') filteredPDCA = pdcaData.filter(p => p.dept === selectedDept);
     let activePDCACount = filteredPDCA.filter(p => p.status !== 'Closed').length;
     if(document.getElementById('kkActiveProjects')) document.getElementById('kkActiveProjects').innerText = activePDCACount;
 
-    let pdcaContainer = document.getElementById('kkPdcaContainer');
-    if(pdcaContainer) {
-        if(filteredPDCA.length === 0) {
-            pdcaContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px;">لا توجد مشاريع تحسين (PDCA) مسجلة لهذا القسم حالياً.</div>';
-        } else {
-            pdcaContainer.innerHTML = filteredPDCA.reverse().map(p => {
-                let statusColor = p.status === 'Plan' ? 'var(--warning)' : (p.status === 'Do' ? '#3B82F6' : (p.status === 'Check' ? 'var(--gold)' : (p.status === 'Act' ? 'var(--success)' : 'var(--text-muted)')));
-                let controls = hasRole('admin') || currentUser.name === p.owner ? `
-                    <select class="form-control flex-2" style="margin:0; padding:2px; font-size:11px; height:auto; border-color:${statusColor}; color:${statusColor}; font-weight:bold;" onclick="event.stopPropagation()" onchange="updatePDCAStatus('${p.id}', this.value)">
-                        <option value="Plan" ${p.status==='Plan'?'selected':''}>خطط (Plan) 🟡</option>
-                        <option value="Do" ${p.status==='Do'?'selected':''}>نفذ (Do) 🔵</option>
-                        <option value="Check" ${p.status==='Check'?'selected':''}>تحقق (Check) 🟠</option>
-                        <option value="Act" ${p.status==='Act'?'selected':''}>اعتمد (Act) 🟢</option>
-                        <option value="Closed" ${p.status==='Closed'?'selected':''}>مغلق 🔒</option>
-                    </select>
-                    <button class="btn btn-sm btn-danger flex-1" style="margin:0; padding:2px;" onclick="event.stopPropagation(); deletePDCA('${p.id}')">🗑️</button>
-                ` : `<div style="font-size:11px; font-weight:bold; color:${statusColor};">المرحلة: ${p.status}</div>`;
+    if(filteredPDCA.length === 0) {
+        pdcaContainer.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:40px; background:var(--surface-inset); border-radius:var(--radius-lg);"><i class="bx bx-bulb" style="font-size:50px; display:block; margin-bottom:15px; opacity:0.5;"></i>لا توجد مشاريع تحسين مسجلة لهذا القسم.</div>';
+    } else {
+        pdcaContainer.innerHTML = filteredPDCA.reverse().map(p => {
+            let statusColor = p.status === 'Plan' ? 'var(--warning)' : (p.status === 'Do' ? 'var(--primary)' : (p.status === 'Check' ? 'var(--gold)' : (p.status === 'Act' ? 'var(--success)' : 'var(--text-muted)')));
+            let controls = hasRole('admin') || currentUser.name === p.owner ? `
+                <select class="form-control flex-2" style="margin:0; padding:6px; font-size:11px; border-color:${statusColor}; color:${statusColor}; font-weight:bold;" onclick="event.stopPropagation()" onchange="updatePDCAStatus('${p.id}', this.value)">
+                    <option value="Plan" ${p.status==='Plan'?'selected':''}>خطط (Plan)</option>
+                    <option value="Do" ${p.status==='Do'?'selected':''}>نفذ (Do)</option>
+                    <option value="Check" ${p.status==='Check'?'selected':''}>تحقق (Check)</option>
+                    <option value="Act" ${p.status==='Act'?'selected':''}>اعتمد (Act)</option>
+                    <option value="Closed" ${p.status==='Closed'?'selected':''}>مغلق</option>
+                </select>
+                <button class="btn btn-sm btn-danger flex-1" style="margin:0; padding:6px;" onclick="event.stopPropagation(); deletePDCA('${p.id}')"><i class='bx bx-trash'></i></button>
+            ` : `<div style="font-size:12px; font-weight:bold; color:${statusColor}; background:var(--surface-inset); padding:6px 15px; border-radius:8px;">${p.status}</div>`;
 
-                return `
-                <div class="card glass-card" style="padding:15px; border-right:4px solid ${statusColor}; cursor:pointer; transition:0.2s;" onclick="viewPDCADetails('${p.id}')" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <b style="color:var(--text-main); font-size:14px;">${p.title}</b>
-                        <span style="font-size:10px; color:var(--text-muted);">${p.date}</span>
-                    </div>
-                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">
-                        🏭 القسم: ${p.dept} | 👤 المالك: ${p.owner} | 🎯 التأثير: ${p.impact || 'غير محدد'}
-                    </div>
-                    <div class="row-flex" style="align-items:center;">
-                        ${controls}
-                    </div>
-                </div>`;
-            }).join('');
-        }
+            return `
+            <div class="card glass-card" style="padding:20px; border-right:4px solid ${statusColor}; cursor:pointer;" onclick="viewPDCADetails('${p.id}')">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <b style="color:var(--text-main); font-size:15px;">${p.title}</b>
+                    <span style="font-size:11px; color:var(--text-muted);"><i class='bx bx-calendar'></i> ${p.date}</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:15px; background:var(--surface-inset); padding:10px; border-radius:8px; border:1px solid var(--border-glass);">
+                    <i class='bx bx-buildings'></i> ${p.dept} | <i class='bx bx-user'></i> ${p.owner} | 🎯 ${p.impact}
+                </div>
+                <div class="row-flex" style="align-items:center;">${controls}</div>
+            </div>`;
+        }).join('');
     }
 };
 
-// 3. دالة إنشاء مشروع PDCA جديد
 window.createNewPDCA = function() {
-    let opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
-    document.getElementById('pdcaDept').innerHTML = opts;
-    
-    let filterEl = document.getElementById('kkGlobalDeptFilter');
-    if(filterEl && filterEl.value !== 'الكل') document.getElementById('pdcaDept').value = filterEl.value;
-
-    document.getElementById('pdcaTitle').value = '';
-    document.getElementById('pdcaBefore').value = '';
-    document.getElementById('pdcaAfter').value = '';
-    document.getElementById('pdcaUnit').value = '';
-    document.getElementById('pdcaPlan').value = '';
-    document.getElementById('pdcaDo').value = '';
-    document.getElementById('pdcaCheck').value = ''; // تم إضافة الفحص
-    document.getElementById('pdcaAct').value = '';   // تم إضافة الاعتماد
-    currentPDCAImg = null;
-    document.getElementById('pdcaImgPreview').innerHTML = '';
-
+    let opts = departments.map(d => `<option value="${d}">${d}</option>`).join(''); document.getElementById('pdcaDept').innerHTML = opts;
+    let filterEl = document.getElementById('kkGlobalDeptFilter'); if(filterEl && filterEl.value !== 'الكل') document.getElementById('pdcaDept').value = filterEl.value;
+    document.getElementById('pdcaTitle').value = ''; document.getElementById('pdcaBefore').value = ''; document.getElementById('pdcaAfter').value = ''; document.getElementById('pdcaUnit').value = ''; document.getElementById('pdcaPlan').value = ''; document.getElementById('pdcaDo').value = ''; document.getElementById('pdcaCheck').value = ''; document.getElementById('pdcaAct').value = ''; currentPDCAImg = null; document.getElementById('pdcaImgPreview').innerHTML = '';
     document.getElementById('pdcaCreateModal').style.display = 'flex';
 };
 
-window.handlePDCAImage = function(e) {
-    const f = e.target.files[0]; if(!f) return;
-    showToast('جاري تحضير الصورة...');
-    processAndEnhanceImage(f, function(dataUrl) { 
-        currentPDCAImg = dataUrl; 
-        document.getElementById('pdcaImgPreview').innerHTML = `<span style="color:var(--success);">✅ صورة جاهزة للرفع</span>`; 
-    });
-};
+window.handlePDCAImage = function(e) { const f = e.target.files[0]; if(!f) return; showToast('جاري تحضير الصورة...'); processAndEnhanceImage(f, function(dataUrl) { currentPDCAImg = dataUrl; document.getElementById('pdcaImgPreview').innerHTML = `<span style="color:var(--success);"><i class='bx bx-check'></i> صورة جاهزة للرفع</span>`; }); };
 
 window.saveNewPDCA = async function() {
-    let t = document.getElementById('pdcaTitle').value;
-    let b = parseFloat(document.getElementById('pdcaBefore').value) || 0;
-    let a = parseFloat(document.getElementById('pdcaAfter').value) || 0;
-    let unit = document.getElementById('pdcaUnit').value || 'وحدة';
-    
+    let t = document.getElementById('pdcaTitle').value; let b = parseFloat(document.getElementById('pdcaBefore').value) || 0; let a = parseFloat(document.getElementById('pdcaAfter').value) || 0; let unit = document.getElementById('pdcaUnit').value || 'وحدة';
     if(!t) return showToast('⚠️ عنوان المشروع مطلوب!');
 
     let uploadedUrl = null;
-    if (currentPDCAImg) {
-        showToast('جاري رفع صورة المشروع... ⏳');
-        uploadedUrl = await uploadImageToStorage(currentPDCAImg);
-    }
+    if (currentPDCAImg) { showToast('جاري رفع صورة المشروع... ⏳'); uploadedUrl = await uploadImageToStorage(currentPDCAImg); }
 
-    let pdcaObj = {
-        id: uniqueNumericId().toString(),
-        title: sanitizeInput(t),
-        dept: document.getElementById('pdcaDept').value,
-        impact: document.getElementById('pdcaImpact').value,
-        beforeVal: b,
-        afterVal: a,
-        unit: sanitizeInput(unit),
-        planText: sanitizeInput(document.getElementById('pdcaPlan').value),
-        doText: sanitizeInput(document.getElementById('pdcaDo').value),
-        checkText: sanitizeInput(document.getElementById('pdcaCheck').value),
-        actText: sanitizeInput(document.getElementById('pdcaAct').value),
-        image: uploadedUrl,
-        status: 'Plan',
-        owner: currentUser.name || 'مجهول',
-        date: new Date().toLocaleDateString('ar-EG')
-    };
-
-    if (pdcaObj.actText !== '') pdcaObj.status = 'Closed';
-    else if (pdcaObj.checkText !== '') pdcaObj.status = 'Check';
-    else if (pdcaObj.doText !== '') pdcaObj.status = 'Do';
-
-    pdcaData.push(pdcaObj);
-    renderKKDashboard();
-    syncRecord('pdca/' + pdcaObj.id, pdcaObj);
-    
-    document.getElementById('pdcaCreateModal').style.display = 'none';
-    awardPoints(25, 'إطلاق A3 PDCA متكامل');
-    showToast('تم إطلاق المشروع بنجاح 🚀');
+    let pdcaObj = { id: uniqueNumericId().toString(), title: sanitizeInput(t), dept: document.getElementById('pdcaDept').value, impact: document.getElementById('pdcaImpact').value, beforeVal: b, afterVal: a, unit: sanitizeInput(unit), planText: sanitizeInput(document.getElementById('pdcaPlan').value), doText: sanitizeInput(document.getElementById('pdcaDo').value), checkText: sanitizeInput(document.getElementById('pdcaCheck').value), actText: sanitizeInput(document.getElementById('pdcaAct').value), image: uploadedUrl, status: 'Plan', owner: currentUser.name || 'مجهول', date: new Date().toLocaleDateString('ar-EG') };
+    if (pdcaObj.actText !== '') pdcaObj.status = 'Closed'; else if (pdcaObj.checkText !== '') pdcaObj.status = 'Check'; else if (pdcaObj.doText !== '') pdcaObj.status = 'Do';
+    pdcaData.push(pdcaObj); renderKKDashboard(); syncRecord('pdca/' + pdcaObj.id, pdcaObj); document.getElementById('pdcaCreateModal').style.display = 'none'; awardPoints(25, 'إطلاق PDCA'); showToast('تم إطلاق المشروع بنجاح 🚀');
 };
 
 window.viewPDCADetails = function(id) {
-    let p = pdcaData.find(x => x.id == id);
-    if(!p) return;
-
-    document.getElementById('viewPdcaTitle').innerText = p.title;
-    document.getElementById('viewPdcaDept').innerText = p.dept;
-    
-    const impactMap = { 'P': 'الإنتاجية (Productivity)', 'Q': 'الجودة (Quality)', 'C': 'التكلفة (Cost)', 'S': 'السلامة (Safety)' };
-    document.getElementById('viewPdcaImpact').innerText = impactMap[p.impact] || p.impact;
-    document.getElementById('viewPdcaOwner').innerText = p.owner;
-
-    document.getElementById('viewPdcaPlan').innerText = p.planText || 'لم يسجل';
-    document.getElementById('viewPdcaDo').innerText = p.doText || 'لم يسجل';
-    document.getElementById('viewPdcaCheck').innerText = p.checkText || 'لم يسجل';
-    document.getElementById('viewPdcaAct').innerText = p.actText || 'لم يسجل';
-
-    if(p.image) {
-        document.getElementById('viewPdcaImg').src = p.image;
-        document.getElementById('viewPdcaImgContainer').style.display = 'block';
-    } else {
-        document.getElementById('viewPdcaImgContainer').style.display = 'none';
-    }
-
-    const ctx = document.getElementById('pdcaChart');
-    if (pdcaChartInstance) pdcaChartInstance.destroy(); 
-    
-    pdcaChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['قبل التحسين', 'الهدف / بعد التحسين'],
-            datasets: [{
-                label: p.unit,
-                data: [p.beforeVal, p.afterVal],
-                backgroundColor: ['rgba(239, 68, 68, 0.8)', 'rgba(34, 197, 94, 0.8)'],
-                borderColor: ['#ef4444', '#22c55e'],
-                borderWidth: 1, borderRadius: 5
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, ticks: { color: '#cbd5e1', font: {family: 'Cairo'} } }, x: { ticks: { color: '#fff', font: {family: 'Cairo', weight: 'bold'} } } },
-            plugins: { legend: { display: false } }
-        }
-    });
-
+    let p = pdcaData.find(x => x.id == id); if(!p) return;
+    document.getElementById('viewPdcaTitle').innerText = p.title; document.getElementById('viewPdcaDept').innerHTML = `<i class='bx bx-buildings'></i> ${p.dept}`; document.getElementById('viewPdcaImpact').innerHTML = `🎯 ${p.impact}`; document.getElementById('viewPdcaOwner').innerHTML = `<i class='bx bx-user'></i> ${p.owner}`;
+    document.getElementById('viewPdcaPlan').innerText = p.planText || 'لم يسجل'; document.getElementById('viewPdcaDo').innerText = p.doText || 'لم يسجل'; document.getElementById('viewPdcaCheck').innerText = p.checkText || 'لم يسجل'; document.getElementById('viewPdcaAct').innerText = p.actText || 'لم يسجل';
+    if(p.image) { document.getElementById('viewPdcaImg').src = p.image; document.getElementById('viewPdcaImgContainer').style.display = 'block'; } else { document.getElementById('viewPdcaImgContainer').style.display = 'none'; }
+    const ctx = document.getElementById('pdcaChart'); if (pdcaChartInstance) pdcaChartInstance.destroy(); 
+    pdcaChartInstance = new Chart(ctx, { type: 'bar', data: { labels: ['قبل التحسين', 'الهدف / بعد'], datasets: [{ label: p.unit, data: [p.beforeVal, p.afterVal], backgroundColor: ['rgba(239, 68, 68, 0.8)', 'rgba(16, 185, 129, 0.8)'], borderWidth: 0, borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: '#94a3b8', font: {family: 'Cairo'} }, grid:{color:'rgba(255,255,255,0.05)'} }, x: { ticks: { color: '#f8fafc', font: {family: 'Cairo', weight: 'bold'} }, grid:{display:false} } }, plugins: { legend: { display: false } } } });
     document.getElementById('pdcaViewModal').style.display = 'flex';
 };
 
-// 4. تحديث حالة الـ PDCA أو حذفه
-window.updatePDCAStatus = function(id, newStatus) {
-    let p = pdcaData.find(x => x.id == id);
-    if(p) {
-        p.status = newStatus;
-        syncRecord('pdca/' + id, p);
-        if(newStatus === 'Act') awardPoints(20, 'اعتماد وتنميط تحسين (Act)');
-    }
-};
-window.deletePDCA = function(id) {
-    if(confirm('هل أنت متأكد من حذف هذا المشروع نهائياً؟')) {
-        deleteRecord('pdca/' + id);
-        showToast('تم مسح المشروع 🗑️');
-    }
-};
+window.updatePDCAStatus = function(id, newStatus) { let p = pdcaData.find(x => x.id == id); if(p) { p.status = newStatus; syncRecord('pdca/' + id, p); if(newStatus === 'Act') awardPoints(20, 'اعتماد تحسين (Act)'); } };
+window.deletePDCA = function(id) { if(confirm('هل أنت متأكد من حذف هذا المشروع نهائياً؟')) { deleteRecord('pdca/' + id); showToast('تم مسح المشروع 🗑️'); } };
 
-// 5. تسجيل فقد جديد
 window.openLossRegistration = function(lossId, lossName) {
-    let filterEl = document.getElementById('kkGlobalDeptFilter');
-    let targetDept = filterEl ? filterEl.value : 'الكل';
-    
+    let filterEl = document.getElementById('kkGlobalDeptFilter'); let targetDept = filterEl ? filterEl.value : 'الكل';
     if(targetDept === 'الكل') {
-        let deptNames = departments.join(' أو ');
-        targetDept = prompt(`لأي قسم تريد تسجيل هذا الفقد؟\n(${deptNames})`, departments[0]);
-        if(!targetDept || !departments.includes(targetDept)) {
-            return showToast('⚠️ يرجى إدخال اسم قسم صحيح مطابق للمصنع.');
-        }
+        targetDept = prompt(`لأي قسم تريد تسجيل هذا الفقد؟\n(${departments.join(' أو ')})`, departments[0]);
+        if(!targetDept || !departments.includes(targetDept)) return showToast('⚠️ يرجى إدخال اسم قسم صحيح.');
     }
-
     let mins = prompt(`تسجيل فقد لـ [${targetDept}]:\nنوع الفقد: ${lossName}\n\nأدخل مدة التوقف (بالدقائق):`);
-    
     if(mins && !isNaN(mins) && parseInt(mins) > 0) {
-        let parsedMins = parseInt(mins);
-        let lossObj = {
-            id: uniqueNumericId().toString(),
-            lossId: lossId,
-            dept: targetDept,
-            minutes: parsedMins,
-            date: new Date().toLocaleDateString('ar-EG'),
-            user: currentUser.name || 'مجهول'
-        };
-        
-        registeredLosses.push(lossObj);
-        renderKKDashboard(); 
-        syncRecord('losses/' + lossObj.id, lossObj); 
-        
-        awardPoints(5, 'تحليل وتسجيل فقد توقف');
-        showToast(`✅ تم تسجيل ${parsedMins} دقيقة لقسم ${targetDept}.`);
-    } else if (mins) {
-        showToast('⚠️ يرجى إدخال رقم صحيح للدقائق');
-    }
+        let lossObj = { id: uniqueNumericId().toString(), lossId: lossId, dept: targetDept, minutes: parseInt(mins), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name || 'مجهول' };
+        registeredLosses.push(lossObj); renderKKDashboard(); syncRecord('losses/' + lossObj.id, lossObj); awardPoints(5, 'تسجيل فقد'); showToast(`✅ تم تسجيل الفقد.`);
+    } else if (mins) showToast('⚠️ إدخال غير صحيح');
 };
 
-// 6. دالة المراجعة (بنية تحتية للمرحلة القادمة)
-window.startKKAudit = function() {
-    const selectedDept = document.getElementById('kkAuditDeptSelect').value;
-    if(!selectedDept) return showToast('يرجى اختيار القسم أولاً');
-    showToast(`تم تجهيز بيئة المراجعة لقسم: ${selectedDept}. جاري برمجة نموذج الأسئلة في التحديث القادم! 🚀`);
-};
+window.startKKAudit = function() { const selectedDept = document.getElementById('kkAuditDeptSelect').value; if(!selectedDept) return showToast('يرجى اختيار القسم أولاً'); showToast(`تم تجهيز بيئة المراجعة. جاري البرمجة! 🚀`); };
 
-// 7. تحديث القوائم المنسدلة للأقسام
-const originalUpdateDeptDropdown = window.updateDeptDropdown;
-window.updateDeptDropdown = function() {
-    if(typeof originalUpdateDeptDropdown === 'function') originalUpdateDeptDropdown();
-    
-    let opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
-    
-    const kkAuditSelect = document.getElementById('kkAuditDeptSelect');
-    if(kkAuditSelect) kkAuditSelect.innerHTML = opts;
+// Service Worker (Offline Support)
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW Registration Failed', err)); }); }
 
-    const kkGlobalFilter = document.getElementById('kkGlobalDeptFilter');
-    if(kkGlobalFilter) {
-        let currentVal = kkGlobalFilter.value;
-        kkGlobalFilter.innerHTML = `<option value="الكل">🏭 جميع الأقسام</option>` + opts;
-        kkGlobalFilter.value = currentVal || 'الكل'; 
-    }
-};
-// ==========================================
-// 📊 محرك مؤشرات نضج الصيانة الذاتية (Enterprise JH KPIs)
-// ==========================================
-
+// JH KPIs Engine
 const TPM_MASTER_KPIs = [
-    // ⚙️ الإنتاجية (Productivity - P)
     { id: "oee", name: "الكفاءة الكلية للمعدات (OEE)", cat: "P", type: "auto", unit: "%", target: 85, dir: "up" },
     { id: "mtbf", name: "متوسط الوقت بين الأعطال (MTBF)", cat: "P", type: "manual", unit: "ساعة", target: 120, dir: "up" },
-    { id: "mttr", name: "متوسط وقت الإصلاح (MTTR)", cat: "P", type: "manual", unit: "دقيقة", target: 30, dir: "down" },
     { id: "breakdowns", name: "تاجات الصيانة الحمراء", cat: "P", type: "auto", unit: "عطل", target: 0, dir: "down" },
-    
-    // ✨ الجودة (Quality - Q)
     { id: "defect_rate", name: "نسبة العيوب / الهالك", cat: "Q", type: "manual", unit: "%", target: 1, dir: "down" },
-    { id: "customer_complaints", name: "شكاوى العملاء (بسبب القسم)", cat: "Q", type: "manual", unit: "شكوى", target: 0, dir: "down" },
-    { id: "rework", name: "معدل إعادة العمل (Rework)", cat: "Q", type: "manual", unit: "%", target: 0.5, dir: "down" },
-    
-    // 💰 التكلفة (Cost - C)
-    { id: "maintenance_cost", name: "تكلفة الصيانة (قطع غيار ومواد)", cat: "C", type: "manual", unit: "جنيه", target: 5000, dir: "down" },
-    { id: "energy_consump", name: "استهلاك الطاقة الفاقدة", cat: "C", type: "manual", unit: "kW", target: 100, dir: "down" },
-    { id: "oil_leakage", name: "كمية تسريب الزيوت", cat: "C", type: "manual", unit: "لتر", target: 0, dir: "down" },
-    
-    // 🚚 التسليم (Delivery - D)
-    { id: "plan_achievement", name: "نسبة تحقيق خطة الإنتاج", cat: "D", type: "manual", unit: "%", target: 98, dir: "up" },
-    { id: "changeover_time", name: "زمن تغيير المنتج (SMED)", cat: "D", type: "manual", unit: "دقيقة", target: 15, dir: "down" },
-    
-    // ⚠️ السلامة (Safety - S)
-    { id: "lti", name: "إصابات وقت العمل المفقود (LTI)", cat: "S", type: "manual", unit: "حادث", target: 0, dir: "down" },
-    { id: "near_miss", name: "الحوادث الوشيكة (Near Miss)", cat: "S", type: "manual", unit: "حالة", target: 0, dir: "down" },
-    { id: "safety_tags", name: "نسبة إغلاق تاجات الأمان", cat: "S", type: "manual", unit: "%", target: 100, dir: "up" },
-    
-    // 👥 المعنويات (Morale - M)
-    { id: "jh_audit_score", name: "درجة مراجعة الصيانة الذاتية (Audit)", cat: "M", type: "auto", unit: "%", target: 90, dir: "up" },
-    { id: "kaizen_implemented", name: "أفكار كايزن المطبقة", cat: "M", type: "auto", unit: "فكرة", target: 10, dir: "up" },
-    { id: "training_hours", name: "ساعات تدريب المشغلين (OPL)", cat: "M", type: "manual", unit: "ساعة", target: 4, dir: "up" },
-    { id: "circle_meetings", name: "اجتماعات دوائر الجودة", cat: "M", type: "manual", unit: "اجتماع", target: 4, dir: "up" },
-    { id: "5s_score", name: "درجة تقييم بيئة العمل (5S)", cat: "M", type: "manual", unit: "%", target: 95, dir: "up" }
+    { id: "maintenance_cost", name: "تكلفة الصيانة", cat: "C", type: "manual", unit: "جنيه", target: 5000, dir: "down" },
+    { id: "plan_achievement", name: "تحقيق الخطة", cat: "D", type: "manual", unit: "%", target: 98, dir: "up" },
+    { id: "safety_tags", name: "إغلاق تاجات الأمان", cat: "S", type: "manual", unit: "%", target: 100, dir: "up" },
+    { id: "jh_audit_score", name: "مراجعة الصيانة الذاتية", cat: "M", type: "auto", unit: "%", target: 90, dir: "up" },
+    { id: "kaizen_implemented", name: "كايزن المطبقة", cat: "M", type: "auto", unit: "فكرة", target: 10, dir: "up" }
 ];
 
-let currentKPIDept = 'حقن الكابينة'; 
-let kpiDataStore = {}; 
 window.currentPQCDSMFilter = 'All';
-let kpiRadarChartInst = null;
-let kpiTrendChartInst = null;
 
-// 🚀 دالة الفتح المركزية
 window.openJHKPIsScreen = function() {
-    showScreen('jhKPIsScreen');
-    renderKPIDeptTabs();
-    loadKPIsForDepartment(currentKPIDept);
-    calculateGlobalKPIs();
-    filterKPITable('All');
-    setTimeout(() => { initEnterpriseCharts(); }, 300);
+    showScreen('jhKPIsScreen'); renderKPIDeptTabs(); loadKPIsForDepartment(currentKPIDept); calculateGlobalKPIs(); filterKPITable('All'); setTimeout(() => { initEnterpriseCharts(); }, 300);
 };
 
 window.renderKPIDeptTabs = function() {
-    let html = departments.map(d => `
-        <button class="btn btn-sm ${d === currentKPIDept ? 'btn-primary active' : 'btn-outline'}" 
-                style="white-space: nowrap; border-radius: 20px;" 
-                onclick="changeKPIDept('${d}')">
-            ${d}
-        </button>
-    `).join('');
-    let tabsEl = document.getElementById('kpiDeptTabs');
-    if(tabsEl) tabsEl.innerHTML = html;
+    let opts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
+    let f1 = document.getElementById('kpiDeptFilter'); if(f1) f1.innerHTML = `<option value="factory">المصنع بالكامل</option>` + opts;
+    
+    // Auto populate month filter
+    let mFilter = document.getElementById('kpiMonthFilter');
+    if(mFilter && mFilter.options.length === 0) {
+        let cm = new Date().toISOString().slice(0, 7);
+        mFilter.innerHTML = `<option value="${cm}">الشهر الحالي</option>`;
+    }
 };
 
-window.changeKPIDept = function(dept) {
-    currentKPIDept = dept;
-    renderKPIDeptTabs();
-    loadKPIsForDepartment(dept);
+window.reloadEnterpriseKPIs = function() {
+    let d = document.getElementById('kpiDeptFilter').value; if(d !== 'factory') currentKPIDept = d;
+    loadKPIsForDepartment(currentKPIDept);
 };
 
 window.loadKPIsForDepartment = async function(dept) {
-    let titleEl = document.getElementById('kpiCurrentDeptTitle');
-    if(titleEl) titleEl.innerText = `القسم: ${dept}`;
-    showToast('جاري حساب المؤشرات... ⏳');
-    
-    let currentMonth = new Date().toISOString().slice(0, 7); 
-    const snap = await db.ref(`tpm_system/jh_kpis/${currentMonth}/${dept}`).once('value');
-    kpiDataStore = snap.val() || {};
+    let currentMonth = document.getElementById('kpiMonthFilter') ? document.getElementById('kpiMonthFilter').value : new Date().toISOString().slice(0, 7); 
+    const snap = await db.ref(`tpm_system/jh_kpis/${currentMonth}/${dept}`).once('value'); kpiDataStore = snap.val() || {};
 
-    // 🤖 تحديث الكروت العلوية للقسم آلياً
     let deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen'));
     let auditScore = deptAudits.length > 0 ? deptAudits[deptAudits.length-1].totalPct : 0;
-    
     let openTags = tagsData.filter(t => t.dept === dept && t.color === 'red' && t.status !== 'closed').length;
     let closedTags = tagsData.filter(t => t.dept === dept && t.color === 'red' && t.status === 'closed').length;
-    
     let kaizens = historyData.filter(h => h.dept === dept && h.stepsOrder.includes('ManualKaizen')).length;
     let oee = Math.max(0, Math.round((auditScore * 0.95) - (openTags * 1.5)));
 
@@ -3020,187 +1295,71 @@ window.loadKPIsForDepartment = async function(dept) {
     renderEnterpriseKPITable();
 };
 
-window.calculateGlobalKPIs = function() {
-    let totalOpenRed = tagsData.filter(t => t.color === 'red' && t.status !== 'closed').length;
-    let totalOpenBlue = tagsData.filter(t => t.color === 'blue' && t.status !== 'closed').length;
-    let totalKaizens = historyData.filter(h => h.stepsOrder.includes('ManualKaizen')).length;
-    let totalAudits = historyData.filter(h => !h.stepsOrder.includes('ManualKaizen')).length;
-
-    let el = document.getElementById('globalKPIStats');
-    if(el) {
-        el.innerHTML = `
-            <div class="stat-card glass-card" style="border-bottom: 2px solid var(--danger);">
-                <div class="stat-value danger-text">${totalOpenRed}</div>
-                <div class="stat-label">تاجات صيانة مفتوحة</div>
-            </div>
-            <div class="stat-card glass-card" style="border-bottom: 2px solid var(--primary);">
-                <div class="stat-value primary-text">${totalOpenBlue}</div>
-                <div class="stat-label">تاجات إنتاج مفتوحة</div>
-            </div>
-            <div class="stat-card glass-card" style="border-bottom: 2px solid var(--success);">
-                <div class="stat-value success-text">${totalKaizens}</div>
-                <div class="stat-label">إجمالي الكايزن</div>
-            </div>
-            <div class="stat-card glass-card" style="border-bottom: 2px solid var(--gold);">
-                <div class="stat-value" style="color:var(--gold);">${totalAudits}</div>
-                <div class="stat-label">إجمالي المراجعات</div>
-            </div>
-        `;
-    }
-};
+window.calculateGlobalKPIs = function() {}; // Reserved for future global aggr
 
 window.filterKPITable = function(category) {
     window.currentPQCDSMFilter = category;
-    let buttons = document.querySelectorAll('#jhKPIsScreen .btn-sm');
-    buttons.forEach(btn => {
-        if(btn.innerText.includes(category) || (category === 'All' && btn.innerText.includes('الكل'))) {
-            btn.classList.add('btn-primary'); btn.classList.remove('btn-outline'); btn.style.color = '#fff';
-        } else {
-            btn.classList.remove('btn-primary'); btn.classList.add('btn-outline');
-            if(btn.innerText.includes('P')) btn.style.color = '#3b82f6';
-            else if(btn.innerText.includes('Q')) btn.style.color = '#22c55e';
-            else if(btn.innerText.includes('C')) btn.style.color = '#eab308';
-            else if(btn.innerText.includes('D')) btn.style.color = '#f97316';
-            else if(btn.innerText.includes('S')) btn.style.color = '#ef4444';
-            else if(btn.innerText.includes('M')) btn.style.color = '#a855f7';
-        }
+    document.querySelectorAll('#jhKPIsScreen .row-flex button').forEach(btn => {
+        if(btn.innerText.includes(category) || (category === 'All' && btn.innerText.includes('الكل'))) { btn.classList.add('btn-primary'); btn.classList.remove('btn-outline'); } 
+        else { btn.classList.remove('btn-primary'); btn.classList.add('btn-outline'); }
     });
     renderEnterpriseKPITable();
 };
 
 window.renderEnterpriseKPITable = function() {
-    let tbody = document.getElementById('enterpriseKPITableBody');
-    if(!tbody) return;
-    
-    tbody.innerHTML = '';
+    let tbody = document.getElementById('enterpriseKPITableBody'); if(!tbody) return; tbody.innerHTML = '';
     let filteredKPIs = TPM_MASTER_KPIs.filter(kpi => window.currentPQCDSMFilter === 'All' || kpi.cat === window.currentPQCDSMFilter);
     
     filteredKPIs.forEach(kpi => {
-        let val = 0;
-        let sourceBadge = '';
-        
-        if(kpi.type === 'manual') {
-            val = kpiDataStore[kpi.id] || 0;
-            sourceBadge = '<span style="color:var(--warning); font-size:10px;">✍️ يدوي</span>';
-        } else {
-            sourceBadge = '<span style="color:var(--success); font-size:10px;">🤖 آلي</span>';
-            // 🧠 السحب الآلي من قلب السيستم
-            if (kpi.id === 'breakdowns') {
-                val = tagsData.filter(t => t.dept === currentKPIDept && t.color === 'red' && t.status !== 'closed').length;
-            } else if (kpi.id === 'jh_audit_score') {
-                let auds = historyData.filter(h => h.dept === currentKPIDept && !h.stepsOrder.includes('ManualKaizen'));
-                val = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
-            } else if (kpi.id === 'kaizen_implemented') {
-                val = historyData.filter(h => h.dept === currentKPIDept && h.stepsOrder.includes('ManualKaizen')).length;
-            } else if (kpi.id === 'oee') {
-                let auds = historyData.filter(h => h.dept === currentKPIDept && !h.stepsOrder.includes('ManualKaizen'));
-                let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
-                let ops = tagsData.filter(t => t.dept === currentKPIDept && t.color === 'red' && t.status !== 'closed').length;
-                val = Math.max(0, Math.round((sc * 0.95) - (ops * 1.5)));
-            }
+        let val = 0; let sourceBadge = '';
+        if(kpi.type === 'manual') { val = kpiDataStore[kpi.id] || 0; sourceBadge = '<span style="color:var(--warning);"><i class="bx bx-edit"></i></span>'; } 
+        else {
+            sourceBadge = '<span style="color:var(--success);"><i class="bx bx-bot"></i></span>';
+            if (kpi.id === 'breakdowns') val = tagsData.filter(t => t.dept === currentKPIDept && t.color === 'red' && t.status !== 'closed').length;
+            else if (kpi.id === 'jh_audit_score') { let auds = historyData.filter(h => h.dept === currentKPIDept && !h.stepsOrder.includes('ManualKaizen')); val = auds.length > 0 ? auds[auds.length-1].totalPct : 0; }
+            else if (kpi.id === 'kaizen_implemented') val = historyData.filter(h => h.dept === currentKPIDept && h.stepsOrder.includes('ManualKaizen')).length;
+            else if (kpi.id === 'oee') { let auds = historyData.filter(h => h.dept === currentKPIDept && !h.stepsOrder.includes('ManualKaizen')); let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0; let ops = tagsData.filter(t => t.dept === currentKPIDept && t.color === 'red' && t.status !== 'closed').length; val = Math.max(0, Math.round((sc * 0.95) - (ops * 1.5))); }
         }
 
         let isGood = kpi.dir === 'up' ? (val >= kpi.target) : (val <= kpi.target);
-        let statusIcon = isGood ? '✅' : '❌';
-        let statusClass = isGood ? 'status-good' : 'status-bad';
-        let statusText = isGood ? 'مُحقق' : 'تجاوز';
+        let statusIcon = isGood ? '<i class="bx bx-check-circle"></i>' : '<i class="bx bx-error-circle"></i>';
+        let statusClass = isGood ? 'success-text' : 'danger-text';
 
-        let tr = document.createElement('tr');
-        tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-        tr.innerHTML = `
-            <td style="text-align: center;"><span class="kpi-category-badge cat-${kpi.cat}">${kpi.cat}</span></td>
-            <td style="font-weight: bold; color: var(--text-main); font-size:12px;">${kpi.name} <br><small style="color: var(--text-muted); font-size:9px;">${sourceBadge}</small></td>
-            <td style="text-align: center; color: var(--gold); font-weight: bold; font-size:12px;">${kpi.target}</td>
-            <td style="text-align: center; font-weight: 900; font-size: 14px; color: ${val > 0 ? 'white' : 'var(--text-muted)'};">${val}</td>
-            <td style="text-align: center; font-size:11px;" class="${statusClass}">${statusIcon} ${statusText}</td>
-        `;
-        tbody.appendChild(tr);
+        tbody.innerHTML += `<tr style="border-bottom: 1px solid var(--border-glass);">
+            <td style="text-align:center; padding:12px;"><span class="kpi-category-badge cat-${kpi.cat}">${kpi.cat}</span></td>
+            <td style="color:var(--text-main); font-weight:bold;">${kpi.name} ${sourceBadge}</td>
+            <td style="text-align:center; color:var(--gold);">${kpi.target}</td>
+            <td style="text-align:center; font-weight:900; color:${val>0?'#fff':'var(--text-muted)'};">${val}</td>
+            <td style="text-align:center;" class="${statusClass}">${statusIcon}</td>
+        </tr>`;
     });
 };
 
 window.openKPIEntryModal = function() {
-    let nameEl = document.getElementById('manualKPIDeptName');
-    if(nameEl) nameEl.innerText = `إدخال بيانات قسم: ${currentKPIDept}`;
-    
-    let fieldsHtml = TPM_MASTER_KPIs.filter(k => k.type === 'manual').map(kpi => `
-        <div class="form-group" style="margin-bottom:10px;">
-            <label style="font-size:11px; color:var(--text-main);">${kpi.name} (${kpi.unit})</label>
-            <input type="number" id="manual_kpi_${kpi.id}" class="form-control" value="${kpiDataStore[kpi.id] || 0}" style="margin-bottom:0;">
-        </div>
-    `).join('');
-
-    let fieldsContainer = document.getElementById('manualKPIFields');
-    if(fieldsContainer) fieldsContainer.innerHTML = fieldsHtml;
-    
-    let modal = document.getElementById('manualKPIModal');
-    if(modal) modal.style.display = 'flex';
+    let nameEl = document.getElementById('manualKPIDeptName'); if(nameEl) nameEl.innerHTML = `<i class='bx bx-edit'></i> إدخال بيانات: ${currentKPIDept}`;
+    let fieldsHtml = TPM_MASTER_KPIs.filter(k => k.type === 'manual').map(kpi => `<div class="form-group"><label style="color:var(--text-muted); font-size:12px;">${kpi.name} (${kpi.unit})</label><input type="number" id="manual_kpi_${kpi.id}" class="form-control" value="${kpiDataStore[kpi.id] || 0}"></div>`).join('');
+    let fieldsContainer = document.getElementById('manualKPIFields'); if(fieldsContainer) fieldsContainer.innerHTML = fieldsHtml;
+    let modal = document.getElementById('manualKPIModal'); if(modal) modal.style.display = 'flex';
 };
 
 window.saveManualKPIs = async function() {
-    showToast('جاري الحفظ... ⏳');
-    let currentMonth = new Date().toISOString().slice(0, 7);
-    
-    let updates = {};
-    TPM_MASTER_KPIs.filter(k => k.type === 'manual').forEach(kpi => {
-        let el = document.getElementById(`manual_kpi_${kpi.id}`);
-        if(el) updates[kpi.id] = parseFloat(el.value) || 0;
-    });
-
+    let currentMonth = document.getElementById('kpiMonthFilter') ? document.getElementById('kpiMonthFilter').value : new Date().toISOString().slice(0, 7);
+    let updates = {}; TPM_MASTER_KPIs.filter(k => k.type === 'manual').forEach(kpi => { let el = document.getElementById(`manual_kpi_${kpi.id}`); if(el) updates[kpi.id] = parseFloat(el.value) || 0; });
     await db.ref(`tpm_system/jh_kpis/${currentMonth}/${currentKPIDept}`).set(updates);
-    
-    let modal = document.getElementById('manualKPIModal');
-    if(modal) modal.style.display = 'none';
-    
-    showToast('تم حفظ المؤشرات بنجاح ✅');
-    loadKPIsForDepartment(currentKPIDept); 
+    document.getElementById('manualKPIModal').style.display = 'none'; showToast('تم حفظ المؤشرات ✅'); loadKPIsForDepartment(currentKPIDept); 
 };
 
 window.initEnterpriseCharts = function() {
     let ctxRadar = document.getElementById('kpiMaturityRadar');
     if(ctxRadar) {
         if(kpiRadarChartInst) kpiRadarChartInst.destroy();
-        kpiRadarChartInst = new Chart(ctxRadar, {
-            type: 'radar',
-            data: {
-                labels: ['إنتاجية', 'جودة', 'تكلفة', 'تسليم', 'سلامة', 'معنويات'],
-                datasets: [{
-                    label: 'الحالي',
-                    data: [85, 92, 70, 88, 100, 95],
-                    backgroundColor: 'rgba(212, 175, 55, 0.2)', borderColor: '#D4AF37', pointBackgroundColor: '#D4AF37', borderWidth: 2
-                }, {
-                    label: 'الهدف',
-                    data: [90, 100, 90, 95, 100, 100],
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: '#3B82F6', borderDash: [5, 5], borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { r: { ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { font: { size: 10, family: 'Cairo' }, color: '#cbd5e1' } } },
-                plugins: { legend: { display: false } }
-            }
-        });
+        kpiRadarChartInst = new Chart(ctxRadar, { type: 'radar', data: { labels: ['إنتاجية', 'جودة', 'تكلفة', 'تسليم', 'سلامة', 'معنويات'], datasets: [{ label: 'الحالي', data: [85, 92, 70, 88, 100, 95], backgroundColor: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b', pointBackgroundColor: '#f59e0b', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { font: { family: 'Cairo' }, color: '#94a3b8' } } }, plugins: { legend: { display: false } } } });
     }
-
     let ctxTrend = document.getElementById('kpiTrendLine');
     if(ctxTrend) {
         if(kpiTrendChartInst) kpiTrendChartInst.destroy();
-        kpiTrendChartInst = new Chart(ctxTrend, {
-            type: 'line',
-            data: {
-                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-                datasets: [{
-                    label: 'OEE %', data: [72, 75, 74, 78, 80, 82],
-                    borderColor: '#00BCD4', backgroundColor: 'rgba(0, 188, 212, 0.1)', borderWidth: 3, fill: true, tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 10, family: 'Cairo' } } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1', font: { size: 10 } } }
-                },
-                plugins: { legend: { display: false } }
-            }
-        });
+        kpiTrendChartInst = new Chart(ctxTrend, { type: 'line', data: { labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'], datasets: [{ label: 'OEE %', data: [72, 75, 74, 78, 80, 82], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 3, fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Cairo' } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } } });
     }
 };
+
+// Checklists & CLIT maps logic reserved

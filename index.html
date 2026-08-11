@@ -274,6 +274,23 @@
         .elite-score { display: flex; flex-direction: column; align-items: center; margin-top: 10px;}
         .elite-card:nth-child(n+4) .elite-score { flex-direction: row; gap: 5px; margin-top: 0;}
         .pts-val { font-size: 22px; font-weight: 900; color: var(--glow-gold); text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        /* ==========================================
+           🛡️ جدار الحماية لشاشات المصادقة (Auth Shield)
+           ========================================== */
+        
+        /* إخفاء الشريط العلوي تماماً إذا كانت شاشة الدخول أو التسجيل نشطة */
+        body:has(#loginScreen.active) #mainHeader,
+        body:has(#signupScreen.active) #mainHeader {
+            display: none !important;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* إزالة الهوامش العلوية التي كانت تسبب الفراغ */
+        body:has(#loginScreen.active) .container.screen,
+        body:has(#signupScreen.active) .container.screen {
+            padding-top: 0 !important;
+        }
     </style>
 </head>
 <body>

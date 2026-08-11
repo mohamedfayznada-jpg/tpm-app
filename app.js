@@ -5,6 +5,7 @@
 const db = firebase.database();
 const auth = firebase.auth();
 
+// 🛡️ المتغيرات العالمية المحصنة
 let tpmSystemRef = null, tpmSystemListener = null;
 let globalApiKeys = { imgbb: "", gemini: "" };
 let departments = [], historyData = [], tasksData = [], usersData = {}, logsData = [], likesData = {}, tagsData = [], kaizenComments = {}, userPoints = {}, knowledgeBaseData = [], deptPhones = {}, maintenanceEngineers = [];
@@ -17,6 +18,10 @@ let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
 let screenHistory = ['homeScreen'];
 let jhMiniChartInstance = null;
 let deptGoalsData = {};
+
+// 👇 المتغيرات التي تم حقنها لحل الانهيار
+let currentJHDept = null; 
+let registeredLosses = [];
 
 // ------------------------------------------
 // 🛡️ أدوات النظام والتنبيهات (Utilities)

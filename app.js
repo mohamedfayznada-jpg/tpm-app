@@ -45,10 +45,14 @@ function clearAllListeners() {
 function renderProductionDashboard() {} function renderMasterData() {} function renderUsersPanel() {}
 
 firebase.auth().onAuthStateChanged(async user => {
-    clearAllListeners();
+    // 1. التقاط الهيكل العام للتطبيق
+    const mainHeader = document.getElementById('mainHeader');
     
     if (user) {
         isDataLoaded = true;
+        
+        // 🛡️ السماح بظهور الهيدر والقوائم لأن المستخدم موثق
+        if (mainHeader) mainHeader.style.display = 'flex';
 
         // 🚀 السحب الذكي: هنسحب الأساسيات بس عشان الشاشة تفتح في ثانية
         const dSnap = await db.ref('tpm_system/departments').once('value');
@@ -145,7 +149,12 @@ dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {
         });
         
  } else {
-        isInitialLoad = true; isDataLoaded = false; 
+        isInitialLoad = true; 
+        isDataLoaded = false; 
+        
+        // 🛡️ إخفاء الهيدر والقوائم تماماً (حجر صحي)
+        if (mainHeader) mainHeader.style.display = 'none';
+        
         showScreen('loginScreen');
     }
 });

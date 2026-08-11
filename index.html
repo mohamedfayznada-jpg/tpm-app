@@ -872,6 +872,171 @@
             </div>
         </div>
     </div>
+    <!-- ==========================================
+         📦 الشاشات المفقودة (Restored DOM Nodes)
+         ========================================== -->
+
+    <!-- 📊 شاشة أرشيف المراجعات (التي سببت الانهيار) -->
+    <div class="container screen" id="historyScreen">
+        <h2 class="section-title" style="color:var(--gold);">📊 أرشيف المراجعات والتقارير</h2>
+        <!-- 🛡️ هذا هو الـ ID الذي يبحث عنه Firebase -->
+        <div id="historyListContainer" class="grid-layout"></div>
+    </div>
+
+    <!-- 🚨 شاشة إدارة التاجات والأعطال -->
+    <div class="container screen" id="tagsScreen">
+        <h2 class="section-title" style="color:var(--danger);">🚨 إدارة التذاكر والأعطال</h2>
+        
+        <div class="card glass-card btn-role-operator">
+            <h4 class="card-title">إصدار تاج جديد</h4>
+            <textarea id="newTagDesc" class="form-control" rows="2" placeholder="وصف المشكلة بدقة..."></textarea>
+            <div class="row-flex">
+                <select id="newTagColor" class="form-control flex-1">
+                    <option value="red">صيانة (أحمر) 🔴</option>
+                    <option value="blue">إنتاج (أزرق) 🔵</option>
+                </select>
+                <select id="newTagDept" class="form-control flex-1"></select>
+            </div>
+            <div class="row-flex">
+                <input type="text" id="newTagMachine" class="form-control flex-1" placeholder="الماكينة (اختياري)">
+                <input type="text" id="newTagSpareParts" class="form-control flex-1" placeholder="قطع غيار مطلوبة (اختياري)">
+            </div>
+            <button class="btn btn-primary full-width" onclick="addNewTag()">إصدار وحفظ التاج 🚀</button>
+        </div>
+
+        <div class="row-flex" style="margin-bottom: 20px;">
+            <select id="filterTagDept" class="form-control flex-1" onchange="renderTags()"><option value="الكل">كل الأقسام</option></select>
+            <select id="filterTagStatus" class="form-control flex-1" onchange="renderTags()">
+                <option value="active">مفتوح / جاري</option>
+                <option value="closed">مغلقة فقط</option>
+            </select>
+            <input type="text" id="filterTagMachine" class="form-control flex-1" placeholder="بحث بالماكينة..." onkeyup="renderTags()">
+        </div>
+
+        <div class="grid-layout">
+            <div class="kanban-col">
+                <h4 style="color:var(--danger); border-bottom:1px solid var(--danger); padding-bottom:10px; margin-bottom:15px;">🔴 تاجات الصيانة</h4>
+                <!-- 🛡️ الـ ID المطلوب لعمل renderTags -->
+                <div id="redTagsContainer"></div>
+            </div>
+            <div class="kanban-col">
+                <h4 style="color:var(--primary); border-bottom:1px solid var(--primary); padding-bottom:10px; margin-bottom:15px;">🔵 تاجات الإنتاج</h4>
+                <!-- 🛡️ الـ ID المطلوب لعمل renderTags -->
+                <div id="blueTagsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📋 شاشة إدارة المهام (Kanban) -->
+    <div class="container screen" id="tasksScreen">
+        <div id="tasksMainView">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 class="section-title" style="margin:0; color:var(--success);">📋 إدارة المهام</h2>
+                <button class="btn btn-success btn-sm" onclick="exportTasksToCSV()">تصدير 📥</button>
+            </div>
+            
+            <div class="dashboard-stats">
+                <div class="stat-card" style="border-bottom: 3px solid var(--danger);"><div id="kpiTasksPendingAll" class="stat-value danger-text">0</div><div class="stat-label">معلقة</div></div>
+                <div class="stat-card" style="border-bottom: 3px solid var(--warning);"><div id="kpiTasksProgressAll" class="stat-value warning-text">0</div><div class="stat-label">جاري التنفيذ</div></div>
+                <div class="stat-card" style="border-bottom: 3px solid var(--success);"><div id="kpiTasksDoneAll" class="stat-value success-text">0</div><div class="stat-label">مكتملة</div></div>
+            </div>
+            
+            <div id="tasksDeptGrid" class="grid-layout"></div>
+        </div>
+
+        <div id="tasksDeptView" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <button class="btn btn-sm btn-outline" onclick="closeTasksDept()">⬅️ عودة للأقسام</button>
+                <h2 id="tasksDeptTitle" style="color:var(--gold); margin:0;">المهام</h2>
+            </div>
+            <div class="card glass-card btn-role-auditor">
+                <div class="row-flex">
+                    <input type="text" id="newTaskInput" class="form-control flex-2" placeholder="أضف مهمة جديدة هنا...">
+                    <button class="btn btn-primary flex-1" onclick="addManualTaskDept()">➕ إضافة مهمة</button>
+                </div>
+            </div>
+            <div class="kanban-board">
+                <div class="kanban-col">
+                    <div class="kanban-header todo-head">🔴 معلقة <span id="count_pending">0</span></div>
+                    <!-- 🛡️ الـ IDs المطلوبة لعمل renderTasks -->
+                    <div id="kanban_pending"></div>
+                </div>
+                <div class="kanban-col">
+                    <div class="kanban-header progress-head">🟡 جاري <span id="count_progress">0</span></div>
+                    <div id="kanban_progress"></div>
+                </div>
+                <div class="kanban-col">
+                    <div class="kanban-header done-head">🟢 مكتملة <span id="count_done">0</span></div>
+                    <div id="kanban_done"></div>
+                </div>
+            </div>
+            <h4 style="color:var(--gold); margin:25px 0 15px;">📂 مجلدات المراجعات (JH)</h4>
+            <div id="auditFoldersContainer" class="grid-layout"></div>
+        </div>
+    </div>
+
+    <!-- 📉 شاشة شجرة الفواقد والـ KK -->
+    <div class="container screen" id="kkScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 class="section-title" style="color:var(--warning); margin:0;">📉 التحسين المستمر (KK)</h2>
+            <select id="kkGlobalDeptFilter" class="form-control" style="width:auto; margin:0;" onchange="renderKKDashboard()">
+                <option value="الكل">🏭 جميع الأقسام</option>
+            </select>
+        </div>
+
+        <div class="dashboard-stats">
+            <div class="stat-card" style="border-bottom: 3px solid var(--danger);"><div class="stat-value danger-text" id="kkTotalLossHours">0</div><div class="stat-label">ساعات التوقف</div></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--success);"><div class="stat-value success-text" id="kkTotalLossCost">0</div><div class="stat-label">النزيف المالي المقدر</div></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--gold);"><div class="stat-value warning-text" id="kkActiveProjects">0</div><div class="stat-label">مشاريع (PDCA)</div></div>
+        </div>
+
+        <div class="row-flex" style="margin-bottom:20px;">
+            <button class="btn btn-primary flex-1" onclick="switchKKTab('lossTree', this)">🌳 شجرة الفواقد</button>
+            <button class="btn btn-outline flex-1" onclick="switchKKTab('pdca', this)">💡 مشاريع PDCA</button>
+        </div>
+
+        <!-- 🛡️ الـ IDs المطلوبة لعمل renderKKDashboard -->
+        <div id="kkTab-lossTree" class="kk-tab-content">
+            <div id="kkLossTreeContainer" class="grid-layout"></div>
+        </div>
+        <div id="kkTab-pdca" class="kk-tab-content" style="display:none;">
+            <button class="btn btn-success full-width" onclick="createNewPDCA()">➕ مشروع تحسين جديد</button>
+            <div id="kkPdcaContainer" class="grid-layout"></div>
+        </div>
+    </div>
+
+    <!-- 💡 مجتمع كايزن -->
+    <div class="container screen" id="kaizenScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 class="section-title" style="color:var(--success); margin:0;">💡 مجتمع كايزن</h2>
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('kaizenUploadModal').style.display='flex'">مشاركة 🚀</button>
+        </div>
+        <select id="kaizenDeptSelect" class="form-control" onchange="renderKaizenFeed()"><option value="الكل">عرض جميع الأقسام</option></select>
+        <!-- 🛡️ الـ ID المطلوب لعمل renderKaizenFeed -->
+        <div id="kaizenFeedContainer" class="grid-layout"></div>
+    </div>
+
+    <!-- 🧠 عقل المصنع -->
+    <div class="container screen" id="knowledgeScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 class="section-title" style="color:var(--primary); margin:0;">🧠 عقل المصنع (AI)</h2>
+            <button class="btn btn-outline btn-sm btn-role-admin" onclick="document.getElementById('addBookModal').style.display='flex'">➕ رفع مرجع</button>
+        </div>
+        
+        <div class="card glass-card">
+            <div class="row-flex">
+                <input type="text" id="kbSearchInput" class="form-control flex-2" placeholder="اسأل المستشار الذكي...">
+                <button class="btn btn-primary flex-1" onclick="askFactoryAI()">اسأل 🤖</button>
+            </div>
+            <div id="aiSearchResponse" style="display:none; margin-top:20px; padding:15px; background:rgba(59,130,246,0.1); border-radius:var(--radius-md);">
+                <div id="aiResponseText"></div>
+            </div>
+        </div>
+
+        <h3 class="card-title">📚 الأرشيف الفني</h3>
+        <!-- 🛡️ الـ ID المطلوب لعمل renderKnowledgeBase -->
+        <div id="knowledgeListContainer" class="grid-layout"></div>
+    </div>
     <!-- إضافة السكربتات الخاصة بك -->
     <script type="module" src="js/main.js"></script>
     <script src="tpm_data.js" defer></script>

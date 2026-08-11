@@ -1363,3 +1363,137 @@ window.initEnterpriseCharts = function() {
 };
 
 // Checklists & CLIT maps logic reserved
+// ==========================================
+// 👑 وحدة إدارة النظام والمستخدمين (System Admin)
+// ==========================================
+
+window.renderUserManagement = function() {
+    if (currentUser.username !== 'mfayez') return;
+    
+    const container = document.getElementById('usersListContainer');
+    if (!container) return;
+    
+    let html = '<h4 style="color:var(--glow-gold); margin:15px 0 10px;"><i class="bx bx-group"></i> إدارة المستخدمين والصلاحيات</h4>';
+    
+    Object.keys(usersData).forEach(uid => {
+        const u = usersData[uid];
+        if (typeof u !== 'object') return; 
+
+        const isPending = u.status === 'pending';
+        const borderColor = isPending ? 'var(--danger)' : 'var(--success)';
+        
+        html += `
+        <div class="card glass-card" style="margin-bottom:12px; border-right:4px solid ${borderColor}; padding: 15px; background:var(--surface-inset);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div style="text-align:right;">
+                    <b style="color:var(--text-main); font-size:15px;">${u.name}</b> <small style="color:var(--text-muted);">(${u.username})</small><br>
+                    <span style="font-size:11px; color:var(--gold); font-weight:bold;">المطلوب: ${u.requestedRole} | الحالي: ${u.role}</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    ${isPending ? `<button class="btn btn-sm btn-success" style="padding:6px 12px;" onclick="approveUser('${uid}')"><i class='bx bx-check'></i> موافقة</button>` : ''}
+                    <button class="btn btn-sm btn-outline" style="padding:6px 12px;" onclick="openPermissionsModal('${uid}')"><i class='bx bx-lock-alt'></i> الأذونات</button>
+                    <button class="btn btn-sm btn-danger" style="padding:6px 12px;" onclick="deleteUser('${uid}')"><i class='bx bx-trash'></i></button>
+                </div>
+            </div>
+        </div>`;
+    });
+    
+    container.innerHTML = html;
+};
+
+window.approveUser = async function(uid) {
+    const u = usersData[uid];
+    if (!u) return;
+    
+    let finalPerms = u.permissions || {
+        homeScreen: 'view', tasksScreen: 'none', historyScreen: 'none',
+        kaizenScreen: 'view', tagsScreen: 'none', knowledgeScreen: 'none'
+    };
+    
+    await db.ref(`tpm_system/users/${uid}`).update({
+        status: 'active',
+        role: u.requestedRole,
+        permissions: finalPerms
+    });
+    showToast(`✅ تم تفعيل حساب ${u.name} بنجاح`);
+};
+
+window.deleteUser = async function(uid) {
+    if(confirm('⚠️ هل أنت متأكد من حذف هذا المستخدم نهائياً؟')) {
+        await db.ref('tpm_system/users/' + uid).remove();
+        showToast('🗑️ تم حذف المستخدم بنجاح');
+    }
+};
+
+window.openPermissionsModal = function(uid) {
+    const u = usersData[uid];
+    if (!u || !u.permissions) return showToast('⚠️ لا توجد أذونات قابلة للتعديل لهذا المستخدم');
+    
+    window.editingUserUid = uid;
+    const perms = u.permissions;
+    const container = document.getElementById('permissionsContainer');
+    
+    const pages = {
+        homeScreen: 'الرئيسية (Dashboard)', tasksScreen: 'إدارة المهام', historyScreen: 'أرشيف التقارير',
+        kaizenScreen: 'مجتمع كايزن', tagsScreen: 'التاجات والأعطال', knowledgeScreen: 'عقل المصنع'
+    };
+
+    let html = `<div style="margin-bottom:15px; color:var(--glow-gold); font-weight:bold; font-size:15px;"><i class='bx bx-user-circle'></i> المستخدم: ${u.name}</div>`;
+    
+    for (let screen in pages) {
+        let currentPerm = perms[screen] || 'none';
+        html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed var(--border-glass);">
+            <span style="font-size:13px; color:var(--text-main); font-weight:bold;">${pages[screen]}</span>
+            <select id="perm_${screen}" class="form-control" style="width:auto; padding:6px 12px; margin:0; font-size:12px; background:var(--bg-base);">
+                <option value="none" ${currentPerm==='none'?'selected':''}>مخفية 🚫</option>
+                <option value="view" ${currentPerm==='view'?'selected':''}>مشاهدة 👁️</option>
+                <option value="edit" ${currentPerm==='edit'?'selected':''}>تعديل ✍️</option>
+            </select>
+        </div>`;
+    }
+    
+    container.innerHTML = html;
+    document.getElementById('permissionsModal').style.display = 'flex';
+};
+
+window.saveUserPermissions = async function() {
+    if (!window.editingUserUid) return;
+    
+    const pages = ['homeScreen', 'tasksScreen', 'historyScreen', 'kaizenScreen', 'tagsScreen', 'knowledgeScreen'];
+    let newPerms = {};
+    
+    pages.forEach(p => {
+        let sel = document.getElementById('perm_' + p);
+        if (sel) newPerms[p] = sel.value;
+    });
+
+    await db.ref(`tpm_system/users/${window.editingUserUid}/permissions`).set(newPerms);
+    showToast('✅ تم تحديث الأذونات بنجاح');
+    document.getElementById('permissionsModal').style.display = 'none';
+};
+
+// ==========================================
+// ⚙️ إعدادات النظام (System Settings)
+// ==========================================
+window.saveApiKeys = async function() {
+    const imgbb = document.getElementById('imgbbKeyInput').value.trim();
+    const gemini = document.getElementById('geminiKeyInput').value.trim();
+    
+    if(!imgbb && !gemini) return showToast('لم تقم بإدخال أي مفاتيح');
+    
+    let updates = {};
+    if(imgbb) updates.imgbb = imgbb;
+    if(gemini) updates.gemini = gemini;
+    
+    await db.ref('tpm_system/api_keys').update(updates);
+    showToast('✅ تم حفظ وتشفير المفاتيح بنجاح');
+    
+    document.getElementById('imgbbKeyInput').value = '';
+    document.getElementById('geminiKeyInput').value = '';
+};
+
+window.enableApiKeysEdit = function() {
+    showToast('⚠️ المفاتيح الحالية مشفرة لحمايتها. أدخل المفاتيح الجديدة للكتابة فوقها.');
+    document.getElementById('imgbbKeyInput').focus();
+};

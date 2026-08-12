@@ -481,48 +481,102 @@ window.openDeptDashboard = function(dept) {
 };
 
 // ==========================================
-// 📝 محرك التقييم والمراجعات (Audit Engine)
+// 📝 محرك التقييم والمراجعات الصارم (Full Audit Engine)
 // ==========================================
-window.saveAuditDraft = function() { if(currentAudit) localStorage.setItem('tpm_audit_draft', JSON.stringify(currentAudit)); };
-window.loadAuditDraft = function() { const draft = localStorage.getItem('tpm_audit_draft'); if(draft) { currentAudit = JSON.parse(draft); window.renderCurrentAuditStep(); } };
-window.clearAuditDraft = function() { localStorage.removeItem('tpm_audit_draft'); };
+
+// 1. الدالة المفقودة التي تسببت في الانهيار (تم إضافتها وتأمينها)
+window.startNewAuditFlowFromPortal = function() {
+    if(!currentJHDept) return showToast('⚠️ يرجى اختيار القسم أولاً');
+    currentViewedDept = currentJHDept;
+    window.startNewAuditFlow();
+};
+
+window.saveAuditDraft = function() { 
+    if(currentAudit) localStorage.setItem('tpm_audit_draft', JSON.stringify(currentAudit)); 
+};
+
+window.loadAuditDraft = function() { 
+    const draft = localStorage.getItem('tpm_audit_draft'); 
+    if(draft) { 
+        currentAudit = JSON.parse(draft); 
+        window.renderCurrentAuditStep(); 
+    } 
+};
+
+window.clearAuditDraft = function() { 
+    localStorage.removeItem('tpm_audit_draft'); 
+};
 
 window.startNewAuditFlow = function() { 
-    if(currentViewedDept) { const sd = document.getElementById('selectDept'); if(sd) sd.value = currentViewedDept; }
+    if(currentViewedDept) { 
+        const sd = document.getElementById('selectDept'); 
+        if(sd) sd.value = currentViewedDept; 
+    }
     const draft = localStorage.getItem('tpm_audit_draft');
-    if(draft) { let dObj = JSON.parse(draft); if(confirm(`يوجد تقييم غير مكتمل لقسم (${dObj.dept}). هل تريد استكماله؟`)) { window.loadAuditDraft(); return; } else { window.clearAuditDraft(); } }
+    if(draft) { 
+        let dObj = JSON.parse(draft); 
+        if(confirm(`يوجد تقييم غير مكتمل لقسم (${dObj.dept}). هل تريد استكماله؟`)) { 
+            window.loadAuditDraft(); 
+            return; 
+        } else { 
+            window.clearAuditDraft(); 
+        } 
+    }
     showScreen('setupScreen'); 
 };
 
 window.initAuditSequential = function() {
-    currentAudit = { id: window.uniqueNumericId().toString(), dept: document.getElementById('selectDept').value, machine: document.getElementById('setupMachine').value||'عام', auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'), stepsOrder: ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'], currentStepIndex: 0, results: {} };
+    currentAudit = { 
+        id: window.uniqueNumericId().toString(), 
+        dept: document.getElementById('selectDept').value, 
+        machine: document.getElementById('setupMachine').value || 'عام', 
+        auditor: currentUser.name, 
+        date: new Date().toLocaleDateString('ar-EG'), 
+        stepsOrder: ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'], 
+        currentStepIndex: 0, 
+        results: {} 
+    };
     window.renderCurrentAuditStep();
 };
 
 window.renderCurrentAuditStep = function() {
-    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; const sd = AUDIT_DATA[k];
+    const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; 
+    
+    // تأمين جلب البيانات من ملف tpm_data.js
+    if(typeof AUDIT_DATA === 'undefined' || !AUDIT_DATA[k]) {
+        return showToast(`⚠️ خطأ قاتل: بيانات المراجعة للخطوة ${k} غير موجودة في ملف tpm_data.js`);
+    }
+    
+    const sd = AUDIT_DATA[k];
     currentStepSelections = (currentAudit.results[k] && currentAudit.results[k].selections) ? currentAudit.results[k].selections : {};
     currentStepImages = (currentAudit.results[k] && currentAudit.results[k].images) ? currentAudit.results[k].images : {};
 
-    const titleEl = document.getElementById('auditStepTitle'); if(titleEl) titleEl.innerText = `${k}: ${sd.name}`;
-    const countEl = document.getElementById('stepCounter'); if(countEl) countEl.innerText = `خطوة ${currentAudit.currentStepIndex + 1} من 7`;
-    const barEl = document.getElementById('auditProgressBar'); if(barEl) barEl.style.width = `${((currentAudit.currentStepIndex + 1) / 7) * 100}%`;
+    const titleEl = document.getElementById('auditStepTitle'); 
+    if(titleEl) titleEl.innerText = `${k}: ${sd.name}`;
+    
+    const countEl = document.getElementById('stepCounter'); 
+    if(countEl) countEl.innerText = `خطوة ${currentAudit.currentStepIndex + 1} من 7`;
+    
+    const barEl = document.getElementById('auditProgressBar'); 
+    if(barEl) barEl.style.width = `${((currentAudit.currentStepIndex + 1) / 7) * 100}%`;
 
     const container = document.getElementById('auditItemsContainer');
     if(container) {
+        // رسم البنود بالكامل وبدون أي اختصار
         container.innerHTML = sd.items.map(item => {
-            let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:15px; display:flex; align-items:center; gap:10px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:60px; width:60px; object-fit:cover; border-radius:10px; border:2px solid var(--primary); cursor:pointer;" onclick="window.open('${currentStepImages['img_' + item.id].data}')"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-bot'></i> تحليل بالذكاء الاصطناعي</button></div>` : '';
+            let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:15px; display:flex; align-items:center; gap:10px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:60px; width:60px; object-fit:cover; border-radius:10px; border:2px solid var(--primary); cursor:pointer;" onclick="window.open('${currentStepImages['img_' + item.id].data}')"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-bot'></i> تحليل الذكاء الاصطناعي</button></div>` : '';
+            
             return `
-            <div class="card glass-card" style="padding:20px;">
+            <div class="card glass-card" style="padding:20px; border-right:4px solid var(--primary);">
                 <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px; border-bottom:1px solid var(--border-glass); padding-bottom:15px;">
                     <div style="display:flex; align-items:flex-start; gap:12px; width:100%;">
                         <div style="background:var(--primary); color:white; width:35px; height:35px; display:flex; align-items:center; justify-content:center; border-radius:10px; font-weight:900; flex-shrink:0; font-size:16px;">${item.id}</div>
                         <div style="flex:1; font-weight:bold; font-size:15px; color:var(--text-main); line-height:1.4;">${item.title}</div>
-                        <span style="font-size:11px; background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:20px; white-space:nowrap;">من ${item.maxScore}</span>
+                        <span style="font-size:11px; background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:20px; white-space:nowrap; font-weight:bold; color:var(--gold);">الدرجة القصوى: ${item.maxScore}</span>
                     </div>
                     <div class="row-flex" style="justify-content:flex-end;">
-                        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:11px;" onclick="explainItem('${item.title}')"><i class='bx bx-info-circle'></i> شرح البند</button>
-                        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:11px; color:var(--primary); border-color:var(--primary);" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-camera'></i> إرفاق دليل</button>
+                        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:11px;" onclick="explainItem('${item.title}')"><i class='bx bx-info-circle'></i> شرح البند للفني</button>
+                        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:11px; color:var(--primary); border-color:var(--primary);" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-camera'></i> إرفاق دليل مرئي</button>
                     </div>
                 </div>
                 <div id="preview_img_${item.id}">${hasImage}</div>
@@ -536,7 +590,10 @@ window.renderCurrentAuditStep = function() {
             </div>`;
         }).join('');
     }
-    currentStepImprovements = []; showScreen('auditScreen'); window.saveAuditDraft(); window.updateCumulativeScoreUI();
+    currentStepImprovements = []; 
+    showScreen('auditScreen'); 
+    window.saveAuditDraft(); 
+    window.updateCumulativeScoreUI();
 };
 
 window.updateCumulativeScoreUI = function() {
@@ -548,7 +605,8 @@ window.updateCumulativeScoreUI = function() {
     for (let key in currentStepSelections) { totalScoreSoFar += currentStepSelections[key].score; totalMaxSoFar += currentStepSelections[key].max; }
     
     const pct = totalMaxSoFar === 0 ? 0 : Math.round((totalScoreSoFar / totalMaxSoFar) * 100);
-    const pctEl = document.getElementById('cumulativeScoreText'); const pointsEl = document.getElementById('cumulativePointsText');
+    const pctEl = document.getElementById('cumulativeScoreText'); 
+    const pointsEl = document.getElementById('cumulativePointsText');
     if (pctEl) { pctEl.innerText = pct + '%'; pctEl.style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)'); }
     if (pointsEl) pointsEl.innerText = `${totalScoreSoFar} / ${totalMaxSoFar}`;
 };
@@ -562,16 +620,27 @@ window.selectLevel = function(id, score, max, el) {
 
 window.finishCurrentStep = function() {
     const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; const sd = AUDIT_DATA[k];
-    if(Object.keys(currentStepSelections).length < sd.items.length) { showToast('⚠️ يرجى تقييم جميع البنود قبل الحفظ'); return; }
+    
+    // حماية صارمة: منع تجاوز الخطوة بدون إكمال التقييم
+    if(Object.keys(currentStepSelections).length < sd.items.length) { 
+        showToast('⚠️ يرجى تقييم جميع البنود بدون استثناء قبل حفظ المرحلة'); 
+        return; 
+    }
     
     let totalScore = 0, totalMax = 0; currentStepImprovements = [];
     for(let key in currentStepSelections) { 
-        let itemData = currentStepSelections[key]; totalScore += itemData.score; totalMax += itemData.max; 
+        let itemData = currentStepSelections[key]; 
+        totalScore += itemData.score; 
+        totalMax += itemData.max; 
+        
+        // محرك استخراج فرص التحسين التلقائي
         if(itemData.score < itemData.max) { 
-            let id = key.split('_')[1]; let itm = sd.items.find(i=>i.id == id); 
+            let id = key.split('_')[1]; 
+            let itm = sd.items.find(i=>i.id == id); 
             if(itm) {
-                let maxLvl = itm.levels.find(l => l.score === itm.maxScore); let targetAction = maxLvl ? maxLvl.desc : "الوصول للمعايير القياسية";
-                currentStepImprovements.push(`[${itm.title}] 🎯 المطلوب: ${targetAction}`); 
+                let maxLvl = itm.levels.find(l => l.score === itm.maxScore); 
+                let targetAction = maxLvl ? maxLvl.desc : "الوصول للمعايير القياسية";
+                currentStepImprovements.push(`[${itm.title}] 🎯 الإجراء التصحيحي: ${targetAction}`); 
             }
         }
     }
@@ -580,41 +649,219 @@ window.finishCurrentStep = function() {
     window.saveAuditDraft();
     
     const pct = Math.round((totalScore/totalMax)*100);
-    const sumPctEl = document.getElementById('summaryPct'); if(sumPctEl) { sumPctEl.innerText = pct + '%'; sumPctEl.style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)'); }
-    const sumScoreEl = document.getElementById('summaryScoreStr'); if(sumScoreEl) sumScoreEl.innerText = `المجموع: ${totalScore} من ${totalMax} نقطة`;
+    const sumPctEl = document.getElementById('summaryPct'); 
+    if(sumPctEl) { sumPctEl.innerText = pct + '%'; sumPctEl.style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)'); }
+    
+    const sumScoreEl = document.getElementById('summaryScoreStr'); 
+    if(sumScoreEl) sumScoreEl.innerText = `الدرجة المستحقة: ${totalScore} من أصل ${totalMax} نقطة`;
     
     const oppContainer = document.getElementById('opportunitiesContainer');
     if(oppContainer) {
-        oppContainer.innerHTML = currentStepImprovements.length > 0 ? currentStepImprovements.map(i=>`<div style="background:var(--surface-inset); padding:15px; border-radius:12px; margin-bottom:10px; border-right:4px solid var(--warning); font-size:13px; text-align:right; color:var(--text-main);"><i class='bx bx-info-circle' style="color:var(--warning);"></i> ${i}</div>`).join('') : '<div style="color:var(--success); font-weight:bold; text-align:center; padding:20px;"><i class="bx bx-check-shield" style="font-size:40px; display:block; margin-bottom:10px;"></i> أداء مثالي، لا توجد ملاحظات</div>';
+        oppContainer.innerHTML = currentStepImprovements.length > 0 ? currentStepImprovements.map(i=>`<div style="background:var(--surface-inset); padding:15px; border-radius:12px; margin-bottom:10px; border-right:4px solid var(--warning); font-size:13px; text-align:right; color:var(--text-main);"><i class='bx bx-error-alt' style="color:var(--warning);"></i> ${i}</div>`).join('') : '<div style="color:var(--success); font-weight:bold; text-align:center; padding:20px; background:rgba(16,185,129,0.1); border-radius:12px;"><i class="bx bx-check-shield" style="font-size:40px; display:block; margin-bottom:10px;"></i> أداء مثالي في هذه الخطوة، لا توجد ملاحظات!</div>';
     }
     showScreen('stepSummaryScreen');
 };
 
-window.skipCurrentStep = function() { currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = {skipped:true, score:0, max:0, improvements:[], selections:{}, images:{}}; window.saveAuditDraft(); window.goToNextStep(); };
-window.goToNextStep = function() { currentAudit.currentStepIndex++; if(currentAudit.currentStepIndex < 7) window.renderCurrentAuditStep(); else window.generateFinalReport(); };
+window.skipCurrentStep = function() { 
+    currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = {skipped:true, score:0, max:0, improvements:[], selections:{}, images:{}}; 
+    window.saveAuditDraft(); 
+    window.goToNextStep(); 
+};
+
+window.goToNextStep = function() { 
+    currentAudit.currentStepIndex++; 
+    if(currentAudit.currentStepIndex < 7) {
+        window.renderCurrentAuditStep(); 
+    } else {
+        window.generateFinalReport(); 
+    }
+};
 
 window.generateFinalReport = function() {
-    let s=0, m=0; currentAudit.stepsOrder.forEach(k=>{if(!currentAudit.results[k].skipped){s+=currentAudit.results[k].score; m+=currentAudit.results[k].max;}});
-    let p=m===0?0:Math.round((s/m)*100); currentAudit.totalPct = p;
-    const finalPctEl = document.getElementById('finalTotalPct'); if(finalPctEl) finalPctEl.innerText = p+'%'; 
-    const finalDeptEl = document.getElementById('finalDeptName'); if(finalDeptEl) finalDeptEl.innerText = currentAudit.dept;
-    showScreen('finalReportScreen'); window.initSignaturePad();
+    let s=0, m=0; 
+    currentAudit.stepsOrder.forEach(k=>{
+        if(!currentAudit.results[k].skipped){
+            s+=currentAudit.results[k].score; 
+            m+=currentAudit.results[k].max;
+        }
+    });
+    let p=m===0?0:Math.round((s/m)*100); 
+    currentAudit.totalPct = p;
+    
+    const finalPctEl = document.getElementById('finalTotalPct'); 
+    if(finalPctEl) finalPctEl.innerText = p+'%'; 
+    
+    const finalDeptEl = document.getElementById('finalDeptName'); 
+    if(finalDeptEl) finalDeptEl.innerText = currentAudit.dept;
+    
+    showScreen('finalReportScreen'); 
+    window.initSignaturePad();
 };
 
 window.saveFinalAudit = async function() {
-    if(!window.hasRole('auditor', 'admin')) { showToast('غير مصرح بحفظ المراجعات'); return; }
-    if(!confirm("هل أنت متأكد من اعتماد وحفظ هذه المراجعة؟ سيتم إنشاء قائمة مهام تلقائية بالتحسينات.")) return;
-    showToast('جاري معالجة البيانات وحفظ التقرير... ⏳');
+    if(!window.hasRole('auditor', 'admin')) { return showToast('⚠️ غير مصرح لك باعتماد وحفظ المراجعات النهائية'); }
+    if(!confirm("هل أنت متأكد من اعتماد وحفظ هذه المراجعة؟ سيتم إنشاء قائمة مهام تلقائية بالفجوات المكتشفة.")) return;
+    
+    showToast('جاري تشفير البيانات وحفظ التقرير... ⏳');
     if(sigCanvas) currentAudit.signature = sigCanvas.toDataURL('image/jpeg', 0.8);
+    
+    // إنشاء المهام التلقائية (Auto-Task Generation)
     let allImprovements = [];
-    currentAudit.stepsOrder.forEach(step => { if(currentAudit.results[step] && currentAudit.results[step].improvements) { allImprovements.push(...currentAudit.results[step].improvements); } });
+    currentAudit.stepsOrder.forEach(step => { 
+        if(currentAudit.results[step] && currentAudit.results[step].improvements) { 
+            allImprovements.push(...currentAudit.results[step].improvements); 
+        } 
+    });
+    
     if(allImprovements.length > 0) {
         let fId = window.uniqueNumericId().toString();
-        let folderTask = { id: fId, isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام', task: `تحسينات مراجعة (${currentAudit.date})`, subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })), status: 'pending' };
+        let folderTask = { 
+            id: fId, isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام', 
+            task: `تحسينات تدقيق (${currentAudit.date})`, subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })), status: 'pending' 
+        };
         await db.ref('tpm_system/tasks/' + fId).set(folderTask);
     }
-    await db.ref('tpm_system/history/' + currentAudit.id).set(currentAudit); window.awardPoints(50, 'إتمام مراجعة رسمية'); window.clearAuditDraft(); showToast('تم حفظ التقرير بنجاح ✅ جاري تحويلك للأرشيف...');
+    
+    await db.ref('tpm_system/history/' + currentAudit.id).set(currentAudit); 
+    window.awardPoints(50, 'إتمام مراجعة رسمية (Audit)'); 
+    window.clearAuditDraft(); 
+    showToast('✅ تم حفظ التقرير بنجاح وتوليد المهام! جاري تحويلك...');
+    
     setTimeout(() => { showScreen('historyScreen'); }, 1500);
+};
+
+// ==========================================
+// 📂 محرك الشاشات الداخلية والسجلات (JH Tools Engine)
+// ==========================================
+window.openJHDocument = async function(type) {
+    currentDocType = type;
+    const headerMap = { 
+        'CLIT': '🧹 معايير التنظيف والتزييت (CLIT)', 
+        'Contamination': '🛢️ حصر مصادر التلوث', 
+        'SOC': '🧗‍♂️ حصر الأماكن صعبة الوصول (SOC)', 
+        'Safety': '⚠️ خريطة الأمان وتقييم المخاطر', 
+        'Anatomy': '⚙️ تشريح أجزاء الماكينة' 
+    };
+    
+    const headEl = document.getElementById('jhDocHeader');
+    if(headEl) headEl.innerHTML = `<i class='bx bx-file'></i> ${headerMap[type] || 'السجل'}`;
+    
+    // التحكم في الفلاتر (تظهر للـ CLIT فقط)
+    ['clitStatsSummary', 'clitZoneFilters', 'clitOpFilters', 'clitFrequencyFilters', 'startChecklistBtnContainer'].forEach(id => { 
+        const el = document.getElementById(id); 
+        if(el) el.style.display = (type === 'CLIT' && currentJHDept === 'حقن الكابينة') ? (id==='clitOpFilters'?'grid':(id==='startChecklistBtnContainer'?'block':'flex')) : 'none'; 
+    });
+    
+    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') { 
+        clitSelectedZone = 'الكل'; clitSelectedOp = 'الكل'; clitSelectedFreq = 'الكل'; 
+        if(window.resetFilterButtonsUI) window.resetFilterButtonsUI(); 
+    }
+    
+    // رسم فورم الإدخال المخصص لكل شاشة
+    window.renderJHDocForm(type); 
+    showToast('جاري تحميل السجلات من السحابة... ⏳');
+    
+    const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value'); 
+    let records = snap.val() ? Object.values(snap.val()) : [];
+    
+    // حقن الخرائط القياسية لأول مرة إذا كانت فارغة
+    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة' && records.length === 0 && window.factoryCLITData) {
+        showToast('جاري تهيئة الخرائط القياسية لأول مرة... ⏳'); 
+        let updates = {}; 
+        window.factoryCLITData.forEach(item => { updates[item.id] = item; });
+        await db.ref(`tpm_system/jh_records/حقن الكابينة/CLIT`).set(updates); 
+        records = window.factoryCLITData; 
+        showToast('تمت التهيئة بنجاح ✅');
+    }
+    
+    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') {
+        if(document.getElementById('statTotalPoints')) document.getElementById('statTotalPoints').innerText = records.length;
+        ['الجيكات', 'الهيد', 'الفرن', 'مدخل', 'عربة', 'تجهيزة'].forEach(z => { 
+            let count = records.filter(item => item.region && item.region.includes(z)).length; 
+            let badge = document.getElementById(`badge-count-${z}`); 
+            if(badge) badge.innerText = count; 
+        });
+    }
+    
+    window.currentLoadedRecords = records; 
+    window.renderJHDocList(type, records); 
+    showScreen('jhDocumentScreen');
+};
+
+window.renderJHDocForm = function(type) {
+    let formHtml = '';
+    const actionArea = document.getElementById('jhDocActionArea');
+    if(!actionArea) return;
+
+    if(type === 'CLIT') { 
+        formHtml = `
+            <h4 style="margin:0 0 15px; color:#00BCD4;"><i class='bx bx-plus-circle'></i> تسجيل نقطة CLIT جديدة بالخريطة</h4>
+            <div class="row-flex">
+                <div class="form-group flex-1">
+                    <label style="font-size:12px; color:var(--text-muted);">نوع العملية</label>
+                    <select id="clitType" class="form-control"><option value="تنظيف">تنظيف (C)</option><option value="تزييت">تزييت/تشحيم (L)</option><option value="فحص">فحص (I)</option><option value="تربيط">تربيط (T)</option></select>
+                </div>
+                <div class="form-group flex-1">
+                    <label style="font-size:12px; color:var(--text-muted);">الدورية (التكرار)</label>
+                    <select id="clitFreq" class="form-control"><option value="يومي">يومي / وردية</option><option value="أسبوعي">أسبوعي</option><option value="شهري">شهري</option><option value="سنوي">سنوي</option></select>
+                </div>
+            </div>
+            <div class="row-flex">
+                <div class="form-group flex-1"><label style="font-size:12px; color:var(--text-muted);">المنطقة</label><input type="text" id="clitRegion" class="form-control" placeholder="مثال: الفرن"></div>
+                <div class="form-group flex-1"><label style="font-size:12px; color:var(--text-muted);">الجزء</label><input type="text" id="clitPart" class="form-control" placeholder="مثال: البلي / الرولمان"></div>
+            </div>
+            <div class="form-group"><label style="font-size:12px; color:var(--text-muted);">الإجراء المطلوب بدقة</label><textarea id="clitAction" class="form-control" rows="2" placeholder="ما الذي سيفعله الفني بالتحديد؟"></textarea></div>
+            <div class="row-flex">
+                <div class="form-group flex-1"><label style="font-size:12px; color:var(--text-muted);">الحالة المثلى / المعيار</label><input type="text" id="clitStandard" class="form-control" placeholder="خالي من الأتربة.."></div>
+                <div class="form-group flex-1"><label style="font-size:12px; color:var(--text-muted);">حالة التدهور المتوقعة</label><input type="text" id="clitDegradation" class="form-control" placeholder="تراكم رايش.."></div>
+            </div>
+            <div class="row-flex">
+                <div class="form-group flex-1"><label style="font-size:12px; color:var(--text-muted);">الأدوات المستخدمة</label><input type="text" id="clitTools" class="form-control" placeholder="فوطة، مزيتة.."></div>
+                <div class="form-group flex-1">
+                    <label style="font-size:12px; color:var(--text-muted);">حالة الماكينة</label>
+                    <select id="clitMachineState" class="form-control"><option value="لا تعمل">يجب أن تكون متوقفة 🛑</option><option value="تعمل">أثناء التشغيل 🟢</option></select>
+                </div>
+            </div>
+            <div class="row-flex">
+                <div class="form-group flex-1"><label style="font-size:12px; color:var(--text-muted);">الزمن قبل التحسين</label><input type="text" id="clitTimeBefore" class="form-control" placeholder="مثال: 5m"></div>
+                <div class="form-group flex-1"><label style="font-size:12px; color:var(--text-muted);">الزمن المستهدف (بعد)</label><input type="text" id="clitTimeAfter" class="form-control" placeholder="مثال: 2m"></div>
+            </div>
+            <button class="btn btn-primary full-width" style="background:#00BCD4; border:none;" onclick="saveJHRecord('CLIT')"><i class='bx bx-save'></i> إضافة وتحديث الخريطة</button>
+        `; 
+    } else if(type === 'Contamination') { 
+        formHtml = `
+            <h4 style="margin:0 0 15px; color:#795548;"><i class='bx bx-water'></i> رصد مصدر تلوث</h4>
+            <div class="form-group"><label style="font-size:12px; color:var(--text-muted);">مكان التلوث أو التسريب</label><input type="text" id="contLocation" class="form-control" placeholder="مثال: أسفل طلمبة الهيدروليك"></div>
+            <div class="form-group"><label style="font-size:12px; color:var(--text-muted);">نوع المادة الملوثة</label><input type="text" id="contType" class="form-control" placeholder="زيت، بودرة، مياه، هالك إنتاج.."></div>
+            <button class="btn btn-primary full-width" style="background:#795548; color:white; border:none;" onclick="saveJHRecord('Contamination')"><i class='bx bx-target-lock'></i> رصد المصدر</button>
+        `; 
+    } else if(type === 'SOC') { 
+        formHtml = `
+            <h4 style="margin:0 0 15px; color:var(--warning);"><i class='bx bx-map-pin'></i> تسجيل منطقة صعبة الوصول</h4>
+            <div class="form-group"><label style="font-size:12px; color:var(--text-muted);">المنطقة</label><input type="text" id="socLocation" class="form-control" placeholder="أين تقع الصعوبة بالتحديد؟"></div>
+            <div class="form-group"><label style="font-size:12px; color:var(--text-muted);">سبب الصعوبة</label><input type="text" id="socReason" class="form-control" placeholder="ضيق مساحة، حرارة عالية، ارتفاع.."></div>
+            <button class="btn btn-warning full-width" style="border:none;" onclick="saveJHRecord('SOC')"><i class='bx bx-plus-circle'></i> تسجيل في الخريطة</button>
+        `; 
+    } else if(type === 'Safety') { 
+        formHtml = `
+            <h4 style="margin:0 0 15px; color:var(--danger);"><i class='bx bx-error-alt'></i> تسجيل خطر أمان (Safety Hazard)</h4>
+            <div class="form-group"><label style="font-size:12px; color:var(--text-muted);">وصف الخطر والمكان</label><input type="text" id="safeHazard" class="form-control" placeholder="مثال: كابل كهرباء مكشوف بجوار الفرن"></div>
+            <div class="form-group">
+                <label style="font-size:12px; color:var(--text-muted);">مستوى الخطورة</label>
+                <select id="safeLevel" class="form-control"><option value="high">حرج (مطلوب إيقاف فوري) 🔴</option><option value="med">متوسط 🟡</option></select>
+            </div>
+            <button class="btn btn-danger full-width" style="border:none;" onclick="saveJHRecord('Safety')"><i class='bx bx-shield-x'></i> تسجيل الخطر فوراً</button>
+        `; 
+    } else { 
+        formHtml = `
+            <h4 style="margin:0 0 15px; color:var(--gold);"><i class='bx bx-cogs'></i> تشريح جزء من الماكينة (Anatomy)</h4>
+            <div class="form-group"><label style="font-size:12px; color:var(--text-muted);">اسم الجزء</label><input type="text" id="partName" class="form-control" placeholder="مثال: الرولمان بلي رقم 3"></div>
+            <div class="form-group"><label style="font-size:12px; color:var(--text-muted);">الوظيفة وطريقة الفحص السليمة</label><textarea id="partDesc" class="form-control" placeholder="اشرح بالتفصيل..." rows="3"></textarea></div>
+            <button class="btn btn-primary full-width" style="background:var(--gold); color:#000; border:none;" onclick="saveJHRecord('Anatomy')"><i class='bx bx-save'></i> حفظ البيانات الفنية</button>
+        `; 
+    }
+    
+    actionArea.innerHTML = `<div style="background:var(--surface-inset); padding:20px; border-radius:var(--radius-lg); border:1px solid var(--border-glass); box-shadow:var(--shadow-pressed);">${formHtml}</div>`;
 };
 
 // ==========================================

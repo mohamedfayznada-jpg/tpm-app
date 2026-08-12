@@ -107,13 +107,18 @@ export const Services = {
                 body: JSON.stringify({ prompt: promptText, imageBase64: b64 })
             });
             
-            const j = await response.json();
-            if(j.error) throw new Error(j.error);
+            const j = await response.json().catch(() => ({}));
+            if (!response.ok || j.error) {
+                const error = new Error(j.error || 'تعذر الاتصال بخدمة الشرح الذكي. حاول مرة أخرى.');
+                error.code = j.code || 'AI_REQUEST_FAILED';
+                error.help = j.help || '';
+                throw error;
+            }
             if(!j.candidates || j.candidates.length === 0 || !j.candidates[0].content) {
-                throw new Error("جوجل رفضت الإجابة بسبب قيود الأمان. جرب صياغة أخرى.");
+                throw new Error("لم تصل إجابة صالحة من الخدمة الذكية. حاول بصياغة أخرى.");
             }
             
-            let text = j.candidates[0].content.parts[0].text;
+            const text = j.candidates[0].content.parts[0].text;
             return text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "").trim();
         } catch (e) {
             throw e;

@@ -1192,7 +1192,12 @@ window.explainItem = async function(t) {
         let prompt = `أنت مهندس صيانة خبير ومراجع TPM. اشرح البند التالي للفنيين: "${t}". رد بخطوات عمل محددة ومرقمة. أجب بنص عادي.`;
         let plainTextResponse = await window.fetchGeminiAPI(prompt);
         document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${plainTextResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--primary);">$1</b>')}</div>`;
-    } catch(e) { document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center;">⚠️ خطأ: ${e.message}</div>`; }
+    } catch(e) {
+        const setupHint = e.code === 'AI_NOT_CONFIGURED'
+            ? '<div style="margin-top:12px; color:var(--text-muted); font-size:12px;">هذه الميزة تحتاج ضبطًا من مسؤول النظام، ثم ستكون جاهزة للاستخدام تلقائيًا.</div>'
+            : '';
+        document.getElementById('aiModalText').innerHTML = `<div style="color:var(--danger); text-align:center; line-height:1.8;"><i class='bx bx-error-circle' style="font-size:28px;"></i><br>⚠️ ${e.message}${setupHint}</div>`;
+    }
 };
 
 window.askFactoryAI = async function() {

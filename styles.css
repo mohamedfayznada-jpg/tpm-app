@@ -293,3 +293,71 @@ tr:hover td { background: rgba(107,91,255,.09) !important; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ——— Contrast guard: readable text on every luminous surface ——— */
+:root {
+  --bg-base: #f4f6ff;
+  --bg-surface: #fafdff;
+  --bg-surface-hover: #edf2ff;
+  --border-subtle: rgba(40, 51, 120, .13);
+  --border-focus: rgba(91, 105, 255, .42);
+  --text-main: #151a42;
+  --text-muted: #5e668f;
+  --text-on-light: #151a42;
+  --text-on-dark: #f8faff;
+}
+
+/* The original app renders many dynamic cards after page load. Explicitly set their
+   foreground so a dark page background can never leak white text into a pale card. */
+.screen.active :is(.card, .panel, .content-card, .stat-card, .audit-card, .section-card, .form-card, .settings-card, .kpi-card, .kaizen-card, .knowledge-card, .modal-content, .tag-ticket, .kanban-col, .table-container, .table-wrapper, .chart-container) {
+  color: var(--text-on-light) !important;
+}
+.screen.active :is(.card, .panel, .content-card, .stat-card, .audit-card, .section-card, .form-card, .settings-card, .kpi-card, .kaizen-card, .knowledge-card, .modal-content, .tag-ticket, .kanban-col, .table-container, .table-wrapper, .chart-container) :is(h1, h2, h3, h4, h5, h6, p, small, label, li, dt, dd) {
+  color: var(--text-on-light) !important;
+}
+.screen.active :is(.card, .panel, .content-card, .stat-card, .audit-card, .section-card, .form-card, .settings-card, .kpi-card, .kaizen-card, .knowledge-card, .modal-content, .tag-ticket, .kanban-col, .table-container, .table-wrapper, .chart-container) :is(.text-muted, .muted, .secondary-text, .meta, .card-meta) {
+  color: var(--text-muted) !important;
+}
+
+/* Preserve high-contrast white labels only where their own background is saturated. */
+.screen.active :is(.btn-primary, .primary-btn, .submit-btn, .btn-success, .btn-danger, .badge, .status-badge, .tag, .pill, .chip, .ticket-ribbon, .pillar-card, .main-header) {
+  color: var(--text-on-dark) !important;
+}
+.screen.active :is(.btn-primary, .primary-btn, .submit-btn, .btn-success, .btn-danger, .badge, .status-badge, .tag, .pill, .chip, .ticket-ribbon, .pillar-card, .main-header) :is(h1, h2, h3, h4, h5, h6, p, span, small, label, i) {
+  color: inherit !important;
+}
+#homeScreen .stat-card, #homeScreen .stat-card :is(h1, h2, h3, h4, h5, h6, p, small, span, label) {
+  color: var(--text-on-light) !important;
+}
+#homeScreen .stat-card .text-muted { color: var(--text-muted) !important; }
+
+/* Keep headers visibly legible on their intentionally dark/saturated gradients. */
+.screen.active :is(.page-header, .section-header) { color: var(--text-on-dark) !important; }
+.screen.active :is(.page-header, .section-header) :is(h1, h2, h3, h4, h5, h6, p, span, small, i) { color: inherit !important; }
+
+/* A light theme must stay readable on small screens as cards become denser. */
+@media (max-width: 520px) {
+  .screen.active :is(.card, .panel, .content-card, .stat-card, .audit-card, .section-card, .form-card, .settings-card, .kpi-card, .kaizen-card, .knowledge-card, .modal-content, .tag-ticket, .kanban-col) {
+    color: var(--text-on-light) !important;
+  }
+}
+
+/* State buttons are actions, not neutral cards: give their light labels an owned saturated surface. */
+.screen.active .btn-success {
+  color: var(--text-on-dark) !important;
+  background: linear-gradient(135deg, #078b73, #11b99b 52%, #55e1ba) !important;
+  box-shadow: 0 13px 24px rgba(16, 185, 151, .28), inset 0 1px 0 rgba(255,255,255,.38) !important;
+}
+.screen.active .btn-danger {
+  color: var(--text-on-dark) !important;
+  background: linear-gradient(135deg, #d93569, #f05c86 52%, #ff9eaf) !important;
+  box-shadow: 0 13px 24px rgba(217, 53, 105, .27), inset 0 1px 0 rgba(255,255,255,.36) !important;
+}
+.screen.active .btn-warning {
+  color: #402605 !important;
+  background: linear-gradient(135deg, #ffc654, #ffd97c 52%, #ffecb5) !important;
+  box-shadow: 0 13px 24px rgba(244, 176, 50, .23), inset 0 1px 0 rgba(255,255,255,.42) !important;
+}
+.screen.active :is(.btn-success, .btn-danger, .btn-warning) i {
+  color: inherit !important;
+}

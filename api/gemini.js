@@ -10,15 +10,23 @@ const json = (payload, status = 200) => new Response(JSON.stringify(payload), {
   },
 });
 
+const serviceUnavailable = () => json({
+  code: 'AI_NOT_CONFIGURED',
+  error: 'ميزة الشرح الذكي غير جاهزة على الخادم حاليًا.',
+  help: 'أضف OPENROUTER_API_KEY إلى متغيرات بيئة مشروع Vercel ثم أعد النشر.',
+}, 503);
+
 export default async function handler(req) {
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405);
+    return json({ error: 'Method not allowed.' }, 405);
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  // This key is deliberately server-only. It must be configured in Vercel,
+  // never embedded in index.html, app.js, or any client-side bundle.
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) {
     console.error('[TPM AI] OPENROUTER_API_KEY is not configured.');
-    return json({ error: 'AI service is not configured on the server.' }, 503);
+    return serviceUnavailable();
   }
 
   try {
@@ -27,7 +35,10 @@ export default async function handler(req) {
     const imageBase64 = typeof body?.imageBase64 === 'string' ? body.imageBase64 : '';
 
     if (!prompt && imageBase64.length <= 20) {
-      return json({ error: 'A prompt or a valid image is required.' }, 400);
+      return json({
+        code: 'AI_INVALID_REQUEST',
+        error: 'أدخل سؤالك أو أرفق صورة صالحة للتحليل.',
+      }, 400);
     }
 
     const userContent = [];
@@ -43,16 +54,14 @@ export default async function handler(req) {
       });
     }
 
-    const freeModels = [
-      'google/gemini-2.0-flash-exp:free',
-      'google/gemini-2.0-pro-exp-02-05:free',
-      'qwen/qwen-vl-plus:free',
-      'meta-llama/llama-3.2-11b-vision-instruct:free',
-    ];
+    // The OpenRouter free router selects an available model that supports the
+    // request capabilities, including vision when an image is supplied.
+    // It avoids pinning TPM to short-lived experimental model slugs.
+    const fallbackModels = ['openrouter/free'];
 
     let aiText = '';
 
-    for (const model of freeModels) {
+    for (const model of fallbackModels) {
       const payload = {
         model,
         messages: [{
@@ -68,13 +77,13 @@ export default async function handler(req) {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://tpm-app-five.vercel.app/',
+          'HTTP-Referer': `https://${process.env.VERCEL_URL || 'tpm-app.vercel.app'}`,
           'X-Title': 'Factory OS TPM',
         },
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       const candidateText = data?.choices?.[0]?.message?.content;
 
       if (response.ok && typeof candidateText === 'string' && candidateText.trim()) {
@@ -82,11 +91,14 @@ export default async function handler(req) {
         break;
       }
 
-      console.warn(`[TPM AI] Skipping model ${model}:`, data?.error?.message || 'Unknown error');
+      console.warn(`[TPM AI] Skipping model ${model}:`, data?.error?.message || `HTTP ${response.status}`);
     }
 
     if (!aiText) {
-      throw new Error('All configured AI models are unavailable right now.');
+      return json({
+        code: 'AI_PROVIDER_UNAVAILABLE',
+        error: 'الخدمة الذكية مشغولة أو غير متاحة حاليًا. حاول مرة أخرى بعد قليل.',
+      }, 503);
     }
 
     return json({
@@ -94,6 +106,9 @@ export default async function handler(req) {
     });
   } catch (error) {
     console.error('[TPM AI] Request failed:', error);
-    return json({ error: error.message || 'AI request failed.' }, 500);
+    return json({
+      code: 'AI_REQUEST_FAILED',
+      error: 'تعذر إتمام طلب الذكاء الاصطناعي. تحقق من الاتصال وحاول مجددًا.',
+    }, 500);
   }
 }

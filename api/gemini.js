@@ -1,80 +1,99 @@
 export const config = {
-  runtime: 'edge', // ⚡ تفعيل محرك الـ Edge لمنع Vercel من إغلاق الاتصال السريع
+  runtime: 'edge',
 };
+
+const json = (payload, status = 200) => new Response(JSON.stringify(payload), {
+  status,
+  headers: {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+  },
+});
 
 export default async function handler(req) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+    return json({ error: 'Method not allowed' }, 405);
+  }
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    console.error('[TPM AI] OPENROUTER_API_KEY is not configured.');
+    return json({ error: 'AI service is not configured on the server.' }, 503);
   }
 
   try {
     const body = await req.json();
-    const { prompt, imageBase64 } = body;
-    
-    // 🔑 مفتاح OpenRouter الخاص بك
-    const apiKey = process.env.OPENROUTER_API_KEY || "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";
+    const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : '';
+    const imageBase64 = typeof body?.imageBase64 === 'string' ? body.imageBase64 : '';
 
-    let userContent = [];
-    if (prompt) userContent.push({ type: "text", text: prompt });
-
-    if (imageBase64 && typeof imageBase64 === 'string' && imageBase64.length > 20) {
-      const cleanBase64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
-      userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${cleanBase64}` } });
+    if (!prompt && imageBase64.length <= 20) {
+      return json({ error: 'A prompt or a valid image is required.' }, 400);
     }
 
-    // 🚀 مصفوفة الإنقاذ: أحدث الموديلات المجانية الداعمة للصور (مرتبة بالأسرع)
+    const userContent = [];
+    if (prompt) userContent.push({ type: 'text', text: prompt });
+
+    if (imageBase64.length > 20) {
+      const cleanBase64 = imageBase64.includes(',')
+        ? imageBase64.split(',')[1]
+        : imageBase64;
+      userContent.push({
+        type: 'image_url',
+        image_url: { url: `data:image/jpeg;base64,${cleanBase64}` },
+      });
+    }
+
     const freeModels = [
-      "google/gemini-2.0-flash-exp:free",         // الأول: جيميناي الجديد
-      "google/gemini-2.0-pro-exp-02-05:free",     // الثاني: جيميناي برو
-      "qwen/qwen-vl-plus:free",                   // الثالث: كوين (ممتاز في الصور)
-      "meta-llama/llama-3.2-11b-vision-instruct:free" // الرابع: لاما 3.2
+      'google/gemini-2.0-flash-exp:free',
+      'google/gemini-2.0-pro-exp-02-05:free',
+      'qwen/qwen-vl-plus:free',
+      'meta-llama/llama-3.2-11b-vision-instruct:free',
     ];
 
-    let aiText = "";
-    let lastError = "";
+    let aiText = '';
 
-    // 🔄 محرك التبديل التلقائي: يجرب الموديلات حتى ينجح واحد منها
-    for (let model of freeModels) {
+    for (const model of freeModels) {
       const payload = {
-        model: model,
-        messages: [{ role: "user", content: userContent.length === 1 && userContent[0].type === "text" ? prompt : userContent }]
+        model,
+        messages: [{
+          role: 'user',
+          content: userContent.length === 1 && userContent[0].type === 'text'
+            ? prompt
+            : userContent,
+        }],
       };
 
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://tpm-app-five.vercel.app/",
-          "X-Title": "Factory OS TPM"
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://tpm-app-five.vercel.app/',
+          'X-Title': 'Factory OS TPM',
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
+      const candidateText = data?.choices?.[0]?.message?.content;
 
-      // إذا نجح الاتصال والموديل موجود، نحفظ الإجابة ونخرج من اللوب فوراً
-      if (response.ok && data.choices && data.choices.length > 0) {
-        aiText = data.choices[0].message.content;
-        break; 
-      } else {
-        // إذا فشل (بسبب تغيير اسمه أو مشغول)، نسجل الخطأ بصمت ونجرب اللي بعده
-        lastError = data.error?.message || "Unknown error";
-        console.warn(`[Architect-Prime] تخطي الموديل ${model} بسبب:`, lastError);
+      if (response.ok && typeof candidateText === 'string' && candidateText.trim()) {
+        aiText = candidateText;
+        break;
       }
+
+      console.warn(`[TPM AI] Skipping model ${model}:`, data?.error?.message || 'Unknown error');
     }
 
-    // لو جربنا الـ 4 موديلات وكلهم فشلوا (مستحيل تقريباً)
     if (!aiText) {
-      throw new Error("جميع خوادم الذكاء الاصطناعي المجانية مشغولة أو متوقفة حالياً. يرجى المحاولة بعد قليل.");
+      throw new Error('All configured AI models are unavailable right now.');
     }
-    
-    // إرجاع الرد للواجهة الأمامية بنفس تنسيق Gemini لكي يعمل بدون تعديل في الـ app.js
-    return new Response(JSON.stringify({
-      candidates: [{ content: { parts: [{ text: aiText }] } }]
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
+    return json({
+      candidates: [{ content: { parts: [{ text: aiText }] } }],
+    });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    console.error('[TPM AI] Request failed:', error);
+    return json({ error: error.message || 'AI request failed.' }, 500);
   }
 }

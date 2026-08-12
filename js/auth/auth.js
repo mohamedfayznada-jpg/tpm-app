@@ -22,7 +22,12 @@ export const Auth = {
         btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جاري المصادقة...';
         btn.disabled = true;
         
-        try { 
+        try {
+            const persistence = document.getElementById('rememberMe')?.checked
+                ? firebase.auth.Auth.Persistence.LOCAL
+                : firebase.auth.Auth.Persistence.SESSION;
+
+            await auth.setPersistence(persistence);
             // 4. إرسال الطلب لخوادم جوجل
             await auth.signInWithEmailAndPassword(email, passwordInput); 
             

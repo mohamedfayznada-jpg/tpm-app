@@ -5,3 +5,6 @@ firebase-debug.*.log
 
 # Runtime secrets (keep local only)
 config.local.js
+.env
+.env.*
+!.env.example

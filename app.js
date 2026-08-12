@@ -66,10 +66,18 @@ window.login = async function() {
     const email = userInp.includes('@') ? userInp : `${userInp.toLowerCase().replace(/\s+/g, '')}@tpm.app`;
 
     try {
-        await auth.signInWithEmailAndPassword(email, passInp);
         const rem = document.getElementById('rememberMe')?.checked;
-        if(rem) { localStorage.setItem('tpm_saved_email', email); localStorage.setItem('tpm_saved_pass', btoa(passInp)); } 
-        else { localStorage.removeItem('tpm_saved_email'); localStorage.removeItem('tpm_saved_pass'); }
+        const persistence = rem
+            ? firebase.auth.Auth.Persistence.LOCAL
+            : firebase.auth.Auth.Persistence.SESSION;
+
+        await auth.setPersistence(persistence);
+        await auth.signInWithEmailAndPassword(email, passInp);
+
+        // لا نخزّن كلمة المرور في المتصفح؛ Firebase يدير جلسة المصادقة بأمان.
+        if(rem) localStorage.setItem('tpm_saved_email', email);
+        else localStorage.removeItem('tpm_saved_email');
+        localStorage.removeItem('tpm_saved_pass');
     } catch (e) {
         showToast('❌ بيانات الدخول غير صحيحة أو الحساب غير موجود');
         btn.innerHTML = origText; btn.disabled = false;
@@ -116,19 +124,22 @@ window.logout = function() {
 };
 
 window.biometricLogin = async function() {
-    const savedEmail = localStorage.getItem('tpm_saved_email'); const savedPass = localStorage.getItem('tpm_saved_pass');
-    if(!savedEmail || !savedPass) return showToast('⚠️ يرجى تسجيل الدخول يدوياً أولاً وتفعيل "تذكر بياناتي"');
+    const savedEmail = localStorage.getItem('tpm_saved_email');
+    if(!savedEmail) return showToast('⚠️ يرجى تسجيل الدخول يدوياً أولاً وتفعيل "تذكر بياناتي"');
 
     try {
         if (window.PublicKeyCredential) {
             const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
-            await navigator.credentials.get({ publicKey: { challenge: challenge, rpId: window.location.hostname, userVerification: "preferred" } });
+            await navigator.credentials.get({ publicKey: { challenge: challenge, rpId: window.location.hostname, userVerification: 'preferred' } });
         }
-        showToast('🔓 تم التحقق بنجاح.. جاري الدخول');
+
+        // التحقق البيومتري هنا لا يملك خادمًا للتحقق من التحدي، لذلك لا نعتبره بديلاً عن كلمة المرور.
         document.getElementById('loginUsername').value = savedEmail.split('@')[0];
-        document.getElementById('loginPassword').value = atob(savedPass);
-        window.login(); 
-    } catch (err) { showToast('❌ تم إلغاء أو فشل التحقق البيومتري'); }
+        document.getElementById('loginPassword').focus();
+        showToast('🔐 تم التحقق من الجهاز. أدخل كلمة المرور لإكمال تسجيل الدخول.');
+    } catch (err) {
+        showToast('❌ تم إلغاء أو فشل التحقق البيومتري');
+    }
 };
 
 // ==========================================

@@ -25,8 +25,7 @@ export default async function handler(req, res) {
 
         // دالة الاتصال بجوجل (استخدمنا v1 المستقر بدلاً من v1beta المتقلب)
         async function callGemini(modelName) {
-            const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
-            const response = await fetch(url, {
+           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
         if (!apiKey) throw new Error("مفتاح OpenRouter غير موجود.");
 
-        // 2. هندسة الطلب (Payload Construction)
+        // 2. هندسة الطلب والصور (Payload Construction)
         let userContent = [];
         if (prompt) userContent.push({ type: "text", text: prompt });
 
@@ -24,22 +24,27 @@ export default async function handler(req, res) {
             });
         }
 
-        // 3. استراتيجية الموديلات المجانية المتعددة (Robust Routing)
-        // نستخدم الموديلات المجانية المتاحة عبر OpenRouter والتي تدعم تحليل الصور
-        const primaryModel = "google/gemini-1.5-flash:free"; 
-        const fallbackModel = "meta-llama/llama-3.2-90b-vision-instruct:free";
+        // 3. 🚀 مصفوفة الموديلات المجانية المدرعة (Self-Healing Array)
+        // هذه الموديلات مجانية 100%، تدعم الصور، وممتازة في اللغة العربية
+        const freeModels = [
+            "qwen/qwen-2-vl-7b-instruct:free",          // الأكثر استقراراً ودعماً للصور
+            "google/gemini-2.0-flash-exp:free",         // إصدار جيميناي المجاني الجديد 
+            "meta-llama/llama-3.2-11b-vision-instruct:free" // موديل ميتا الاحتياطي
+        ];
 
-        const payload = {
-            model: primaryModel,
-            messages: [{
-                role: "user",
-                content: userContent.length === 1 && userContent[0].type === "text" ? prompt : userContent
-            }]
-        };
+        let data = null;
+        let lastError = "";
 
-        // 4. دالة الاتصال المباشر
-        async function callOpenRouter(modelName) {
-            payload.model = modelName;
+        // 4. خوارزمية التبديل التلقائي (Auto-Failover Loop)
+        for (let modelName of freeModels) {
+            const payload = {
+                model: modelName,
+                messages: [{
+                    role: "user",
+                    content: userContent.length === 1 && userContent[0].type === "text" ? prompt : userContent
+                }]
+            };
+
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
                 headers: {
@@ -50,22 +55,27 @@ export default async function handler(req, res) {
                 },
                 body: JSON.stringify(payload)
             });
-            return await response.json();
+
+            const tempData = await response.json();
+
+            // إذا نجح الاتصال والموديل متوفر، نخرج من الحلقة (Loop)
+            if (response.ok && tempData.choices && tempData.choices.length > 0) {
+                data = tempData;
+                console.log(`[Architect-Prime] Success with model: ${modelName}`);
+                break;
+            } else {
+                // إذا فشل (بسبب اسم خاطئ أو سيرفر مشغول)، نسجل الخطأ وننتقل للموديل التالي
+                lastError = tempData.error?.message || "Unknown error";
+                console.warn(`[Architect-Prime] Model ${modelName} failed: ${lastError}. Trying next...`);
+            }
         }
 
-        // 5. محاولة الاتصال بالموديل الأساسي
-        let data = await callOpenRouter(primaryModel);
-
-        // 6. نظام التبديل الذاتي (Auto-Fallback) في حالة تعطل الموديل
-        if (data.error && (data.error.message.includes("No endpoints found") || data.error.message.includes("not found"))) {
-            console.warn(`[Architect-Prime] Primary model failed. Switching to fallback: ${fallbackModel}`);
-            data = await callOpenRouter(fallbackModel);
+        // 5. إذا جربنا كل الموديلات المجانية وكلها فاشلة
+        if (!data) {
+            throw new Error(lastError || "جميع سيرفرات الذكاء الاصطناعي المجانية مشغولة حالياً، يرجى المحاولة بعد قليل.");
         }
 
-        // إذا استمر الفشل، نعيد الخطأ الحقيقي
-        if (data.error) throw new Error(data.error.message);
-
-        // 7. تغليف الرد وإرساله للواجهة الأمامية
+        // 6. تغليف الرد وإرساله للواجهة الأمامية
         const aiText = data.choices[0]?.message?.content || "عذراً، لم يتم استلام إجابة من السيرفر.";
         
         return res.status(200).json({

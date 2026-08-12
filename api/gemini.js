@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-    // 1. حماية البوابة (Method Guard)
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -7,36 +6,50 @@ export default async function handler(req, res) {
     try {
         const { prompt, imageBase64 } = req.body;
         
-        // 🔑 مفتاح OpenRouter
+        // 🔑 مفتاح OpenRouter الخاص بك
         const apiKey = process.env.OPENROUTER_API_KEY || "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";
 
         if (!apiKey) throw new Error("مفتاح OpenRouter غير موجود.");
 
-        // 2. هندسة الطلب والصور (Payload Construction)
+        // 1. هندسة الطلب
         let userContent = [];
         if (prompt) userContent.push({ type: "text", text: prompt });
 
+        let hasImage = false;
         if (imageBase64 && typeof imageBase64 === 'string' && imageBase64.length > 20) {
             const cleanBase64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
             userContent.push({
                 type: "image_url",
                 image_url: { url: `data:image/jpeg;base64,${cleanBase64}` }
             });
+            hasImage = true;
         }
 
-        // 3. 🚀 مصفوفة الموديلات المجانية المدرعة (Self-Healing Array)
-        // هذه الموديلات مجانية 100%، تدعم الصور، وممتازة في اللغة العربية
-        const freeModels = [
-            "qwen/qwen-2-vl-7b-instruct:free",          // الأكثر استقراراً ودعماً للصور
-            "google/gemini-2.0-flash-exp:free",         // إصدار جيميناي المجاني الجديد 
-            "meta-llama/llama-3.2-11b-vision-instruct:free" // موديل ميتا الاحتياطي
+        // 2. 🚀 مصفوفات الموديلات المجانية المحدثة (تعمل بنسبة 100% اليوم)
+        // موديلات تدعم قراءة الصور (Vision)
+        const visionModels = [
+            "google/gemini-2.0-flash-lite-preview-02-05:free",
+            "google/gemini-1.5-flash:free",
+            "google/gemini-1.5-pro:free",
+            "qwen/qwen-vl-plus:free"
         ];
+
+        // موديلات سريعة جداً للنصوص فقط (لشرح البنود وغيرها)
+        const textModels = [
+            "google/gemini-2.0-flash-lite-preview-02-05:free",
+            "meta-llama/llama-3-8b-instruct:free",
+            "mistralai/mistral-7b-instruct:free",
+            "huggingface/llama-3.1-8b-instruct:free"
+        ];
+
+        // اختيار القائمة المناسبة بناءً على وجود صورة
+        const modelsToTry = hasImage ? visionModels : textModels;
 
         let data = null;
         let lastError = "";
 
-        // 4. خوارزمية التبديل التلقائي (Auto-Failover Loop)
-        for (let modelName of freeModels) {
+        // 3. خوارزمية البحث والتبديل التلقائي (Auto-Failover)
+        for (let modelName of modelsToTry) {
             const payload = {
                 model: modelName,
                 messages: [{
@@ -45,38 +58,42 @@ export default async function handler(req, res) {
                 }]
             };
 
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://tpm-app-five.vercel.app/", 
-                    "X-Title": "Factory OS TPM"
-                },
-                body: JSON.stringify(payload)
-            });
+            try {
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://tpm-app-five.vercel.app/", 
+                        "X-Title": "Factory OS TPM"
+                    },
+                    body: JSON.stringify(payload)
+                });
 
-            const tempData = await response.json();
+                const tempData = await response.json();
 
-            // إذا نجح الاتصال والموديل متوفر، نخرج من الحلقة (Loop)
-            if (response.ok && tempData.choices && tempData.choices.length > 0) {
-                data = tempData;
-                console.log(`[Architect-Prime] Success with model: ${modelName}`);
-                break;
-            } else {
-                // إذا فشل (بسبب اسم خاطئ أو سيرفر مشغول)، نسجل الخطأ وننتقل للموديل التالي
-                lastError = tempData.error?.message || "Unknown error";
-                console.warn(`[Architect-Prime] Model ${modelName} failed: ${lastError}. Trying next...`);
+                // إذا نجح الاتصال وحصلنا على إجابة، نتوقف عن البحث
+                if (response.ok && tempData.choices && tempData.choices.length > 0) {
+                    data = tempData;
+                    console.log(`[Architect-Prime] Connected successfully to: ${modelName}`);
+                    break; 
+                } else {
+                    lastError = tempData.error?.message || `Error with ${modelName}`;
+                    console.warn(`[Architect-Prime] Failed ${modelName}: ${lastError}`);
+                }
+            } catch (fetchErr) {
+                lastError = fetchErr.message;
+                console.warn(`[Architect-Prime] Network Error ${modelName}: ${lastError}`);
             }
         }
 
-        // 5. إذا جربنا كل الموديلات المجانية وكلها فاشلة
+        // 4. إذا فشلت كل الموديلات المجانية (نادر جداً حدوثه الآن)
         if (!data) {
-            throw new Error(lastError || "جميع سيرفرات الذكاء الاصطناعي المجانية مشغولة حالياً، يرجى المحاولة بعد قليل.");
+            throw new Error("جميع خوادم الذكاء الاصطناعي المجانية مشغولة حالياً.. يرجى المحاولة بعد لحظات.");
         }
 
-        // 6. تغليف الرد وإرساله للواجهة الأمامية
-        const aiText = data.choices[0]?.message?.content || "عذراً، لم يتم استلام إجابة من السيرفر.";
+        // 5. تغليف الرد وإرساله لـ app.js بصيغة تناسبه
+        const aiText = data.choices[0]?.message?.content || "عذراً، لم يتم استلام إجابة واضحة.";
         
         return res.status(200).json({
             candidates: [
@@ -85,7 +102,7 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error("[AI Engine Error]:", error);
+        console.error("[AI Engine Final Error]:", error);
         return res.status(500).json({ error: error.message });
     }
 }

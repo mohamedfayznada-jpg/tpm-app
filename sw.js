@@ -1,41 +1,29 @@
-const CACHE_NAME = 'tpm-os-v32';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'factory-os-cache-v1';
+const urlsToCache = [
   '/',
   '/index.html',
-  '/style.css',
-  '/app.js',
-  '/icon.png',
-  '/manifest.json'
+  '/app.js'
 ];
 
-// 1. تثبيت المحرك وحفظ الملفات
-self.addEventListener('install', (event) => {
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // الطريقة دي بتمنع الكاش من الانهيار لو فيه ملف ناقص
+      for (let url of urlsToCache) {
+        try {
+          const response = await fetch(url);
+          if (response.ok) await cache.put(url, response);
+        } catch (e) {
+          console.warn('تخطي ملف في الكاش:', url);
+        }
+      }
     })
   );
 });
 
-// 2. تفعيل المحرك ومسح الكاش القديم
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
-        })
-      );
-    })
-  );
-});
-
-// 3. اعتراض الطلبات (لو مفيش نت، شغل من الكاش)
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then((response) => {
+    caches.match(event.request).then(response => {
       return response || fetch(event.request);
     })
   );

@@ -1,30 +1,54 @@
-const CACHE_NAME = 'factory-os-cache-v1';
-const urlsToCache = [
+const CACHE_NAME = 'factory-os-cache-v4';
+const APP_SHELL = [
   '/',
   '/index.html',
-  '/app.js'
+  '/app.js',
+  '/styles.css'
 ];
 
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      // الطريقة دي بتمنع الكاش من الانهيار لو فيه ملف ناقص
-      for (let url of urlsToCache) {
-        try {
-          const response = await fetch(url);
-          if (response.ok) await cache.put(url, response);
-        } catch (e) {
-          console.warn('تخطي ملف في الكاش:', url);
-        }
-      }
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('fetch', event => {
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith('factory-os-cache-') && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  const requestUrl = new URL(event.request.url);
+  const isApplicationPage = event.request.mode === 'navigate';
+  const isUiAsset = requestUrl.origin === self.location.origin && (
+    requestUrl.pathname === '/index.html' || requestUrl.pathname === '/styles.css'
+  );
+
+  if (isApplicationPage || isUiAsset) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseCopy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseCopy));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
 });

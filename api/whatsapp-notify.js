@@ -1,1 +1,160 @@
-ZXhwb3J0IGNvbnN0IGNvbmZpZyA9IHsKICBydW50aW1lOiAnZWRnZScsCn07Cgpjb25zdCBqc29uID0gKHBheWxvYWQsIHN0YXR1cyA9IDIwMCkgPT4gbmV3IFJlc3BvbnNlKEpTT04uc3RyaW5naWZ5KHBheWxvYWQpLCB7CiAgc3RhdHVzLAogIGhlYWRlcnM6IHsKICAgICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24vanNvbjsgY2hhcnNldD11dGYtOCcsCiAgICAnQ2FjaGUtQ29udHJvbCc6ICduby1zdG9yZScsCiAgfSwKfSk7Cgpjb25zdCBjbGVhblRleHQgPSAodmFsdWUsIG1heCA9IDE2MCkgPT4gU3RyaW5nKHZhbHVlID8/ICcnKQogIC5yZXBsYWNlKC9bPD5dL2csICcnKQogIC5yZXBsYWNlKC9ccysvZywgJyAnKQogIC50cmltKCkKICAuc2xpY2UoMCwgbWF4KTsKCmNvbnN0IGdldENvbmZpZyA9ICgpID0+ICh7CiAgYWNjZXNzVG9rZW46IHByb2Nlc3MuZW52LldIQVRTQVBQX0FDQ0VTU19UT0tFTj8udHJpbSgpLAogIHBob25lTnVtYmVySWQ6IHByb2Nlc3MuZW52LldIQVRTQVBQX1BIT05FX05VTUJFUl9JRD8udHJpbSgpLAogIHRlbXBsYXRlTmFtZTogcHJvY2Vzcy5lbnYuV0hBVFNBUFBfVEVNUExBVEVfTkFNRT8udHJpbSgpLAogIHRlbXBsYXRlTGFuZ3VhZ2U6IHByb2Nlc3MuZW52LldIQVRTQVBQX1RFTVBMQVRFX0xBTkdVQUdFPy50cmltKCkgfHwgJ2FyJywKICBncmFwaFZlcnNpb246IHByb2Nlc3MuZW52LldIQVRTQVBQX0dSQVBIX0FQSV9WRVJTSU9OPy50cmltKCkgfHwgJ3YyMy4wJywKICBmaXJlYmFzZVByb2plY3RJZDogcHJvY2Vzcy5lbnYuRklSRUJBU0VfUFJPSkVDVF9JRD8udHJpbSgpLAogIGFsbG93ZWRFbWFpbHM6IChwcm9jZXNzLmVudi5UUE1fTk9USUZJQ0FUSU9OX0FMTE9XRURfRU1BSUxTIHx8ICcnKQogICAgLnNwbGl0KCcsJykKICAgIC5tYXAoZW1haWwgPT4gZW1haWwudHJpbSgpLnRvTG93ZXJDYXNlKCkpCiAgICAuZmlsdGVyKEJvb2xlYW4pLAp9KTsKCmNvbnN0IG1pc3NpbmdDb25maWd1cmF0aW9uID0gKCkgPT4ganNvbih7CiAgY29kZTogJ1dIQVRTQVBQX05PVF9DT05GSUdVUkVEJywKICBlcnJvcjogJ9il2LTYudin2LHYp9iqIFdoYXRzQXBwINi62YrYsSDZhdmH2YrYo9ipINi52YTZiSDYp9mE2K7Yp9iv2YUg2KjYudivLicsCiAgaGVscDogJ9ij2LbZgSDZhdiq2LrZitix2KfYqiBNZXRhINmI2YXYqti62YrYsdin2Kog2KfZhNiq2K3ZgtmCINmF2YYgRmlyZWJhc2Ug2YHZiiBWZXJjZWwg2KvZhSDYo9i52K8g2KfZhNmG2LTYsS4nLAp9LCA1MDMpOwoKY29uc3QgZGVjb2RlQmFzZTY0VXJsSnNvbiA9IChzZWdtZW50KSA9PiB7CiAgY29uc3QgYmFzZTY0ID0gc2VnbWVudC5yZXBsYWNlKC8tL2csICcrJykucmVwbGFjZSgvXy9nLCAnLycpLnBhZEVuZChNYXRoLmNlaWwoc2VnbWVudC5sZW5ndGggLyA0KSAqIDQsICc9Jyk7CiAgY29uc3QgdmFsdWUgPSBhdG9iKGJhc2U2NCk7CiAgcmV0dXJuIEpTT04ucGFyc2UodmFsdWUpOwp9OwoKY29uc3QgdmVyaWZ5RmlyZWJhc2VUb2tlbiA9IGFzeW5jIChhdXRob3JpemF0aW9uLCBmaXJlYmFzZVByb2plY3RJZCkgPT4gewogIGlmICghYXV0aG9yaXphdGlvbj8uc3RhcnRzV2l0aCgnQmVhcmVyICcpKSByZXR1cm4gbnVsbDsKICBjb25zdCB0b2tlbiA9IGF1dGhvcml6YXRpb24uc2xpY2UoNykudHJpbSgpOwogIGNvbnN0IFtoZWFkZXJQYXJ0LCBwYXlsb2FkUGFydCwgc2lnbmF0dXJlUGFydF0gPSB0b2tlbi5zcGxpdCgnLicpOwogIGlmICghaGVhZGVyUGFydCB8fCAhcGF5bG9hZFBhcnQgfHwgIXNpZ25hdHVyZVBhcnQpIHJldHVybiBudWxsOwoKICBjb25zdCBoZWFkZXIgPSBkZWNvZGVCYXNlNjRVcmxKc29uKGhlYWRlclBhcnQpOwogIGNvbnN0IGNsYWltcyA9IGRlY29kZUJhc2U2NFVybEpzb24ocGF5bG9hZFBhcnQpOwogIGNvbnN0IG5vdyA9IE1hdGguZmxvb3IoRGF0ZS5ub3coKSAvIDEwMDApOwogIGNvbnN0IGV4cGVjdGVkSXNzdWVyID0gYGh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS8ke2ZpcmViYXNlUHJvamVjdElkfWA7CiAgaWYgKGhlYWRlci5hbGcgIT09ICdSUzI1NicgfHwgIWhlYWRlci5raWQgfHwgY2xhaW1zLmF1ZCAhPT0gZmlyZWJhc2VQcm9qZWN0SWQgfHwgY2xhaW1zLmlzcyAhPT0gZXhwZWN0ZWRJc3N1ZXIgfHwgIWNsYWltcy5zdWIgfHwgY2xhaW1zLmV4cCA8PSBub3cgfHwgY2xhaW1zLmlhdCA+IG5vdyArIDYwKSByZXR1cm4gbnVsbDsKCiAgY29uc3Qga2V5UmVzcG9uc2UgPSBhd2FpdCBmZXRjaCgnaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vc2VydmljZV9hY2NvdW50cy92MS9qd2svc2VjdXJldG9rZW5Ac3lzdGVtLmdzZXJ2aWNlYWNjb3VudC5jb20nKTsKICBpZiAoIWtleVJlc3BvbnNlLm9rKSB0aHJvdyBuZXcgRXJyb3IoJ9iq2LnYsNixINis2YTYqCDZhdmB2KfYqtmK2K0g2KrYrdmC2YIgRmlyZWJhc2UnKTsKICBjb25zdCBrZXlTZXQgPSBhd2FpdCBrZXlSZXNwb25zZS5qc29uKCk7CiAgY29uc3QgandrID0ga2V5U2V0Py5rZXlzPy5maW5kKGl0ZW0gPT4gaXRlbS5raWQgPT09IGhlYWRlci5raWQgJiYgaXRlbS5rdHkgPT09ICdSU0EnKTsKICBpZiAoIWp3aykgcmV0dXJuIG51bGw7CgogIGNvbnN0IGtleSA9IGF3YWl0IGNyeXB0by5zdWJ0bGUuaW1wb3J0S2V5KAogICAgJ2p3aycsCiAgICBqd2ssCiAgICB7IG5hbWU6ICdSU0FTU0EtUEtDUzEtdjFfNScsIGhhc2g6ICdTSEEtMjU2JyB9LAogICAgZmFsc2UsCiAgICBbJ3ZlcmlmeSddLAogICk7CiAgY29uc3Qgc2lnbmVkRGF0YSA9IG5ldyBUZXh0RW5jb2RlcigpLmVuY29kZShgJHtoZWFkZXJQYXJ0fS4ke3BheWxvYWRQYXJ0fWApOwogIGNvbnN0IHNpZ25hdHVyZUJhc2U2NCA9IHNpZ25hdHVyZVBhcnQucmVwbGFjZSgvLS9nLCAnKycpLnJlcGxhY2UoL18vZywgJy8nKS5wYWRFbmQoTWF0aC5jZWlsKHNpZ25hdHVyZVBhcnQubGVuZ3RoIC8gNCkgKiA0LCAnPScpOwogIGNvbnN0IHNpZ25hdHVyZUJpbmFyeSA9IGF0b2Ioc2lnbmF0dXJlQmFzZTY0KTsKICBjb25zdCBzaWduYXR1cmUgPSBuZXcgVWludDhBcnJheShzaWduYXR1cmVCaW5hcnkubGVuZ3RoKTsKICBmb3IgKGxldCBpbmRleCA9IDA7IGluZGV4IDwgc2lnbmF0dXJlQmluYXJ5Lmxlbmd0aDsgaW5kZXggKz0gMSkgc2lnbmF0dXJlW2luZGV4XSA9IHNpZ25hdHVyZUJpbmFyeS5jaGFyQ29kZUF0KGluZGV4KTsKICBjb25zdCB2YWxpZCA9IGF3YWl0IGNyeXB0by5zdWJ0bGUudmVyaWZ5KCdSU0FTU0EtUEtDUzEtdjFfNScsIGtleSwgc2lnbmF0dXJlLCBzaWduZWREYXRhKTsKICByZXR1cm4gdmFsaWQgPyBjbGFpbXMgOiBudWxsOwp9OwoKY29uc3Qgbm9ybWFsaXplUGhvbmUgPSAodmFsdWUpID0+IFN0cmluZyh2YWx1ZSA/PyAnJykucmVwbGFjZSgvW14wLTldL2csICcnKTsKCmNvbnN0IGV2ZW50TGFiZWxzID0gewogIHRhZ19hc3NpZ25lZDogJ9iq2KfYrCDYtdmK2KfZhtipINmF2LPZhtivINil2YTZitmDJywKICBjcml0aWNhbF90YWc6ICfYqtin2Kwg2K3YsdisINmK2K3Yqtin2Kwg2KrYr9iu2YTZi9inINmB2YjYsdmK2YvYpycsCiAgdGFnX2VzY2FsYXRlZDogJ9iq2KfYrCDYqtmFINiq2LXYudmK2K/ZhyDZhNmE2YXYsdin2KzYudipJywKfTsKCmV4cG9ydCBkZWZhdWx0IGFzeW5jIGZ1bmN0aW9uIGhhbmRsZXIocmVxKSB7CiAgaWYgKHJlcS5tZXRob2QgIT09ICdQT1NUJykgcmV0dXJuIGpzb24oeyBlcnJvcjogJ01ldGhvZCBub3QgYWxsb3dlZC4nIH0sIDQwNSk7CgogIGNvbnN0IHNldHRpbmdzID0gZ2V0Q29uZmlnKCk7CiAgaWYgKCFzZXR0aW5ncy5hY2Nlc3NUb2tlbiB8fCAhc2V0dGluZ3MucGhvbmVOdW1iZXJJZCB8fCAhc2V0dGluZ3MudGVtcGxhdGVOYW1lIHx8ICFzZXR0aW5ncy5maXJlYmFzZVByb2plY3RJZCB8fCBzZXR0aW5ncy5hbGxvd2VkRW1haWxzLmxlbmd0aCA9PT0gMCkgcmV0dXJuIG1pc3NpbmdDb25maWd1cmF0aW9uKCk7CgogIHRyeSB7CiAgICBjb25zdCBpZGVudGl0eSA9IGF3YWl0IHZlcmlmeUZpcmViYXNlVG9rZW4ocmVxLmhlYWRlcnMuZ2V0KCdhdXRob3JpemF0aW9uJyksIHNldHRpbmdzLmZpcmViYXNlUHJvamVjdElkKTsKICAgIGNvbnN0IHVzZXJFbWFpbCA9IFN0cmluZyhpZGVudGl0eT8uZW1haWwgfHwgJycpLnRvTG93ZXJDYXNlKCk7CiAgICBpZiAoIWlkZW50aXR5IHx8ICFzZXR0aW5ncy5hbGxvd2VkRW1haWxzLmluY2x1ZGVzKHVzZXJFbWFpbCkpIHsKICAgICAgcmV0dXJuIGpzb24oeyBjb2RlOiAnV0hBVFNBUFBfRk9SQklEREVOJywgZXJyb3I6ICfZhNmK2LPYqiDZhNiv2YrZgyDYtdmE2KfYrdmK2Kkg2KXYsdiz2KfZhCDYpdi02LnYp9ix2KfYqiBXaGF0c0FwcC4nIH0sIDQwMyk7CiAgICB9CgogICAgY29uc3QgYm9keSA9IGF3YWl0IHJlcS5qc29uKCk7CiAgICBjb25zdCBldmVudFR5cGUgPSBjbGVhblRleHQoYm9keT8uZXZlbnRUeXBlLCAzMik7CiAgICBjb25zdCB0YWcgPSBib2R5Py50YWcgfHwge307CiAgICBpZiAoIWV2ZW50TGFiZWxzW2V2ZW50VHlwZV0pIHJldHVybiBqc29uKHsgY29kZTogJ1dIQVRTQVBQX0lOVkFMSURfRVZFTlQnLCBlcnJvcjogJ9mG2YjYuSDYrdiv2Ksg2KfZhNil2LTYudin2LEg2LrZitixINi12KfZhNitLicgfSwgNDAwKTsKCiAgICBjb25zdCBwaG9uZSA9IG5vcm1hbGl6ZVBob25lKHRhZy5lbmdpbmVlclBob25lKTsKICAgIGNvbnN0IHRhZ0lkID0gY2xlYW5UZXh0KHRhZy5pZCwgODApOwogICAgY29uc3QgZGVzY3JpcHRpb24gPSBjbGVhblRleHQodGFnLmRlc2MsIDQ1MCk7CiAgICBpZiAocGhvbmUubGVuZ3RoIDwgOCB8fCBwaG9uZS5sZW5ndGggPiAxNSB8fCAhdGFnSWQgfHwgIWRlc2NyaXB0aW9uKSB7CiAgICAgIHJldHVybiBqc29uKHsgY29kZTogJ1dIQVRTQVBQX0lOVkFMSURfUEFZTE9BRCcsIGVycm9yOiAn2KjZitin2YbYp9iqINin2YTYqtin2Kwg2KPZiCDYsdmC2YUgV2hhdHNBcHAg2LrZitixINi12KfZhNit2Kkg2YTZhNil2LHYs9in2YQuJyB9LCA0MDApOwogICAgfQoKICAgIGNvbnN0IHBhcmFtZXRlcnMgPSBbCiAgICAgIHRhZ0lkLAogICAgICBldmVudExhYmVsc1tldmVudFR5cGVdLAogICAgICBjbGVhblRleHQodGFnLmRlcHQsIDEwMCkgfHwgJ9i62YrYsSDZhdit2K/YrycsCiAgICAgIGNsZWFuVGV4dCh0YWcubWFjaGluZSwgMTAwKSB8fCAn2LrZitixINmF2K3Yr9iv2KknLAogICAgICAoeyBjcml0aWNhbDogJ9it2LHYrNipJywgaGlnaDogJ9i52KfZhNmK2KknLCBtZWRpdW06ICfZhdiq2YjYs9i32KknLCBsb3c6ICfZhdmG2K7Zgdi22KknIH1bdGFnLnByaW9yaXR5XSB8fCAn2YXYqtmI2LPYt9ipJyksCiAgICAgIGRlc2NyaXB0aW9uLAogICAgXS5tYXAodGV4dCA9PiAoeyB0eXBlOiAndGV4dCcsIHRleHQgfSkpOwoKICAgIGNvbnN0IHByb3ZpZGVyUmVzcG9uc2UgPSBhd2FpdCBmZXRjaChgaHR0cHM6Ly9ncmFwaC5mYWNlYm9vay5jb20vJHtzZXR0aW5ncy5ncmFwaFZlcnNpb259LyR7ZW5jb2RlVVJJQ29tcG9uZW50KHNldHRpbmdzLnBob25lTnVtYmVySWQpfS9tZXNzYWdlc2AsIHsKICAgICAgbWV0aG9kOiAnUE9TVCcsCiAgICAgIGhlYWRlcnM6IHsKICAgICAgICBBdXRob3JpemF0aW9uOiBgQmVhcmVyICR7c2V0dGluZ3MuYWNjZXNzVG9rZW59YCwKICAgICAgICAnQ29udGVudC1UeXBlJzogJ2FwcGxpY2F0aW9uL2pzb24nLAogICAgICB9LAogICAgICBib2R5OiBKU09OLnN0cmluZ2lmeSh7CiAgICAgICAgbWVzc2FnaW5nX3Byb2R1Y3Q6ICd3aGF0c2FwcCcsCiAgICAgICAgcmVjaXBpZW50X3R5cGU6ICdpbmRpdmlkdWFsJywKICAgICAgICB0bzogcGhvbmUsCiAgICAgICAgdHlwZTogJ3RlbXBsYXRlJywKICAgICAgICB0ZW1wbGF0ZTogewogICAgICAgICAgbmFtZTogc2V0dGluZ3MudGVtcGxhdGVOYW1lLAogICAgICAgICAgbGFuZ3VhZ2U6IHsgY29kZTogc2V0dGluZ3MudGVtcGxhdGVMYW5ndWFnZSB9LAogICAgICAgICAgY29tcG9uZW50czogW3sgdHlwZTogJ2JvZHknLCBwYXJhbWV0ZXJzIH1dLAogICAgICAgIH0sCiAgICAgIH0pLAogICAgfSk7CgogICAgY29uc3QgcHJvdmlkZXJEYXRhID0gYXdhaXQgcHJvdmlkZXJSZXNwb25zZS5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSk7CiAgICBpZiAoIXByb3ZpZGVyUmVzcG9uc2Uub2spIHsKICAgICAgY29uc29sZS5lcnJvcignW1RQTSBXaGF0c0FwcF0gTWV0YSByZWplY3RlZCBub3RpZmljYXRpb246JywgcHJvdmlkZXJEYXRhPy5lcnJvcj8ubWVzc2FnZSB8fCBgSFRUUCAke3Byb3ZpZGVyUmVzcG9uc2Uuc3RhdHVzfWApOwogICAgICByZXR1cm4ganNvbih7CiAgICAgICAgY29kZTogJ1dIQVRTQVBQX1BST1ZJREVSX1JFSkVDVEVEJywKICAgICAgICBlcnJvcjogJ9iq2LnYsNixINil2LHYs9in2YQg2KfZhNil2LTYudin2LEg2LnYqNixIFdoYXRzQXBwLiDYqtit2YLZgiDZhdmGINin2LnYqtmF2KfYryDYp9mE2YLYp9mE2Kgg2YjYqNmK2KfZhtin2KogTWV0YS4nLAogICAgICB9LCA1MDIpOwogICAgfQoKICAgIHJldHVybiBqc29uKHsKICAgICAgc3VjY2VzczogdHJ1ZSwKICAgICAgbWVzc2FnZTogJ9iq2YUg2KrYs9mE2YrZhSDYt9mE2Kgg2KfZhNil2LTYudin2LEg2KXZhNmJIFdoYXRzQXBwLicsCiAgICAgIG1lc3NhZ2VJZDogcHJvdmlkZXJEYXRhPy5tZXNzYWdlcz8uWzBdPy5pZCB8fCBudWxsLAogICAgfSk7CiAgfSBjYXRjaCAoZXJyb3IpIHsKICAgIGNvbnNvbGUuZXJyb3IoJ1tUUE0gV2hhdHNBcHBdIFJlcXVlc3QgZmFpbGVkOicsIGVycm9yPy5tZXNzYWdlIHx8IGVycm9yKTsKICAgIHJldHVybiBqc29uKHsKICAgICAgY29kZTogJ1dIQVRTQVBQX1JFUVVFU1RfRkFJTEVEJywKICAgICAgZXJyb3I6ICfYqti52LDYsSDYqtmG2YHZitiwINi32YTYqCDYpdi02LnYp9ixIFdoYXRzQXBwINit2KfZhNmK2YvYpy4nLAogICAgfSwgNTAwKTsKICB9Cn0K
+export const config = {
+  runtime: 'edge',
+};
+
+const json = (payload, status = 200) => new Response(JSON.stringify(payload), {
+  status,
+  headers: {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+  },
+});
+
+const cleanText = (value, max = 160) => String(value ?? '')
+  .replace(/[<>]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .slice(0, max);
+
+const getConfig = () => ({
+  accessToken: process.env.WHATSAPP_ACCESS_TOKEN?.trim(),
+  phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID?.trim(),
+  templateName: process.env.WHATSAPP_TEMPLATE_NAME?.trim(),
+  templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() || 'ar',
+  graphVersion: process.env.WHATSAPP_GRAPH_API_VERSION?.trim() || 'v23.0',
+  firebaseProjectId: process.env.FIREBASE_PROJECT_ID?.trim(),
+  allowedEmails: (process.env.TPM_NOTIFICATION_ALLOWED_EMAILS || '')
+    .split(',')
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean),
+});
+
+const missingConfiguration = () => json({
+  code: 'WHATSAPP_NOT_CONFIGURED',
+  error: 'إشعارات WhatsApp غير مهيأة على الخادم بعد.',
+  help: 'أضف متغيرات Meta ومتغيرات التحقق من Firebase في Vercel ثم أعد النشر.',
+}, 503);
+
+const decodeBase64UrlJson = (segment) => {
+  const base64 = segment.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(segment.length / 4) * 4, '=');
+  const value = atob(base64);
+  return JSON.parse(value);
+};
+
+const verifyFirebaseToken = async (authorization, firebaseProjectId) => {
+  if (!authorization?.startsWith('Bearer ')) return null;
+  const token = authorization.slice(7).trim();
+  const [headerPart, payloadPart, signaturePart] = token.split('.');
+  if (!headerPart || !payloadPart || !signaturePart) return null;
+
+  const header = decodeBase64UrlJson(headerPart);
+  const claims = decodeBase64UrlJson(payloadPart);
+  const now = Math.floor(Date.now() / 1000);
+  const expectedIssuer = `https://securetoken.google.com/${firebaseProjectId}`;
+  if (header.alg !== 'RS256' || !header.kid || claims.aud !== firebaseProjectId || claims.iss !== expectedIssuer || !claims.sub || claims.exp <= now || claims.iat > now + 60) return null;
+
+  const keyResponse = await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com');
+  if (!keyResponse.ok) throw new Error('تعذر جلب مفاتيح تحقق Firebase');
+  const keySet = await keyResponse.json();
+  const jwk = keySet?.keys?.find(item => item.kid === header.kid && item.kty === 'RSA');
+  if (!jwk) return null;
+
+  const key = await crypto.subtle.importKey(
+    'jwk',
+    jwk,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify'],
+  );
+  const signedData = new TextEncoder().encode(`${headerPart}.${payloadPart}`);
+  const signatureBase64 = signaturePart.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(signaturePart.length / 4) * 4, '=');
+  const signatureBinary = atob(signatureBase64);
+  const signature = new Uint8Array(signatureBinary.length);
+  for (let index = 0; index < signatureBinary.length; index += 1) signature[index] = signatureBinary.charCodeAt(index);
+  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, signature, signedData);
+  return valid ? claims : null;
+};
+
+const normalizePhone = (value) => String(value ?? '').replace(/[^0-9]/g, '');
+
+const eventLabels = {
+  tag_assigned: 'تاج صيانة مسند إليك',
+  critical_tag: 'تاج حرج يحتاج تدخلًا فوريًا',
+  tag_escalated: 'تاج تم تصعيده للمراجعة',
+};
+
+export default async function handler(req) {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
+
+  const settings = getConfig();
+  if (!settings.accessToken || !settings.phoneNumberId || !settings.templateName || !settings.firebaseProjectId || settings.allowedEmails.length === 0) return missingConfiguration();
+
+  try {
+    const identity = await verifyFirebaseToken(req.headers.get('authorization'), settings.firebaseProjectId);
+    const userEmail = String(identity?.email || '').toLowerCase();
+    if (!identity || !settings.allowedEmails.includes(userEmail)) {
+      return json({ code: 'WHATSAPP_FORBIDDEN', error: 'ليست لديك صلاحية إرسال إشعارات WhatsApp.' }, 403);
+    }
+
+    const body = await req.json();
+    const eventType = cleanText(body?.eventType, 32);
+    const tag = body?.tag || {};
+    if (!eventLabels[eventType]) return json({ code: 'WHATSAPP_INVALID_EVENT', error: 'نوع حدث الإشعار غير صالح.' }, 400);
+
+    const phone = normalizePhone(tag.engineerPhone);
+    const tagId = cleanText(tag.id, 80);
+    const description = cleanText(tag.desc, 450);
+    if (phone.length < 8 || phone.length > 15 || !tagId || !description) {
+      return json({ code: 'WHATSAPP_INVALID_PAYLOAD', error: 'بيانات التاج أو رقم WhatsApp غير صالحة للإرسال.' }, 400);
+    }
+
+    const parameters = [
+      tagId,
+      eventLabels[eventType],
+      cleanText(tag.dept, 100) || 'غير محدد',
+      cleanText(tag.machine, 100) || 'غير محددة',
+      ({ critical: 'حرجة', high: 'عالية', medium: 'متوسطة', low: 'منخفضة' }[tag.priority] || 'متوسطة'),
+      description,
+    ].map(text => ({ type: 'text', text }));
+
+    const providerResponse = await fetch(`https://graph.facebook.com/${settings.graphVersion}/${encodeURIComponent(settings.phoneNumberId)}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${settings.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: phone,
+        type: 'template',
+        template: {
+          name: settings.templateName,
+          language: { code: settings.templateLanguage },
+          components: [{ type: 'body', parameters }],
+        },
+      }),
+    });
+
+    const providerData = await providerResponse.json().catch(() => ({}));
+    if (!providerResponse.ok) {
+      console.error('[TPM WhatsApp] Meta rejected notification:', providerData?.error?.message || `HTTP ${providerResponse.status}`);
+      return json({
+        code: 'WHATSAPP_PROVIDER_REJECTED',
+        error: 'تعذر إرسال الإشعار عبر WhatsApp. تحقق من اعتماد القالب وبيانات Meta.',
+      }, 502);
+    }
+
+    return json({
+      success: true,
+      message: 'تم تسليم طلب الإشعار إلى WhatsApp.',
+      messageId: providerData?.messages?.[0]?.id || null,
+    });
+  } catch (error) {
+    console.error('[TPM WhatsApp] Request failed:', error?.message || error);
+    return json({
+      code: 'WHATSAPP_REQUEST_FAILED',
+      error: 'تعذر تنفيذ طلب إشعار WhatsApp حاليًا.',
+    }, 500);
+  }
+}

@@ -473,7 +473,6 @@
             <button class="btn btn-outline btn-sm btn-role-admin" onclick="setDeptGoal()"><i class='bx bx-target-lock'></i> المستهدف</button>
         </div>
 
-        <div id="tpmWorkspaceStructure-jh"></div>
 
         <button class="btn btn-primary full-width" style="margin-bottom: 25px; background: linear-gradient(135deg, #1e3a8a, #3b82f6);" onclick="openJHKPIsScreen()">
             <i class='bx bx-radar'></i> لوحة مؤشرات النضج للركيزة (JH KPIs)
@@ -631,7 +630,6 @@
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 style="color:#00BCD4; margin:0;"><i class='bx bx-sparkles'></i> بيئة العمل (5S)</h2>
         </div>
-        <div id="tpmWorkspaceStructure-5s"></div>
 
         <div class="card" style="border-top: 4px solid #00BCD4;">
             <h3 class="card-title"><i class='bx bx-camera'></i> كاميرا المطابقة (Standard Check)</h3>
@@ -657,7 +655,6 @@
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 style="color:var(--danger); margin:0;"><i class='bx bx-cog'></i> الصيانة المخططة (PM)</h2>
         </div>
-        <div id="tpmWorkspaceStructure-pm"></div>
 
         <div class="dashboard-stats">
             <div class="stat-card" style="border-bottom: 3px solid var(--danger);"><div class="stat-value danger-text" id="pmPendingCount">0</div><div class="stat-label">أوامر معلقة</div></div>
@@ -674,7 +671,6 @@
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 style="color:#8b5cf6; margin:0;"><i class='bx bxs-graduation'></i> التعليم والتدريب (E&T)</h2>
         </div>
-        <div id="tpmWorkspaceStructure-et"></div>
 
         <div class="card text-center" style="padding:50px; border-top: 4px solid #8b5cf6;">
             <i class='bx bx-hard-hat' style="font-size:60px; color:#8b5cf6; margin-bottom:20px;"></i>
@@ -695,7 +691,6 @@
             </select>
         </div>
 
-        <div id="tpmWorkspaceStructure-kk"></div>
 
         <div class="dashboard-stats">
             <div class="stat-card" style="border-bottom: 3px solid var(--danger);"><div class="stat-value danger-text" id="kkTotalLossHours">0</div><div class="stat-label">ساعات التوقف</div></div>
@@ -733,23 +728,22 @@
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 style="color:#22c55e; margin:0;"><i class='bx bx-shield-quarter'></i> الصحة والسلامة والبيئة (HSE)</h2>
         </div>
-        <div id="tpmWorkspaceStructure-hse"></div>
         <div class="card" style="border-top:4px solid #22c55e;">
-            <h3 class="card-title"><i class='bx bx-shield-check'></i> مركز عمليات HSE</h3>
-            <p style="color:var(--text-muted);">تظهر هنا لاحقًا سجلات الجولات والمخاطر وإجراءات الإغلاق الخاصة بالفريق. ابدأ بتشكيل فريق HSE وحلقات الأقسام أعلاه.</p>
+            <h3 class="card-title"><i class='bx bx-shield-check'></i> مساحة HSE</h3>
+            <p style="color:var(--text-muted);">هذه المساحة مخصصة لفريق الصحة والسلامة والبيئة. سيتم بناء أدواتها وسجلاتها بشكل مستقل عند اعتماد نطاق العمل الخاص بها.</p>
         </div>
     </div>
 
     <!-- ==========================================
          🛠️ OPERATIONAL SCREENS
          ========================================== -->
-    <!-- TPM Teams Hub: preserves existing JH, E&T, 5S, KK and PM workspaces -->
+    <!-- TPM Teams Gateway: direct access to the six team workspaces -->
     <div class="container screen" id="tpmTeamsScreen">
         <div class="screen-command-header teams-command-header">
             <div>
                 <span class="eyebrow"><i class='bx bx-group'></i> هيكل فرق المصنع</span>
                 <h2>فرق TPM</h2>
-                <p>اختر فريقًا للانتقال إلى مساحة عمله الأصلية. يظهر التشكيل والأقسام والحلقات قبل المحتوى الذي أنشأته مسبقًا.</p>
+                <p>اختر الفريق للانتقال مباشرةً إلى مساحة عمله. تظل صفحات JH وE&amp;T و5S وKK وPM بمحتواها الأصلي كما أنشأته.</p>
             </div>
             <div class="screen-command-actions">
                 <button class="btn btn-outline btn-sm" onclick="showScreen('homeScreen')">⬅️ عودة</button>
@@ -757,7 +751,6 @@
         </div>
         <div id="tpmTeamKpis" class="tpm-kpi-ribbon"></div>
         <div id="tpmTeamsGrid" class="tpm-team-grid"></div>
-        <section id="tpmTeamDetail" class="tpm-team-detail" style="display:none;"></section>
     </div>
 
     <!-- Tags Screen -->
@@ -767,34 +760,30 @@
             <h2 style="color:var(--danger); margin:0;"><i class='bx bx-error-circle'></i> إدارة التذاكر والأعطال</h2>
         </div>
         
-        <div class="card btn-role-operator" style="border-top:4px solid var(--danger);">
-            <h4 class="card-title"><i class='bx bx-plus'></i> إصدار تاج جديد</h4>
-            <textarea id="newTagDesc" class="form-control" rows="2" placeholder="وصف المشكلة بدقة..."></textarea>
-            <div class="row-flex">
-                <select id="newTagColor" class="form-control flex-1"><option value="red">صيانة (أحمر)</option><option value="blue">إنتاج (أزرق)</option></select>
-                <select id="newTagDept" class="form-control flex-1"></select>
-                <select id="newTagPriority" class="form-control flex-1"><option value="critical">حرج</option><option value="high" selected>عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select>
-            </div>
-            <div class="row-flex">
-                <input type="text" id="newTagMachine" class="form-control flex-1" placeholder="الماكينة (اختياري)">
-                <input type="text" id="newTagSpareParts" class="form-control flex-1" placeholder="قطع غيار مطلوبة (اختياري)">
-                <select id="newTagTeam" class="form-control flex-1"><option value="">مسار TPM (اختياري)</option></select>
-            </div>
-            <div class="row-flex" style="margin-bottom:15px;">
-                <select id="newTagEngineer" class="form-control flex-2"><option value="">إبلاغ مهندس الصيانة (اختياري)</option></select>
-                <label class="btn btn-outline flex-1" style="border-style:dashed;"><i class='bx bx-camera'></i> إرفاق صورة<input type="file" style="display:none;" onchange="handleTagImage(event)"></label>
+        <div class="card btn-role-operator tag-intake-card" style="border-top:4px solid var(--danger);">
+            <div class="tag-intake-header"><div><span class="eyebrow"><i class='bx bx-purchase-tag-alt'></i> سجل بلاغ تشغيلي</span><h4 class="card-title"><i class='bx bx-plus'></i> إصدار تاج جديد</h4></div><p>الحقول المعلَّمة بـ <b>*</b> مطلوبة حتى يصل البلاغ إلى القسم الصحيح.</p></div>
+            <div class="form-group"><label for="newTagDesc">ما المشكلة أو حالة عدم المطابقة؟ <b>*</b></label><textarea id="newTagDesc" class="form-control" rows="3" placeholder="مثال: تسريب زيت من وصلة المضخة ويؤثر في نظافة منطقة العمل"></textarea><small class="field-help">اكتب العيب ومكانه وأثره باختصار واضح.</small></div>
+            <div class="tag-intake-grid">
+                <div class="form-group"><label for="newTagColor">نوع التاج <b>*</b></label><select id="newTagColor" class="form-control"><option value="red">تاج صيانة — أحمر</option><option value="blue">تاج إنتاج — أزرق</option></select><small class="field-help">حدد الجهة التي ستبدأ المعالجة.</small></div>
+                <div class="form-group"><label for="newTagDept">القسم التشغيلي <b>*</b></label><select id="newTagDept" class="form-control"></select><small class="field-help">اختر القسم الذي ظهرت فيه الحالة.</small></div>
+                <div class="form-group"><label for="newTagPriority">درجة الأولوية <b>*</b></label><select id="newTagPriority" class="form-control"><option value="critical">حرج — خطر أو توقف</option><option value="high" selected>عالية — تحتاج معالجة سريعة</option><option value="medium">متوسطة — ضمن خطة قريبة</option><option value="low">منخفضة — تحسين غير عاجل</option></select><small class="field-help">تحدد ترتيب المتابعة والتصعيد.</small></div>
+                <div class="form-group"><label for="newTagMachine">المعدة أو الموقع <span>اختياري</span></label><input type="text" id="newTagMachine" class="form-control" placeholder="مثال: ماكينة حقن 02 أو منطقة التجميع"><small class="field-help">يسهّل الوصول لمكان البلاغ.</small></div>
+                <div class="form-group"><label for="newTagSpareParts">قطع الغيار المطلوبة <span>اختياري</span></label><input type="text" id="newTagSpareParts" class="form-control" placeholder="مثال: جوان 25 مم أو سير ناقل"><small class="field-help">دوّنها إن كانت معروفة فقط.</small></div>
+                <div class="form-group"><label for="newTagTeam">فريق TPM المرتبط <span>اختياري</span></label><select id="newTagTeam" class="form-control"><option value="">لا يوجد فريق مرتبط</option></select><small class="field-help">استخدمه للربط والتحليل، وليس بدل القسم.</small></div>
+                <div class="form-group"><label for="newTagEngineer">المسؤول أو مهندس الصيانة <span>اختياري</span></label><select id="newTagEngineer" class="form-control"><option value="">غير مُسند الآن</option></select><small class="field-help">اختر المسؤول عند معرفة من سيتابع الإغلاق.</small></div>
+                <div class="form-group"><label>صورة دليل <span>اختياري</span></label><label class="btn btn-outline full-width tag-image-picker"><i class='bx bx-camera'></i> اختر صورة للحالة<input type="file" style="display:none;" accept="image/*" onchange="handleTagImage(event)"></label><small class="field-help">صورة واحدة واضحة تساعد في التحقق.</small></div>
             </div>
             <div id="tagImagePreview" style="margin-bottom:15px; text-align:center;"></div>
-            <button class="btn btn-danger full-width" onclick="addNewTag()"><i class='bx bx-send'></i> تسجيل التاج وتنبيه المسؤول</button>
+            <button class="btn btn-danger full-width" onclick="addNewTag()"><i class='bx bx-send'></i> تسجيل التاج</button>
         </div>
 
         <div id="tagCommandStats" class="tag-command-stats"></div>
-        <div class="row-flex tag-filter-bar" style="margin-bottom: 20px; background:var(--surface-inset); padding:10px; border-radius:var(--radius-lg); border:1px solid var(--border-glass);">
-            <select id="filterTagDept" class="form-control flex-1" style="margin:0;" onchange="renderTags()"><option value="الكل">كل الأقسام</option></select>
-            <select id="filterTagStatus" class="form-control flex-1" style="margin:0;" onchange="renderTags()"><option value="active">مفتوح / جاري</option><option value="closed">مغلقة فقط</option></select>
-            <select id="filterTagPriority" class="form-control flex-1" style="margin:0;" onchange="renderTags()"><option value="all">كل الأولويات</option><option value="critical">حرج</option><option value="high">عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select>
-            <input type="text" id="filterTagMachine" class="form-control flex-1" style="margin:0;" placeholder="بحث بالماكينة أو المسؤول..." onkeyup="renderTags()">
-        </div>
+        <section class="tag-filter-panel" aria-label="فلاتر التاجات"><div class="tag-filter-title"><i class='bx bx-filter-alt'></i><b>تصفية سجل التاجات</b><span>اعرض البلاغات التي تحتاجها فقط</span></div><div class="tag-filter-grid">
+            <label>القسم<select id="filterTagDept" class="form-control" onchange="renderTags()"><option value="الكل">كل الأقسام</option></select></label>
+            <label>حالة التاج<select id="filterTagStatus" class="form-control" onchange="renderTags()"><option value="active">مفتوح / جاري</option><option value="closed">مغلقة فقط</option></select></label>
+            <label>الأولوية<select id="filterTagPriority" class="form-control" onchange="renderTags()"><option value="all">كل الأولويات</option><option value="critical">حرج</option><option value="high">عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select></label>
+            <label>بحث<input type="text" id="filterTagMachine" class="form-control" placeholder="اسم المعدة أو المسؤول أو كلمة من الوصف" onkeyup="renderTags()"></label>
+        </div></section>
 
         <div class="grid-layout">
             <div class="kanban-col"><h4 class="todo-head"><i class='bx bx-error'></i> تاجات الصيانة</h4><div id="redTagsContainer"></div></div>
@@ -1059,55 +1048,53 @@
          ⚙️ SETTINGS & PROFILE
          ========================================== -->
     <div class="container screen" id="settingsScreen">
-        <button class="btn btn-primary full-width" style="padding:20px; font-size:16px; margin-bottom: 30px; background:linear-gradient(135deg, var(--primary), #8b5cf6);" onclick="openMyFullProfile()">
-            <i class='bx bx-shield-quarter' style="font-size:24px;"></i> دخول مركز القيادة الشخصي
-        </button>
+        <section class="settings-command-deck">
+            <div class="settings-command-copy"><span class="eyebrow"><i class='bx bx-slider-alt'></i> إدارة Factory OS</span><h2>مركز التحكم</h2><p>نظّم تشغيل المصنع من مكان واحد: الأقسام، الإسناد، التاجات، صلاحيات المستخدمين، والبيانات.</p></div>
+            <button class="btn btn-primary settings-profile-launch" onclick="openMyFullProfile()"><i class='bx bx-id-card'></i><span>بياناتي الشخصية</span><small>الاسم · القسم · الهاتف</small></button>
+        </section>
 
-        <div class="card text-center" style="border-top: 4px solid var(--primary); padding-top:40px;">
-            <div style="width:110px; height:110px; margin: -80px auto 15px; border-radius: 30%; background: var(--bg-surface); padding: 5px; border: 1px solid var(--border-glow); box-shadow:0 10px 20px rgba(0,0,0,0.5);">
-                <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=ffffff" style="width:100%; height:100%; border-radius: 25%; object-fit:cover;">
+        <section class="settings-identity-strip"><img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=ffffff" alt="صورة المستخدم"><div><span>المستخدم الحالي</span><h3 id="profileName">اسم المستخدم</h3><b id="profileRoleBadge">دور المستخدم</b></div><div class="settings-identity-note"><i class='bx bx-lock-alt'></i><span>التحكم الحساس ظاهر للمدير فقط.</span></div></section>
+
+        <nav class="settings-navigation" aria-label="تبويبات الإعدادات">
+            <button class="btn active" onclick="switchSettingsTab('overview', this)"><i class='bx bx-grid-alt'></i> نظرة عامة</button>
+            <button class="btn btn-role-admin" onclick="switchSettingsTab('factory-manage', this)"><i class='bx bx-buildings'></i> تشغيل المصنع</button>
+            <button class="btn btn-role-admin" onclick="switchSettingsTab('assignments', this)"><i class='bx bx-user-check'></i> الإسناد والتنبيهات</button>
+            <button class="btn btn-role-admin" onclick="switchSettingsTab('governance', this)"><i class='bx bx-shield-quarter'></i> المستخدمون والبيانات</button>
+        </nav>
+
+        <section id="tab-overview" class="settings-tab-content active">
+            <div class="settings-section-title"><div><span class="eyebrow">مرجع التشغيل</span><h3>الأقسام الأساسية</h3><p>هذه الأقسام الأربعة تظهر دائمًا في المراجعات والتاجات والكايزنات والمهام.</p></div><span class="settings-lock-chip"><i class='bx bx-lock-alt'></i> أساس التطبيق</span></div>
+            <div class="core-department-grid">
+                <article><i class='bx bx-injection'></i><b>حقن الكابينة</b><span>قسم تشغيل أساسي</span></article>
+                <article><i class='bx bx-injection'></i><b>حقن الباب</b><span>قسم تشغيل أساسي</span></article>
+                <article><i class='bx bx-wind'></i><b>الفاكيوم</b><span>قسم تشغيل أساسي</span></article>
+                <article><i class='bx bx-cylinder'></i><b>المواسير</b><span>قسم تشغيل أساسي</span></article>
             </div>
-            <h2 id="profileName" style="color:var(--text-main); font-size:22px;">اسم المستخدم</h2>
-            <div id="profileRoleBadge" style="background:rgba(59, 130, 246, 0.1); color:var(--primary); border:1px solid rgba(59, 130, 246, 0.3); padding:6px 18px; border-radius:50px; font-size:12px; font-weight:900; margin-top:10px; display:inline-block;">دور المستخدم</div>
-        </div>
+            <div class="dashboard-stats settings-personal-stats"><div class="stat-card" style="border-bottom:3px solid var(--gold);"><div class="stat-value warning-text" id="myAudits">0</div><div class="stat-label">مراجعاتي</div></div><div class="stat-card" style="border-bottom:3px solid var(--danger);"><div class="stat-value danger-text" id="myTags">0</div><div class="stat-label">تاجاتي</div></div><div class="stat-card" style="border-bottom:3px solid var(--success);"><div class="stat-value success-text" id="myKaizens">0</div><div class="stat-label">كايزن</div></div></div>
+            <div class="settings-quick-actions"><button class="btn btn-outline" onclick="showScreen('tagsScreen')"><i class='bx bx-purchase-tag-alt'></i> فتح التاجات</button><button class="btn btn-outline" onclick="showScreen('tasksScreen')"><i class='bx bx-task'></i> فتح المهام</button><button class="btn btn-outline" onclick="toggleDarkMode()"><i class='bx bx-moon'></i> تبديل المظهر</button></div>
+        </section>
 
-        <div class="row-flex" style="background: var(--surface-inset); padding: 8px; border-radius: var(--radius-lg); border: 1px solid var(--border-glass); margin-bottom: 20px; box-shadow:var(--shadow-pressed);">
-            <button class="btn flex-1 active" style="background: var(--primary); color: white; border:none;" onclick="switchSettingsTab('my-activity')"><i class='bx bx-pulse'></i> نشاطي</button>
-            <button class="btn flex-1 btn-outline btn-role-admin" style="border: none;" onclick="switchSettingsTab('factory-manage')"><i class='bx bx-buildings'></i> الإدارة</button>
-            <button class="btn flex-1 btn-outline btn-role-admin" style="border: none;" onclick="switchSettingsTab('notifications-admin')"><i class='bx bxl-whatsapp'></i> التنبيهات</button>
-            <button class="btn flex-1 btn-outline btn-role-admin" style="border: none;" onclick="switchSettingsTab('system-admin')"><i class='bx bx-server'></i> السيستم</button>
-        </div>
+        <section id="tab-factory-manage" class="settings-tab-content" style="display:none;">
+            <div class="settings-section-title"><div><span class="eyebrow">الهيكل التشغيلي</span><h3>إدارة الأقسام</h3><p>الأقسام الأساسية ثابتة. أضف هنا فقط الأقسام المساندة أو الخدمية عند الحاجة.</p></div></div>
+            <div class="settings-core-card"><div><i class='bx bx-check-shield'></i><b>الأقسام الأربعة الأساسية مفعّلة تلقائيًا</b><span>حقن الكابينة · حقن الباب · الفاكيوم · المواسير</span></div><small>لا يمكن حذفها من هذه الشاشة.</small></div>
+            <div class="card settings-form-card"><h4 class="card-title"><i class='bx bx-plus-circle'></i> إضافة قسم مساند</h4><p>مثال: المخازن أو الجودة. سيظهر بعد الحفظ في قوائم التشغيل، ولا يزيل أي قسم قائم.</p><div class="settings-inline-form"><div class="form-group"><label for="newDeptInput">اسم القسم المساند</label><input type="text" id="newDeptInput" class="form-control" placeholder="اكتب اسم القسم الجديد"></div><button class="btn btn-primary" onclick="addOrUpdateDept()"><i class='bx bx-plus'></i> إضافة القسم</button></div><div id="managedDeptsList" class="settings-managed-list"></div></div>
+            <div class="settings-control-map"><article><i class='bx bx-clipboard'></i><b>المراجعات</b><span>تستخدم القسم عند بدء المراجعة وتحفظ سجله.</span></article><article><i class='bx bx-purchase-tag-alt'></i><b>التاجات</b><span>القسم مطلوب لتوجيه البلاغ والتحليل.</span></article><article><i class='bx bx-bulb'></i><b>الكايزن</b><span>يسند التحسين إلى القسم المسؤول.</span></article><article><i class='bx bx-task'></i><b>المهام</b><span>تنظم التنفيذ والمتابعة حسب القسم.</span></article></div>
+        </section>
 
-        <div id="tab-my-activity" class="settings-tab-content active">
-            <div class="dashboard-stats">
-                <div class="stat-card" style="border-bottom:3px solid var(--gold);"><div class="stat-value warning-text" id="myAudits">0</div><div class="stat-label">مراجعاتي</div></div>
-                <div class="stat-card" style="border-bottom:3px solid var(--danger);"><div class="stat-value danger-text" id="myTags">0</div><div class="stat-label">تاجاتي</div></div>
-                <div class="stat-card" style="border-bottom:3px solid var(--success);"><div class="stat-value success-text" id="myKaizens">0</div><div class="stat-label">كايزن</div></div>
-            </div>
-            <button class="btn btn-outline full-width" onclick="toggleDarkMode()"><i class='bx bx-moon'></i> تفعيل وضع النهار / الليل</button>
-        </div>
+        <section id="tab-assignments" class="settings-tab-content" style="display:none;">
+            <div class="settings-section-title"><div><span class="eyebrow">المسؤولية والمتابعة</span><h3>الإسناد والتنبيهات</h3><p>أضف مسؤولي الصيانة ليظهروا في نموذج التاج والمهام. تبقى رسائل WhatsApp متوقفة حتى يتم تجهيز الخادم.</p></div></div>
+            <div class="card settings-form-card"><h4 class="card-title"><i class='bx bx-hard-hat'></i> مسؤولو الصيانة</h4><div class="settings-inline-form settings-engineer-form"><div class="form-group"><label for="newEngName">اسم المسؤول أو المهندس</label><input type="text" id="newEngName" class="form-control" placeholder="مثال: أحمد محمد"></div><div class="form-group"><label for="newEngPhone">رقم الهاتف</label><input type="tel" id="newEngPhone" class="form-control" placeholder="مثال: 2010xxxxxxx"></div><button class="btn btn-primary" onclick="addEngineer()"><i class='bx bx-plus'></i> إضافة</button></div><div id="managedEngsList" class="settings-managed-list"></div></div>
+            <div class="settings-notification-state"><div><span class="eyebrow"><i class='bx bxl-whatsapp'></i> WhatsApp Cloud API</span><h4>الإرسال مؤجل حاليًا</h4><p>لا تُحفظ مفاتيح Meta هنا ولا يرسل التطبيق رسائل حتى يتم تجهيز المتغيرات على الخادم.</p></div><span id="whatsappConnectionBadge" class="integration-badge">غير مهيأ على الخادم</span></div>
+            <div class="card settings-form-card"><h4 class="card-title"><i class='bx bx-bell'></i> قواعد الإرسال عند التفعيل</h4><label class="setting-toggle"><input type="checkbox" id="notifyOnTagAssigned" checked> <span>عند إسناد تاج لمسؤول أو مهندس</span></label><label class="setting-toggle"><input type="checkbox" id="notifyOnCriticalTag" checked> <span>عند تسجيل تاج حرج</span></label><label class="setting-toggle"><input type="checkbox" id="notifyOnTagEscalation" checked> <span>عند تأخر التاج أو تصعيده</span></label><button class="btn btn-outline full-width" onclick="saveNotificationSettings()"><i class='bx bx-save'></i> حفظ قواعد الإرسال المستقبلية</button></div>
+        </section>
 
-        <div id="tab-factory-manage" class="settings-tab-content" style="display:none;">
-            <div class="card"><h4 class="card-title"><i class='bx bx-layer'></i> إدارة الأقسام</h4><div class="row-flex"><input type="text" id="newDeptInput" class="form-control flex-2" style="margin:0;" placeholder="قسم جديد"><button class="btn btn-primary flex-1" onclick="addOrUpdateDept()">إضافة</button></div><div id="managedDeptsList" style="margin-top:15px; max-height:200px; overflow-y:auto;"></div></div>
-            <div class="card"><h4 class="card-title"><i class='bx bx-group'></i> فريق الصيانة</h4><div class="row-flex"><input type="text" id="newEngName" class="form-control flex-1" style="margin:0;" placeholder="الاسم"><input type="tel" id="newEngPhone" class="form-control flex-1" style="margin:0;" placeholder="رقم الموبايل"><button class="btn btn-warning" onclick="addEngineer()"><i class='bx bx-plus'></i></button></div><div id="managedEngsList" style="margin-top:15px; max-height:200px; overflow-y:auto;"></div></div>
-        </div>
+        <section id="tab-governance" class="settings-tab-content" style="display:none;">
+            <div class="settings-section-title"><div><span class="eyebrow">الحوكمة</span><h3>المستخدمون والبيانات</h3><p>تحكم في صلاحيات الحسابات، وصدّر السجلات من دون عرض مفاتيح أو إعدادات سرية في المتصفح.</p></div></div>
+            <div class="card settings-form-card"><h4 class="card-title"><i class='bx bx-user-check'></i> إدارة المستخدمين والصلاحيات</h4><p>وافق على الحسابات الجديدة وحدد دور كل مستخدم وفق احتياج التشغيل.</p><div id="usersListContainer"></div></div>
+            <div class="settings-export-card"><div><i class='bx bx-data'></i><b>تصدير بيانات التشغيل</b><span>حمّل نسخة Excel من سجلات التطبيق للمراجعة أو الأرشفة.</span></div><button class="btn btn-success" onclick="exportToCSV()"><i class='bx bx-export'></i> تصدير Excel</button></div>
+        </section>
 
-        <div id="tab-notifications-admin" class="settings-tab-content" style="display:none;">
-            <div class="settings-hero-card whatsapp-settings-card">
-                <div><span class="eyebrow"><i class='bx bxl-whatsapp'></i> Meta Cloud API</span><h3>قواعد إشعارات WhatsApp</h3><p>تُرسل من الخادم فقط عند تعيين تاج أو تصعيده. لا يتم حفظ أي مفتاح أو رمز وصول هنا.</p></div>
-                <span id="whatsappConnectionBadge" class="integration-badge">غير مهيأ على الخادم</span>
-            </div>
-            <div class="card"><h4 class="card-title"><i class='bx bx-bell'></i> أحداث الإرسال</h4><label class="setting-toggle"><input type="checkbox" id="notifyOnTagAssigned" checked> <span>إرسال عند تعيين تاج لمهندس</span></label><label class="setting-toggle"><input type="checkbox" id="notifyOnCriticalTag" checked> <span>إرسال عند إصدار تاج حرج</span></label><label class="setting-toggle"><input type="checkbox" id="notifyOnTagEscalation" checked> <span>إرسال عند تأخر التاج أو تصعيده</span></label><button class="btn btn-success full-width" onclick="saveNotificationSettings()"><i class='bx bx-save'></i> حفظ قواعد الإشعار</button></div>
-            <div class="card"><h4 class="card-title"><i class='bx bx-shield-quarter'></i> قبل التفعيل</h4><p class="setting-help">أضف لاحقًا متغيرات Meta إلى Vercel: <code>WHATSAPP_ACCESS_TOKEN</code> و<code>WHATSAPP_PHONE_NUMBER_ID</code> و<code>WHATSAPP_TEMPLATE_NAME</code>. يجب اعتماد قالب الرسالة في Meta قبل استخدام الإرسال الفعلي.</p></div>
-        </div>
-
-        <div id="tab-system-admin" class="settings-tab-content" style="display:none;">
-            <div class="card"><h4 class="card-title danger-text"><i class='bx bx-key'></i> مفاتيح API (عالية الخطورة)</h4><input type="password" id="imgbbKeyInput" class="form-control" placeholder="ImgBB Key"><input type="password" id="geminiKeyInput" class="form-control" placeholder="Gemini Key"><div class="row-flex"><button class="btn btn-primary flex-2" onclick="saveApiKeys()">حفظ وتشفير</button><button class="btn btn-outline flex-1" onclick="enableApiKeysEdit()">تعديل</button></div></div>
-            <div class="card"><h4 class="card-title"><i class='bx bx-user-check'></i> إدارة المستخدمين</h4><div id="usersListContainer"></div></div>
-            <button class="btn btn-success full-width" style="padding:15px; font-size:15px;" onclick="exportToCSV()"><i class='bx bx-export'></i> تصدير قاعدة البيانات (Excel)</button>
-        </div>
-
-        <button class="btn btn-danger full-width" style="margin-top:30px; padding: 16px; font-size:15px;" onclick="logout()"><i class='bx bx-power-off'></i> تسجيل الخروج النهائي</button>
+        <button class="btn btn-danger full-width" style="margin-top:30px; padding:16px; font-size:15px;" onclick="logout()"><i class='bx bx-power-off'></i> تسجيل الخروج</button>
     </div>
 
     <div class="container screen" id="profileDetailsScreen">

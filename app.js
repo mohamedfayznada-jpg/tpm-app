@@ -9,7 +9,7 @@ const auth = firebase.auth();
 // 🛡️ المتغيرات العالمية المحصنة (كاملة)
 let tpmSystemRef = null, tpmSystemListener = null;
 let globalApiKeys = { imgbb: "", gemini: "" };
-let departments = [], historyData = [], tasksData = [], usersData = {}, logsData = [], likesData = {}, tagsData = [], kaizenComments = {}, userPoints = {}, knowledgeBaseData = [], deptPhones = {}, maintenanceEngineers = [], teamProgressData = {}, notificationSettings = { onTagAssigned: true, onCriticalTag: true, onTagEscalation: true }; let knowledgeActiveFilter = 'all';
+let departments = [], historyData = [], tasksData = [], usersData = {}, logsData = [], likesData = {}, tagsData = [], kaizenComments = {}, userPoints = {}, knowledgeBaseData = [], deptPhones = {}, maintenanceEngineers = [], notificationSettings = { onTagAssigned: true, onCriticalTag: true, onTagEscalation: true }; let knowledgeActiveFilter = 'all';
 let currentUser = { name: '', username: '', role: '', status: '' };
 let currentAudit = null, isOnline = true, isDataLoaded = false, isInitialLoad = true;
 let radarChartInstance = null, trendChartInstance = null, currentViewedDept = null;
@@ -21,6 +21,17 @@ let jhMiniChartInstance = null;
 let deptGoalsData = {};
 let currentJHDept = null; 
 let registeredLosses = [];
+
+// الأقسام التشغيلية الأساسية: تظهر دائمًا في المراجعات والتاجات والكايزنات والمهام، ولا تحذف الأقسام المحفوظة الأخرى.
+const CORE_OPERATIONAL_DEPARTMENTS = Object.freeze(['حقن الكابينة', 'حقن الباب', 'الفاكيوم', 'المواسير']);
+window.getOperationalDepartments = function(source = departments) {
+    const stored = Array.isArray(source) ? source : Object.values(source || {});
+    const normalized = stored.map(item => String(item || '').trim()).filter(Boolean);
+    return [...CORE_OPERATIONAL_DEPARTMENTS, ...normalized.filter(item => !CORE_OPERATIONAL_DEPARTMENTS.includes(item))]
+        .filter((item, index, list) => list.indexOf(item) === index);
+};
+window.isCoreOperationalDepartment = function(dept) { return CORE_OPERATIONAL_DEPARTMENTS.includes(dept); };
+window.encodeTPMArgument = function(value) { return encodeURIComponent(String(value ?? '')); };
 
 // ==========================================
 // 🛠️ دوال النظام الأساسية (Core Utilities)
@@ -37,6 +48,7 @@ window.showScreen = function(screenId) {
     const target = document.getElementById(screenId);
     if(target) { target.classList.add('active'); target.style.display = 'block'; }
     if(screenId === 'tpmTeamsScreen' && typeof window.renderTPMTeams === 'function') window.renderTPMTeams();
+    if(screenId === 'settingsScreen' && typeof window.renderSettingsControlLists === 'function') window.renderSettingsControlLists();
     window.scrollTo({top: 0, behavior: 'smooth'});
 };
 
@@ -156,7 +168,7 @@ firebase.auth().onAuthStateChanged(async user => {
         if (mainHeader) mainHeader.style.display = 'flex';
 
         const dSnap = await db.ref('tpm_system/departments').once('value');
-        departments = dSnap.val() || ['إنتاج', 'صيانة'];
+        departments = window.getOperationalDepartments(dSnap.val() || []);
 
         const uSnap = await db.ref('tpm_system/users').once('value');
         usersData = uSnap.val() || {};
@@ -246,11 +258,6 @@ firebase.auth().onAuthStateChanged(async user => {
         dbListeners.engineers = db.ref('tpm_system/maintenanceEngineers').on('value', snap => {
             maintenanceEngineers = snap.val() ? Object.values(snap.val()) : [];
             if(window.updateOperationalSelects) window.updateOperationalSelects();
-        });
-
-        dbListeners.teamProgress = db.ref('tpm_system/team_activity_progress').on('value', snap => {
-            teamProgressData = snap.val() || {};
-            if(document.getElementById('tpmTeamsScreen')?.classList.contains('active') && window.renderTPMTeams) window.renderTPMTeams();
         });
 
         if (currentUser.role === 'admin') {
@@ -426,11 +433,12 @@ window.savePersonalData = async function() {
     currentUser.name = newName; localStorage.setItem('tpm_user', newName); showToast('تم التحديث ✅'); window.openMyFullProfile();
 };
 
-window.switchSettingsTab = function(tabId) {
-    document.querySelectorAll('.settings-tab-content').forEach(c => { c.classList.remove('active'); c.style.display = 'none'; });
-    document.querySelectorAll('#settingsScreen .row-flex .btn').forEach(b => { b.classList.remove('active'); b.style.background='transparent'; b.style.color='var(--text-main)'; });
+window.switchSettingsTab = function(tabId, button) {
+    document.querySelectorAll('.settings-tab-content').forEach(content => { content.classList.remove('active'); content.style.display = 'none'; });
+    document.querySelectorAll('#settingsScreen .settings-navigation .btn').forEach(item => item.classList.remove('active'));
     const targetTab = document.getElementById('tab-' + tabId); if(targetTab) { targetTab.classList.add('active'); targetTab.style.display = 'block'; }
-    const clickedBtn = event.currentTarget; if(clickedBtn) { clickedBtn.classList.add('active'); clickedBtn.style.background='var(--primary)'; clickedBtn.style.color='white'; }
+    if(button) button.classList.add('active');
+    window.renderSettingsControlLists?.();
 };
 
 // ==========================================
@@ -1310,18 +1318,65 @@ window.deleteKnowledgeBook = async function(id) {
 };
 
 window.updateDeptDropdown = function() {
-    const opts = departments.map(d=>`<option value="${d}">${d}</option>`).join('');
-    document.querySelectorAll('select').forEach(s => { if(s.id.includes('Dept')) s.innerHTML = opts; });
+    departments = window.getOperationalDepartments(departments);
+    const options = departments.map(dept => `<option value="${window.escapeTPM(dept)}">${window.escapeTPM(dept)}</option>`).join('');
+    document.querySelectorAll('select').forEach(select => {
+        if (!select.id.includes('Dept')) return;
+        const previous = select.value;
+        const supportsAll = /filter|Global/.test(select.id);
+        const requiresChoice = select.id === 'newTagDept';
+        const prefix = supportsAll ? '<option value="الكل">كل الأقسام</option>' : (requiresChoice ? '<option value="" disabled>اختر القسم التشغيلي</option>' : '');
+        select.innerHTML = prefix + options;
+        if ([...select.options].some(option => option.value === previous)) select.value = previous;
+        else if (requiresChoice) select.value = '';
+    });
     window.updateOperationalSelects?.();
 };
 window.updateOperationalSelects = function() {
-    const teamOptions = (window.TPM_TEAM_CATALOG || []).map(t => `<option value="${t.id}">${t.code} — ${t.name}</option>`).join('');
-    ['newTagTeam', 'newTaskTeam'].forEach(id => { const el = document.getElementById(id); if(el) { const placeholder = id === 'newTagTeam' ? 'مسار TPM (اختياري)' : 'فريق TPM (اختياري)'; el.innerHTML = `<option value="">${placeholder}</option>${teamOptions}`; } });
-    const engineerOptions = maintenanceEngineers.map(e => `<option value="${e.name}" data-phone="${e.phone || ''}">${e.name}</option>`).join('');
-    ['newTagEngineer', 'newTaskAssignee'].forEach(id => { const el = document.getElementById(id); if(el) { const placeholder = id === 'newTagEngineer' ? 'إبلاغ مهندس الصيانة (اختياري)' : 'مسؤول التنفيذ'; el.innerHTML = `<option value="">${placeholder}</option>${engineerOptions}`; } });
+    const teamOptions = (window.TPM_TEAM_HUB || window.TPM_TEAM_CATALOG || []).map(team => `<option value="${team.id}">${team.code} — ${window.escapeTPM(team.name)}</option>`).join('');
+    ['newTagTeam', 'newTaskTeam'].forEach(id => { const el = document.getElementById(id); if(el) { const previous = el.value; const placeholder = id === 'newTagTeam' ? 'لا يوجد فريق مرتبط' : 'فريق TPM (اختياري)'; el.innerHTML = `<option value="">${placeholder}</option>${teamOptions}`; if ([...el.options].some(option => option.value === previous)) el.value = previous; } });
+    const engineerOptions = maintenanceEngineers.map(engineer => `<option value="${window.escapeTPM(engineer.name)}" data-phone="${window.escapeTPM(engineer.phone || '')}">${window.escapeTPM(engineer.name)}</option>`).join('');
+    ['newTagEngineer', 'newTaskAssignee'].forEach(id => { const el = document.getElementById(id); if(el) { const previous = el.value; const placeholder = id === 'newTagEngineer' ? 'غير مُسند الآن' : 'مسؤول التنفيذ'; el.innerHTML = `<option value="">${placeholder}</option>${engineerOptions}`; if ([...el.options].some(option => option.value === previous)) el.value = previous; } });
 };
-window.addOrUpdateDept = function() { let v = document.getElementById('newDeptInput').value; if(v){ departments.push(v); window.syncRecord('departments', departments); window.updateDeptDropdown(); showToast('تم الحفظ'); } };
-window.addEngineer = function() { let n=document.getElementById('newEngName').value, p=document.getElementById('newEngPhone').value; if(n&&p) { maintenanceEngineers.push({name:n, phone:p}); window.syncRecord('maintenanceEngineers', maintenanceEngineers); window.updateOperationalSelects(); document.getElementById('newEngName').value=''; document.getElementById('newEngPhone').value=''; showToast('تمت إضافة المهندس وتحديث قوائم الإسناد'); } };
+window.addOrUpdateDept = function() {
+    if (!window.hasRole('admin')) return showToast('⚠️ إدارة الأقسام متاحة للمدير فقط');
+    const input = document.getElementById('newDeptInput'); const value = String(input?.value || '').trim();
+    if (!value) return showToast('⚠️ اكتب اسم القسم المساند أولًا');
+    departments = window.getOperationalDepartments([...departments, value]);
+    window.syncRecord('departments', departments); window.updateDeptDropdown(); window.renderSettingsControlLists?.();
+    if (input) input.value = ''; showToast('تم حفظ القسم وإتاحته في كل نماذج التشغيل');
+};
+window.addEngineer = function() {
+    if (!window.hasRole('admin')) return showToast('⚠️ إدارة الإسناد متاحة للمدير فقط');
+    const nameInput = document.getElementById('newEngName'); const phoneInput = document.getElementById('newEngPhone');
+    const name = String(nameInput?.value || '').trim(); const phone = String(phoneInput?.value || '').trim();
+    if (!name || !phone) return showToast('⚠️ اكتب الاسم ورقم الهاتف لإضافة المسؤول');
+    if (maintenanceEngineers.some(engineer => engineer.name === name)) return showToast('⚠️ هذا المسؤول موجود بالفعل في قائمة الإسناد');
+    maintenanceEngineers.push({ name, phone }); window.syncRecord('maintenanceEngineers', maintenanceEngineers); window.updateOperationalSelects(); window.renderSettingsControlLists?.();
+    nameInput.value = ''; phoneInput.value = ''; showToast('تمت إضافة المسؤول وتحديث قوائم الإسناد');
+};
+window.removeSupportDepartment = function(dept) {
+    if (!window.hasRole('admin')) return showToast('⚠️ إدارة الأقسام متاحة للمدير فقط');
+    if (window.isCoreOperationalDepartment(dept)) return showToast('⚠️ لا يمكن إزالة قسم تشغيلي أساسي');
+    if (!confirm(`إزالة «${dept}» من قائمة الأقسام المساندة؟ لن تتأثر السجلات القديمة المرتبطة به.`)) return;
+    departments = window.getOperationalDepartments(departments.filter(item => item !== dept));
+    window.syncRecord('departments', departments); window.updateDeptDropdown(); window.renderSettingsControlLists?.(); showToast('تمت إزالة القسم من قوائم الإدخال الجديدة');
+};
+window.removeEngineer = function(name) {
+    if (!window.hasRole('admin')) return showToast('⚠️ إدارة الإسناد متاحة للمدير فقط');
+    if (!confirm(`إزالة «${name}» من قائمة الإسناد؟ لن تتأثر التاجات أو المهام القديمة.`)) return;
+    maintenanceEngineers = maintenanceEngineers.filter(engineer => engineer.name !== name);
+    window.syncRecord('maintenanceEngineers', maintenanceEngineers); window.updateOperationalSelects(); window.renderSettingsControlLists?.(); showToast('تمت إزالة المسؤول من قائمة الإسناد الجديدة');
+};
+window.renderSettingsControlLists = function() {
+    const departmentList = document.getElementById('managedDeptsList');
+    if (departmentList) {
+        const support = window.getOperationalDepartments(departments).filter(dept => !window.isCoreOperationalDepartment(dept));
+        departmentList.innerHTML = support.length ? support.map(dept => `<div class="settings-list-row"><span><i class='bx bx-layer'></i>${window.escapeTPM(dept)}</span><button class="btn btn-sm btn-outline" onclick="removeSupportDepartment(decodeURIComponent('${window.encodeTPMArgument(dept)}'))"><i class='bx bx-x'></i> إزالة</button></div>`).join('') : '<p class="settings-empty-state">لا توجد أقسام مساندة مضافة. الأقسام الأساسية الأربعة تعمل تلقائيًا.</p>';
+    }
+    const engineerList = document.getElementById('managedEngsList');
+    if (engineerList) engineerList.innerHTML = maintenanceEngineers.length ? maintenanceEngineers.map(engineer => `<div class="settings-list-row"><span><i class='bx bx-user'></i><b>${window.escapeTPM(engineer.name)}</b><small>${window.escapeTPM(engineer.phone || 'بدون رقم')}</small></span><button class="btn btn-sm btn-outline" onclick="removeEngineer(decodeURIComponent('${window.encodeTPMArgument(engineer.name)}'))"><i class='bx bx-x'></i> إزالة</button></div>`).join('') : '<p class="settings-empty-state">أضف مسؤولين ليظهروا عند إسناد التاجات والمهام.</p>';
+};
 
 // ==========================================
 // 📉 محرك التحسين المستمر وشجرة الفواقد (KK Engine)
@@ -1959,7 +2014,7 @@ window.formatTPMDate = function(value) {
     return Number.isNaN(date.getTime()) ? window.escapeTPM(value) : date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
 };
 window.getTeamLabel = function(teamId) {
-    const team = (window.TPM_TEAM_CATALOG || []).find(item => item.id === teamId);
+    const team = (window.TPM_TEAM_HUB || window.TPM_TEAM_CATALOG || []).find(item => item.id === teamId);
     return team ? `${team.code} — ${team.name}` : 'مسار عام';
 };
 window.getPriorityMeta = function(priority) {
@@ -1975,86 +2030,6 @@ window.isOverdue = function(item) {
 };
 window.getEngineer = function(name) {
     return maintenanceEngineers.find(engineer => engineer.name === name) || null;
-};
-
-// ---------- فرق TPM ----------
-window.renderTPMTeams = function() {
-    const grid = document.getElementById('tpmTeamsGrid');
-    const kpis = document.getElementById('tpmTeamKpis');
-    if (!grid || !window.TPM_TEAM_CATALOG) return;
-
-    const catalog = window.TPM_TEAM_CATALOG;
-    const totalActivities = catalog.reduce((sum, team) => sum + team.activities.length, 0);
-    const completedActivities = catalog.reduce((sum, team) => sum + team.activities.filter(activity => teamProgressData?.[team.id]?.[activity.id]?.status === 'done').length, 0);
-    const linkedTasks = tasksData.filter(task => task.team && task.status !== 'done').length;
-    const linkedTags = tagsData.filter(tag => tag.team && tag.status !== 'closed').length;
-    if (kpis) kpis.innerHTML = `
-        <div class="tpm-kpi-chip"><i class='bx bx-grid-alt'></i><span><b>${catalog.length}</b> فرق تشغيلية</span></div>
-        <div class="tpm-kpi-chip"><i class='bx bx-check-shield'></i><span><b>${completedActivities}/${totalActivities}</b> أنشطة معتمدة</span></div>
-        <div class="tpm-kpi-chip"><i class='bx bx-task'></i><span><b>${linkedTasks}</b> مهام مرتبطة</span></div>
-        <div class="tpm-kpi-chip"><i class='bx bx-purchase-tag-alt'></i><span><b>${linkedTags}</b> تاجات مرتبطة</span></div>`;
-
-    grid.innerHTML = catalog.map(team => {
-        const progressMap = teamProgressData?.[team.id] || {};
-        const done = team.activities.filter(activity => progressMap[activity.id]?.status === 'done').length;
-        const inProgress = team.activities.filter(activity => progressMap[activity.id]?.status === 'progress').length;
-        const openTasks = tasksData.filter(task => task.team === team.id && task.status !== 'done').length;
-        const pct = team.activities.length ? Math.round((done / team.activities.length) * 100) : 0;
-        return `<article class="tpm-team-card" style="--team-color:${team.color}" onclick="showTPMTeam('${team.id}')">
-            <div class="team-card-top"><div class="team-icon"><i class='bx ${team.icon}'></i></div><span class="team-code">${team.code}</span></div>
-            <h3>${team.name}</h3><p>${team.purpose}</p>
-            <div class="team-progress-track"><span style="width:${pct}%"></span></div>
-            <div class="team-card-metrics"><span><b>${done}/${team.activities.length}</b> معتمد</span><span><b>${inProgress}</b> قيد التنفيذ</span><span><b>${openTasks}</b> مهمة</span></div>
-            <button class="team-explore-btn">استكشاف المسار <i class='bx bx-left-arrow-alt'></i></button>
-        </article>`;
-    }).join('');
-};
-
-window.showTPMTeam = function(teamId) {
-    const team = (window.TPM_TEAM_CATALOG || []).find(item => item.id === teamId);
-    const detail = document.getElementById('tpmTeamDetail');
-    if (!team || !detail) return;
-    const canManage = window.hasRole('admin', 'auditor');
-    const teamProgress = teamProgressData?.[team.id] || {};
-    detail.style.display = 'block';
-    detail.innerHTML = `<div class="team-detail-shell" style="--team-color:${team.color}">
-        <div class="team-detail-header"><div><button class="btn btn-sm btn-outline" onclick="closeTPMTeamDetail()"><i class='bx bx-arrow-back'></i> كل الفرق</button><span class="eyebrow" style="color:${team.color};">${team.code} / فريق TPM</span><h2><i class='bx ${team.icon}'></i> ${team.name}</h2><p>${team.purpose}</p></div><div class="team-owner-card"><span>مالك المسار</span><b>${team.ownerRole}</b></div></div>
-        <div class="team-indicators"><div><span>مؤشرات المتابعة</span>${team.kpis.map(kpi => `<b>${kpi}</b>`).join('')}</div><div><span>وضع التنفيذ</span><b>${team.activities.filter(activity => teamProgress[activity.id]?.status === 'done').length} من ${team.activities.length} أنشطة معتمدة</b></div></div>
-        <div class="activity-list">${team.activities.map((activity, index) => {
-            const progress = teamProgress[activity.id] || { status: 'not_started' };
-            const statusLabel = progress.status === 'done' ? 'مكتمل ومعتمد' : progress.status === 'progress' ? 'قيد التنفيذ' : 'لم يبدأ';
-            const manageControl = canManage ? `<select class="activity-state-select state-${progress.status}" onchange="setTPMActivityState('${team.id}', '${activity.id}', this.value)"><option value="not_started" ${progress.status === 'not_started' ? 'selected' : ''}>لم يبدأ</option><option value="progress" ${progress.status === 'progress' ? 'selected' : ''}>قيد التنفيذ</option><option value="done" ${progress.status === 'done' ? 'selected' : ''}>مكتمل ومعتمد</option></select>` : `<span class="activity-status state-${progress.status}">${statusLabel}</span>`;
-            return `<article class="tpm-activity-card"><div class="activity-number">${String(index + 1).padStart(2, '0')}</div><div class="activity-content"><div class="activity-title-row"><h4>${activity.title}</h4>${manageControl}</div><p>${activity.brief}</p><div class="activity-meta"><span><i class='bx bx-calendar'></i> ${activity.cadence}</span><span><i class='bx bx-user'></i> ${activity.owner}</span><span><i class='bx bx-check-double'></i> الدليل: ${activity.proof}</span></div><div class="activity-actions"><button class="btn btn-sm btn-outline" onclick="openTPMActivityBrief('${activity.id}')"><i class='bx bx-info-circle'></i> شرح سريع</button>${canManage ? `<button class="btn btn-sm btn-primary" onclick="createTPMTask('${activity.id}')"><i class='bx bx-task'></i> إنشاء مهمة</button>` : ''}</div></div></article>`;
-        }).join('')}</div>
-    </div>`;
-    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
-};
-window.closeTPMTeamDetail = function() { const detail = document.getElementById('tpmTeamDetail'); if(detail) { detail.style.display = 'none'; detail.innerHTML = ''; } };
-window.openTPMTeamSetup = function() { window.showTPMTeam('am'); showToast('اختر نشاطاً ثم أنشئ له مهمة ذات مسؤول وموعد استحقاق'); };
-window.openTPMActivityBrief = function(activityId) {
-    const found = window.getTPMActivity?.(activityId);
-    if (!found) return;
-    const { team, activity } = found;
-    const modal = document.getElementById('aiModal'); const output = document.getElementById('aiModalText');
-    if (!modal || !output) return;
-    output.innerHTML = `<div class="tpm-brief-modal"><span class="eyebrow" style="color:${team.color}">${team.code} — ${team.name}</span><h3>${activity.title}</h3><p>${activity.brief}</p><div class="brief-grid"><div><span>متى ينفذ؟</span><b>${activity.cadence}</b></div><div><span>من المسؤول؟</span><b>${activity.owner}</b></div></div><div class="brief-proof"><i class='bx bx-check-shield'></i><div><span>دليل الإنجاز المقبول</span><b>${activity.proof}</b></div></div><p class="brief-note">هذا الشرح التشغيلي محفوظ داخل التطبيق ويعمل حتى إذا لم تُفعّل خدمة الذكاء الاصطناعي. يمكن استخدام زر «إنشاء مهمة» في المسار لبدء التنفيذ والمتابعة.</p></div>`;
-    modal.style.display = 'flex';
-};
-window.setTPMActivityState = async function(teamId, activityId, status) {
-    if (!window.hasRole('admin', 'auditor')) return showToast('⚠️ يلزم دور مراجع أو مدير لتحديث حالة النشاط');
-    await window.syncRecord(`team_activity_progress/${teamId}/${activityId}`, { status, updatedAt: Date.now(), updatedBy: currentUser.name || 'مستخدم' });
-    showToast(status === 'done' ? 'تم اعتماد النشاط ✅' : 'تم تحديث حالة النشاط');
-};
-window.createTPMTask = async function(activityId) {
-    if (!window.hasRole('admin', 'auditor')) return showToast('⚠️ يلزم دور مراجع أو مدير لإنشاء مهمة تشغيلية');
-    const found = window.getTPMActivity?.(activityId); if (!found) return;
-    const { team, activity } = found;
-    const dept = (currentUser.dept && departments.includes(currentUser.dept)) ? currentUser.dept : departments[0];
-    if (!dept) return showToast('⚠️ أضف قسماً أولاً من الإعدادات');
-    const id = window.uniqueNumericId().toString();
-    const dueDate = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-    await window.syncRecord(`tasks/${id}`, { id, task: `[${team.code}] ${activity.title}`, dept, team: team.id, activityId: activity.id, assignee: '', priority: 'medium', dueDate, status: 'pending', createdAt: Date.now(), createdBy: currentUser.name || 'TPM' });
-    showToast('تم إنشاء المهمة في قسم ' + dept + '؛ حدّد المسؤول والموعد من لوحة المهام');
 };
 
 // ---------- المهام ----------
@@ -2103,6 +2078,7 @@ window.changeTaskStatus = async function(id, status) { const task = tasksData.fi
 window.addNewTag = async function() {
     const desc = window.sanitizeInput(document.getElementById('newTagDesc')?.value || ''); const color = document.getElementById('newTagColor')?.value || 'red'; const dept = document.getElementById('newTagDept')?.value || ''; const machine = window.sanitizeInput(document.getElementById('newTagMachine')?.value || ''); const spareParts = window.sanitizeInput(document.getElementById('newTagSpareParts')?.value || ''); const priority = document.getElementById('newTagPriority')?.value || 'high'; const team = document.getElementById('newTagTeam')?.value || ''; const engineerName = document.getElementById('newTagEngineer')?.value || '';
     if (!desc) return showToast('⚠️ أدخل وصف المشكلة قبل تسجيل التاج');
+    if (!dept) return showToast('⚠️ اختر القسم التشغيلي الذي ظهر فيه التاج');
     let image = null; if (currentTagImg) { showToast('جاري حفظ التاج والصورة…'); image = await uploadImageToStorage(currentTagImg); if (!image) showToast('⚠️ تعذر رفع الصورة؛ سيُحفظ التاج من دونها.'); }
     const engineer = window.getEngineer(engineerName); const id = window.uniqueNumericId().toString();
     const record = { id, desc: spareParts ? `${desc} [قطع مطلوبة: ${spareParts}]` : desc, color, dept, machine, image, priority, team, engineer: engineerName, engineerPhone: engineer?.phone || '', status: 'open', auditor: currentUser.name || '', date: new Date().toLocaleDateString('ar-EG'), timestamp: Date.now(), notification: { requested: Boolean(engineer?.phone), status: engineer?.phone ? 'pending' : 'not_requested' } };
@@ -2160,178 +2136,33 @@ window.saveNotificationSettings = async function() { if (!window.hasRole('admin'
 // إعادة تهيئة عناصر التشغيل بعد اكتمال تحميل الصفحة.
 document.addEventListener('DOMContentLoaded', () => { window.updateOperationalSelects?.(); });
 
-// ===================== TPM Teams Hub =====================
-// This layer deliberately keeps the existing JH, E&T, 5S, KK and PM workspaces intact.
-window.tpmTeamFormations = window.tpmTeamFormations || {};
-
-window.loadTPMTeamFormations = async function() {
-    try {
-        const snap = await db.ref('tpm_system/tpm_team_formations').once('value');
-        window.tpmTeamFormations = snap.val() || {};
-        window.renderAllTPMWorkspaceStructures?.();
-        if (document.getElementById('tpmTeamsScreen')?.classList.contains('active')) window.renderTPMTeams();
-    } catch (error) { console.warn('TPM team formations were not loaded', error); }
+// ===================== TPM Teams Gateway =====================
+// The gateway deliberately lists the six teams and opens each existing workspace without injecting new content.
+window.escapeTPMHub = function(value) {
+    return window.escapeTPM ? window.escapeTPM(String(value ?? '')) : String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 };
-
-window.getTPMHubUsers = function() {
-    return Object.entries(usersData || {})
-        .filter(([, user]) => user && typeof user === 'object' && user.status !== 'pending')
-        .map(([uid, user]) => ({ uid, name: user.name || 'مستخدم بلا اسم', avatar: user.avatar || '', role: user.role || '', dept: user.dept || '' }));
+window.getTPMHubTeam = function(teamId) {
+    return (window.TPM_TEAM_HUB || []).find(team => team.id === teamId) || null;
 };
-
-window.escapeTPMHub = function(value) { return window.escapeTPM ? window.escapeTPM(String(value ?? '')) : String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); };
-window.normalizeTPMAvatarUrl = function(value) {
-    const raw = String(value || '').trim(); if (!raw) return '';
-    try { const url = new URL(raw); return ['https:', 'http:'].includes(url.protocol) ? url.href : ''; } catch (_) { return ''; }
-};
-window.tpmHubAvatar = function(person) {
-    const safeName = window.escapeTPMHub(person?.name || 'غير معيّن');
-    const src = window.normalizeTPMAvatarUrl(person?.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(person?.name || 'TPM')}&background=172554&color=ffffff&bold=true`;
-    return `<img src="${window.escapeTPMHub(src)}" alt="${safeName}" class="tpm-person-avatar">`;
-};
-window.getTPMHubPerson = function(source) {
-    if (!source) return null;
-    if (typeof source === 'object' && !Array.isArray(source)) return { name: source.name || 'عضو غير معيّن', avatar: source.avatar || '' };
-    const user = usersData?.[source];
-    return user ? { name: user.name || 'مستخدم بلا اسم', avatar: user.avatar || '' } : { name: 'عضو غير متاح', avatar: '' };
-};
-window.tpmHubRoster = function(formation, label) {
-    const f = formation || {}; const roles = [
-        ['leader', 'leaderUid', 'قائد'], ['facilitator', 'facilitatorUid', 'مييسر'], ['recorder', 'recorderUid', 'مقرر']
-    ];
-    const tiles = roles.map(([manualKey, legacyKey, role]) => {
-        const person = window.getTPMHubPerson(f[manualKey] || f[legacyKey]);
-        return `<div class="tpm-role-tile ${person ? '' : 'is-empty'}">${window.tpmHubAvatar(person)}<div><small>${role} ${label}</small><b>${window.escapeTPMHub(person?.name || 'غير معيّن')}</b></div></div>`;
-    }).join('');
-    const rawMembers = Array.isArray(f.members) ? f.members : (Array.isArray(f.memberUids) ? f.memberUids : []);
-    const members = rawMembers.map(window.getTPMHubPerson).filter(Boolean);
-    return `<div class="tpm-roster">${tiles}<div class="tpm-member-strip"><span>الأعضاء</span>${members.length ? members.map(person => `<span class="tpm-member-chip">${window.tpmHubAvatar(person)}${window.escapeTPMHub(person.name)}</span>`).join('') : '<em>لم يتم تشكيل الأعضاء بعد</em>'}</div></div>`;
-};
-
-window.getTPMActivity = function(activityId) {
-    for (const team of (window.TPM_TEAM_HUB || [])) for (const section of team.sections || []) {
-        const index = (section.activities || []).findIndex((item, i) => `${section.id}-${i + 1}` === activityId);
-        if (index >= 0) return { team, section, activity: { id: activityId, title: section.activities[index][0], description: section.activities[index][1] } };
-    }
-    return null;
-};
-
 window.renderTPMTeams = function() {
     const teams = window.TPM_TEAM_HUB || [];
-    const grid = document.getElementById('tpmTeamsGrid'); const kpis = document.getElementById('tpmTeamKpis');
+    const grid = document.getElementById('tpmTeamsGrid');
+    const kpis = document.getElementById('tpmTeamKpis');
     if (!grid || !kpis) return;
-    const formations = window.tpmTeamFormations || {};
-    const sectionCount = teams.reduce((sum, team) => sum + team.sections.length, 0);
-    const activityCount = teams.reduce((sum, team) => sum + team.sections.reduce((sectionSum, section) => sectionSum + section.activities.length, 0), 0);
-    const formedTeams = teams.filter(team => formations[team.id]?.team?.leader?.name || formations[team.id]?.team?.leaderUid).length;
-    kpis.innerHTML = `<div class="tpm-kpi-card"><i class='bx bx-group'></i><b>${teams.length}</b><span>فرق TPM</span></div><div class="tpm-kpi-card"><i class='bx bx-category-alt'></i><b>${sectionCount}</b><span>أقسام تشغيلية</span></div><div class="tpm-kpi-card"><i class='bx bx-list-check'></i><b>${activityCount}</b><span>أنشطة قياسية</span></div><div class="tpm-kpi-card"><i class='bx bx-user-check'></i><b>${formedTeams}/${teams.length}</b><span>فرق مشكّلة</span></div>`;
-    grid.innerHTML = teams.map(team => {
-        const formation = formations[team.id]?.team || {}; const formed = formation.leader?.name || formation.leaderUid ? 'مُشكّل' : 'بانتظار التشكيل';
-        const activities = team.sections.reduce((sum, section) => sum + section.activities.length, 0);
-        return `<article class="tpm-team-card" style="--team-color:${team.color}"><div class="tpm-team-card-head"><div class="tpm-team-icon"><i class='bx ${team.icon}'></i></div><span class="tpm-team-code">${team.code}</span></div><h3>${window.escapeTPMHub(team.name)}</h3><p>${window.escapeTPMHub(team.description)}</p><div class="tpm-team-metrics"><span><i class='bx bx-category'></i> ${team.sections.length} أقسام</span><span><i class='bx bx-check-double'></i> ${activities} نشاطًا</span></div><div class="tpm-team-card-footer"><span class="tpm-formation-state ${formation.leader?.name || formation.leaderUid ? 'is-ready' : ''}"><i class='bx bx-user'></i> ${formed}</span><button class="btn btn-sm btn-primary" onclick="openTPMExistingWorkspace('${team.id}')">فتح مساحة الفريق <i class='bx bx-left-arrow-alt'></i></button></div></article>`;
-    }).join('');
-};
 
-window.openTPMTeamDetail = function(teamId) {
-    const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId); const detail = document.getElementById('tpmTeamDetail');
-    if (!team || !detail) return;
-    const formation = (window.tpmTeamFormations || {})[team.id] || {};
-    const sectionCards = team.sections.map(section => {
-        const circle = formation.circles?.[section.id] || {};
-        const activities = section.activities.map((activity, index) => {
-            const activityId = `${section.id}-${index + 1}`; const progress = teamProgressData?.[team.id]?.[activityId]?.status || 'not_started';
-            return `<li class="tpm-activity-row"><div><b>${window.escapeTPMHub(activity[0])}</b><p>${window.escapeTPMHub(activity[1])}</p></div><div class="tpm-activity-actions"><span class="tpm-state-badge ${progress}">${progress === 'done' ? 'مكتمل' : progress === 'progress' ? 'قيد التنفيذ' : 'لم يبدأ'}</span><button class="icon-action" title="شرح النشاط" onclick="openTPMHubActivity('${activityId}')"><i class='bx bx-info-circle'></i></button><button class="icon-action" title="إنشاء مهمة" onclick="createTPMHubTask('${activityId}')"><i class='bx bx-task'></i></button><button class="icon-action" title="تحديث الحالة" onclick="cycleTPMHubActivity('${team.id}','${activityId}','${progress}')"><i class='bx bx-check-circle'></i></button></div></li>`;
-        }).join('');
-        return `<article class="tpm-section-card"><div class="tpm-section-heading"><div><span>قسم الفريق</span><h4>${window.escapeTPMHub(section.title)}</h4><p>${window.escapeTPMHub(section.purpose)}</p></div><button class="btn btn-sm btn-outline btn-role-admin" onclick="openTPMCircleEditor('${team.id}','${section.id}')"><i class='bx bx-group'></i> تشكيل الحلقة</button></div><div class="tpm-circle-box"><div class="tpm-circle-label"><i class='bx bx-dots-horizontal-rounded'></i> الحلقة الداخلية</div>${window.tpmHubRoster(circle, 'الحلقة')}</div><ul class="tpm-activity-list">${activities}</ul></article>`;
-    }).join('');
-    detail.innerHTML = `<div class="tpm-detail-toolbar"><button class="btn btn-sm btn-outline" onclick="closeTPMTeamDetail()"><i class='bx bx-right-arrow-alt'></i> كل الفرق</button>${team.workspace ? `<button class="btn btn-sm btn-primary" onclick="openTPMExistingWorkspace('${team.id}')"><i class='bx bx-window-open'></i> فتح مساحة العمل الأصلية</button>` : ''}</div><header class="tpm-detail-hero" style="--team-color:${team.color}"><div class="tpm-team-icon"><i class='bx ${team.icon}'></i></div><div><span>${team.code}</span><h3>${window.escapeTPMHub(team.name)}</h3><p>${window.escapeTPMHub(team.description)}</p></div></header><section class="tpm-formation-panel"><div class="tpm-panel-title"><div><span>تشكيل الفريق</span><h4>أدوار فريق ${team.code}</h4></div><button class="btn btn-sm btn-primary btn-role-admin" onclick="openTPMTeamEditor('${team.id}')"><i class='bx bx-user-plus'></i> تشكيل الفريق</button></div>${window.tpmHubRoster(formation.team || {}, 'الفريق')}</section><div class="tpm-sections-stack">${sectionCards}</div>`;
-    detail.style.display = 'block'; detail.scrollIntoView({ behavior:'smooth', block:'start' });
+    kpis.innerHTML =         `<div class="tpm-kpi-card"><i class='bx bx-group'></i><b>${teams.length}</b><span>فرق TPM</span></div>         <div class="tpm-kpi-card"><i class='bx bx-window-open'></i><b>5</b><span>مساحات عمل قائمة</span></div>         <div class="tpm-kpi-card"><i class='bx bx-shield-quarter'></i><b>1</b><span>مساحة HSE</span></div>`;
+
+    grid.innerHTML = teams.map(team =>         `<article class="tpm-team-card" style="--team-color:${team.color}" onclick="showTPMTeam('${team.id}')">            <div class="tpm-team-card-head"><div class="tpm-team-icon"><i class='bx ${team.icon}'></i></div><span class="tpm-team-code">${team.code}</span></div>            <h3>${window.escapeTPMHub(team.name)}</h3>            <p>${window.escapeTPMHub(team.description)}</p>            <div class="tpm-team-card-footer"><span class="tpm-formation-state"><i class='bx bx-window-open'></i> مساحة العمل</span><button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); showTPMTeam('${team.id}')">فتح الفريق <i class='bx bx-left-arrow-alt'></i></button></div>        </article>`
+    ).join('');
 };
-// Keep legacy callers compatible while routing every team to its original workspace.
 window.showTPMTeam = function(teamId) {
     return window.openTPMExistingWorkspace(teamId);
 };
-window.closeTPMTeamDetail = function() { const detail = document.getElementById('tpmTeamDetail'); if (detail) { detail.style.display = 'none'; detail.innerHTML = ''; } };
-window.renderTPMWorkspaceStructure = function(teamId) {
-    const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId);
-    const mount = document.getElementById(`tpmWorkspaceStructure-${teamId}`);
-    if (!team || !mount) return;
-    const formation = (window.tpmTeamFormations || {})[team.id] || {};
-    const sections = (team.sections || []).map((section, index) => {
-        const circle = formation.circles?.[section.id] || {};
-        const activities = (section.activities || []).map((activity, activityIndex) => { const activityId = `${section.id}-${activityIndex + 1}`; return `<li><span>${String(activityIndex + 1).padStart(2, '0')}</span><div><b>${window.escapeTPMHub(activity[0])}</b><p>${window.escapeTPMHub(activity[1])}</p></div><button class="btn btn-sm btn-outline tpm-workspace-activity-help" onclick="openTPMHubActivity('${activityId}')"><i class='bx bx-info-circle'></i> شرح النشاط</button></li>`; }).join('');
-        return `<article class="tpm-workspace-section" style="--team-color:${team.color}"><div class="tpm-workspace-section-heading"><div><span>القسم ${String(index + 1).padStart(2, '0')}</span><h3>${window.escapeTPMHub(section.title)}</h3><p>${window.escapeTPMHub(section.purpose)}</p></div><button class="btn btn-sm btn-outline btn-role-admin" onclick="openTPMCircleEditor('${team.id}','${section.id}')"><i class='bx bx-group'></i> تعديل الحلقة</button></div><div class="tpm-circle-box"><div class="tpm-circle-label"><i class='bx bx-dots-horizontal-rounded'></i> فريق القسم — الحلقة</div>${window.tpmHubRoster(circle, 'الحلقة')}</div><details class="tpm-workspace-activities" open><summary><i class='bx bx-list-check'></i> أنشطة القسم القياسية <span>${section.activities.length}</span></summary><ol>${activities}</ol></details></article>`;
-    }).join('');
-    mount.innerHTML = `<section class="tpm-workspace-structure" style="--team-color:${team.color}"><div class="tpm-workspace-hero"><div><span>هيكل فريق ${window.escapeTPMHub(team.code)}</span><h2>${window.escapeTPMHub(team.name)}</h2><p>ابدأ بالتشكيل والحلقات، ثم تابع إلى أدوات وسجلات الفريق الأصلية أدناه.</p></div><button class="btn btn-primary btn-role-admin" onclick="openTPMTeamEditor('${team.id}')"><i class='bx bx-user-plus'></i> تعديل تشكيل الفريق</button></div><div class="tpm-formation-panel"><div class="tpm-panel-title"><div><span>أولًا</span><h4>تشكيل الفريق الرئيسي</h4></div></div>${window.tpmHubRoster(formation.team || {}, 'الفريق')}</div><div class="tpm-workspace-section-stack"><div class="tpm-workspace-section-intro"><span>ثانيًا</span><h3>الأقسام وحلقات العمل</h3><p>يظهر فريق كل قسم قبل أنشطته، ثم يبدأ المحتوى الأصلي للفريق بعد هذه البنية.</p></div>${sections}</div><div class="tpm-original-content-marker"><i class='bx bx-layer'></i> المحتوى الأصلي لمساحة العمل يبدأ من هنا</div></section>`;
-};
-window.renderAllTPMWorkspaceStructures = function() { (window.TPM_TEAM_HUB || []).forEach(team => window.renderTPMWorkspaceStructure(team.id)); };
 window.openTPMExistingWorkspace = function(teamId) {
-    const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId); if (!team?.workspace) return;
-    window.closeTPMTeamDetail();
+    const team = window.getTPMHubTeam(teamId);
+    if (!team || !team.workspace) return showToast('⚠️ مساحة الفريق غير متاحة حاليًا');
     if (team.id === 'jh' && typeof window.showJHPortal === 'function') window.showJHPortal();
     else window.showScreen(team.workspace);
-    window.renderTPMWorkspaceStructure(team.id);
     if (team.id === 'kk' && typeof window.renderKKDashboard === 'function') window.renderKKDashboard();
 };
-
-window.openTPMHubActivity = function(activityId) {
-    const found = window.getTPMActivity(activityId); if (!found) return;
-    const modal = document.getElementById('aiModal'); const body = document.getElementById('aiModalText'); if (!modal || !body) return;
-    body.innerHTML = `<div class="tpm-activity-explainer"><span>${window.escapeTPMHub(found.team.code)} · ${window.escapeTPMHub(found.section.title)}</span><h3>${window.escapeTPMHub(found.activity.title)}</h3><p>${window.escapeTPMHub(found.activity.description)}</p><p class="brief-note">نفّذ النشاط داخل الحلقة، وثّق الدليل، ثم حدّث حالته من صفحة فرق TPM أو أنشئ له مهمة بمسؤول وموعد.</p></div>`;
-    modal.style.display = 'flex';
-};
-window.cycleTPMHubActivity = async function(teamId, activityId, currentStatus) {
-    if (!window.hasRole('admin', 'auditor')) return showToast('⚠️ يلزم دور مراجع أو مدير لتحديث حالة النشاط');
-    const states = ['not_started','progress','done']; const status = states[(states.indexOf(currentStatus) + 1) % states.length];
-    teamProgressData[teamId] = teamProgressData[teamId] || {}; teamProgressData[teamId][activityId] = { status, updatedAt: Date.now(), updatedBy: currentUser.name || 'مستخدم' };
-    await window.syncRecord(`team_activity_progress/${teamId}/${activityId}`, teamProgressData[teamId][activityId]);
-    window.openTPMTeamDetail(teamId); showToast(status === 'done' ? 'تم اعتماد النشاط ✅' : 'تم تحديث حالة النشاط');
-};
-window.createTPMHubTask = async function(activityId) {
-    if (!window.hasRole('admin', 'auditor')) return showToast('⚠️ يلزم دور مراجع أو مدير لإنشاء مهمة');
-    const found = window.getTPMActivity(activityId); if (!found) return; const dept = (currentUser.dept && departments.includes(currentUser.dept)) ? currentUser.dept : departments[0];
-    if (!dept) return showToast('⚠️ أضف قسماً أولاً من الإعدادات');
-    const id = window.uniqueNumericId().toString(); const dueDate = new Date(Date.now() + 7 * 86400000).toISOString().slice(0,10);
-    await window.syncRecord(`tasks/${id}`, { id, task:`[${found.team.code}] ${found.activity.title}`, dept, team:found.team.id, section:found.section.id, activityId, assignee:'', priority:'medium', dueDate, status:'pending', createdAt:Date.now(), createdBy:currentUser.name || 'TPM' });
-    showToast('تم إنشاء المهمة؛ عيّن المسؤول والموعد من مركز المهام');
-};
-
-window.tpmHubManualPerson = function(prefix) {
-    const name = document.getElementById(`${prefix}NameField`)?.value.trim() || '';
-    const avatar = window.normalizeTPMAvatarUrl(document.getElementById(`${prefix}AvatarField`)?.value) || '';
-    return name ? { name, avatar } : null;
-};
-window.tpmHubManualMembers = function() {
-    return (document.getElementById('tpmMembersField')?.value || '').split('\n').map(line => {
-        const [rawName, ...avatarParts] = line.split('|'); const name = rawName.trim(); const avatar = window.normalizeTPMAvatarUrl(avatarParts.join('|')) || '';
-        return name ? { name, avatar } : null;
-    }).filter(Boolean);
-};
-window.tpmHubFormationPerson = function(formation, key, legacyKey) { return window.getTPMHubPerson(formation?.[key] || formation?.[legacyKey]); };
-window.openTPMTeamEditor = function(teamId) { window.openTPMFormationEditor(teamId, null); };
-window.openTPMCircleEditor = function(teamId, sectionId) { window.openTPMFormationEditor(teamId, sectionId); };
-window.openTPMFormationEditor = function(teamId, sectionId) {
-    if (!window.hasRole('admin')) return showToast('⚠️ تشكيل الفرق والحلقات متاح للمدير فقط');
-    const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId); if (!team) return; const section = sectionId ? team.sections.find(item => item.id === sectionId) : null;
-    const formation = sectionId ? (window.tpmTeamFormations?.[teamId]?.circles?.[sectionId] || {}) : (window.tpmTeamFormations?.[teamId]?.team || {});
-    const title = section ? `تشكيل حلقة: ${section.title}` : `تشكيل فريق: ${team.name}`; const scope = section ? 'الحلقة' : 'الفريق';
-    const leader = window.tpmHubFormationPerson(formation, 'leader', 'leaderUid') || {}; const facilitator = window.tpmHubFormationPerson(formation, 'facilitator', 'facilitatorUid') || {}; const recorder = window.tpmHubFormationPerson(formation, 'recorder', 'recorderUid') || {};
-    const members = (Array.isArray(formation.members) ? formation.members : (formation.memberUids || [])).map(window.getTPMHubPerson).filter(Boolean).map(person => `${person.name}${person.avatar ? ` | ${person.avatar}` : ''}`).join('\n');
-    const roleFields = (prefix, label, person) => `<div class="tpm-editor-person"><h4>${label} ${scope}</h4><label>الاسم<input id="${prefix}NameField" type="text" value="${window.escapeTPMHub(person.name || '')}" placeholder="الاسم الكامل"></label><label>رابط الصورة <input id="${prefix}AvatarField" type="url" value="${window.escapeTPMHub(person.avatar || '')}" placeholder="https://… (اختياري)"></label></div>`;
-    const modal = document.getElementById('aiModal'); const body = document.getElementById('aiModalText'); if (!modal || !body) return;
-    body.innerHTML = `<div class="tpm-formation-editor"><span>${window.escapeTPMHub(team.code)}</span><h3>${window.escapeTPMHub(title)}</h3><p>أدخل الاسم ورابط الصورة يدويًا الآن. هذه البيانات ستكون جاهزة للربط بحسابات المستخدمين لاحقًا دون تغيير هيكل الفريق.</p><div class="tpm-editor-grid">${roleFields('tpmLeader', 'قائد', leader)}${roleFields('tpmFacilitator', 'مييسر', facilitator)}${roleFields('tpmRecorder', 'مقرر', recorder)}<label class="tpm-members-field">أعضاء ${scope}<textarea id="tpmMembersField" rows="5" placeholder="اسم العضو | رابط الصورة (اختياري)&#10;اسم عضو آخر | رابط الصورة">${window.escapeTPMHub(members)}</textarea><small>أضف عضوًا في كل سطر. ضع رابط الصورة بعد الرمز | إذا توفر.</small></label></div><div class="row-flex"><button class="btn btn-success flex-2" onclick="saveTPMFormation('${teamId}','${sectionId || ''}')"><i class='bx bx-save'></i> حفظ التشكيل</button><button class="btn btn-outline flex-1" onclick="document.getElementById('aiModal').style.display='none'">إلغاء</button></div></div>`;
-    modal.style.display = 'flex';
-};
-window.saveTPMFormation = async function(teamId, sectionId) {
-    if (!window.hasRole('admin')) return showToast('⚠️ هذه العملية للمدير فقط');
-    const record = { leader:window.tpmHubManualPerson('tpmLeader'), facilitator:window.tpmHubManualPerson('tpmFacilitator'), recorder:window.tpmHubManualPerson('tpmRecorder'), members:window.tpmHubManualMembers(), updatedAt:Date.now(), updatedBy:currentUser.name || '' };
-    window.tpmTeamFormations = window.tpmTeamFormations || {}; window.tpmTeamFormations[teamId] = window.tpmTeamFormations[teamId] || { team:{}, circles:{} };
-    const path = sectionId ? `tpm_team_formations/${teamId}/circles/${sectionId}` : `tpm_team_formations/${teamId}/team`;
-    if (sectionId) { window.tpmTeamFormations[teamId].circles = window.tpmTeamFormations[teamId].circles || {}; window.tpmTeamFormations[teamId].circles[sectionId] = record; }
-    else window.tpmTeamFormations[teamId].team = record;
-    await window.syncRecord(path, record); document.getElementById('aiModal').style.display = 'none'; window.renderTPMTeams(); window.renderTPMWorkspaceStructure(teamId); showToast('تم حفظ تشكيل ' + (sectionId ? 'الحلقة' : 'الفريق') + ' ✅');
-};
-
-// Load formations independently so existing application data remains untouched.
-setTimeout(() => { if (typeof window.loadTPMTeamFormations === 'function') window.loadTPMTeamFormations(); }, 1200);
-// =================== End TPM Teams Hub ===================
+// =================== End TPM Teams Gateway ===================

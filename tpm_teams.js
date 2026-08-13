@@ -46,7 +46,7 @@ window.TPM_TEAM_HUB = [
     ]
   },
   {
-    id:'hse', code:'HSE', name:'الصحة والسلامة والبيئة', icon:'bx-shield-quarter', color:'#22c55e', workspace:null, isNew:true,
+    id:'hse', code:'HSE', name:'الصحة والسلامة والبيئة', icon:'bx-shield-quarter', color:'#22c55e', workspace:'hseScreen', isNew:true,
     description:'منع الضرر قبل وقوعه عبر مشاركة العاملين وتحديد المخاطر والتحكم فيها والاستجابة المنضبطة.',
     sections:[
       {id:'hse-leadership',title:'قيادة السلامة والمشاركة',purpose:'تثبيت المسؤولية والمشاركة اليومية في بيئة عمل آمنة.',activities:[['سياسة وأهداف HSE','تحديد التزامات وأهداف سلامة قابلة للقياس.'],['اجتماع سلامة الحلقة','مناقشة المخاطر والإجراءات والدروس في موقع العمل.'],['ملاحظة سلوكية إيجابية','تعزيز الممارسة الآمنة وتسجيل فرص التحسين.']]},

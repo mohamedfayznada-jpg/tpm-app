@@ -403,4 +403,42 @@ body:has(#tpmTeamsScreen.active) { background:radial-gradient(760px 560px at 88%
 .tpm-activity-list { padding:0; margin:16px 0 0; list-style:none; border-top:1px solid #e9eef5; }.tpm-activity-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 3px; border-bottom:1px solid #e9eef5; }.tpm-activity-row b { color:#172554; font-size:.89rem; }.tpm-activity-row p { max-width:700px; margin:4px 0 0; color:#64748b; font-size:.78rem; line-height:1.65; }.tpm-activity-actions { display:flex; flex:0 0 auto; align-items:center; gap:6px; }.tpm-state-badge { padding:4px 7px; color:#64748b; border-radius:7px; background:#e8edf5; font-size:.68rem; font-weight:800; white-space:nowrap; }.tpm-state-badge.progress { color:#9a5b00; background:#fff4cc; }.tpm-state-badge.done { color:#087f5b; background:#d9f9e7; }.icon-action { width:30px; height:30px; color:#2b4c92; border:1px solid #dbe4f0; border-radius:9px; background:#fff; cursor:pointer; font-size:15px; }.icon-action:hover { color:#0f2d70; background:#edf4ff; }
 .tpm-formation-editor { color:#172554; }.tpm-formation-editor>span { color:#5b21b6; font-size:.72rem; font-weight:900; }.tpm-formation-editor h3 { margin:4px 0 8px; }.tpm-formation-editor>p { color:#64748b; font-size:.82rem; line-height:1.7; }.tpm-editor-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; margin:16px 0; }.tpm-editor-grid label { display:grid; gap:6px; color:#334155; font-size:.77rem; font-weight:800; }.tpm-editor-grid select { padding:9px; color:#172554; border:1px solid #cfd9e8; border-radius:9px; background:#fff; }.tpm-members-field { grid-column:1/-1; }.tpm-activity-explainer { color:#172554; }.tpm-activity-explainer>span { color:#4f46e5; font-size:.75rem; font-weight:800; }.tpm-activity-explainer h3 { margin:6px 0; }.tpm-activity-explainer p { color:#536075; line-height:1.8; }
 @media (max-width:680px) { .tpm-team-grid { grid-template-columns:1fr; }.tpm-detail-hero { align-items:flex-start; padding:18px; }.tpm-detail-hero h3 { font-size:1.25rem; }.tpm-panel-title,.tpm-section-heading,.tpm-detail-toolbar { flex-direction:column; align-items:stretch; }.tpm-panel-title .btn,.tpm-section-heading .btn { width:100%; }.tpm-roster { grid-template-columns:1fr; }.tpm-activity-row { flex-direction:column; align-items:flex-start; }.tpm-activity-actions { flex-wrap:wrap; width:100%; }.tpm-editor-grid { grid-template-columns:1fr; }.tpm-members-field { grid-column:auto; } }
+/* Manual roster editor for the TPM team and section circles */
+.tpm-editor-person { display:grid; gap:7px; padding:12px; border:1px solid #e1e8f3; border-radius:13px; background:#f8faff; }
+.tpm-editor-person h4 { margin:0 0 2px; color:#172554; font-size:.84rem; }
+.tpm-editor-person label { display:grid; gap:5px; color:#334155; font-size:.74rem; font-weight:800; }
+.tpm-editor-person input, .tpm-members-field textarea { width:100%; box-sizing:border-box; padding:9px; color:#172554; border:1px solid #cfd9e8; border-radius:9px; background:#fff; font:inherit; }
+.tpm-members-field textarea { min-height:108px; resize:vertical; }
+.tpm-members-field small { color:#64748b; font-size:.7rem; font-weight:600; line-height:1.6; }
 /* ================= End TPM Teams Hub ================= */
+
+/* TPM original-workspace structure: team formation, circles, and activity explainers */
+.tpm-workspace-structure { margin:0 0 22px; color:#172554; }
+.tpm-workspace-hero { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:22px; overflow:hidden; border:1px solid color-mix(in srgb,var(--team-color) 28%,#fff); border-radius:22px; background:linear-gradient(135deg,color-mix(in srgb,var(--team-color) 16%,#fff),rgba(255,255,255,.98) 60%); box-shadow:0 15px 30px rgba(30,41,96,.10); }
+.tpm-workspace-hero span,.tpm-workspace-section-heading span,.tpm-workspace-section-intro>span { display:inline-flex; padding:4px 8px; color:var(--team-color); border-radius:999px; background:color-mix(in srgb,var(--team-color) 12%,#fff); font-size:.7rem; font-weight:900; }
+.tpm-workspace-hero h2 { margin:7px 0 5px; color:#162052; font-size:clamp(1.2rem,2.8vw,1.65rem); }
+.tpm-workspace-hero p { max-width:660px; margin:0; color:#52607c; font-size:.84rem; line-height:1.75; }
+.tpm-workspace-structure>.tpm-formation-panel { margin-top:14px; border-top:3px solid var(--team-color); }
+.tpm-workspace-section-stack { display:grid; gap:14px; margin-top:18px; }
+.tpm-workspace-section-intro { padding:15px 17px; border-right:4px solid var(--team-color); border-radius:15px; background:linear-gradient(105deg,color-mix(in srgb,var(--team-color) 10%,#fff),#fff); }
+.tpm-workspace-section-intro h3 { margin:7px 0 3px; color:#1e2857; font-size:1rem; }
+.tpm-workspace-section-intro p { margin:0; color:#5d6884; font-size:.79rem; line-height:1.7; }
+.tpm-workspace-section { padding:18px; border:1px solid color-mix(in srgb,var(--team-color) 19%,#dce4f1); border-radius:19px; background:rgba(255,255,255,.95); box-shadow:0 9px 22px rgba(35,47,104,.07); }
+.tpm-workspace-section-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:13px; }
+.tpm-workspace-section-heading h3 { margin:8px 0 4px; color:#1c2759; font-size:1rem; }
+.tpm-workspace-section-heading p { max-width:680px; margin:0; color:#5e6a85; font-size:.79rem; line-height:1.7; }
+.tpm-workspace-activities { margin-top:15px; overflow:hidden; border:1px solid #e0e7f2; border-radius:14px; background:#fbfcff; }
+.tpm-workspace-activities summary { display:flex; align-items:center; gap:7px; padding:12px 14px; cursor:pointer; color:#283664; font-size:.8rem; font-weight:900; list-style:none; }
+.tpm-workspace-activities summary::-webkit-details-marker { display:none; }
+.tpm-workspace-activities summary:after { content:'⌄'; margin-right:auto; color:var(--team-color); font-size:1rem; transition:transform .2s ease; }
+.tpm-workspace-activities[open] summary:after { transform:rotate(180deg); }
+.tpm-workspace-activities summary>span { display:inline-grid; place-items:center; min-width:20px; height:20px; color:#fff; border-radius:50%; background:var(--team-color); font-size:.67rem; }
+.tpm-workspace-activities ol { display:grid; gap:8px; padding:0 12px 12px; margin:0; list-style:none; }
+.tpm-workspace-activities li { display:grid; grid-template-columns:29px minmax(0,1fr) auto; align-items:center; gap:10px; padding:11px; border:1px solid #e8edf6; border-radius:12px; background:#fff; }
+.tpm-workspace-activities li>span { display:grid; place-items:center; width:29px; height:29px; color:#fff; border-radius:9px; background:var(--team-color); font-size:.65rem; font-weight:900; box-shadow:0 5px 10px color-mix(in srgb,var(--team-color) 23%,transparent); }
+.tpm-workspace-activities li b { display:block; color:#27325f; font-size:.81rem; }
+.tpm-workspace-activities li p { margin:4px 0 0; color:#65718b; font-size:.74rem; line-height:1.55; }
+.tpm-workspace-activity-help { white-space:nowrap; color:var(--team-color)!important; border-color:color-mix(in srgb,var(--team-color) 36%,#d9e1f0)!important; background:color-mix(in srgb,var(--team-color) 6%,#fff)!important; }
+.tpm-original-content-marker { display:flex; align-items:center; gap:7px; margin:17px 6px 0; color:#60708f; font-size:.76rem; font-weight:800; }
+.tpm-original-content-marker i { color:var(--team-color); font-size:1.05rem; }
+@media (max-width:680px) { .tpm-workspace-hero,.tpm-workspace-section-heading { flex-direction:column; align-items:stretch; }.tpm-workspace-hero .btn,.tpm-workspace-section-heading .btn { width:100%; }.tpm-workspace-activities li { grid-template-columns:29px minmax(0,1fr); align-items:start; }.tpm-workspace-activity-help { grid-column:1/-1; width:100%; }.tpm-workspace-activities li>span { margin-top:1px; } }

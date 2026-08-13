@@ -2168,6 +2168,7 @@ window.loadTPMTeamFormations = async function() {
     try {
         const snap = await db.ref('tpm_system/tpm_team_formations').once('value');
         window.tpmTeamFormations = snap.val() || {};
+        window.renderAllTPMWorkspaceStructures?.();
         if (document.getElementById('tpmTeamsScreen')?.classList.contains('active')) window.renderTPMTeams();
     } catch (error) { console.warn('TPM team formations were not loaded', error); }
 };
@@ -2179,25 +2180,31 @@ window.getTPMHubUsers = function() {
 };
 
 window.escapeTPMHub = function(value) { return window.escapeTPM ? window.escapeTPM(String(value ?? '')) : String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); };
+window.normalizeTPMAvatarUrl = function(value) {
+    const raw = String(value || '').trim(); if (!raw) return '';
+    try { const url = new URL(raw); return ['https:', 'http:'].includes(url.protocol) ? url.href : ''; } catch (_) { return ''; }
+};
 window.tpmHubAvatar = function(person) {
     const safeName = window.escapeTPMHub(person?.name || 'غير معيّن');
-    const src = person?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(person?.name || 'TPM')}&background=172554&color=ffffff&bold=true`;
+    const src = window.normalizeTPMAvatarUrl(person?.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(person?.name || 'TPM')}&background=172554&color=ffffff&bold=true`;
     return `<img src="${window.escapeTPMHub(src)}" alt="${safeName}" class="tpm-person-avatar">`;
 };
-window.getTPMHubPerson = function(uid) {
-    if (!uid) return null;
-    const user = usersData?.[uid];
-    return user ? { uid, name: user.name || 'مستخدم بلا اسم', avatar: user.avatar || '' } : { uid, name: 'عضو غير متاح', avatar: '' };
+window.getTPMHubPerson = function(source) {
+    if (!source) return null;
+    if (typeof source === 'object' && !Array.isArray(source)) return { name: source.name || 'عضو غير معيّن', avatar: source.avatar || '' };
+    const user = usersData?.[source];
+    return user ? { name: user.name || 'مستخدم بلا اسم', avatar: user.avatar || '' } : { name: 'عضو غير متاح', avatar: '' };
 };
 window.tpmHubRoster = function(formation, label) {
     const f = formation || {}; const roles = [
-        ['leaderUid', 'قائد'], ['facilitatorUid', 'مييسر'], ['recorderUid', 'مقرر']
+        ['leader', 'leaderUid', 'قائد'], ['facilitator', 'facilitatorUid', 'مييسر'], ['recorder', 'recorderUid', 'مقرر']
     ];
-    const tiles = roles.map(([key, role]) => {
-        const person = window.getTPMHubPerson(f[key]);
+    const tiles = roles.map(([manualKey, legacyKey, role]) => {
+        const person = window.getTPMHubPerson(f[manualKey] || f[legacyKey]);
         return `<div class="tpm-role-tile ${person ? '' : 'is-empty'}">${window.tpmHubAvatar(person)}<div><small>${role} ${label}</small><b>${window.escapeTPMHub(person?.name || 'غير معيّن')}</b></div></div>`;
     }).join('');
-    const members = Array.isArray(f.memberUids) ? f.memberUids.map(window.getTPMHubPerson).filter(Boolean) : [];
+    const rawMembers = Array.isArray(f.members) ? f.members : (Array.isArray(f.memberUids) ? f.memberUids : []);
+    const members = rawMembers.map(window.getTPMHubPerson).filter(Boolean);
     return `<div class="tpm-roster">${tiles}<div class="tpm-member-strip"><span>الأعضاء</span>${members.length ? members.map(person => `<span class="tpm-member-chip">${window.tpmHubAvatar(person)}${window.escapeTPMHub(person.name)}</span>`).join('') : '<em>لم يتم تشكيل الأعضاء بعد</em>'}</div></div>`;
 };
 
@@ -2216,12 +2223,12 @@ window.renderTPMTeams = function() {
     const formations = window.tpmTeamFormations || {};
     const sectionCount = teams.reduce((sum, team) => sum + team.sections.length, 0);
     const activityCount = teams.reduce((sum, team) => sum + team.sections.reduce((sectionSum, section) => sectionSum + section.activities.length, 0), 0);
-    const formedTeams = teams.filter(team => formations[team.id]?.team?.leaderUid).length;
+    const formedTeams = teams.filter(team => formations[team.id]?.team?.leader?.name || formations[team.id]?.team?.leaderUid).length;
     kpis.innerHTML = `<div class="tpm-kpi-card"><i class='bx bx-group'></i><b>${teams.length}</b><span>فرق TPM</span></div><div class="tpm-kpi-card"><i class='bx bx-category-alt'></i><b>${sectionCount}</b><span>أقسام تشغيلية</span></div><div class="tpm-kpi-card"><i class='bx bx-list-check'></i><b>${activityCount}</b><span>أنشطة قياسية</span></div><div class="tpm-kpi-card"><i class='bx bx-user-check'></i><b>${formedTeams}/${teams.length}</b><span>فرق مشكّلة</span></div>`;
     grid.innerHTML = teams.map(team => {
-        const formation = formations[team.id]?.team || {}; const formed = formation.leaderUid ? 'مُشكّل' : 'بانتظار التشكيل';
+        const formation = formations[team.id]?.team || {}; const formed = formation.leader?.name || formation.leaderUid ? 'مُشكّل' : 'بانتظار التشكيل';
         const activities = team.sections.reduce((sum, section) => sum + section.activities.length, 0);
-        return `<article class="tpm-team-card" style="--team-color:${team.color}"><div class="tpm-team-card-head"><div class="tpm-team-icon"><i class='bx ${team.icon}'></i></div><span class="tpm-team-code">${team.code}</span></div><h3>${window.escapeTPMHub(team.name)}</h3><p>${window.escapeTPMHub(team.description)}</p><div class="tpm-team-metrics"><span><i class='bx bx-category'></i> ${team.sections.length} أقسام</span><span><i class='bx bx-check-double'></i> ${activities} نشاطًا</span></div><div class="tpm-team-card-footer"><span class="tpm-formation-state ${formation.leaderUid ? 'is-ready' : ''}"><i class='bx bx-user'></i> ${formed}</span><button class="btn btn-sm btn-primary" onclick="openTPMTeamDetail('${team.id}')">فتح الفريق <i class='bx bx-left-arrow-alt'></i></button></div></article>`;
+        return `<article class="tpm-team-card" style="--team-color:${team.color}"><div class="tpm-team-card-head"><div class="tpm-team-icon"><i class='bx ${team.icon}'></i></div><span class="tpm-team-code">${team.code}</span></div><h3>${window.escapeTPMHub(team.name)}</h3><p>${window.escapeTPMHub(team.description)}</p><div class="tpm-team-metrics"><span><i class='bx bx-category'></i> ${team.sections.length} أقسام</span><span><i class='bx bx-check-double'></i> ${activities} نشاطًا</span></div><div class="tpm-team-card-footer"><span class="tpm-formation-state ${formation.leader?.name || formation.leaderUid ? 'is-ready' : ''}"><i class='bx bx-user'></i> ${formed}</span><button class="btn btn-sm btn-primary" onclick="openTPMExistingWorkspace('${team.id}')">فتح مساحة الفريق <i class='bx bx-left-arrow-alt'></i></button></div></article>`;
     }).join('');
 };
 
@@ -2240,15 +2247,30 @@ window.openTPMTeamDetail = function(teamId) {
     detail.innerHTML = `<div class="tpm-detail-toolbar"><button class="btn btn-sm btn-outline" onclick="closeTPMTeamDetail()"><i class='bx bx-right-arrow-alt'></i> كل الفرق</button>${team.workspace ? `<button class="btn btn-sm btn-primary" onclick="openTPMExistingWorkspace('${team.id}')"><i class='bx bx-window-open'></i> فتح مساحة العمل الأصلية</button>` : ''}</div><header class="tpm-detail-hero" style="--team-color:${team.color}"><div class="tpm-team-icon"><i class='bx ${team.icon}'></i></div><div><span>${team.code}</span><h3>${window.escapeTPMHub(team.name)}</h3><p>${window.escapeTPMHub(team.description)}</p></div></header><section class="tpm-formation-panel"><div class="tpm-panel-title"><div><span>تشكيل الفريق</span><h4>أدوار فريق ${team.code}</h4></div><button class="btn btn-sm btn-primary btn-role-admin" onclick="openTPMTeamEditor('${team.id}')"><i class='bx bx-user-plus'></i> تشكيل الفريق</button></div>${window.tpmHubRoster(formation.team || {}, 'الفريق')}</section><div class="tpm-sections-stack">${sectionCards}</div>`;
     detail.style.display = 'block'; detail.scrollIntoView({ behavior:'smooth', block:'start' });
 };
-// This alias replaces the retired operational-teams detail renderer, so every team id opens the unified hub.
+// Keep legacy callers compatible while routing every team to its original workspace.
 window.showTPMTeam = function(teamId) {
-    return window.openTPMTeamDetail(teamId);
+    return window.openTPMExistingWorkspace(teamId);
 };
 window.closeTPMTeamDetail = function() { const detail = document.getElementById('tpmTeamDetail'); if (detail) { detail.style.display = 'none'; detail.innerHTML = ''; } };
+window.renderTPMWorkspaceStructure = function(teamId) {
+    const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId);
+    const mount = document.getElementById(`tpmWorkspaceStructure-${teamId}`);
+    if (!team || !mount) return;
+    const formation = (window.tpmTeamFormations || {})[team.id] || {};
+    const sections = (team.sections || []).map((section, index) => {
+        const circle = formation.circles?.[section.id] || {};
+        const activities = (section.activities || []).map((activity, activityIndex) => { const activityId = `${section.id}-${activityIndex + 1}`; return `<li><span>${String(activityIndex + 1).padStart(2, '0')}</span><div><b>${window.escapeTPMHub(activity[0])}</b><p>${window.escapeTPMHub(activity[1])}</p></div><button class="btn btn-sm btn-outline tpm-workspace-activity-help" onclick="openTPMHubActivity('${activityId}')"><i class='bx bx-info-circle'></i> شرح النشاط</button></li>`; }).join('');
+        return `<article class="tpm-workspace-section" style="--team-color:${team.color}"><div class="tpm-workspace-section-heading"><div><span>القسم ${String(index + 1).padStart(2, '0')}</span><h3>${window.escapeTPMHub(section.title)}</h3><p>${window.escapeTPMHub(section.purpose)}</p></div><button class="btn btn-sm btn-outline btn-role-admin" onclick="openTPMCircleEditor('${team.id}','${section.id}')"><i class='bx bx-group'></i> تعديل الحلقة</button></div><div class="tpm-circle-box"><div class="tpm-circle-label"><i class='bx bx-dots-horizontal-rounded'></i> فريق القسم — الحلقة</div>${window.tpmHubRoster(circle, 'الحلقة')}</div><details class="tpm-workspace-activities" open><summary><i class='bx bx-list-check'></i> أنشطة القسم القياسية <span>${section.activities.length}</span></summary><ol>${activities}</ol></details></article>`;
+    }).join('');
+    mount.innerHTML = `<section class="tpm-workspace-structure" style="--team-color:${team.color}"><div class="tpm-workspace-hero"><div><span>هيكل فريق ${window.escapeTPMHub(team.code)}</span><h2>${window.escapeTPMHub(team.name)}</h2><p>ابدأ بالتشكيل والحلقات، ثم تابع إلى أدوات وسجلات الفريق الأصلية أدناه.</p></div><button class="btn btn-primary btn-role-admin" onclick="openTPMTeamEditor('${team.id}')"><i class='bx bx-user-plus'></i> تعديل تشكيل الفريق</button></div><div class="tpm-formation-panel"><div class="tpm-panel-title"><div><span>أولًا</span><h4>تشكيل الفريق الرئيسي</h4></div></div>${window.tpmHubRoster(formation.team || {}, 'الفريق')}</div><div class="tpm-workspace-section-stack"><div class="tpm-workspace-section-intro"><span>ثانيًا</span><h3>الأقسام وحلقات العمل</h3><p>يظهر فريق كل قسم قبل أنشطته، ثم يبدأ المحتوى الأصلي للفريق بعد هذه البنية.</p></div>${sections}</div><div class="tpm-original-content-marker"><i class='bx bx-layer'></i> المحتوى الأصلي لمساحة العمل يبدأ من هنا</div></section>`;
+};
+window.renderAllTPMWorkspaceStructures = function() { (window.TPM_TEAM_HUB || []).forEach(team => window.renderTPMWorkspaceStructure(team.id)); };
 window.openTPMExistingWorkspace = function(teamId) {
     const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId); if (!team?.workspace) return;
-    if (team.id === 'jh' && typeof window.showJHPortal === 'function') return window.showJHPortal();
-    window.showScreen(team.workspace);
+    window.closeTPMTeamDetail();
+    if (team.id === 'jh' && typeof window.showJHPortal === 'function') window.showJHPortal();
+    else window.showScreen(team.workspace);
+    window.renderTPMWorkspaceStructure(team.id);
     if (team.id === 'kk' && typeof window.renderKKDashboard === 'function') window.renderKKDashboard();
 };
 
@@ -2274,10 +2296,18 @@ window.createTPMHubTask = async function(activityId) {
     showToast('تم إنشاء المهمة؛ عيّن المسؤول والموعد من مركز المهام');
 };
 
-window.tpmHubUserOptions = function(selected, multiple) {
-    const values = multiple ? new Set(selected || []) : new Set([selected || '']);
-    return `<option value="">غير معيّن</option>${window.getTPMHubUsers().map(user => `<option value="${window.escapeTPMHub(user.uid)}" ${values.has(user.uid) ? 'selected' : ''}>${window.escapeTPMHub(user.name)}${user.dept ? ' — ' + window.escapeTPMHub(user.dept) : ''}</option>`).join('')}`;
+window.tpmHubManualPerson = function(prefix) {
+    const name = document.getElementById(`${prefix}NameField`)?.value.trim() || '';
+    const avatar = window.normalizeTPMAvatarUrl(document.getElementById(`${prefix}AvatarField`)?.value) || '';
+    return name ? { name, avatar } : null;
 };
+window.tpmHubManualMembers = function() {
+    return (document.getElementById('tpmMembersField')?.value || '').split('\n').map(line => {
+        const [rawName, ...avatarParts] = line.split('|'); const name = rawName.trim(); const avatar = window.normalizeTPMAvatarUrl(avatarParts.join('|')) || '';
+        return name ? { name, avatar } : null;
+    }).filter(Boolean);
+};
+window.tpmHubFormationPerson = function(formation, key, legacyKey) { return window.getTPMHubPerson(formation?.[key] || formation?.[legacyKey]); };
 window.openTPMTeamEditor = function(teamId) { window.openTPMFormationEditor(teamId, null); };
 window.openTPMCircleEditor = function(teamId, sectionId) { window.openTPMFormationEditor(teamId, sectionId); };
 window.openTPMFormationEditor = function(teamId, sectionId) {
@@ -2285,19 +2315,21 @@ window.openTPMFormationEditor = function(teamId, sectionId) {
     const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId); if (!team) return; const section = sectionId ? team.sections.find(item => item.id === sectionId) : null;
     const formation = sectionId ? (window.tpmTeamFormations?.[teamId]?.circles?.[sectionId] || {}) : (window.tpmTeamFormations?.[teamId]?.team || {});
     const title = section ? `تشكيل حلقة: ${section.title}` : `تشكيل فريق: ${team.name}`; const scope = section ? 'الحلقة' : 'الفريق';
+    const leader = window.tpmHubFormationPerson(formation, 'leader', 'leaderUid') || {}; const facilitator = window.tpmHubFormationPerson(formation, 'facilitator', 'facilitatorUid') || {}; const recorder = window.tpmHubFormationPerson(formation, 'recorder', 'recorderUid') || {};
+    const members = (Array.isArray(formation.members) ? formation.members : (formation.memberUids || [])).map(window.getTPMHubPerson).filter(Boolean).map(person => `${person.name}${person.avatar ? ` | ${person.avatar}` : ''}`).join('\n');
+    const roleFields = (prefix, label, person) => `<div class="tpm-editor-person"><h4>${label} ${scope}</h4><label>الاسم<input id="${prefix}NameField" type="text" value="${window.escapeTPMHub(person.name || '')}" placeholder="الاسم الكامل"></label><label>رابط الصورة <input id="${prefix}AvatarField" type="url" value="${window.escapeTPMHub(person.avatar || '')}" placeholder="https://… (اختياري)"></label></div>`;
     const modal = document.getElementById('aiModal'); const body = document.getElementById('aiModalText'); if (!modal || !body) return;
-    body.innerHTML = `<div class="tpm-formation-editor"><span>${window.escapeTPMHub(team.code)}</span><h3>${window.escapeTPMHub(title)}</h3><p>اختر أعضاء حقيقيين من حسابات التطبيق. لا تُنشأ أسماء أو صور افتراضية في تشكيل الفريق.</p><div class="tpm-editor-grid"><label>قائد ${scope}<select id="tpmLeaderField">${window.tpmHubUserOptions(formation.leaderUid,false)}</select></label><label>مييسر ${scope}<select id="tpmFacilitatorField">${window.tpmHubUserOptions(formation.facilitatorUid,false)}</select></label><label>مقرر ${scope}<select id="tpmRecorderField">${window.tpmHubUserOptions(formation.recorderUid,false)}</select></label><label class="tpm-members-field">أعضاء ${scope}<select id="tpmMembersField" multiple size="5">${window.tpmHubUserOptions(formation.memberUids,true)}</select></label></div><div class="row-flex"><button class="btn btn-success flex-2" onclick="saveTPMFormation('${teamId}','${sectionId || ''}')"><i class='bx bx-save'></i> حفظ التشكيل</button><button class="btn btn-outline flex-1" onclick="document.getElementById('aiModal').style.display='none'">إلغاء</button></div></div>`;
+    body.innerHTML = `<div class="tpm-formation-editor"><span>${window.escapeTPMHub(team.code)}</span><h3>${window.escapeTPMHub(title)}</h3><p>أدخل الاسم ورابط الصورة يدويًا الآن. هذه البيانات ستكون جاهزة للربط بحسابات المستخدمين لاحقًا دون تغيير هيكل الفريق.</p><div class="tpm-editor-grid">${roleFields('tpmLeader', 'قائد', leader)}${roleFields('tpmFacilitator', 'مييسر', facilitator)}${roleFields('tpmRecorder', 'مقرر', recorder)}<label class="tpm-members-field">أعضاء ${scope}<textarea id="tpmMembersField" rows="5" placeholder="اسم العضو | رابط الصورة (اختياري)&#10;اسم عضو آخر | رابط الصورة">${window.escapeTPMHub(members)}</textarea><small>أضف عضوًا في كل سطر. ضع رابط الصورة بعد الرمز | إذا توفر.</small></label></div><div class="row-flex"><button class="btn btn-success flex-2" onclick="saveTPMFormation('${teamId}','${sectionId || ''}')"><i class='bx bx-save'></i> حفظ التشكيل</button><button class="btn btn-outline flex-1" onclick="document.getElementById('aiModal').style.display='none'">إلغاء</button></div></div>`;
     modal.style.display = 'flex';
 };
 window.saveTPMFormation = async function(teamId, sectionId) {
     if (!window.hasRole('admin')) return showToast('⚠️ هذه العملية للمدير فقط');
-    const members = Array.from(document.getElementById('tpmMembersField')?.selectedOptions || []).map(option => option.value).filter(Boolean);
-    const record = { leaderUid:document.getElementById('tpmLeaderField')?.value || '', facilitatorUid:document.getElementById('tpmFacilitatorField')?.value || '', recorderUid:document.getElementById('tpmRecorderField')?.value || '', memberUids:members, updatedAt:Date.now(), updatedBy:currentUser.name || '' };
+    const record = { leader:window.tpmHubManualPerson('tpmLeader'), facilitator:window.tpmHubManualPerson('tpmFacilitator'), recorder:window.tpmHubManualPerson('tpmRecorder'), members:window.tpmHubManualMembers(), updatedAt:Date.now(), updatedBy:currentUser.name || '' };
     window.tpmTeamFormations = window.tpmTeamFormations || {}; window.tpmTeamFormations[teamId] = window.tpmTeamFormations[teamId] || { team:{}, circles:{} };
     const path = sectionId ? `tpm_team_formations/${teamId}/circles/${sectionId}` : `tpm_team_formations/${teamId}/team`;
     if (sectionId) { window.tpmTeamFormations[teamId].circles = window.tpmTeamFormations[teamId].circles || {}; window.tpmTeamFormations[teamId].circles[sectionId] = record; }
     else window.tpmTeamFormations[teamId].team = record;
-    await window.syncRecord(path, record); document.getElementById('aiModal').style.display = 'none'; window.renderTPMTeams(); window.openTPMTeamDetail(teamId); showToast('تم حفظ تشكيل ' + (sectionId ? 'الحلقة' : 'الفريق') + ' ✅');
+    await window.syncRecord(path, record); document.getElementById('aiModal').style.display = 'none'; window.renderTPMTeams(); window.renderTPMWorkspaceStructure(teamId); showToast('تم حفظ تشكيل ' + (sectionId ? 'الحلقة' : 'الفريق') + ' ✅');
 };
 
 // Load formations independently so existing application data remains untouched.

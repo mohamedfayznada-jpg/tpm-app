@@ -473,6 +473,8 @@
             <button class="btn btn-outline btn-sm btn-role-admin" onclick="setDeptGoal()"><i class='bx bx-target-lock'></i> المستهدف</button>
         </div>
 
+        <div id="tpmWorkspaceStructure-jh"></div>
+
         <button class="btn btn-primary full-width" style="margin-bottom: 25px; background: linear-gradient(135deg, #1e3a8a, #3b82f6);" onclick="openJHKPIsScreen()">
             <i class='bx bx-radar'></i> لوحة مؤشرات النضج للركيزة (JH KPIs)
         </button>
@@ -629,6 +631,8 @@
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 style="color:#00BCD4; margin:0;"><i class='bx bx-sparkles'></i> بيئة العمل (5S)</h2>
         </div>
+        <div id="tpmWorkspaceStructure-5s"></div>
+
         <div class="card" style="border-top: 4px solid #00BCD4;">
             <h3 class="card-title"><i class='bx bx-camera'></i> كاميرا المطابقة (Standard Check)</h3>
             <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">ارفع صورة الوضع القياسي المثالي، ثم التقط صورة للوضع الحالي واسحب الشريط لاكتشاف الاختلافات الدقيقة.</p>
@@ -653,6 +657,8 @@
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 style="color:var(--danger); margin:0;"><i class='bx bx-cog'></i> الصيانة المخططة (PM)</h2>
         </div>
+        <div id="tpmWorkspaceStructure-pm"></div>
+
         <div class="dashboard-stats">
             <div class="stat-card" style="border-bottom: 3px solid var(--danger);"><div class="stat-value danger-text" id="pmPendingCount">0</div><div class="stat-label">أوامر معلقة</div></div>
             <div class="stat-card" style="border-bottom: 3px solid var(--warning);"><div class="stat-value warning-text" id="pmProgressCount">0</div><div class="stat-label">قيد التنفيذ</div></div>
@@ -668,6 +674,8 @@
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 style="color:#8b5cf6; margin:0;"><i class='bx bxs-graduation'></i> التعليم والتدريب (E&T)</h2>
         </div>
+        <div id="tpmWorkspaceStructure-et"></div>
+
         <div class="card text-center" style="padding:50px; border-top: 4px solid #8b5cf6;">
             <i class='bx bx-hard-hat' style="font-size:60px; color:#8b5cf6; margin-bottom:20px;"></i>
             <h3 style="color:var(--text-main);">شاشة مصفوفة المهارات قيد التطوير...</h3>
@@ -686,6 +694,8 @@
                 <option value="الكل">🏭 المصنع</option>
             </select>
         </div>
+
+        <div id="tpmWorkspaceStructure-kk"></div>
 
         <div class="dashboard-stats">
             <div class="stat-card" style="border-bottom: 3px solid var(--danger);"><div class="stat-value danger-text" id="kkTotalLossHours">0</div><div class="stat-label">ساعات التوقف</div></div>
@@ -717,6 +727,19 @@
         </div>
     </div>
 
+    <!-- 7. HSE Screen -->
+    <div class="container screen" id="hseScreen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
+            <h2 style="color:#22c55e; margin:0;"><i class='bx bx-shield-quarter'></i> الصحة والسلامة والبيئة (HSE)</h2>
+        </div>
+        <div id="tpmWorkspaceStructure-hse"></div>
+        <div class="card" style="border-top:4px solid #22c55e;">
+            <h3 class="card-title"><i class='bx bx-shield-check'></i> مركز عمليات HSE</h3>
+            <p style="color:var(--text-muted);">تظهر هنا لاحقًا سجلات الجولات والمخاطر وإجراءات الإغلاق الخاصة بالفريق. ابدأ بتشكيل فريق HSE وحلقات الأقسام أعلاه.</p>
+        </div>
+    </div>
+
     <!-- ==========================================
          🛠️ OPERATIONAL SCREENS
          ========================================== -->
@@ -726,7 +749,7 @@
             <div>
                 <span class="eyebrow"><i class='bx bx-group'></i> هيكل فرق المصنع</span>
                 <h2>فرق TPM</h2>
-                <p>اختر فريقًا لعرض الأقسام والأنشطة وتشكيل الفريق والحلقات الداخلية. مساحات العمل الأصلية للفرق الخمسة محفوظة كما هي.</p>
+                <p>اختر فريقًا للانتقال إلى مساحة عمله الأصلية. يظهر التشكيل والأقسام والحلقات قبل المحتوى الذي أنشأته مسبقًا.</p>
             </div>
             <div class="screen-command-actions">
                 <button class="btn btn-outline btn-sm" onclick="showScreen('homeScreen')">⬅️ عودة</button>

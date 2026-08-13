@@ -24,6 +24,9 @@
       "team_activity_progress": {
         ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
       },
+      "tpm_team_formations": {
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
+      },
       "notification_settings": {
         ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
       },

@@ -292,7 +292,7 @@
             padding-top: 0 !important;
         }
     </style>
-    <link rel="stylesheet" href="styles.css?v=20260813-tpmops2">
+    <link rel="stylesheet" href="styles.css?v=20260813-teamhub1">
 </head>
 <body>
     
@@ -326,7 +326,7 @@
         <div class="sidebar-menu">
             <div class="side-item" onclick="showScreen('homeScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-grid-alt'></i></div>الرئيسية (Hub)</div>
             <div class="side-item" onclick="showScreen('tasksScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-task'></i></div>إدارة المهام</div>
-            <div class="side-item" onclick="showScreen('tpmTeamsScreen'); renderTPMTeams(); toggleSidebar();"><div class="side-icon"><i class='bx bx-network-chart'></i></div>فرق TPM التشغيلية</div>
+            <div class="side-item" onclick="showScreen('tpmTeamsScreen'); renderTPMTeams(); toggleSidebar();"><div class="side-icon"><i class='bx bx-group'></i></div>فرق TPM</div>
             <div class="side-item" onclick="showScreen('historyScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bar-chart-alt-2'></i></div>تقارير المراجعات</div>
             <div class="side-item" onclick="showScreen('kaizenScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bulb'></i></div>مجتمع كايزن</div>
             <div class="side-item btn-role-admin" onclick="showScreen('knowledgeScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-brain'></i></div>عقل المصنع</div>
@@ -422,29 +422,7 @@
             </button>
         </div>
 
-        <h3 class="section-title">وحدات التشغيل (Pillars)</h3>
-        <div class="pillars-grid">
-            <div class="pillar-card" style="border-bottom: 3px solid var(--glow-success);" onclick="showJHPortal()">
-                <div class="pillar-icon" style="color:var(--glow-success);"><i class='bx bx-wrench'></i></div><div class="pillar-title">صيانة ذاتية (JH)</div><div class="pillar-desc">بوابة الأقسام الفنية</div>
-            </div>
-            <div class="pillar-card" style="border-bottom: 3px solid #00BCD4;" onclick="showScreen('fiveSScreen')">
-                <div class="pillar-badge" style="background:var(--warning);">Soon</div>
-                <div class="pillar-icon" style="color:#00BCD4;"><i class='bx bx-sparkles'></i></div><div class="pillar-title">بيئة العمل (5S)</div><div class="pillar-desc">تنظيم وتنميط</div>
-            </div>            
-            <div class="pillar-card" style="border-bottom: 3px solid var(--glow-danger);" onclick="showScreen('pmScreen')">
-                <div class="pillar-badge">New</div>
-                <div class="pillar-icon" style="color:var(--glow-danger);"><i class='bx bx-cog'></i></div><div class="pillar-title">صيانة مخططة (PM)</div><div class="pillar-desc">أوامر شغل وقطع غيار</div>
-            </div>
-            <div class="pillar-card" style="border-bottom: 3px solid var(--glow-gold);" onclick="showScreen('kkScreen'); renderKKDashboard();">
-                <div class="pillar-badge">New</div>
-                <div class="pillar-icon" style="color:var(--glow-gold);"><i class='bx bx-line-chart'></i></div><div class="pillar-title">تحسين مستمر (KK)</div><div class="pillar-desc">شجرة الفواقد والـ OEE</div>
-            </div>
-            <div class="pillar-card" style="border-bottom: 3px solid #8b5cf6;" onclick="showScreen('etScreen')">
-                <div class="pillar-badge">Soon</div>
-                <div class="pillar-icon" style="color:#8b5cf6;"><i class='bx bxs-graduation'></i></div><div class="pillar-title">تعليم وتدريب (E&T)</div><div class="pillar-desc">مصفوفة المهارات</div>
-            </div>
-        </div>
-        
+
         <button class="btn btn-danger full-width dashboard-alert-action" style="font-size:16px; margin-bottom:25px;" onclick="showScreen('tagsScreen'); renderTags();"><i class='bx bx-error-circle'></i> إدارة التذاكر والأعطال</button>
         <div id="searchResults" class="card" style="display:none;"></div>
         
@@ -742,22 +720,21 @@
     <!-- ==========================================
          🛠️ OPERATIONAL SCREENS
          ========================================== -->
-    <!-- TPM Teams Operating Model -->
+    <!-- TPM Teams Hub: preserves existing JH, E&T, 5S, KK and PM workspaces -->
     <div class="container screen" id="tpmTeamsScreen">
         <div class="screen-command-header teams-command-header">
             <div>
-                <span class="eyebrow"><i class='bx bx-network-chart'></i> نظام التشغيل المتكامل</span>
-                <h2>فرق TPM والأنشطة القياسية</h2>
-                <p>حوّل المنهج إلى عمل يومي: نشاط واضح، مالك، دليل إنجاز، ومؤشر متابعة مرتبط بالمهام والتاجات.</p>
+                <span class="eyebrow"><i class='bx bx-group'></i> هيكل فرق المصنع</span>
+                <h2>فرق TPM</h2>
+                <p>اختر فريقًا لعرض الأقسام والأنشطة وتشكيل الفريق والحلقات الداخلية. مساحات العمل الأصلية للفرق الخمسة محفوظة كما هي.</p>
             </div>
             <div class="screen-command-actions">
                 <button class="btn btn-outline btn-sm" onclick="showScreen('homeScreen')">⬅️ عودة</button>
-                <button class="btn btn-primary btn-sm btn-role-auditor" onclick="openTPMTeamSetup()"><i class='bx bx-plus-circle'></i> إطلاق نشاط</button>
             </div>
         </div>
         <div id="tpmTeamKpis" class="tpm-kpi-ribbon"></div>
         <div id="tpmTeamsGrid" class="tpm-team-grid"></div>
-        <div id="tpmTeamDetail" class="tpm-team-detail" style="display:none;"></div>
+        <section id="tpmTeamDetail" class="tpm-team-detail" style="display:none;"></section>
     </div>
 
     <!-- Tags Screen -->
@@ -1139,7 +1116,7 @@
     <!-- Scripts Integration -->
     <script type="module" src="js/main.js"></script>
     <script src="tpm_data.js" defer></script>
-    <script src="tpm_teams.js?v=20260813-tpmops2" defer></script>
-    <script src="app.js?v=20260813-tpmops2" defer></script>
+    <script src="tpm_teams.js?v=20260813-teamhub1" defer></script>
+    <script src="app.js?v=20260813-teamhub1" defer></script>
 </body>
 </html>

@@ -16,6 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -480,6 +481,65 @@
 
         <h3 class="section-title">📂 اختر القسم للمتابعة:</h3>
         <div id="jhDeptGrid" class="grid-layout" style="margin-bottom:30px;"></div>
+
+        <section id="jhMainTeamSection" class="jh-team-section" aria-labelledby="jhMainTeamTitle">
+            <div class="jh-team-heading">
+                <div>
+                    <span class="jh-team-eyebrow"><i class='bx bx-git-branch'></i> هيكل العمل</span>
+                    <h3 id="jhMainTeamTitle">فريق الصيانة الذاتية الرئيسي</h3>
+                    <p>تدرّج واضح للفريق المسؤول عن الأقسام الأربعة. أضف الاسم والصورة فقط، ثم احفظ.</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-role-admin" onclick="openJHMainTeamEditor()"><i class='bx bx-user-plus'></i> إدارة أسماء وصور الفريق</button>
+            </div>
+
+            <div id="jhMainTeamTree" class="jh-team-tree" aria-live="polite">
+                <div class="jh-team-empty"><i class='bx bx-group'></i><strong>يُجري تحميل هيكل الفريق…</strong><span>ستظهر هنا أسماء الفريق وصورهم بعد الحفظ.</span></div>
+            </div>
+
+            <div id="jhMainTeamEditor" class="jh-team-editor" hidden>
+                <div class="jh-team-editor-header">
+                    <div><span class="jh-team-eyebrow"><i class='bx bx-edit-alt'></i> إدخال سريع</span><h4>أسماء وصور فريق JH</h4></div>
+                    <button type="button" class="icon-btn" onclick="closeJHMainTeamEditor()" aria-label="إغلاق محرر الفريق"><i class='bx bx-x'></i></button>
+                </div>
+                <p class="jh-team-editor-help">لكل دور: اكتب الاسم ثم اختر صورة شخصية. لا يلزم ربطه بحساب مستخدم في هذه المرحلة.</p>
+
+                <div class="jh-role-editor-grid">
+                    <div class="jh-role-editor-card">
+                        <label for="jhTeamLeaderName">قائد الفريق</label>
+                        <input id="jhTeamLeaderName" class="form-control" type="text" maxlength="80" placeholder="اكتب اسم قائد الفريق">
+                        <label class="jh-photo-input" for="jhTeamLeaderPhoto"><i class='bx bx-image-add'></i><span>ارفع صورة القائد</span><input id="jhTeamLeaderPhoto" type="file" accept="image/jpeg,image/png,image/webp" onchange="cacheJHMainTeamPhoto('leader', this)"></label>
+                        <div id="jhTeamLeaderPhotoStatus" class="jh-photo-status"></div>
+                    </div>
+                    <div class="jh-role-editor-card">
+                        <label for="jhTeamFacilitatorName">ميّسر الفريق</label>
+                        <input id="jhTeamFacilitatorName" class="form-control" type="text" maxlength="80" placeholder="اكتب اسم ميّسر الفريق">
+                        <label class="jh-photo-input" for="jhTeamFacilitatorPhoto"><i class='bx bx-image-add'></i><span>ارفع صورة الميّسر</span><input id="jhTeamFacilitatorPhoto" type="file" accept="image/jpeg,image/png,image/webp" onchange="cacheJHMainTeamPhoto('facilitator', this)"></label>
+                        <div id="jhTeamFacilitatorPhotoStatus" class="jh-photo-status"></div>
+                    </div>
+                    <div class="jh-role-editor-card">
+                        <label for="jhTeamRecorderName">مقرر الفريق</label>
+                        <input id="jhTeamRecorderName" class="form-control" type="text" maxlength="80" placeholder="اكتب اسم مقرر الفريق">
+                        <label class="jh-photo-input" for="jhTeamRecorderPhoto"><i class='bx bx-image-add'></i><span>ارفع صورة المقرر</span><input id="jhTeamRecorderPhoto" type="file" accept="image/jpeg,image/png,image/webp" onchange="cacheJHMainTeamPhoto('recorder', this)"></label>
+                        <div id="jhTeamRecorderPhotoStatus" class="jh-photo-status"></div>
+                    </div>
+                </div>
+
+                <div class="jh-members-editor">
+                    <div class="jh-members-editor-heading"><h5><i class='bx bx-group'></i> أعضاء الفريق</h5><span>أضف كل عضو باسمه وصورته.</span></div>
+                    <div class="jh-member-add-row">
+                        <input id="jhNewMemberName" class="form-control" type="text" maxlength="80" placeholder="اسم عضو الفريق">
+                        <label class="jh-photo-input jh-photo-input-compact" for="jhNewMemberPhoto"><i class='bx bx-image-add'></i><span>الصورة</span><input id="jhNewMemberPhoto" type="file" accept="image/jpeg,image/png,image/webp"></label>
+                        <button type="button" class="btn btn-outline" onclick="addJHMainTeamMember()"><i class='bx bx-plus'></i> إضافة عضو</button>
+                    </div>
+                    <div id="jhMainTeamMembersDraft" class="jh-members-draft"></div>
+                </div>
+
+                <div class="jh-team-editor-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeJHMainTeamEditor()">إلغاء</button>
+                    <button type="button" class="btn btn-success" onclick="saveJHMainTeam()"><i class='bx bx-save'></i> حفظ هيكل الفريق</button>
+                </div>
+            </div>
+        </section>
 
         <div id="jhToolbox" style="display:none; animation: screenRise 0.5s;">
             <div class="card" style="border-top: 4px solid var(--glow-success); margin-bottom:20px;">

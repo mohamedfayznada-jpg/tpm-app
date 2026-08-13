@@ -27,49 +27,49 @@ export const Services = {
         this.syncRecord('logs/' + logObj.id, logObj);
     },
 
-   // 2. محرك رفع الصور (ImgBB) مع الدعم الاحتياطي الذكي
-    async uploadImageToStorage(fileOrDataUrl) {
+   // 2. محرك رفع الصور الموحد — Firebase Storage
+    // يدعم File أو Data URL حتى تبقى جميع النماذج الحالية (5S، الكايزن، التاجات، الملف الشخصي) متوافقة.
+    async uploadImageToStorage(fileOrDataUrl, options = {}) {
         try {
-            let base64Data = fileOrDataUrl;
-            if (typeof fileOrDataUrl !== 'string') {
-                const reader = new FileReader();
-                base64Data = await new Promise((resolve) => {
-                    reader.readAsDataURL(fileOrDataUrl);
-                    reader.onload = () => resolve(reader.result);
-                });
-            }
-            const b64 = base64Data.split(',')[1];
-            
-            // المحاولة الأولى: عبر السيرفر الآمن (Vercel)
-            try {
-                const response = await fetch('/api/imgbb', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: b64 }) 
-                });
-                const data = await response.json();
-                if(data && data.success) return data.data.url;
-            } catch (err) {
-                console.warn("Vercel ImgBB Failed, switching to Client Fallback...");
+            const user = firebase.auth().currentUser;
+            if (!user) throw new Error('سجّل الدخول أولاً قبل رفع صورة.');
+            if (!firebase.storage) throw new Error('خدمة تخزين الصور غير محمّلة.');
+
+            let blob;
+            let contentType = '';
+            let extension = 'jpg';
+            if (typeof fileOrDataUrl === 'string') {
+                if (!fileOrDataUrl.startsWith('data:image/')) throw new Error('صيغة الصورة غير صالحة.');
+                const parts = fileOrDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+                if (!parts) throw new Error('تعذر قراءة بيانات الصورة.');
+                contentType = parts[1].toLowerCase();
+                const binary = atob(parts[2]);
+                const bytes = new Uint8Array(binary.length);
+                for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+                blob = new Blob([bytes], { type: contentType });
+            } else if (fileOrDataUrl instanceof Blob) {
+                blob = fileOrDataUrl;
+                contentType = (fileOrDataUrl.type || '').toLowerCase();
+            } else {
+                throw new Error('اختر ملف صورة صالحًا.');
             }
 
-            // المحاولة الثانية: الاحتياطية (لو السيرفر فشل، نسحب المفتاح من إعدادات السيستم)
-            if (window.globalApiKeys && window.globalApiKeys.imgbb) {
-                const formData = new URLSearchParams();
-                formData.append('image', b64);
-                const fbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${window.globalApiKeys.imgbb}`, {
-                    method: 'POST',
-                    body: formData,
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
-                const fbData = await fbResponse.json();
-                if(fbData.success) return fbData.data.url;
-            }
+            if (!/^image\/(jpeg|png|webp|gif)$/i.test(contentType)) throw new Error('يرجى اختيار صورة JPG أو PNG أو WEBP أو GIF.');
+            if (blob.size > 8 * 1024 * 1024) throw new Error('حجم الصورة يتجاوز الحد المسموح: 8 ميجابايت.');
 
-            throw new Error("لا يوجد مفتاح صالح للرفع.");
-        } catch(e) {
-            console.error("ImgBB Error:", e);
-            UI.showToast('⚠️ فشل الرفع: تأكد من مفتاح ImgBB في الإعدادات');
+            extension = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' })[contentType] || 'jpg';
+            const requestedFolder = String(options.folder || 'general').toLowerCase();
+            const folder = requestedFolder.replace(/[^a-z0-9_-]/g, '').slice(0, 40) || 'general';
+            const objectName = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}.${extension}`;
+            const reference = firebase.storage().ref(`factory-os/${folder}/${user.uid}/${objectName}`);
+            const snapshot = await reference.put(blob, {
+                contentType,
+                cacheControl: 'public,max-age=31536000,immutable'
+            });
+            return await snapshot.ref.getDownloadURL();
+        } catch (error) {
+            console.error('Firebase Storage upload error:', error);
+            UI.showToast(`⚠️ فشل رفع الصورة: ${error.message || 'تحقق من تفعيل Firebase Storage وقواعد الوصول.'}`);
             return null;
         }
     },

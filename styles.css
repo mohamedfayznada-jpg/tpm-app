@@ -533,3 +533,68 @@ body:has(#tpmTeamsScreen.active) { background:radial-gradient(760px 560px at 88%
 .settings-export-card { margin-bottom:0; border-color:rgba(41,146,124,.18); }
 @media (max-width: 900px) { .settings-navigation { grid-template-columns:repeat(2,minmax(0,1fr)); } .core-department-grid, .settings-control-map { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width: 600px) { .settings-command-deck { align-items:stretch; flex-direction:column; padding:19px; } .settings-profile-launch { width:100%; } .settings-identity-note { display:none; } .settings-navigation { grid-template-columns:1fr 1fr; gap:6px; } .settings-navigation .btn { font-size:10px; } .settings-section-title { flex-direction:column; } .core-department-grid, .settings-control-map { grid-template-columns:1fr 1fr; gap:8px; } .settings-inline-form, .settings-engineer-form { grid-template-columns:1fr; } .settings-inline-form .btn { width:100%; } .settings-core-card, .settings-notification-state, .settings-export-card { align-items:flex-start; flex-direction:column; } .settings-export-card .btn { width:100%; } }
+
+
+/* ==========================================
+   JH MAIN TEAM — structured ladder
+   ========================================== */
+.jh-team-section {
+    margin: 0 0 30px;
+    padding: clamp(18px, 3vw, 30px);
+    border: 1px solid rgba(29, 78, 216, 0.20);
+    border-top: 4px solid #10b981;
+    border-radius: 24px;
+    background: radial-gradient(circle at 92% 12%, rgba(16, 185, 129, 0.16), transparent 31%), radial-gradient(circle at 8% 90%, rgba(59, 130, 246, 0.12), transparent 36%), rgba(255, 255, 255, 0.68);
+    box-shadow: 0 20px 42px rgba(20, 36, 71, 0.10);
+    overflow: hidden;
+}
+.jh-team-heading, .jh-team-editor-header, .jh-members-editor-heading, .jh-team-editor-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.jh-team-heading { margin-bottom: 24px; }
+.jh-team-heading h3, .jh-team-editor-header h4, .jh-members-editor-heading h5 { margin: 4px 0 0; color: #102a43; font-weight: 900; }
+.jh-team-heading h3 { font-size: clamp(18px, 2.6vw, 25px); }
+.jh-team-heading p, .jh-team-editor-help, .jh-members-editor-heading span { color: #52677f; font-size: 13px; line-height: 1.8; margin: 8px 0 0; }
+.jh-team-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: #047857; font-size: 11px; font-weight: 900; letter-spacing: 0.02em; }
+.jh-team-tree { min-height: 210px; border: 1px solid rgba(148, 163, 184, 0.26); border-radius: 20px; background: linear-gradient(135deg, rgba(248, 250, 252, 0.92), rgba(240, 253, 250, 0.82)); padding: clamp(16px, 3vw, 28px); }
+.jh-team-empty, .jh-tree-placeholder, .jh-members-draft-empty { color: #64748b; text-align: center; border: 1px dashed rgba(100, 116, 139, 0.42); border-radius: 14px; padding: 22px; background: rgba(255, 255, 255, 0.6); }
+.jh-team-empty { display: grid; place-items: center; gap: 7px; min-height: 150px; }
+.jh-team-empty i { font-size: 34px; color: #10b981; }
+.jh-team-empty strong { color: #1e3a5f; }
+.jh-team-empty span { font-size: 13px; }
+.jh-team-ladder { display: grid; justify-items: center; }
+.jh-team-level { width: min(100%, 860px); display: flex; justify-content: center; align-items: stretch; gap: 14px; }
+.jh-team-level-support { width: min(100%, 620px); }
+.jh-team-level-members { width: 100%; flex-wrap: wrap; }
+.jh-team-connector { width: 2px; height: 32px; background: linear-gradient(#14b8a6, #60a5fa); position: relative; }
+.jh-team-connector::after { content: ''; position: absolute; width: 28px; height: 2px; background: #60a5fa; bottom: 0; right: 50%; transform: translateX(50%); }
+.jh-tree-person { flex: 1 1 160px; max-width: 244px; min-width: 0; display: flex; align-items: center; gap: 11px; padding: 12px; border: 1px solid rgba(148, 163, 184, 0.32); border-radius: 16px; background: rgba(255, 255, 255, 0.90); box-shadow: 0 9px 22px rgba(30, 64, 175, 0.08); }
+.jh-tree-leader { border-color: rgba(16, 185, 129, 0.58); background: linear-gradient(135deg, #ecfdf5, #ffffff); box-shadow: 0 12px 28px rgba(16, 185, 129, 0.17); }
+.jh-tree-support { border-top: 3px solid #3b82f6; }
+.jh-tree-member { border-top: 3px solid #f59e0b; flex: 0 1 205px; }
+.jh-person-photo, .jh-draft-avatar { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 15px; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.9); box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16); }
+.jh-person-initials { display: grid; place-items: center; background: linear-gradient(135deg, #2563eb, #10b981); color: white; font-weight: 900; font-size: 17px; }
+.jh-tree-person-copy { min-width: 0; display: grid; gap: 3px; }
+.jh-tree-person-copy span { color: #0f766e; font-size: 10px; font-weight: 900; }
+.jh-tree-person-copy strong { color: #172b4d; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jh-tree-placeholder { width: min(100%, 300px); align-self: stretch; display: grid; place-items: center; font-size: 12px; }
+.jh-team-editor { margin-top: 18px; padding: clamp(16px, 3vw, 25px); border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 20px; background: rgba(248, 250, 252, 0.94); box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 12px 28px rgba(15, 23, 42, 0.08); }
+.jh-role-editor-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+.jh-role-editor-card, .jh-members-editor { border: 1px solid rgba(148, 163, 184, 0.30); background: white; border-radius: 16px; padding: 14px; }
+.jh-role-editor-card > label:first-child { display: block; color: #172b4d; font-weight: 900; font-size: 13px; margin-bottom: 8px; }
+.jh-photo-input { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; width: 100%; margin-top: 10px; padding: 8px 10px; border: 1px dashed rgba(37, 99, 235, 0.55); border-radius: 10px; color: #1d4ed8; background: #eff6ff; font-size: 12px; font-weight: 800; cursor: pointer; }
+.jh-photo-input:hover { background: #dbeafe; }
+.jh-photo-input input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.jh-photo-input-compact { width: auto; min-width: 98px; margin: 0; }
+.jh-photo-status { min-height: 19px; margin-top: 7px; color: #047857; font-size: 11px; font-weight: 700; }
+.jh-members-editor { margin-top: 14px; }
+.jh-members-editor-heading { align-items: baseline; }
+.jh-members-editor-heading h5 { font-size: 15px; }
+.jh-member-add-row { display: grid; grid-template-columns: minmax(150px, 1fr) auto auto; gap: 10px; align-items: center; margin-top: 14px; }
+.jh-members-draft { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 14px; }
+.jh-member-draft-item { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 9px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.jh-member-draft-item .jh-draft-avatar { width: 38px; height: 38px; flex-basis: 38px; border-radius: 11px; font-size: 13px; }
+.jh-member-draft-item strong { color: #1e3a5f; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jh-member-draft-item span { grid-column: 2; color: #64748b; font-size: 10px; margin-top: -7px; }
+.jh-member-draft-item .icon-btn { grid-column: 3; grid-row: 1 / span 2; color: #dc2626; }
+.jh-team-editor-actions { justify-content: flex-start; margin-top: 18px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+@media (max-width: 760px) { .jh-team-heading { align-items: flex-start; flex-direction: column; } .jh-team-heading .btn { width: 100%; } .jh-role-editor-grid { grid-template-columns: 1fr; } .jh-team-level-support { flex-wrap: wrap; } .jh-team-level-members { justify-content: stretch; } .jh-tree-person, .jh-tree-member { max-width: none; flex: 1 1 100%; } .jh-member-add-row { grid-template-columns: 1fr 1fr; } .jh-member-add-row .btn { grid-column: 1 / -1; } }
+@media (max-width: 420px) { .jh-team-section { padding: 14px; border-radius: 18px; } .jh-team-tree { padding: 13px; } .jh-member-add-row { grid-template-columns: 1fr; } .jh-photo-input-compact { width: 100%; } }

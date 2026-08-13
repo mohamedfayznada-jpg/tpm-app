@@ -33,6 +33,9 @@
       },
       "jh_kpis": { ".write": "auth != null" },
       "jh_records": { ".write": "auth != null" },
+      "jh_main_team": {
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
+      },
       "clit_executions": { ".write": "auth != null" },
       "dept_goals": { ".write": "auth != null" },
       "knowledgeBase": { ".write": "auth != null" },

@@ -35,7 +35,8 @@ window.forceAcceptBarcode = (text) => Scanner.forceAcceptBarcode(text);
 window.syncRecord = (path, data) => Services.syncRecord(path, data);
 window.deleteRecord = (path) => Services.deleteRecord(path);
 window.logAction = (act) => Services.logAction(act, window.currentUser?.name);
-window.uploadImageToStorage = (file) => Services.uploadImageToStorage(file);
+window.uploadImageToStorage = (file, options = {}) => Services.uploadImageToStorage(file, options);
+
 window.processAndEnhanceImage = (file, callback) => Services.processAndEnhanceImage(file, callback);
 window.fetchGeminiAPI = (prompt, base64) => Services.fetchGeminiAPI(prompt, base64);
 

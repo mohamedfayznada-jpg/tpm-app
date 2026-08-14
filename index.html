@@ -348,7 +348,24 @@
     
     <div class="modal-overlay" id="oplModal"><div class="modal-content"><h3 class="card-title"><i class='bx bx-file'></i> إنشاء درس نقطة واحدة (OPL)</h3><div class="form-group"><label>العنوان:</label><input type="text" id="oplTitle" class="form-control"></div><div class="form-group"><label>صورة:</label><input type="file" class="form-control" accept="image/*" onchange="uploadOplImage(event)"><div id="oplImgPreview"></div></div><div class="form-group"><label>الشرح:</label><textarea id="oplDesc" class="form-control" rows="4"></textarea></div><div class="row-flex"><button class="btn btn-success flex-1" onclick="generateOPLPDF()">تصدير PDF</button><button class="btn btn-danger flex-1" onclick="document.getElementById('oplModal').style.display='none'">إلغاء</button></div></div></div>
     
-    <div class="modal-overlay" id="kaizenUploadModal"><div class="modal-content"><h3 class="card-title"><i class='bx bx-bulb'></i> تسجيل كايزن</h3><div class="form-group"><label>وصف التحسين:</label><input type="text" id="newKaizenTitle" class="form-control"></div><div class="form-group"><label>القسم:</label><select id="newKaizenDept" class="form-control"></select></div><div class="row-flex" style="margin-bottom: 15px;"><div class="flex-1" style="background: var(--surface-inset); padding: 15px; border-radius: 12px; text-align: center; box-shadow: var(--shadow-pressed);"><label style="color:var(--glow-danger); cursor:pointer;"><i class='bx bx-camera'></i> صورة (قبل)<input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'before')"></label><div id="kaizenBeforePreview"></div></div><div class="flex-1" style="background: var(--surface-inset); padding: 15px; border-radius: 12px; text-align: center; box-shadow: var(--shadow-pressed);"><label style="color:var(--glow-success); cursor:pointer;"><i class='bx bx-camera'></i> صورة (بعد)<input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'after')"></label><div id="kaizenAfterPreview"></div></div></div><div class="row-flex"><button class="btn btn-success flex-2" onclick="submitManualKaizen()" id="submitKaizenBtn">اعتماد التحسين</button><button class="btn btn-danger flex-1" onclick="document.getElementById('kaizenUploadModal').style.display='none'">إلغاء</button></div></div></div>
+    <div class="modal-overlay" id="kaizenUploadModal">
+        <div class="modal-content kaizen-a3-modal">
+            <div class="kaizen-a3-modal-head"><div><span class="eyebrow"><i class='bx bx-git-branch'></i> A3 / PDCA</span><h3 class="card-title"><i class='bx bx-bulb'></i> بطاقة كايزن احترافية</h3></div><span class="kaizen-stage-chip">PLAN</span></div>
+            <p class="field-help">وثّق المشكلة وسببها والحل والتحقق؛ ثم تُتابَع البطاقة حتى تثبيت المعيار.</p>
+            <div class="kaizen-a3-grid">
+                <div class="form-group"><label for="newKaizenTitle">عنوان التحسين <b>*</b></label><input type="text" id="newKaizenTitle" class="form-control" placeholder="مثال: تقليل وقت تغيير القالب"></div>
+                <div class="form-group"><label for="newKaizenDept">القسم التشغيلي <b>*</b></label><select id="newKaizenDept" class="form-control"></select></div>
+                <div class="form-group"><label for="newKaizenImpact">محور الأثر <b>*</b></label><select id="newKaizenImpact" class="form-control"><option value="Q">الجودة</option><option value="C">التكلفة</option><option value="D">التسليم / الإنتاجية</option><option value="S">السلامة</option><option value="M">المعنويات / بيئة العمل</option></select></div>
+                <div class="form-group"><label for="newKaizenOwner">مالك المتابعة</label><input type="text" id="newKaizenOwner" class="form-control" placeholder="يُستخدم اسمك تلقائيًا إن تركته فارغًا"></div>
+            </div>
+            <section class="a3-section"><span class="a3-section-label plan">P</span><div><h4>Plan — تحديد المشكلة وتحليل السبب</h4><textarea id="newKaizenProblem" class="form-control" rows="2" placeholder="ما الوضع الحالي؟ ما الأثر أو الفقد؟ *"></textarea><textarea id="newKaizenRootCause" class="form-control" rows="2" placeholder="ما السبب الجذري بعد تحليل 5 Why أو مخطط عظمة السمكة؟ *"></textarea></div></section>
+            <section class="a3-section"><span class="a3-section-label do">D</span><div><h4>Do — الإجراء المضاد وخطة التنفيذ</h4><textarea id="newKaizenCountermeasure" class="form-control" rows="2" placeholder="ما الإجراء الذي نُفذ أو سيُنفذ؟ *"></textarea><textarea id="newKaizenExpectedBenefit" class="form-control" rows="2" placeholder="ما النتيجة أو الفائدة المستهدفة؟ مثال: خفض زمن التغيير 20%"></textarea></div></section>
+            <section class="a3-section"><span class="a3-section-label check">C</span><div><h4>Check — طريقة التحقق</h4><textarea id="newKaizenVerification" class="form-control" rows="2" placeholder="كيف سنثبت أن التحسين نجح؟ قياس، مراجعة، أو ملاحظة"></textarea></div></section>
+            <section class="a3-section"><span class="a3-section-label act">A</span><div><h4>Act — التثبيت كمعيار</h4><textarea id="newKaizenStandardization" class="form-control" rows="2" placeholder="الإجراء المعياري أو OPL المطلوب لتثبيت التحسين"></textarea></div></section>
+            <div class="row-flex kaizen-photo-row"><div class="flex-1 kaizen-photo-box"><label><i class='bx bx-camera'></i> صورة قبل <b>*</b><input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'before')"></label><div id="kaizenBeforePreview"></div></div><div class="flex-1 kaizen-photo-box after"><label><i class='bx bx-camera'></i> صورة بعد <b>*</b><input type="file" style="display:none;" accept="image/*" onchange="handleKaizenImage(event, 'after')"></label><div id="kaizenAfterPreview"></div></div></div>
+            <div class="row-flex"><button class="btn btn-success flex-2" onclick="submitManualKaizen()" id="submitKaizenBtn"><i class='bx bx-send'></i> إرسال بطاقة كايزن للمراجعة</button><button class="btn btn-danger flex-1" onclick="closeKaizenA3Modal()">إلغاء</button></div>
+        </div>
+    </div>
     
     <div class="modal-overlay" id="permissionsModal"><div class="modal-content"><h3 class="card-title"><i class='bx bx-lock-alt'></i> تعديل الأذونات</h3><div id="permissionsContainer"></div><div class="row-flex" style="margin-top:15px;"><button class="btn btn-success flex-2" onclick="saveUserPermissions()">حفظ</button><button class="btn btn-danger flex-1" onclick="document.getElementById('permissionsModal').style.display='none'">إلغاء</button></div></div></div>
 
@@ -838,6 +855,11 @@
         </div>
 
         <div id="tagCommandStats" class="tag-command-stats"></div>
+        <section class="tag-control-deck" aria-label="مركز قيادة التاجات">
+            <div class="tag-control-deck-head"><div><span class="eyebrow"><i class='bx bx-radar'></i> مركز قيادة التاجات</span><h3>الاستجابة والإسناد والتحقق</h3></div><button class="btn btn-outline btn-sm" onclick="applyTagQuickView('all')"><i class='bx bx-refresh'></i> كل البلاغات</button></div>
+            <div class="tag-quick-views"><button class="tag-quick-view critical" onclick="applyTagQuickView('critical')"><i class='bx bx-alarm-exclamation'></i><span>حرجة الآن</span><b id="tagQuickCritical">0</b></button><button class="tag-quick-view unassigned" onclick="applyTagQuickView('unassigned')"><i class='bx bx-user-x'></i><span>غير مُسندة</span><b id="tagQuickUnassigned">0</b></button><button class="tag-quick-view overdue" onclick="applyTagQuickView('overdue')"><i class='bx bx-timer'></i><span>تجاوزت المهلة</span><b id="tagQuickOverdue">0</b></button><button class="tag-quick-view review" onclick="applyTagQuickView('review')"><i class='bx bx-search-alt-2'></i><span>بانتظار التحقق</span><b id="tagQuickReview">0</b></button></div>
+            <div id="tagEscalationQueue" class="tag-escalation-queue"></div>
+        </section>
         <section class="tag-filter-panel" aria-label="فلاتر التاجات"><div class="tag-filter-title"><i class='bx bx-filter-alt'></i><b>تصفية سجل التاجات</b><span>اعرض البلاغات التي تحتاجها فقط</span></div><div class="tag-filter-grid">
             <label>القسم<select id="filterTagDept" class="form-control" onchange="renderTags()"><option value="الكل">كل الأقسام</option></select></label>
             <label>حالة التاج<select id="filterTagStatus" class="form-control" onchange="renderTags()"><option value="active">مفتوح / جاري</option><option value="closed">مغلقة فقط</option></select></label>
@@ -912,6 +934,11 @@
                 <button class="btn btn-outline btn-sm" onclick="document.getElementById('oplModal').style.display='flex'"><i class='bx bx-file'></i> OPL</button>
             </div>
         </div>
+        <section id="kaizenA3CommandStats" class="kaizen-a3-command-stats"></section>
+        <section class="kaizen-stage-journey" aria-label="رحلة كايزن">
+            <div><span class="eyebrow"><i class='bx bx-git-branch'></i> رحلة التحسين</span><h3>من المشكلة إلى المعيار</h3></div>
+            <div class="kaizen-stage-steps"><button onclick="applyKaizenStageFilter('all')" class="active">الكل</button><button onclick="applyKaizenStageFilter('plan')">P · خطة</button><button onclick="applyKaizenStageFilter('do')">D · تنفيذ</button><button onclick="applyKaizenStageFilter('check')">C · تحقق</button><button onclick="applyKaizenStageFilter('act')">A · تثبيت</button><button onclick="applyKaizenStageFilter('standardized')">معياري</button></div>
+        </section>
         <div style="background:var(--surface-inset); padding:10px; border-radius:var(--radius-md); box-shadow:var(--shadow-pressed); margin-bottom:20px;">
             <select id="kaizenDeptSelect" class="form-control" style="margin:0;" onchange="renderKaizenFeed()"><option value="الكل">عرض جميع الأقسام</option></select>
         </div>

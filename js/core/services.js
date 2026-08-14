@@ -4,16 +4,16 @@ import { UI } from '../utils/ui.js';
 
 export const Services = {
     // 1. محرك المزامنة مع قاعدة البيانات
-    syncRecord(path, data) { 
-        if (firebase.auth().currentUser) {
-            db.ref('tpm_system/' + path).set(data); 
-        }
+    async syncRecord(path, data) {
+        if (!firebase.auth().currentUser) throw new Error('سجّل الدخول أولاً قبل حفظ البيانات.');
+        await db.ref('tpm_system/' + path).set(data);
+        return true;
     },
     
-    deleteRecord(path) { 
-        if (firebase.auth().currentUser) {
-            db.ref('tpm_system/' + path).remove(); 
-        }
+    async deleteRecord(path) {
+        if (!firebase.auth().currentUser) throw new Error('سجّل الدخول أولاً قبل حذف البيانات.');
+        await db.ref('tpm_system/' + path).remove();
+        return true;
     },
 
     logAction(act, currentUserName) { 

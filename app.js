@@ -14,7 +14,7 @@ let currentUser = { name: '', username: '', role: '', status: '' };
 let currentAudit = null, isOnline = true, isDataLoaded = false, isInitialLoad = true;
 let radarChartInstance = null, trendChartInstance = null, currentViewedDept = null;
 let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];
-let currentTagImg = null, currentTaskDept = null, kaizenImgs = { before: null, after: null };
+let currentTagImg = null, currentTaskDept = null, kaizenImgs = { before: null, after: null }, fiveSImages = { standard: null, current: null };
 let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
 let screenHistory = ['homeScreen'];
 let jhMiniChartInstance = null;
@@ -60,8 +60,21 @@ window.toggleSidebar = function() {
 window.goBack = function() { showScreen('homeScreen'); };
 window.uniqueNumericId = function() { return Date.now() + Math.floor(Math.random() * 1000); };
 window.sanitizeInput = function(str) { return String(str).replace(/[<>]/g, '').trim(); };
-window.syncRecord = async function(path, data) { await db.ref('tpm_system/' + path).set(data); };
-window.deleteRecord = async function(path) { await db.ref('tpm_system/' + path).remove(); };
+window.syncRecord = async function(path, data) {
+    if (!auth.currentUser) throw new Error('سجّل الدخول أولاً قبل حفظ البيانات.');
+    await db.ref('tpm_system/' + path).set(data);
+    return true;
+};
+window.deleteRecord = async function(path) {
+    if (!auth.currentUser) throw new Error('سجّل الدخول أولاً قبل حذف البيانات.');
+    await db.ref('tpm_system/' + path).remove();
+    return true;
+};
+window.deleteStorageImage = async function(downloadUrl) {
+    if (!downloadUrl || !auth.currentUser || !firebase.storage) return false;
+    await firebase.storage().refFromURL(downloadUrl).delete();
+    return true;
+};
 window.hasRole = function(...allowed) { return currentUser && currentUser.role && allowed.includes(currentUser.role); };
 
 // ==========================================
@@ -187,7 +200,23 @@ firebase.auth().onAuthStateChanged(async user => {
         if (isMasterAdmin) {
             role = 'admin';
             currentUser = { name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
-            window.currentUser = currentUser; localStorage.setItem('tpm_username', 'mfayez'); 
+            window.currentUser = currentUser; localStorage.setItem('tpm_username', 'mfayez');
+
+            // استعادة سجل المدير القديم الذي كان يفتقد role، حتى تتطابق صلاحية الواجهة مع قواعد Realtime Database.
+            const storedMaster = (usersData[user.uid] && typeof usersData[user.uid] === 'object') ? usersData[user.uid] : {};
+            if (storedMaster.role !== 'admin' || storedMaster.status !== 'active') {
+                try {
+                    await db.ref(`tpm_system/users/${user.uid}`).update({
+                        role: 'admin',
+                        status: 'active',
+                        updatedAt: Date.now()
+                    });
+                    usersData[user.uid] = { ...storedMaster, role: 'admin', status: 'active' };
+                } catch (error) {
+                    console.error('Master administrator role synchronization failed:', error);
+                    showToast('⚠️ تعذر مزامنة صلاحية المدير مع قاعدة البيانات. لن يتم اعتماد سجلات كايزن حتى تُنشر القواعد الجديدة.');
+                }
+            }
             
             let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
             let notifyIcon = document.getElementById('adminNotification');
@@ -224,7 +253,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
         dbListeners.tags = db.ref('tpm_system/tags').orderByChild('id').limitToLast(100).on('value', snap => {
             let data = snap.val() || {}; tagsData = Object.values(data).filter(x => x && x.id).sort((a,b)=>b.id-a.id); window.tagsData = tagsData; 
-            if(window.renderTags) window.renderTags(); if(currentUser.role && window.updateHomeDashboard) window.updateHomeDashboard();
+            if(window.renderTags) window.renderTags(); if(window.renderTagCommandCenter) window.renderTagCommandCenter(); if(currentUser.role && window.updateHomeDashboard) window.updateHomeDashboard();
         });
 
         dbListeners.tasks = db.ref('tpm_system/tasks').orderByChild('id').limitToLast(100).on('value', snap => {
@@ -233,7 +262,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
         dbListeners.history = db.ref('tpm_system/history').orderByChild('id').limitToLast(100).on('value', snap => {
             let data = snap.val() || {}; historyData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id); window.historyData = historyData; 
-            if(window.renderHistory) window.renderHistory(); if(window.renderKaizenFeed) window.renderKaizenFeed(); if(currentUser.role && window.updateHomeDashboard) window.updateHomeDashboard();
+            if(window.renderHistory) window.renderHistory(); if(window.renderKaizenFeed) window.renderKaizenFeed(); if(window.renderKaizenA3CommandStats) window.renderKaizenA3CommandStats(); if(currentUser.role && window.updateHomeDashboard) window.updateHomeDashboard();
         });
     
         dbListeners.goals = db.ref('tpm_system/dept_goals').on('value', snap => { 
@@ -1059,54 +1088,120 @@ window.handleKaizenImage = function(e, type) {
     processAndEnhanceImage(f, function(dataUrl) { kaizenImgs[type] = dataUrl; document.getElementById(type==='before'?'kaizenBeforePreview':'kaizenAfterPreview').innerHTML=`<span style="color:var(--success); font-size:12px; font-weight:bold; display:block; margin-top:10px;"><i class='bx bx-check'></i> تم الإرفاق</span>`; });
 };
 
-window.submitManualKaizen = function() {
-    let t = document.getElementById('newKaizenTitle').value; let d = document.getElementById('newKaizenDept').value;
-    if(!t || !kaizenImgs.before || !kaizenImgs.after) return showToast('⚠️ برجاء كتابة الوصف وإرفاق الصورتين');
-    
-    const btn = document.getElementById('submitKaizenBtn'); btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري الدمج..."; btn.disabled = true;
-    
-    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-    const imgBefore = new Image(); const imgAfter = new Image();
-    
-    imgBefore.onload = function() {
-        imgAfter.onload = async function() {
-            canvas.width = 600; canvas.height = 300; ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,600,300); ctx.drawImage(imgBefore, 0, 0, 295, 300); ctx.drawImage(imgAfter, 305, 0, 295, 300);
-            ctx.fillStyle = "#f59e0b"; ctx.beginPath(); ctx.moveTo(280, 150); ctx.lineTo(320, 130); ctx.lineTo(320, 170); ctx.fill();
-            ctx.fillStyle = "rgba(239,68,68,0.9)"; ctx.fillRect(10, 10, 60, 30); ctx.fillStyle = "white"; ctx.font = "bold 16px Cairo"; ctx.fillText("قبل", 25, 32);
-            ctx.fillStyle = "rgba(16,185,129,0.9)"; ctx.fillRect(530, 10, 60, 30); ctx.fillStyle = "white"; ctx.font = "bold 16px Cairo"; ctx.fillText("بعد", 545, 32);
-            
-            const mergedB64 = canvas.toDataURL('image/jpeg', 0.8);
-            const uploadedUrl = await uploadImageToStorage(mergedB64);
-            if (uploadedUrl) {
-                let kId = window.uniqueNumericId().toString();
-                window.syncRecord('history/' + kId, { id: kId, dept: d, auditor: currentUser.name, date: new Date().toLocaleDateString('ar-EG'), stepsOrder: ['ManualKaizen'], totalPct: 100, results: { 'ManualKaizen': { images: { 'img_1': { title: t, data: uploadedUrl } } } } });
-                document.getElementById('newKaizenTitle').value = ''; document.getElementById('kaizenBeforePreview').innerHTML = ''; document.getElementById('kaizenAfterPreview').innerHTML = ''; kaizenImgs = { before: null, after: null }; document.getElementById('kaizenUploadModal').style.display = 'none';
-                window.awardPoints(40, 'مشاركة كايزن'); showToast('تم نشر الكايزن بنجاح 🚀');
-            } else { showToast('فشل الرفع'); }
-            btn.innerHTML = "اعتماد التحسين"; btn.disabled = false;
-        }; imgAfter.src = kaizenImgs.after;
-    }; imgBefore.src = kaizenImgs.before;
+window.submitManualKaizen = async function() {
+    const title = document.getElementById('newKaizenTitle').value.trim();
+    const dept = document.getElementById('newKaizenDept').value;
+    const a3 = {
+        impact: document.getElementById('newKaizenImpact')?.value || 'Q',
+        owner: window.sanitizeInput(document.getElementById('newKaizenOwner')?.value.trim() || currentUser.name || 'مستخدم'),
+        problem: window.sanitizeInput(document.getElementById('newKaizenProblem')?.value.trim() || ''),
+        rootCause: window.sanitizeInput(document.getElementById('newKaizenRootCause')?.value.trim() || ''),
+        countermeasure: window.sanitizeInput(document.getElementById('newKaizenCountermeasure')?.value.trim() || ''),
+        expectedBenefit: window.sanitizeInput(document.getElementById('newKaizenExpectedBenefit')?.value.trim() || ''),
+        verification: window.sanitizeInput(document.getElementById('newKaizenVerification')?.value.trim() || ''),
+        standardization: window.sanitizeInput(document.getElementById('newKaizenStandardization')?.value.trim() || ''),
+        stage: 'plan',
+        stageHistory: [{ stage: 'plan', by: currentUser.name || 'مستخدم', at: Date.now(), note: 'تم تسجيل بطاقة A3' }]
+    };
+    if (!title || !a3.problem || !a3.rootCause || !a3.countermeasure || !kaizenImgs.before || !kaizenImgs.after) return showToast('⚠️ أكمل عنوان التحسين والمشكلة والسبب الجذري والإجراء المضاد وأرفق الصورتين');
+
+    const btn = document.getElementById('submitKaizenBtn');
+    const originalLabel = btn.innerHTML;
+    btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري دمج الصور…";
+    btn.disabled = true;
+
+    let uploadedUrl = null;
+    try {
+        const [imgBefore, imgAfter] = await Promise.all([window.loadImageForCanvas(kaizenImgs.before), window.loadImageForCanvas(kaizenImgs.after)]);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 600; canvas.height = 300;
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 600, 300);
+        ctx.drawImage(imgBefore, 0, 0, 295, 300); ctx.drawImage(imgAfter, 305, 0, 295, 300);
+        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(280, 150); ctx.lineTo(320, 130); ctx.lineTo(320, 170); ctx.fill();
+        ctx.fillStyle = 'rgba(239,68,68,0.9)'; ctx.fillRect(10, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('قبل', 25, 32);
+        ctx.fillStyle = 'rgba(16,185,129,0.9)'; ctx.fillRect(530, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('بعد', 545, 32);
+
+        btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري رفع الصورة…";
+        uploadedUrl = await uploadImageToStorage(canvas.toDataURL('image/jpeg', 0.8), { folder: 'kaizen' });
+        if (!uploadedUrl) throw new Error('تعذر رفع صورة كايزن إلى التخزين.');
+
+        const kId = window.uniqueNumericId().toString();
+        const record = {
+            id: kId,
+            dept,
+            auditor: currentUser.name || 'مستخدم',
+            date: new Date().toLocaleDateString('ar-EG'),
+            createdAt: Date.now(),
+            stepsOrder: ['ManualKaizen'],
+            totalPct: 100,
+            improvementStatus: 'plan',
+            a3,
+            results: { ManualKaizen: { images: { img_1: { title: window.sanitizeInput(title), data: uploadedUrl } } } }
+        };
+
+        btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري اعتماد السجل…";
+        await window.syncRecord('history/' + kId, record);
+
+        ['newKaizenTitle', 'newKaizenOwner', 'newKaizenProblem', 'newKaizenRootCause', 'newKaizenCountermeasure', 'newKaizenExpectedBenefit', 'newKaizenVerification', 'newKaizenStandardization'].forEach(id => { const field = document.getElementById(id); if (field) field.value = ''; });
+        document.getElementById('kaizenBeforePreview').innerHTML = '';
+        document.getElementById('kaizenAfterPreview').innerHTML = '';
+        kaizenImgs = { before: null, after: null };
+        document.getElementById('kaizenUploadModal').style.display = 'none';
+        window.awardPoints(40, 'مشاركة كايزن');
+        window.renderKaizenFeed?.();
+        window.renderKaizenA3CommandStats?.();
+        showToast('✅ تم حفظ بطاقة A3 كايزن وصورتها؛ وهي الآن في مرحلة التخطيط.');
+    } catch (error) {
+        console.error('Manual Kaizen save error:', error);
+        if (uploadedUrl) {
+            try { await window.deleteStorageImage(uploadedUrl); } catch (cleanupError) { console.error('Kaizen image cleanup error:', cleanupError); }
+        }
+        showToast(`⚠️ لم يُعتمد كايزن: ${error.message || 'تعذر حفظ السجل في قاعدة البيانات.'}`);
+    } finally {
+        btn.innerHTML = originalLabel;
+        btn.disabled = false;
+    }
 };
 
+window.loadImageForCanvas = function(source) {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('تعذر تجهيز إحدى صور كايزن للدمج.'));
+        image.src = source;
+    });
+};
+
+window.kaizenStageFilter = 'all';
 window.renderKaizenFeed = function() {
     let c = document.getElementById('kaizenFeedContainer'); if(!c) return;
     let selectedDept = document.getElementById('kaizenDeptSelect').value;
+    const activeStage = window.kaizenStageFilter || 'all';
     
-    let html = historyData.filter(h=>h.stepsOrder.includes('ManualKaizen') && (selectedDept === 'الكل' || h.dept === selectedDept)).reverse().map(k=> {
+    let html = historyData.filter(h=>h.stepsOrder.includes('ManualKaizen') && (selectedDept === 'الكل' || h.dept === selectedDept) && (activeStage === 'all' || window.getKaizenStage?.(h).key === activeStage || (!window.getKaizenStage && activeStage === 'plan'))).reverse().map(k=> {
         let lId = k.id; let liked = likesData[lId] && likesData[lId].includes(currentUser.name); let canEdit = window.hasRole('admin') || currentUser.name === k.auditor;
+        const stage = window.getKaizenStage?.(k) || { key: 'plan', label: 'PLAN · تخطيط', className: 'plan', nextLabel: 'بدء التنفيذ' };
+        const owner = k.a3?.owner || k.auditor || 'غير محدد';
+        const canProgress = window.canAdvanceKaizenPDCA?.(k) && stage.key !== 'standardized';
+        const progressControl = canProgress ? `<button class="btn btn-sm btn-success flex-1" onclick="advanceKaizenPDCA('${k.id}')"><i class='bx bx-right-arrow-alt'></i> ${stage.nextLabel}</button>` : '';
+        const a3Summary = k.a3 ? `<div class="kaizen-a3-summary"><div><span>المشكلة</span><b>${window.escapeTPM(k.a3.problem || '—')}</b></div><div><span>السبب الجذري</span><b>${window.escapeTPM(k.a3.rootCause || '—')}</b></div><div><span>الإجراء</span><b>${window.escapeTPM(k.a3.countermeasure || '—')}</b></div></div>` : `<div class="kaizen-a3-summary legacy"><div><span>بطاقة كايزن سابقة</span><b>يمكن اعتمادها في دورة A3 من خلال مرحلة التخطيط.</b></div></div>`;
         let controls = canEdit ? `<button class="btn btn-sm btn-outline flex-1" onclick="editKaizen('${k.id}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger flex-1" onclick="deleteKaizen('${k.id}')"><i class='bx bx-trash'></i> حذف</button>` : '';
         let comments = kaizenComments[lId] || []; let commentsHtml = comments.map(cm => `<div style="background:var(--surface-inset); padding:10px 15px; border-radius:10px; margin-bottom:8px; border-right:3px solid var(--primary); font-size:13px;"><b style="color:var(--primary); display:block; margin-bottom:3px;">${cm.user}:</b> ${cm.text} <span style="font-size:10px; color:var(--text-muted); float:left;">${cm.date}</span></div>`).join('');
 
         return `<div class="card glass-card" style="padding:0; overflow:hidden;">
             <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:rgba(0,0,0,0.2); border-bottom:1px solid var(--border-glass);">
                 <div style="display:flex; align-items:center; gap:10px;"><i class='bx bx-user-circle' style="font-size:24px; color:var(--gold);"></i><b style="color:var(--text-main); font-size:15px;">${k.auditor}</b></div>
-                <span style="font-size:12px; color:var(--text-muted); background:var(--surface-inset); padding:4px 10px; border-radius:12px;"><i class='bx bx-buildings'></i> ${k.dept} | ${k.date}</span>
+                <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:flex-end;"><span class="kaizen-stage-chip ${stage.className}">${stage.label}</span><span style="font-size:12px; color:var(--text-muted); background:var(--surface-inset); padding:4px 10px; border-radius:12px;"><i class='bx bx-buildings'></i> ${k.dept} | ${k.date}</span></div>
             </div>
             <div style="padding:20px;">
-                <b style="font-size:16px; color:var(--text-main); display:block; margin-bottom:15px;">${k.results.ManualKaizen.images.img_1.title}</b>
+                <b style="font-size:16px; color:var(--text-main); display:block; margin-bottom:8px;">${k.results.ManualKaizen.images.img_1.title}</b>
+                <div class="kaizen-owner-line"><i class='bx bx-user-pin'></i><span>مالك التحسين:</span><b>${window.escapeTPM(owner)}</b></div>
+                ${a3Summary}
                 <img src="${k.results.ManualKaizen.images.img_1.data}" style="width:100%; border-radius:12px; border:1px solid var(--border-glass); margin-bottom:20px; box-shadow:var(--shadow-raised);">
                 <div class="row-flex" style="margin-bottom:20px;">
                     <button class="btn btn-sm ${liked?'btn-primary':'btn-outline'} flex-1" onclick="toggleKaizenLike('${lId}')"><i class='bx ${liked?'bxs-like':'bx-like'}'></i> إعجاب (${likesData[lId]?likesData[lId].length:0})</button>
+                    ${progressControl}
                     ${controls}
                 </div>
                 <div style="border-top: 1px solid var(--border-glass); padding-top: 15px;">
@@ -1122,7 +1217,64 @@ window.renderKaizenFeed = function() {
 window.toggleKaizenLike = function(id) { if(!likesData[id]) likesData[id]=[]; let i=likesData[id].indexOf(currentUser.name); if(i>-1) likesData[id].splice(i,1); else likesData[id].push(currentUser.name); window.syncRecord('likes/' + id, likesData[id]); };
 window.deleteKaizen = function(id) { if(confirm('تأكيد مسح الكايزن؟')) { window.deleteRecord('history/' + id); showToast('تم الحذف'); } };
 window.editKaizen = function(id) { let k=historyData.find(x=>x.id===id); if(!k) return; let v=prompt('تعديل الوصف:', k.results.ManualKaizen.images.img_1.title); if(v) { k.results.ManualKaizen.images.img_1.title=window.sanitizeInput(v); window.syncRecord('history/' + id, k); showToast('تم التعديل'); } };
-window.addKaizenComment = function(id) { let el=document.getElementById(`comment_input_${id}`); let txt=window.sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; kaizenComments[id].push({user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}); window.syncRecord('kaizenComments/' + id, kaizenComments[id]); el.value=''; window.awardPoints(2, 'تعليق'); };
+window.addKaizenComment = function(id) { let el=document.getElementById(`comment_input_${id}`); let txt=window.sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; let comment = {user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}; kaizenComments[id].push(comment); window.syncRecord('kaizenComments/' + id, kaizenComments[id]).then(() => { el.value=''; window.awardPoints(2, 'تعليق'); }).catch(error => { kaizenComments[id].pop(); showToast(`⚠️ تعذر حفظ التعليق: ${error.message || 'خطأ في قاعدة البيانات'}`); }); };
+
+// A3 / PDCA Kaizen workflow. Legacy cards default to PLAN and remain readable.
+window.KAIZEN_PDCA_STAGES = [
+    { key: 'plan', label: 'PLAN · تخطيط', className: 'plan', next: 'do', nextLabel: 'بدء التنفيذ' },
+    { key: 'do', label: 'DO · تنفيذ', className: 'do', next: 'check', nextLabel: 'إرسال للتحقق' },
+    { key: 'check', label: 'CHECK · تحقق', className: 'check', next: 'act', nextLabel: 'اعتماد النتيجة' },
+    { key: 'act', label: 'ACT · تثبيت', className: 'act', next: 'standardized', nextLabel: 'تثبيت كمعيار' },
+    { key: 'standardized', label: 'STANDARD · معياري', className: 'standardized', next: null, nextLabel: 'تم التثبيت' }
+];
+window.getKaizenStage = function(kaizen) {
+    const key = kaizen?.a3?.stage || kaizen?.improvementStatus || 'plan';
+    return window.KAIZEN_PDCA_STAGES.find(stage => stage.key === key) || window.KAIZEN_PDCA_STAGES[0];
+};
+window.canAdvanceKaizenPDCA = function(kaizen) {
+    const stage = window.getKaizenStage(kaizen);
+    if (stage.key === 'standardized') return false;
+    const isAdmin = window.hasRole?.('admin');
+    const isOwner = [kaizen?.auditor, kaizen?.a3?.owner].filter(Boolean).includes(currentUser?.name);
+    return ['check', 'act'].includes(stage.key) ? isAdmin : (isAdmin || isOwner);
+};
+window.advanceKaizenPDCA = async function(id) {
+    const kaizen = historyData.find(item => item.id == id);
+    if (!kaizen) return showToast('⚠️ تعذر العثور على بطاقة كايزن');
+    const stage = window.getKaizenStage(kaizen);
+    if (!window.canAdvanceKaizenPDCA(kaizen)) return showToast('⚠️ لا تملك صلاحية نقل هذه البطاقة في الدورة الحالية');
+    if (!stage.next) return showToast('✅ هذا التحسين مثبت بالفعل كمعيار');
+    kaizen.a3 = kaizen.a3 || { owner: kaizen.auditor || currentUser.name || 'مستخدم', stageHistory: [] };
+    if (stage.key === 'check' && !kaizen.a3.verification) return showToast('⚠️ أضف طريقة التحقق قبل اعتماد النتيجة');
+    if (stage.key === 'act' && !kaizen.a3.standardization) return showToast('⚠️ أضف إجراء التثبيت أو OPL قبل تحويل التحسين إلى معيار');
+    const nextStage = window.KAIZEN_PDCA_STAGES.find(item => item.key === stage.next);
+    kaizen.a3.stage = nextStage.key;
+    kaizen.improvementStatus = nextStage.key;
+    kaizen.a3.stageHistory = Array.isArray(kaizen.a3.stageHistory) ? kaizen.a3.stageHistory : [];
+    kaizen.a3.stageHistory.push({ stage: nextStage.key, by: currentUser.name || 'مستخدم', at: Date.now(), note: `انتقال إلى ${nextStage.label}` });
+    if (nextStage.key === 'standardized') { kaizen.standardizedAt = Date.now(); kaizen.standardizedBy = currentUser.name || 'مدير'; }
+    try {
+        await window.syncRecord('history/' + id, kaizen);
+        if (nextStage.key === 'standardized') window.awardPoints(25, 'تثبيت كايزن كمعيار');
+        window.renderKaizenFeed?.();
+        window.renderKaizenA3CommandStats?.();
+        showToast(`✅ تم نقل بطاقة كايزن إلى مرحلة: ${nextStage.label}`);
+    } catch (error) {
+        showToast(`⚠️ تعذر تحديث مرحلة كايزن: ${error.message || 'خطأ في قاعدة البيانات'}`);
+    }
+};
+window.applyKaizenStageFilter = function(stage) {
+    window.kaizenStageFilter = stage || 'all';
+    document.querySelectorAll('.kaizen-stage-steps button').forEach(button => button.classList.toggle('active', button.getAttribute('onclick')?.includes(`'${window.kaizenStageFilter}'`)));
+    window.renderKaizenFeed?.();
+};
+window.renderKaizenA3CommandStats = function() {
+    const container = document.getElementById('kaizenA3CommandStats');
+    if (!container) return;
+    const kaizens = historyData.filter(item => item.stepsOrder?.includes('ManualKaizen'));
+    const count = key => kaizens.filter(item => window.getKaizenStage(item).key === key).length;
+    container.innerHTML = `<div class="kaizen-a3-stat plan"><span>تخطيط</span><b>${count('plan')}</b></div><div class="kaizen-a3-stat do"><span>تنفيذ</span><b>${count('do')}</b></div><div class="kaizen-a3-stat check"><span>تحقق</span><b>${count('check')}</b></div><div class="kaizen-a3-stat act"><span>تثبيت</span><b>${count('act')}</b></div><div class="kaizen-a3-stat standardized"><span>مثبّت كمعيار</span><b>${count('standardized')}</b></div>`;
+};
 
 // ==========================================
 // 🏷️ التاجات (Tags Engine)
@@ -1935,28 +2087,55 @@ window.renderInternalDeptLeaderboard = function(dept) {
 // ==========================================
 window.load5SImage = function(event, type) {
     const file = event.target.files[0];
-    if(!file) return;
-    showToast('جاري رفع الصورة... ⏳');
-    
+    if (!file) return;
+
+    const processImage = (dataUrl) => window.save5SImage(dataUrl, type);
+    showToast('جاري تجهيز الصورة ورفعها إلى التخزين السحابي…');
+
     if (typeof processAndEnhanceImage === 'function') {
-        processAndEnhanceImage(file, function(dataUrl) { window.finalize5SImage(dataUrl, type); });
-    } else {
-        const reader = new FileReader();
-        reader.onload = function(e) { window.finalize5SImage(e.target.result, type); };
-        reader.readAsDataURL(file);
+        processAndEnhanceImage(file, processImage);
+        return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (e) => processImage(e.target.result);
+    reader.onerror = () => showToast('⚠️ تعذر قراءة ملف الصورة.');
+    reader.readAsDataURL(file);
 };
 
-window.finalize5SImage = function(dataUrl, type) {
-    document.getElementById(type === 'standard' ? 'imgStandard' : 'imgCurrent').src = dataUrl;
-    showToast('تم إرفاق الصورة بنجاح ✅');
-    
-    const stdSrc = document.getElementById('imgStandard').src;
-    const curSrc = document.getElementById('imgCurrent').src;
-    if(stdSrc && curSrc && stdSrc !== window.location.href && curSrc !== window.location.href) {
+window.save5SImage = async function(dataUrl, type) {
+    const previewTarget = document.getElementById(type === 'standard' ? 'imgStandard' : 'imgCurrent');
+    if (!previewTarget) return;
+
+    // تُعرض المعاينة فورًا، ثم يُستبدل مصدرها برابط Firebase الدائم بعد نجاح الرفع.
+    previewTarget.src = dataUrl;
+    fiveSImages[type] = { previewUrl: dataUrl, storageUrl: null };
+    window.finalize5SImage(dataUrl, type, false);
+
+    const storageUrl = await window.uploadImageToStorage(dataUrl, { folder: '5s' });
+    if (!storageUrl) {
+        showToast('⚠️ لم تُحفظ صورة 5S في التخزين. أعد اختيار الصورة قبل تسجيل عدم المطابقة.');
+        return;
+    }
+
+    fiveSImages[type] = { previewUrl: dataUrl, storageUrl };
+    previewTarget.src = storageUrl;
+    window.finalize5SImage(storageUrl, type, true);
+    showToast('✅ تم حفظ صورة 5S في Firebase Storage.');
+};
+
+window.finalize5SImage = function(sourceUrl, type, isStored = true) {
+    const target = document.getElementById(type === 'standard' ? 'imgStandard' : 'imgCurrent');
+    if (target) target.src = sourceUrl;
+
+    const stdSrc = document.getElementById('imgStandard')?.src;
+    const curSrc = document.getElementById('imgCurrent')?.src;
+    if (stdSrc && curSrc && stdSrc !== window.location.href && curSrc !== window.location.href) {
         document.getElementById('fiveSSliderContainer').style.display = 'block';
         window.init5SSlider();
     }
+
+    if (!isStored) showToast('تم تجهيز المعاينة، جارٍ حفظ الصورة في التخزين…');
 };
 
 window.init5SSlider = function() {
@@ -1986,19 +2165,40 @@ window.init5SSlider = function() {
     container.ontouchmove = slide;
 };
 
-window.generate5STask = function() {
-    if(!departments || departments.length === 0) return showToast('لا توجد أقسام مسجلة');
-    let dept = prompt('لأي قسم تريد تسجيل عدم المطابقة؟\n' + departments.join(' - '), departments[0]);
-    if(!dept || !departments.includes(dept)) return showToast('قسم غير صالح');
-    let desc = prompt('اكتب وصف المشكلة (عدم المطابقة في 5S):');
-    if(!desc) return;
-    
-    let id = window.uniqueNumericId().toString();
-    window.syncRecord('tasks/' + id, {
-        id: id, task: '[5S] ' + window.sanitizeInput(desc), dept: dept, status: 'pending'
-    });
-    window.awardPoints(10, 'تسجيل عدم مطابقة 5S');
-    showToast('تم تحويل عدم المطابقة إلى مهمة صيانة/تنظيم 🚀');
+window.generate5STask = async function() {
+    if (!departments || departments.length === 0) return showToast('لا توجد أقسام مسجلة');
+    if (!fiveSImages.standard?.storageUrl || !fiveSImages.current?.storageUrl) {
+        return showToast('⚠️ انتظر اكتمال رفع صورتي 5S إلى التخزين قبل تسجيل عدم المطابقة.');
+    }
+
+    const dept = prompt('لأي قسم تريد تسجيل عدم المطابقة؟\n' + departments.join(' - '), departments[0]);
+    if (!dept || !departments.includes(dept)) return showToast('قسم غير صالح');
+    const desc = prompt('اكتب وصف المشكلة (عدم المطابقة في 5S):');
+    if (!desc) return;
+
+    const id = window.uniqueNumericId().toString();
+    const record = {
+        id,
+        task: '[5S] ' + window.sanitizeInput(desc),
+        dept,
+        status: 'pending',
+        source: '5S',
+        createdAt: Date.now(),
+        createdBy: currentUser.name || 'مستخدم',
+        images: {
+            standard: fiveSImages.standard.storageUrl,
+            current: fiveSImages.current.storageUrl
+        }
+    };
+
+    try {
+        await window.syncRecord('tasks/' + id, record);
+        window.awardPoints(10, 'تسجيل عدم مطابقة 5S');
+        showToast('✅ تم حفظ عدم المطابقة وصورتي 5S في المهمة.');
+    } catch (error) {
+        console.error('5S task save error:', error);
+        showToast('⚠️ رُفعت الصور لكن تعذر حفظ المهمة. لم تُمنح نقاط ولم يُعتمد السجل.');
+    }
 };
 
 
@@ -2092,18 +2292,23 @@ window.renderTags = function() {
     const redContainer = document.getElementById('redTagsContainer'); const blueContainer = document.getElementById('blueTagsContainer'); if (!redContainer || !blueContainer) return;
     const deptFilter = document.getElementById('filterTagDept')?.value || 'الكل'; const statusFilter = document.getElementById('filterTagStatus')?.value || 'active'; const priorityFilter = document.getElementById('filterTagPriority')?.value || 'all'; const textFilter = (document.getElementById('filterTagMachine')?.value || '').trim().toLowerCase();
     const ageLimit = 3 * 24 * 60 * 60 * 1000; let red = '', blue = '';
-    const visible = tagsData.filter(tag => { const closed = tag.status === 'closed'; const matchesText = !textFilter || `${tag.machine || ''} ${tag.engineer || ''} ${tag.desc || ''}`.toLowerCase().includes(textFilter); return (deptFilter === 'الكل' || tag.dept === deptFilter) && (statusFilter !== 'active' || !closed) && (statusFilter !== 'closed' || closed) && (priorityFilter === 'all' || (tag.priority || 'high') === priorityFilter) && matchesText; });
+    const commandView = window.activeTagCommandView || 'all'; const normalizedText = textFilter.startsWith('__TAG_') ? '' : textFilter;
+    const visible = tagsData.filter(tag => { const closed = ['closed', 'verified'].includes(tag.status); const matchesText = !normalizedText || `${tag.machine || ''} ${tag.engineer || ''} ${tag.desc || ''}`.toLowerCase().includes(normalizedText); const sla = window.getTagSLA ? window.getTagSLA(tag) : { overdue: !closed && tag.timestamp && Date.now() - tag.timestamp > ageLimit }; const matchesCommand = commandView === 'all' || (commandView === 'critical' && (tag.priority || 'high') === 'critical') || (commandView === 'unassigned' && !tag.engineer) || (commandView === 'overdue' && sla.overdue) || (commandView === 'review' && tag.status === 'review'); return (deptFilter === 'الكل' || tag.dept === deptFilter) && (statusFilter !== 'active' || !closed) && (statusFilter !== 'closed' || closed) && (priorityFilter === 'all' || (tag.priority || 'high') === priorityFilter) && matchesText && matchesCommand; });
     visible.forEach(tag => {
-        const closed = tag.status === 'closed'; const aged = !closed && tag.timestamp && Date.now() - tag.timestamp > ageLimit; const priority = window.getPriorityMeta(tag.priority || 'high'); const canEdit = window.hasRole('admin', 'auditor') || currentUser.name === tag.auditor;
-        const control = canEdit ? `<select class="form-control flex-2 tag-state-select" onchange="updateTagState('${tag.id}', this.value)"><option value="open" ${tag.status === 'open' ? 'selected' : ''}>مفتوح</option><option value="progress" ${tag.status === 'progress' ? 'selected' : ''}>جاري التنفيذ</option><option value="review" ${tag.status === 'review' ? 'selected' : ''}>بانتظار مراجعة</option><option value="closed" ${tag.status === 'closed' ? 'selected' : ''}>مغلق</option></select><button class="btn btn-sm btn-outline" onclick="editTag('${tag.id}')"><i class='bx bx-edit'></i></button><button class="btn btn-sm btn-danger" onclick="deleteTag('${tag.id}')"><i class='bx bx-trash'></i></button>` : `<span class="tag-state-readonly">${window.escapeTPM(tag.status || 'open')}</span>`;
+        const closed = ['closed', 'verified'].includes(tag.status); const sla = window.getTagSLA(tag); const aged = sla.overdue; const priority = window.getPriorityMeta(tag.priority || 'high'); const canEdit = window.hasRole('admin', 'auditor') || currentUser.name === tag.auditor;
+        const stateControl = `<select class="form-control flex-2 tag-state-select" onchange="updateTagState('${tag.id}', this.value)"><option value="open" ${tag.status === 'open' ? 'selected' : ''}>مفتوح</option><option value="progress" ${tag.status === 'progress' ? 'selected' : ''}>جاري التنفيذ</option><option value="review" ${tag.status === 'review' ? 'selected' : ''}>بانتظار مراجعة</option></select>`;
+        const assignButton = window.hasRole('admin', 'auditor') ? `<button class="btn btn-sm btn-outline" onclick="assignTagOwner('${tag.id}')"><i class='bx bx-user-plus'></i> إسناد</button>` : '';
+        const verifyButton = tag.status === 'review' && window.hasRole('admin', 'auditor') ? `<button class="btn btn-sm btn-success" onclick="verifyTagClosure('${tag.id}')"><i class='bx bx-check-shield'></i> تحقق</button>` : '';
+        const control = canEdit ? `${stateControl}${assignButton}${verifyButton}<button class="btn btn-sm btn-outline" onclick="editTag('${tag.id}')"><i class='bx bx-edit'></i></button><button class="btn btn-sm btn-danger" onclick="deleteTag('${tag.id}')"><i class='bx bx-trash'></i></button>` : `<span class="tag-state-readonly">${window.escapeTPM(tag.status || 'open')}</span>`;
         const notificationButton = tag.engineerPhone && window.hasRole('admin', 'auditor') ? `<button class="btn btn-sm btn-outline" onclick="resendTagNotification('${tag.id}')"><i class='bx bxl-whatsapp'></i> تنبيه</button>` : '';
-        const card = `<article class="tag-ticket ${tag.color === 'red' ? 'ticket-red' : 'ticket-blue'} ${aged ? 'tag-is-aged' : ''}"><div class="tag-ticket-head"><span class="priority-badge ${priority.className}">${priority.label}</span>${aged ? '<span class="overdue-badge">متأخر</span>' : ''}</div><h4>${window.escapeTPM(tag.desc)}</h4><div class="tag-context-row"><span><i class='bx bx-buildings'></i>${window.escapeTPM(tag.dept || 'غير محدد')}</span>${tag.machine ? `<span><i class='bx bx-cog'></i>${window.escapeTPM(tag.machine)}</span>` : ''}</div><div class="tag-ownership"><div><i class='bx bx-user-check'></i><span>المسؤول</span><b>${window.escapeTPM(tag.engineer || 'غير مُسند')}</b></div><div><i class='bx bx-network-chart'></i><span>المسار</span><b>${window.escapeTPM(window.getTeamLabel(tag.team))}</b></div></div>${tag.image ? `<img src="${window.escapeTPM(tag.image)}" alt="صورة التاج" class="tag-attachment" onclick="window.open('${window.escapeTPM(tag.image)}', '_blank')">` : ''}<div class="tag-footer"><small><i class='bx bx-calendar'></i> ${window.escapeTPM(tag.date || '')} · ${window.escapeTPM(tag.auditor || '')}</small><div class="row-flex tag-controls">${notificationButton}${control}</div></div></article>`;
+        const card = `<article class="tag-ticket ${tag.color === 'red' ? 'ticket-red' : 'ticket-blue'} ${aged ? 'tag-is-aged' : ''}"><div class="tag-ticket-head"><span class="priority-badge ${priority.className}">${priority.label}</span>${aged ? '<span class="overdue-badge">متأخر</span>' : ''}</div><h4>${window.escapeTPM(tag.desc)}</h4><div class="tag-context-row"><span><i class='bx bx-buildings'></i>${window.escapeTPM(tag.dept || 'غير محدد')}</span>${tag.machine ? `<span><i class='bx bx-cog'></i>${window.escapeTPM(tag.machine)}</span>` : ''}</div><div class="tag-ownership"><div><i class='bx bx-user-check'></i><span>المسؤول</span><b>${window.escapeTPM(tag.engineer || 'غير مُسند')}</b></div><div><i class='bx bx-network-chart'></i><span>المسار</span><b>${window.escapeTPM(window.getTeamLabel(tag.team))}</b></div></div><div class="tag-sla-row ${aged ? 'is-overdue' : ''}"><i class='bx bx-timer'></i><span>${window.formatTagSLA(tag)}</span>${tag.assignedAt ? `<small>أُسند ${window.formatTPMDate(tag.assignedAt)}</small>` : ''}</div>${tag.image ? `<img src="${window.escapeTPM(tag.image)}" alt="صورة التاج" class="tag-attachment" onclick="window.open('${window.escapeTPM(tag.image)}', '_blank')">` : ''}<div class="tag-footer"><small><i class='bx bx-calendar'></i> ${window.escapeTPM(tag.date || '')} · ${window.escapeTPM(tag.auditor || '')}</small><div class="row-flex tag-controls">${notificationButton}${control}</div></div></article>`;
         if (tag.color === 'red') red += card; else blue += card;
     });
     redContainer.innerHTML = red || '<div class="empty-kanban-state">لا توجد تاجات صيانة مطابقة للفلاتر</div>'; blueContainer.innerHTML = blue || '<div class="empty-kanban-state">لا توجد تاجات إنتاج مطابقة للفلاتر</div>';
-    const stats = document.getElementById('tagCommandStats'); if (stats) { const open = tagsData.filter(tag => tag.status !== 'closed'); const critical = open.filter(tag => tag.priority === 'critical').length; const aged = open.filter(tag => tag.timestamp && Date.now() - tag.timestamp > ageLimit).length; const assigned = open.filter(tag => tag.engineer).length; stats.innerHTML = `<div class="tag-stat"><span>تاجات مفتوحة</span><b>${open.length}</b></div><div class="tag-stat critical"><span>حرجة</span><b>${critical}</b></div><div class="tag-stat"><span>متأخرة</span><b>${aged}</b></div><div class="tag-stat"><span>مُسندة</span><b>${assigned}</b></div>`; }
+    const stats = document.getElementById('tagCommandStats'); if (stats) { const open = tagsData.filter(tag => !['closed', 'verified'].includes(tag.status)); const critical = open.filter(tag => (tag.priority || 'high') === 'critical').length; const aged = open.filter(tag => window.getTagSLA(tag).overdue).length; const assigned = open.filter(tag => tag.engineer).length; stats.innerHTML = `<div class="tag-stat"><span>تاجات مفتوحة</span><b>${open.length}</b></div><div class="tag-stat critical"><span>حرجة</span><b>${critical}</b></div><div class="tag-stat"><span>تجاوزت SLA</span><b>${aged}</b></div><div class="tag-stat"><span>مُسندة</span><b>${assigned}</b></div>`; }
+    window.renderTagCommandCenter?.();
 };
-window.updateTagState = async function(id, status) { const tag = tagsData.find(item => item.id == id); if (!tag) return; const previousStatus = tag.status; tag.status = status; if (status === 'closed') { tag.closedAt = Date.now(); window.awardPoints(20, 'إغلاق تاج'); } await window.syncRecord(`tags/${id}`, tag); if (status === 'review' && previousStatus !== 'review' && tag.engineerPhone && notificationSettings.onTagEscalation) window.dispatchWhatsAppNotification(tag, 'tag_escalated'); };
+window.updateTagState = async function(id, status) { const tag = tagsData.find(item => item.id == id); if (!tag) return; if (status === 'closed' || status === 'verified') return window.verifyTagClosure(id); const previousStatus = tag.status; tag.status = status; if (status === 'review' && previousStatus !== 'review') { tag.reviewRequestedAt = Date.now(); tag.reviewRequestedBy = currentUser.name || ''; } await window.syncRecord(`tags/${id}`, tag); if (status === 'review' && previousStatus !== 'review' && tag.engineerPhone && notificationSettings.onTagEscalation) window.dispatchWhatsAppNotification(tag, 'tag_escalated'); };
 window.resendTagNotification = function(id) { const tag = tagsData.find(item => item.id == id); if (!tag?.engineerPhone) return showToast('⚠️ لا يوجد رقم WhatsApp صالح للمسؤول'); window.dispatchWhatsAppNotification(tag, 'tag_assigned', true); };
 window.dispatchWhatsAppNotification = async function(tag, eventType = 'tag_assigned', manual = false) {
     try {
@@ -2414,3 +2619,75 @@ firebase.auth().onAuthStateChanged(user => {
         window.renderJHMainTeam();
     }
 });
+
+
+// ==========================================
+// 🛰️ Tag Command Center — ownership, SLA & verification
+// ==========================================
+window.getTagSLA = function(tag) {
+    const priority = tag?.priority || (tag?.color === 'red' ? 'high' : 'medium');
+    const hours = { critical: 4, high: 24, medium: 72, low: 168 }[priority] || 72;
+    const openedAt = Number(tag?.timestamp || Date.now()); const deadline = openedAt + hours * 60 * 60 * 1000;
+    const closed = ['closed', 'verified'].includes(tag?.status);
+    const remaining = deadline - Date.now();
+    return { priority, hours, deadline, closed, overdue: !closed && remaining < 0, approaching: !closed && remaining >= 0 && remaining < Math.min(hours * 0.25 * 60 * 60 * 1000, 8 * 60 * 60 * 1000), remaining };
+};
+window.formatTagSLA = function(tag) {
+    const sla = window.getTagSLA(tag); if (sla.closed) return 'تم الإغلاق';
+    const absoluteHours = Math.ceil(Math.abs(sla.remaining) / 3600000);
+    if (sla.overdue) return `متجاوز للمهلة بـ ${absoluteHours} س`;
+    return `متبقي ${Math.max(1, absoluteHours)} س`;
+};
+window.renderTagCommandCenter = function() {
+    const open = tagsData.filter(tag => !['closed', 'verified'].includes(tag.status));
+    const critical = open.filter(tag => (tag.priority || (tag.color === 'red' ? 'high' : 'medium')) === 'critical');
+    const unassigned = open.filter(tag => !tag.engineer);
+    const overdue = open.filter(tag => window.getTagSLA(tag).overdue);
+    const review = open.filter(tag => tag.status === 'review');
+    const counters = { tagQuickCritical: critical.length, tagQuickUnassigned: unassigned.length, tagQuickOverdue: overdue.length, tagQuickReview: review.length };
+    Object.entries(counters).forEach(([id, value]) => { const el = document.getElementById(id); if (el) el.textContent = value; });
+    const queue = document.getElementById('tagEscalationQueue'); if (!queue) return;
+    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+    const actionList = [...overdue, ...critical.filter(tag => !overdue.includes(tag)), ...unassigned.filter(tag => !overdue.includes(tag) && !critical.includes(tag))]
+        .sort((a, b) => (priorityOrder[a.priority || 'medium'] ?? 2) - (priorityOrder[b.priority || 'medium'] ?? 2) || Number(a.timestamp || 0) - Number(b.timestamp || 0))
+        .slice(0, 5);
+    queue.innerHTML = actionList.length ? actionList.map(tag => {
+        const sla = window.getTagSLA(tag); const needsOwner = !tag.engineer;
+        return `<div class="tag-escalation-item ${sla.overdue ? 'overdue' : ''}"><i class='bx ${sla.overdue ? 'bx-alarm-exclamation' : needsOwner ? 'bx-user-x' : 'bx-error-circle'}'></i><div><b>${window.escapeTPM(tag.desc || 'تاج بلا وصف')}</b><small>${window.escapeTPM(tag.dept || 'قسم غير محدد')} · ${window.formatTagSLA(tag)}${needsOwner ? ' · يحتاج إسنادًا' : ''}</small></div><button class="btn btn-sm btn-outline" onclick="focusTagFromCommand('${tag.id}')">فتح</button></div>`;
+    }).join('') : '<div class="tag-escalation-item"><i class="bx bx-check-shield"></i><div><b>لا توجد استثناءات حرجة حاليًا</b><small>كل التاجات المفتوحة لها مسار متابعة ضمن المهلة.</small></div></div>';
+};
+window.applyTagQuickView = function(view) {
+    const status = document.getElementById('filterTagStatus'); const priority = document.getElementById('filterTagPriority'); const search = document.getElementById('filterTagMachine');
+    if (status) status.value = 'active'; if (priority) priority.value = 'all'; if (search) search.value = '';
+    window.activeTagCommandView = view;
+    if (view === 'critical' && priority) priority.value = 'critical';
+    if (view === 'review' && search) search.value = '__TAG_REVIEW__';
+    if (view === 'unassigned' && search) search.value = '__TAG_UNASSIGNED__';
+    if (view === 'overdue' && search) search.value = '__TAG_OVERDUE__';
+    window.renderTags();
+};
+window.focusTagFromCommand = function(id) {
+    const tag = tagsData.find(item => item.id == id); if (!tag) return;
+    const dept = document.getElementById('filterTagDept'); const status = document.getElementById('filterTagStatus'); const search = document.getElementById('filterTagMachine');
+    if (dept) dept.value = tag.dept || 'الكل'; if (status) status.value = 'active'; if (search) search.value = tag.machine || tag.desc || '';
+    window.activeTagCommandView = 'all'; window.renderTags(); document.getElementById('redTagsContainer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+window.assignTagOwner = async function(id) {
+    const tag = tagsData.find(item => item.id == id); if (!tag) return;
+    const choices = maintenanceEngineers.map(engineer => engineer.name).filter(Boolean);
+    if (!choices.length) return showToast('⚠️ أضف مسؤولي الصيانة من الإعدادات أولًا');
+    const selected = prompt(`اكتب اسم المسؤول كما يظهر في القائمة:\n${choices.join(' • ')}`, tag.engineer || '');
+    if (selected === null) return; const engineer = window.getEngineer(selected.trim());
+    if (!engineer) return showToast('⚠️ اختر اسمًا مطابقًا لمسؤولي الصيانة في الإعدادات');
+    tag.engineer = engineer.name; tag.engineerPhone = engineer.phone || ''; tag.assignedAt = Date.now(); tag.assignedBy = currentUser.name || '';
+    await window.syncRecord(`tags/${tag.id}`, tag); showToast(`تم إسناد التاج إلى ${engineer.name} ✅`);
+    if (engineer.phone && notificationSettings.onTagAssigned) window.dispatchWhatsAppNotification(tag, 'tag_assigned');
+};
+window.verifyTagClosure = async function(id) {
+    const tag = tagsData.find(item => item.id == id); if (!tag) return;
+    if (!window.hasRole('admin', 'auditor')) return showToast('⚠️ التحقق من الإغلاق متاح للمراجع أو المدير فقط');
+    if (tag.status !== 'review') return showToast('⚠️ انقل التاج إلى «بانتظار مراجعة» قبل التحقق');
+    const note = prompt('ملاحظة التحقق (اختياري):', tag.verificationNote || ''); if (note === null) return;
+    tag.status = 'closed'; tag.verifiedAt = Date.now(); tag.verifiedBy = currentUser.name || ''; tag.verificationNote = window.sanitizeInput(note); tag.closedAt = Date.now();
+    await window.syncRecord(`tags/${tag.id}`, tag); window.awardPoints(20, 'إغلاق تاج بعد التحقق'); showToast('تم التحقق من الإغلاق وتوثيقه ✅');
+};

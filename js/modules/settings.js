@@ -51,27 +51,29 @@ export const Settings = {
             el.style.display = u.role === 'admin' ? '' : 'none';
         });
 
-        // 4. إظهار محتوى التابات بأمان تام
-        this.switchSettingsTab('my-activity');
+        // 4. إظهار النظرة العامة المطابقة للتبويبات الحالية.
+        this.switchSettingsTab('overview');
+        window.renderSettingsControlLists?.();
+        window.populateNotificationSettings?.();
     },
 
-    switchSettingsTab(tabId) {
-        document.querySelectorAll('.settings-tab-content').forEach(c => {
-            c.classList.remove('active');
-            c.style.display = 'none';
+    switchSettingsTab(tabId, button) {
+        document.querySelectorAll('.settings-tab-content').forEach(content => {
+            content.classList.remove('active');
+            content.style.display = 'none';
         });
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        
+        document.querySelectorAll('#settingsScreen .settings-navigation .btn').forEach(item => item.classList.remove('active'));
+
         const targetTab = document.getElementById('tab-' + tabId);
-        if(targetTab) {
+        if (targetTab) {
             targetTab.classList.add('active');
             targetTab.style.display = 'block';
         }
-        
-        const activeBtn = document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
-        if(activeBtn) {
-            activeBtn.classList.add('active');
-        }
+
+        const activeButton = button || document.querySelector(`#settingsScreen .settings-navigation .btn[onclick*="'${tabId}'"]`);
+        if (activeButton) activeButton.classList.add('active');
+        window.renderSettingsControlLists?.();
+        window.populateNotificationSettings?.();
     },
 
     openMyFullProfile() {

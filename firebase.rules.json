@@ -12,8 +12,11 @@
         ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
       },
       "history": {
-        ".indexOn": ["id", "dept", "auditor"],
-        ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
+        ".indexOn": ["id", "dept", "auditor", "authorUid"],
+        ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')",
+        "$historyId": {
+          ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor' || (!data.exists() && newData.child('authorUid').val() === auth.uid) || (!newData.exists() && data.child('authorUid').val() === auth.uid) || (data.child('authorUid').val() === auth.uid && newData.child('authorUid').val() === auth.uid))"
+        }
       },
       "tasks": {
         ".indexOn": ["id", "dept"],

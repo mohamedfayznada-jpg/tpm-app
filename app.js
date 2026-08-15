@@ -199,7 +199,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
         if (isMasterAdmin) {
             role = 'admin';
-            currentUser = { name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
+            currentUser = { uid: user.uid, name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
             window.currentUser = currentUser; localStorage.setItem('tpm_username', 'mfayez');
 
             // استعادة سجل المدير القديم الذي كان يفتقد role، حتى تتطابق صلاحية الواجهة مع قواعد Realtime Database.
@@ -234,7 +234,7 @@ firebase.auth().onAuthStateChanged(async user => {
             let uData = usersData[user.uid];
             if (typeof uData === 'string') { role = uData; } 
             else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
-            currentUser = { name: savedName, username: finalUsername, role: role, status: status };
+            currentUser = { uid: user.uid, name: savedName, username: finalUsername, role: role, status: status };
             window.currentUser = currentUser;
         }
 
@@ -1089,8 +1089,10 @@ window.handleKaizenImage = function(e, type) {
 };
 
 window.submitManualKaizen = async function() {
-    const title = document.getElementById('newKaizenTitle').value.trim();
-    const dept = document.getElementById('newKaizenDept').value;
+    const authUser = firebase?.auth?.().currentUser;
+    if (!authUser) return showToast('⚠️ سجّل الدخول أولًا قبل مشاركة كايزن.');
+    const title = document.getElementById('newKaizenTitle')?.value.trim() || '';
+    const dept = document.getElementById('newKaizenDept')?.value || '';
     const a3 = {
         impact: document.getElementById('newKaizenImpact')?.value || 'Q',
         owner: window.sanitizeInput(document.getElementById('newKaizenOwner')?.value.trim() || currentUser.name || 'مستخدم'),
@@ -1129,8 +1131,10 @@ window.submitManualKaizen = async function() {
         const kId = window.uniqueNumericId().toString();
         const record = {
             id: kId,
-            dept,
-            auditor: currentUser.name || 'مستخدم',
+            dept: window.sanitizeInput(dept),
+            auditor: window.sanitizeInput(currentUser.name || 'مستخدم'),
+            authorUid: authUser.uid,
+            authorName: window.sanitizeInput(currentUser.name || 'مستخدم'),
             date: new Date().toLocaleDateString('ar-EG'),
             createdAt: Date.now(),
             stepsOrder: ['ManualKaizen'],
@@ -1176,29 +1180,39 @@ window.loadImageForCanvas = function(source) {
 window.kaizenStageFilter = 'all';
 window.renderKaizenFeed = function() {
     let c = document.getElementById('kaizenFeedContainer'); if(!c) return;
-    let selectedDept = document.getElementById('kaizenDeptSelect').value;
+    let selectedDept = document.getElementById('kaizenDeptSelect')?.value || 'الكل';
     const activeStage = window.kaizenStageFilter || 'all';
+    const safe = (value, fallback = '—') => window.escapeTPM(String(value ?? fallback));
+    const records = Array.isArray(historyData) ? historyData : [];
     
-    let html = historyData.filter(h=>h.stepsOrder.includes('ManualKaizen') && (selectedDept === 'الكل' || h.dept === selectedDept) && (activeStage === 'all' || window.getKaizenStage?.(h).key === activeStage || (!window.getKaizenStage && activeStage === 'plan'))).reverse().map(k=> {
-        let lId = k.id; let liked = likesData[lId] && likesData[lId].includes(currentUser.name); let canEdit = window.hasRole('admin') || currentUser.name === k.auditor;
+    let html = records.filter(h => {
+        const stageKey = window.getKaizenStage?.(h)?.key || 'plan';
+        return Array.isArray(h?.stepsOrder) && h.stepsOrder.includes('ManualKaizen') && (selectedDept === 'الكل' || h.dept === selectedDept) && (activeStage === 'all' || stageKey === activeStage);
+    }).slice().reverse().map(k=> {
+        const manual = k?.results?.ManualKaizen;
+        const image = manual?.images?.img_1;
+        if (!image?.data || !image?.title) return '';
+        let lId = String(k.id || ''); let liked = Array.isArray(likesData[lId]) && likesData[lId].includes(currentUser.name); let canEdit = window.hasRole('admin') || window.hasRole('auditor') || (!!currentUser.uid && currentUser.uid === k.authorUid);
         const stage = window.getKaizenStage?.(k) || { key: 'plan', label: 'PLAN · تخطيط', className: 'plan', nextLabel: 'بدء التنفيذ' };
         const owner = k.a3?.owner || k.auditor || 'غير محدد';
+        const imageSrc = /^(data:image\/|https?:\/\/)/i.test(String(image.data)) ? safe(image.data, '') : '';
+        if (!imageSrc) return '';
         const canProgress = window.canAdvanceKaizenPDCA?.(k) && stage.key !== 'standardized';
-        const progressControl = canProgress ? `<button class="btn btn-sm btn-success flex-1" onclick="advanceKaizenPDCA('${k.id}')"><i class='bx bx-right-arrow-alt'></i> ${stage.nextLabel}</button>` : '';
-        const a3Summary = k.a3 ? `<div class="kaizen-a3-summary"><div><span>المشكلة</span><b>${window.escapeTPM(k.a3.problem || '—')}</b></div><div><span>السبب الجذري</span><b>${window.escapeTPM(k.a3.rootCause || '—')}</b></div><div><span>الإجراء</span><b>${window.escapeTPM(k.a3.countermeasure || '—')}</b></div></div>` : `<div class="kaizen-a3-summary legacy"><div><span>بطاقة كايزن سابقة</span><b>يمكن اعتمادها في دورة A3 من خلال مرحلة التخطيط.</b></div></div>`;
-        let controls = canEdit ? `<button class="btn btn-sm btn-outline flex-1" onclick="editKaizen('${k.id}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger flex-1" onclick="deleteKaizen('${k.id}')"><i class='bx bx-trash'></i> حذف</button>` : '';
-        let comments = kaizenComments[lId] || []; let commentsHtml = comments.map(cm => `<div style="background:var(--surface-inset); padding:10px 15px; border-radius:10px; margin-bottom:8px; border-right:3px solid var(--primary); font-size:13px;"><b style="color:var(--primary); display:block; margin-bottom:3px;">${cm.user}:</b> ${cm.text} <span style="font-size:10px; color:var(--text-muted); float:left;">${cm.date}</span></div>`).join('');
+        const progressControl = canProgress ? `<button class="btn btn-sm btn-success flex-1" onclick="advanceKaizenPDCA('${safe(k.id)}')"><i class='bx bx-right-arrow-alt'></i> ${safe(stage.nextLabel)}</button>` : '';
+        const a3Summary = k.a3 ? `<div class="kaizen-a3-summary"><div><span>المشكلة</span><b>${safe(k.a3.problem)}</b></div><div><span>السبب الجذري</span><b>${safe(k.a3.rootCause)}</b></div><div><span>الإجراء</span><b>${safe(k.a3.countermeasure)}</b></div></div>` : `<div class="kaizen-a3-summary legacy"><div><span>بطاقة كايزن سابقة</span><b>يمكن اعتمادها في دورة A3 من خلال مرحلة التخطيط.</b></div></div>`;
+        let controls = canEdit ? `<button class="btn btn-sm btn-outline flex-1" onclick="editKaizen('${safe(k.id)}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger flex-1" onclick="deleteKaizen('${safe(k.id)}')"><i class='bx bx-trash'></i> حذف</button>` : '';
+        let comments = Array.isArray(kaizenComments[lId]) ? kaizenComments[lId] : []; let commentsHtml = comments.map(cm => `<div style="background:var(--surface-inset); padding:10px 15px; border-radius:10px; margin-bottom:8px; border-right:3px solid var(--primary); font-size:13px;"><b style="color:var(--primary); display:block; margin-bottom:3px;">${safe(cm?.user)}</b> ${safe(cm?.text, '')} <span style="font-size:10px; color:var(--text-muted); float:left;">${safe(cm?.date)}</span></div>`).join('');
 
         return `<div class="card glass-card" style="padding:0; overflow:hidden;">
             <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:rgba(0,0,0,0.2); border-bottom:1px solid var(--border-glass);">
-                <div style="display:flex; align-items:center; gap:10px;"><i class='bx bx-user-circle' style="font-size:24px; color:var(--gold);"></i><b style="color:var(--text-main); font-size:15px;">${k.auditor}</b></div>
-                <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:flex-end;"><span class="kaizen-stage-chip ${stage.className}">${stage.label}</span><span style="font-size:12px; color:var(--text-muted); background:var(--surface-inset); padding:4px 10px; border-radius:12px;"><i class='bx bx-buildings'></i> ${k.dept} | ${k.date}</span></div>
+                <div style="display:flex; align-items:center; gap:10px;"><i class='bx bx-user-circle' style="font-size:24px; color:var(--gold);"></i><b style="color:var(--text-main); font-size:15px;">${safe(k.auditor, 'مستخدم')}</b></div>
+                <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:flex-end;"><span class="kaizen-stage-chip ${safe(stage.className)}">${safe(stage.label)}</span><span style="font-size:12px; color:var(--text-muted); background:var(--surface-inset); padding:4px 10px; border-radius:12px;"><i class='bx bx-buildings'></i> ${safe(k.dept)} | ${safe(k.date)}</span></div>
             </div>
             <div style="padding:20px;">
-                <b style="font-size:16px; color:var(--text-main); display:block; margin-bottom:8px;">${k.results.ManualKaizen.images.img_1.title}</b>
+                <b style="font-size:16px; color:var(--text-main); display:block; margin-bottom:8px;">${safe(image.title)}</b>
                 <div class="kaizen-owner-line"><i class='bx bx-user-pin'></i><span>مالك التحسين:</span><b>${window.escapeTPM(owner)}</b></div>
                 ${a3Summary}
-                <img src="${k.results.ManualKaizen.images.img_1.data}" style="width:100%; border-radius:12px; border:1px solid var(--border-glass); margin-bottom:20px; box-shadow:var(--shadow-raised);">
+                <img src="${imageSrc}" alt="صورة تحسين كايزن" loading="lazy" style="width:100%; border-radius:12px; border:1px solid var(--border-glass); margin-bottom:20px; box-shadow:var(--shadow-raised);">
                 <div class="row-flex" style="margin-bottom:20px;">
                     <button class="btn btn-sm ${liked?'btn-primary':'btn-outline'} flex-1" onclick="toggleKaizenLike('${lId}')"><i class='bx ${liked?'bxs-like':'bx-like'}'></i> إعجاب (${likesData[lId]?likesData[lId].length:0})</button>
                     ${progressControl}

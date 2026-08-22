@@ -6,11 +6,14 @@ import { Auth } from './auth/auth.js';
 import { Services } from './core/services.js';
 import { Scanner } from './modules/scanner.js';
 import { Settings } from './modules/settings.js';
+import { TPM_DOMAIN, getTPMPillar } from './core/tpm-domain.js';
 
 console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} ARCHITECTURE LOADED`);
 
 window.auth = auth;
 window.db = db;
+window.TPM_DOMAIN = TPM_DOMAIN;
+window.getTPMPillar = getTPMPillar;
 
 const loadEnterpriseTheme = () => {
     if (document.getElementById('enterprise-v26-theme')) return;
@@ -52,7 +55,6 @@ window.uploadImageToStorage = (file, options = {}) => Services.uploadImageToStor
 window.processAndEnhanceImage = (file, callback) => Services.processAndEnhanceImage(file, callback);
 window.fetchGeminiAPI = (prompt, base64) => Services.fetchGeminiAPI(prompt, base64);
 
-// Central UI authorization. Firebase Rules remain the actual security boundary.
 window.TPMAccess = {
     role() { return window.currentUser?.role || 'viewer'; },
     canAccess(screenId) {
@@ -82,8 +84,6 @@ window.TPMAccess = {
     }
 };
 
-// app.js is the legacy controller and defines window.showScreen later.
-// Guard the final navigation function after all deferred scripts have loaded.
 window.addEventListener('load', () => {
     const legacyShowScreen = window.showScreen;
     if (typeof legacyShowScreen === 'function' && !legacyShowScreen.__tpmGuarded) {

@@ -1,4 +1,3 @@
-
 export const ENV = {
     FIREBASE_CONFIG: {
         apiKey: "AIzaSyADr-QEzWt6xeT8oeF7wXfNySvXiKXMEy4",
@@ -10,5 +9,5 @@ export const ENV = {
         appId: "1:1047922099229:web:5e3d6fd5fa4c23ab2772f4"
     },
     APP_VERSION: "5.0.1",
-    IS_DEBUG_MODE: true
+    IS_DEBUG_MODE: false
 };

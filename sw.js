@@ -1,10 +1,17 @@
-const CACHE_NAME = 'factory-os-cache-v10';
+const CACHE_NAME = 'factory-os-cache-v11';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/app.js',
   '/tpm_teams.js',
-  '/styles.css'
+  '/styles.css',
+  '/css/enterprise-v26.css',
+  '/js/main.js',
+  '/js/core/firebase-init.js',
+  '/js/core/services.js',
+  '/js/utils/ui.js',
+  '/js/auth/auth.js',
+  '/js/config/env.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -33,15 +40,22 @@ self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
   const isApplicationPage = event.request.mode === 'navigate';
   const isUiAsset = requestUrl.origin === self.location.origin && (
-    requestUrl.pathname === '/index.html' || requestUrl.pathname === '/styles.css' || requestUrl.pathname === '/app.js' || requestUrl.pathname === '/tpm_teams.js'
+    requestUrl.pathname === '/index.html' ||
+    requestUrl.pathname === '/styles.css' ||
+    requestUrl.pathname === '/css/enterprise-v26.css' ||
+    requestUrl.pathname === '/app.js' ||
+    requestUrl.pathname === '/tpm_teams.js' ||
+    requestUrl.pathname.startsWith('/js/')
   );
 
   if (isApplicationPage || isUiAsset) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const responseCopy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseCopy));
+          if (response.ok) {
+            const responseCopy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseCopy));
+          }
           return response;
         })
         .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
@@ -49,7 +63,5 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
-  );
+  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
 });

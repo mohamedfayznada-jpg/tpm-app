@@ -9,6 +9,17 @@ import { Settings } from './modules/settings.js';
 
 console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} ARCHITECTURE LOADED`);
 
+// Enterprise V26 visual layer. Loaded after the legacy styles so no page or module is removed.
+const loadEnterpriseTheme = () => {
+    if (document.getElementById('enterprise-v26-theme')) return;
+    const link = document.createElement('link');
+    link.id = 'enterprise-v26-theme';
+    link.rel = 'stylesheet';
+    link.href = './css/enterprise-v26.css?v=26';
+    document.head.appendChild(link);
+};
+loadEnterpriseTheme();
+
 // ربط دوال الإعدادات والملف الشخصي.
 window.renderProfileAndSettings = () => Settings.renderProfileAndSettings();
 window.switchSettingsTab = (id, button) => Settings.switchSettingsTab(id, button);

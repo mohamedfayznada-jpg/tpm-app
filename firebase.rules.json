@@ -2,61 +2,105 @@
   "rules": {
     "tpm_system": {
       ".read": "auth != null",
+
       "api_keys": {
-        ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
       },
+
       "departments": {
-        ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
       },
+
       "maintenanceEngineers": {
-        ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
       },
+
       "history": {
         ".indexOn": ["id", "dept", "auditor", "authorUid"],
-        ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')",
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')",
         "$historyId": {
-          ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor' || (!data.exists() && newData.child('authorUid').val() === auth.uid) || (!newData.exists() && data.child('authorUid').val() === auth.uid) || (data.child('authorUid').val() === auth.uid && newData.child('authorUid').val() === auth.uid))"
+          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor' || (!data.exists() && newData.child('authorUid').val() === auth.uid) || (!newData.exists() && data.child('authorUid').val() === auth.uid) || (data.child('authorUid').val() === auth.uid && newData.child('authorUid').val() === auth.uid))"
         }
       },
+
       "tasks": {
         ".indexOn": ["id", "dept"],
-        ".write": "auth != null"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')"
       },
+
       "tags": {
         ".indexOn": ["id", "dept", "status"],
-        ".write": "auth != null"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
       },
+
       "losses": {
         ".indexOn": ["id", "dept", "lossId"],
-        ".write": "auth != null"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')"
       },
+
       "pdca": {
         ".indexOn": ["id", "dept", "status"],
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
+      },
+
+      "jh_kpis": {
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+      },
+
+      "jh_records": {
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')"
+      },
+
+      "jh_main_team": {
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
+      },
+
+      "clit_executions": {
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+      },
+
+      "dept_goals": {
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+      },
+
+      "knowledgeBase": {
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+      },
+
+      "pdf_files": {
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+      },
+
+      "global_achievements": {
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+      },
+
+      "notification_settings": {
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
+      },
+
+      "kaizenComments": {
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')"
+      },
+
+      "likes": {
         ".write": "auth != null"
       },
-      "jh_kpis": { ".write": "auth != null" },
-      "jh_records": { ".write": "auth != null" },
-      "jh_main_team": {
-        ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
-      },
-      "clit_executions": { ".write": "auth != null" },
-      "dept_goals": { ".write": "auth != null" },
-      "knowledgeBase": { ".write": "auth != null" },
-      "pdf_files": { ".write": "auth != null" },
-      "global_achievements": { ".write": "auth != null" },
-      "notification_settings": {
-        ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
-      },
-      "kaizenComments": { ".write": "auth != null" },
-      "likes": { ".write": "auth != null" },
+
       "users": {
         ".read": "auth != null",
         "$uid": {
-          ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'viewer' && newData.child('status').val() === 'pending') || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('status').val() === data.child('status').val() && newData.child('permissions').val() === data.child('permissions').val()))"
+          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'viewer' && newData.child('status').val() === 'pending') || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('status').val() === data.child('status').val() && newData.child('permissions').val() === data.child('permissions').val()))"
         }
       },
-      "points": { ".write": "auth != null" },
-      "logs": { ".write": "auth != null" }
+
+      "points": {
+        ".write": "auth != null"
+      },
+
+      "logs": {
+        ".write": "auth != null"
+      }
     }
   }
 }

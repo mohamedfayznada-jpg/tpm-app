@@ -9,6 +9,9 @@ import { Settings } from './modules/settings.js';
 
 console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} ARCHITECTURE LOADED`);
 
+window.auth = auth;
+window.db = db;
+
 const loadEnterpriseTheme = () => {
     if (document.getElementById('enterprise-v26-theme')) return;
     const link = document.createElement('link');
@@ -49,14 +52,14 @@ window.uploadImageToStorage = (file, options = {}) => Services.uploadImageToStor
 window.processAndEnhanceImage = (file, callback) => Services.processAndEnhanceImage(file, callback);
 window.fetchGeminiAPI = (prompt, base64) => Services.fetchGeminiAPI(prompt, base64);
 
-// Central UI authorization. Database rules remain the real security boundary.
+// Central UI authorization. Firebase Rules remain the actual security boundary.
 window.TPMAccess = {
     role() { return window.currentUser?.role || 'viewer'; },
     canAccess(screenId) {
+        if (['loginScreen', 'signupScreen'].includes(screenId)) return true;
+        if (!window.auth?.currentUser) return false;
+
         const role = this.role();
-        if (!window.auth || !window.auth.currentUser) {
-            return ['loginScreen', 'signupScreen'].includes(screenId);
-        }
         if (role === 'admin' || role === 'engineer') return true;
 
         const technicianScreens = new Set([
@@ -73,14 +76,14 @@ window.TPMAccess = {
         if (role === 'auditor') return auditorScreens.has(screenId);
         return ['homeScreen', 'settingsScreen'].includes(screenId);
     },
-    deny(screenId) {
-        UI.showToast(`🔒 لا تملك صلاحية الوصول إلى هذه المساحة.`);
+    deny() {
+        UI.showToast('🔒 لا تملك صلاحية الوصول إلى هذه المساحة.');
         return false;
     }
 };
 
-// app.js is the legacy master controller and defines window.showScreen later.
-// Wrap it after all deferred scripts have loaded so every navigation entry point is guarded.
+// app.js is the legacy controller and defines window.showScreen later.
+// Guard the final navigation function after all deferred scripts have loaded.
 window.addEventListener('load', () => {
     const legacyShowScreen = window.showScreen;
     if (typeof legacyShowScreen === 'function' && !legacyShowScreen.__tpmGuarded) {
@@ -92,10 +95,7 @@ window.addEventListener('load', () => {
         window.showScreen = guardedShowScreen;
     }
 
-    const originalToast = window.showToast;
-    if (typeof originalToast === 'function' && originalToast !== UI.showToast) {
-        window.showToast = (message) => UI.showToast(message);
-    }
+    window.showToast = (message) => UI.showToast(message);
 });
 
 window.addEventListener('DOMContentLoaded', () => {

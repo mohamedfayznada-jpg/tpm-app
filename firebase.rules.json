@@ -4,15 +4,15 @@
       ".read": "auth != null",
 
       "api_keys": {
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
       },
 
       "departments": {
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
       },
 
       "maintenanceEngineers": {
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
       },
 
       "history": {
@@ -23,19 +23,54 @@
         }
       },
 
-      "tasks": {
-        ".indexOn": ["id", "dept"],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')"
+      "abnormalities": {
+        ".indexOn": ["id", "machineId", "area", "status", "ownerUid", "detectedBy", "dueDate", "updatedAt"],
+        "$abnormalityId": {
+          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')",
+          ".validate": "newData.hasChildren(['id','type','status','description','detectedBy','detectedAt','updatedAt']) && newData.child('id').val() === $abnormalityId && newData.child('type').val() === 'abnormality'"
+        }
       },
 
       "tags": {
-        ".indexOn": ["id", "dept", "status"],
+        ".indexOn": ["id", "dept", "status", "abnormalityId", "ownerUid", "dueDate"],
         ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
       },
 
       "losses": {
-        ".indexOn": ["id", "dept", "lossId"],
+        ".indexOn": ["id", "dept", "lossId", "abnormalityId", "machineId", "lossType", "recordedAt"],
         ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')"
+      },
+
+      "rca": {
+        ".indexOn": ["id", "abnormalityId", "method", "status", "preparedAt"],
+        "$rcaId": {
+          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')",
+          ".validate": "newData.hasChildren(['id','type','abnormalityId','method','preparedBy','preparedAt','status']) && newData.child('id').val() === $rcaId && newData.child('type').val() === 'root_cause_analysis'"
+        }
+      },
+
+      "countermeasures": {
+        ".indexOn": ["id", "abnormalityId", "rcaId", "ownerUid", "dueDate", "status"],
+        "$actionId": {
+          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')",
+          ".validate": "newData.hasChildren(['id','type','abnormalityId','action','createdBy','createdAt','status']) && newData.child('id').val() === $actionId && newData.child('type').val() === 'countermeasure'"
+        }
+      },
+
+      "verifications": {
+        ".indexOn": ["id", "abnormalityId", "actionId", "effective", "verifiedAt", "status"],
+        "$verificationId": {
+          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')",
+          ".validate": "newData.hasChildren(['id','type','abnormalityId','verifiedBy','verifiedAt','status']) && newData.child('id').val() === $verificationId && newData.child('type').val() === 'verification'"
+        }
+      },
+
+      "standards": {
+        ".indexOn": ["id", "abnormalityId", "verificationId", "standardizedAt", "status"],
+        "$standardId": {
+          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')",
+          ".validate": "newData.hasChildren(['id','type','abnormalityId','standardizedBy','standardizedAt','status']) && newData.child('id').val() === $standardId && newData.child('type').val() === 'standardization'"
+        }
       },
 
       "pdca": {

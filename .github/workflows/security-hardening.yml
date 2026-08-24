@@ -1,0 +1,26 @@
+name: Enterprise Security Hardening
+on:
+  push:
+    branches: [ui/enterprise-v26]
+permissions:
+  contents: write
+jobs:
+  harden:
+    if: "!contains(github.event.head_commit.message, '[security-hardening]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ui/enterprise-v26
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/security-hardening.mjs
+      - name: Commit hardening patch
+        run: |
+          git config user.name 'factory-os-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'security: harden legacy core [security-hardening]'
+          git push origin HEAD:ui/enterprise-v26

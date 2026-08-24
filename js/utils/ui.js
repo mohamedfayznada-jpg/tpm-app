@@ -4,23 +4,22 @@ export const UI = {
     screenHistory: ['homeScreen'],
 
     showScreen(screenId) {
-        // حماية الصلاحيات هتتنفذ من ملف الـ Auth
         if (this.screenHistory[this.screenHistory.length - 1] !== screenId) {
             this.screenHistory.push(screenId);
         }
-        
+
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        let target = document.getElementById(screenId);
+        const target = document.getElementById(screenId);
         if (target) target.classList.add('active');
         window.scrollTo(0, 0);
     },
 
     goBack() {
         if (this.screenHistory.length > 1) {
-            this.screenHistory.pop(); 
-            let lastScreen = this.screenHistory[this.screenHistory.length - 1];
+            this.screenHistory.pop();
+            const lastScreen = this.screenHistory[this.screenHistory.length - 1];
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            let target = document.getElementById(lastScreen);
+            const target = document.getElementById(lastScreen);
             if (target) target.classList.add('active');
             window.scrollTo(0, 0);
         } else {
@@ -29,31 +28,33 @@ export const UI = {
     },
 
     showToast(msg) {
-        let c = document.getElementById('toast-container');
-        if (!c) { 
-            c = document.createElement('div'); 
-            c.id = 'toast-container'; 
-            document.body.appendChild(c); 
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            document.body.appendChild(container);
         }
-        let t = document.createElement('div'); 
-        t.className = 'toast-msg'; 
-        t.innerHTML = msg;
-        c.appendChild(t);
-        setTimeout(() => { 
-            t.style.animation = 'fadeOut 0.3s ease-out forwards'; 
-            setTimeout(() => t.remove(), 300); 
+
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        // Toast content can originate from user/database data: never interpret it as HTML.
+        toast.textContent = String(msg ?? '');
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+            setTimeout(() => toast.remove(), 300);
         }, 3000);
     },
 
     toggleSidebar() {
-        const sb = document.getElementById('mainSidebar');
-        const ov = document.getElementById('sidebarOverlay');
-        if (!sb) return;
-        if (sb.classList.contains('open')) {
-            sb.classList.remove('open'); ov.style.display = 'none';
-        } else {
-            sb.classList.add('open'); ov.style.display = 'block';
-        }
+        const sidebar = document.getElementById('mainSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (!sidebar) return;
+
+        const open = sidebar.classList.toggle('open');
+        sidebar.classList.toggle('active', open);
+        if (overlay) overlay.classList.toggle('active', open);
     },
 
     toggleDarkMode() {
@@ -67,7 +68,7 @@ export const UI = {
     sanitizeInput(val) {
         if (!val) return '';
         const div = document.createElement('div');
-        div.appendChild(document.createTextNode(val));
+        div.appendChild(document.createTextNode(String(val)));
         return div.innerHTML.trim();
     },
 

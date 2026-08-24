@@ -2,42 +2,53 @@
 import { db } from './firebase-init.js';
 import { UI } from '../utils/ui.js';
 
+const assertAuthenticated = () => {
+    const user = firebase.auth().currentUser;
+    if (!user) throw new Error('سجّل الدخول أولاً قبل تنفيذ هذه العملية.');
+    return user;
+};
+
+const normalizePath = path => {
+    const value = String(path || '').replace(/^\/+|\/+$/g, '');
+    if (!value || value.includes('..') || value.startsWith('api_keys')) throw new Error('مسار بيانات غير مسموح.');
+    return value;
+};
+
 export const Services = {
-    // 1. محرك المزامنة مع قاعدة البيانات
     async syncRecord(path, data) {
-        if (!firebase.auth().currentUser) throw new Error('سجّل الدخول أولاً قبل حفظ البيانات.');
-        await db.ref('tpm_system/' + path).set(data);
+        const user = assertAuthenticated();
+        const safePath = normalizePath(path);
+        await db.ref('tpm_system/' + safePath).set(data);
         return true;
     },
-    
+
     async deleteRecord(path) {
-        if (!firebase.auth().currentUser) throw new Error('سجّل الدخول أولاً قبل حذف البيانات.');
-        await db.ref('tpm_system/' + path).remove();
+        assertAuthenticated();
+        const safePath = normalizePath(path);
+        await db.ref('tpm_system/' + safePath).remove();
         return true;
     },
 
-    logAction(act, currentUserName) { 
-        if (!currentUserName) return;
-        let logObj = {
-            id: UI.uniqueNumericId().toString(), 
-            user: currentUserName, 
-            action: act, 
-            time: new Date().toLocaleTimeString('ar-EG')
+    logAction(act, currentUserName) {
+        const user = firebase.auth().currentUser;
+        if (!user || !currentUserName) return;
+        const logObj = {
+            id: UI.uniqueNumericId().toString(),
+            uid: user.uid,
+            user: String(currentUserName).slice(0, 120),
+            action: String(act || '').slice(0, 300),
+            time: new Date().toISOString()
         };
-        this.syncRecord('logs/' + logObj.id, logObj);
+        this.syncRecord('logs/' + logObj.id, logObj).catch(error => console.error('Audit log error:', error));
     },
 
-   // 2. محرك رفع الصور الموحد — Firebase Storage
-    // يدعم File أو Data URL حتى تبقى جميع النماذج الحالية (5S، الكايزن، التاجات، الملف الشخصي) متوافقة.
     async uploadImageToStorage(fileOrDataUrl, options = {}) {
         try {
-            const user = firebase.auth().currentUser;
-            if (!user) throw new Error('سجّل الدخول أولاً قبل رفع صورة.');
+            const user = assertAuthenticated();
             if (!firebase.storage) throw new Error('خدمة تخزين الصور غير محمّلة.');
 
             let blob;
             let contentType = '';
-            let extension = 'jpg';
             if (typeof fileOrDataUrl === 'string') {
                 if (!fileOrDataUrl.startsWith('data:image/')) throw new Error('صيغة الصورة غير صالحة.');
                 const parts = fileOrDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
@@ -57,15 +68,12 @@ export const Services = {
             if (!/^image\/(jpeg|png|webp|gif)$/i.test(contentType)) throw new Error('يرجى اختيار صورة JPG أو PNG أو WEBP أو GIF.');
             if (blob.size > 8 * 1024 * 1024) throw new Error('حجم الصورة يتجاوز الحد المسموح: 8 ميجابايت.');
 
-            extension = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' })[contentType] || 'jpg';
+            const extension = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' })[contentType] || 'jpg';
             const requestedFolder = String(options.folder || 'general').toLowerCase();
             const folder = requestedFolder.replace(/[^a-z0-9_-]/g, '').slice(0, 40) || 'general';
             const objectName = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}.${extension}`;
             const reference = firebase.storage().ref(`factory-os/${folder}/${user.uid}/${objectName}`);
-            const snapshot = await reference.put(blob, {
-                contentType,
-                cacheControl: 'public,max-age=31536000,immutable'
-            });
+            const snapshot = await reference.put(blob, { contentType, cacheControl: 'public,max-age=31536000,immutable' });
             return await snapshot.ref.getDownloadURL();
         } catch (error) {
             console.error('Firebase Storage upload error:', error);
@@ -73,55 +81,43 @@ export const Services = {
             return null;
         }
     },
+
     processAndEnhanceImage(file, callback) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
-                const canvas = document.createElement('canvas'); 
+                const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                const MAX_WIDTH = 800; 
-                let width = img.width; 
+                const MAX_WIDTH = 800;
+                let width = img.width;
                 let height = img.height;
                 if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
                 canvas.width = width; canvas.height = height;
                 ctx.drawImage(img, 0, 0, width, height);
                 callback(canvas.toDataURL('image/jpeg', 0.8));
-            }; 
+            };
             img.src = e.target.result;
-        }; 
+        };
         reader.readAsDataURL(file);
     },
 
-    // 3. محرك الذكاء الاصطناعي (Gemini)
     async fetchGeminiAPI(promptText, pdfBase64 = null) {
         let b64 = null;
-        if (pdfBase64) {
-            b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
+        if (pdfBase64) b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
+        const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: String(promptText || '').slice(0, 12000), imageBase64: b64 })
+        });
+        const j = await response.json().catch(() => ({}));
+        if (!response.ok || j.error) {
+            const error = new Error(j.error || 'تعذر الاتصال بخدمة الشرح الذكي. حاول مرة أخرى.');
+            error.code = j.code || 'AI_REQUEST_FAILED';
+            error.help = j.help || '';
+            throw error;
         }
-
-        try {
-            const response = await fetch('/api/gemini', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: promptText, imageBase64: b64 })
-            });
-            
-            const j = await response.json().catch(() => ({}));
-            if (!response.ok || j.error) {
-                const error = new Error(j.error || 'تعذر الاتصال بخدمة الشرح الذكي. حاول مرة أخرى.');
-                error.code = j.code || 'AI_REQUEST_FAILED';
-                error.help = j.help || '';
-                throw error;
-            }
-            if(!j.candidates || j.candidates.length === 0 || !j.candidates[0].content) {
-                throw new Error("لم تصل إجابة صالحة من الخدمة الذكية. حاول بصياغة أخرى.");
-            }
-            
-            const text = j.candidates[0].content.parts[0].text;
-            return text.replace(/```[\s\S]*?```/g, "").replace(/```/g, "").replace(/<\/?[^>]+(>|$)/g, "").trim();
-        } catch (e) {
-            throw e;
-        }
+        if (!j.candidates?.length || !j.candidates[0]?.content?.parts?.[0]?.text) throw new Error('لم تصل إجابة صالحة من الخدمة الذكية.');
+        return j.candidates[0].content.parts[0].text.replace(/```[\s\S]*?```/g, '').replace(/```/g, '').replace(/<\/?[^>]+(>|$)/g, '').trim();
     }
 };

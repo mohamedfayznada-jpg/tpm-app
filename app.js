@@ -185,9 +185,8 @@ firebase.auth().onAuthStateChanged(async user => {
 
         const uSnap = await db.ref('tpm_system/users').once('value');
         usersData = uSnap.val() || {};
-
-        const kSnap = await db.ref('tpm_system/api_keys').once('value');
-        globalApiKeys = kSnap.val() || { imgbb: "", gemini: "" };
+        // Secrets are server-managed; the browser never reads tpm_system/api_keys.
+        globalApiKeys = { imgbb: "", gemini: "" };
         window.globalApiKeys = globalApiKeys;
         
         const userEmail = user.email ? user.email.toLowerCase() : '';
@@ -234,6 +233,9 @@ firebase.auth().onAuthStateChanged(async user => {
             let uData = usersData[user.uid];
             if (typeof uData === 'string') { role = uData; } 
             else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
+            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
+            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
+            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
             currentUser = { uid: user.uid, name: savedName, username: finalUsername, role: role, status: status };
             window.currentUser = currentUser;
         }
@@ -336,7 +338,7 @@ window.renderUserManagement = function() {
 window.approveUser = async function(uid) {
     const u = usersData[uid]; if (!u) return;
     let finalPerms = u.permissions || { homeScreen: 'view', tasksScreen: 'none', historyScreen: 'none', kaizenScreen: 'view', tagsScreen: 'none', knowledgeScreen: 'none' };
-    await db.ref(`tpm_system/users/${uid}`).update({ status: 'active', role: u.requestedRole, permissions: finalPerms });
+    await db.ref(`tpm_system/users/${uid}`).update({ status: 'active', role: (window.normalizeTPMRole ? window.normalizeTPMRole(u.requestedRole) : u.requestedRole), permissions: finalPerms });
     showToast(`✅ تم تفعيل حساب ${u.name}`);
 };
 
@@ -367,22 +369,10 @@ window.saveUserPermissions = async function() {
 };
 
 window.saveApiKeys = async function() {
-    const imgbb = document.getElementById('imgbbKeyInput').value.trim(); const gemini = document.getElementById('geminiKeyInput').value.trim();
-    if(!imgbb && !gemini) return showToast('لم تقم بإدخال أي مفاتيح');
-    let updates = {}; if(imgbb) updates.imgbb = imgbb; if(gemini) updates.gemini = gemini;
-    await db.ref('tpm_system/api_keys').update(updates); showToast('✅ تم حفظ وتشفير المفاتيح بنجاح');
-    document.getElementById('imgbbKeyInput').value = ''; document.getElementById('geminiKeyInput').value = '';
+    showToast('🔐 مفاتيح الخدمة تُدار على الخادم فقط. استخدم Vercel Environment Variables.');
 };
-window.enableApiKeysEdit = function() { showToast('⚠️ المفاتيح الحالية مشفرة. أدخل المفاتيح الجديدة للكتابة فوقها.'); document.getElementById('imgbbKeyInput').focus(); };
-
-// ==========================================
-// 🏆 نظام النقاط والرتب (Enterprise Elite)
-// ==========================================
-window.awardPoints = function(pts, reason) {
-    const uid = firebase.auth().currentUser.uid; if(!uid) return;
-    let currentPts = (userPoints[uid] || 0) + pts; window.syncRecord('points/' + uid, currentPts);
-    let achievementId = window.uniqueNumericId(); window.syncRecord('global_achievements/' + achievementId, { user: currentUser.name, uid: uid, reason: reason, points: pts, date: new Date().toLocaleString('ar-EG') });
-    showToast(`🎖️ حصلت على ${pts} نقطة: ${reason}`);
+window.enableApiKeysEdit = function() {
+    showToast('🔐 لا يتم عرض أو تخزين مفاتيح الخدمة داخل المتصفح.');
 };
 
 window.updateUsersLeaderboard = function() {
@@ -728,10 +718,13 @@ window.finishCurrentStep = function() {
     showScreen('stepSummaryScreen');
 };
 
-window.skipCurrentStep = function() { 
-    currentAudit.results[currentAudit.stepsOrder[currentAudit.currentStepIndex]] = {skipped:true, score:0, max:0, improvements:[], selections:{}, images:{}}; 
-    window.saveAuditDraft(); 
-    window.goToNextStep(); 
+window.skipCurrentStep = function() {
+    const step = currentAudit.stepsOrder[currentAudit.currentStepIndex];
+    const reason = window.sanitizeInput(prompt('سبب تخطي المرحلة؟ يجب توثيق السبب في سجل التدقيق:') || '');
+    if (!reason || reason.length < 5) return showToast('⚠️ لا يمكن تخطي المرحلة بدون سبب موثق لا يقل عن 5 أحرف.');
+    currentAudit.results[step] = { skipped:true, skipReason:reason, score:0, max:0, improvements:[], selections:{}, images:{}, skippedBy:currentUser.name, skippedAt:Date.now() };
+    window.saveAuditDraft();
+    window.goToNextStep();
 };
 
 window.goToNextStep = function() { 

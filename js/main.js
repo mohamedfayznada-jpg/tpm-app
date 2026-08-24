@@ -7,20 +7,23 @@ import { Services } from './core/services.js';
 import { Scanner } from './modules/scanner.js';
 import { Settings } from './modules/settings.js';
 import { TPM_DOMAIN, getTPMPillar } from './core/tpm-domain.js';
+import { normalizeRole, roleLabel, canAccessRole } from './core/role-policy.js';
 
-console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} ARCHITECTURE LOADED`);
+console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} ENTERPRISE CORE`);
 
 window.auth = auth;
 window.db = db;
 window.TPM_DOMAIN = TPM_DOMAIN;
 window.getTPMPillar = getTPMPillar;
+window.normalizeTPMRole = normalizeRole;
+window.getTPMRoleLabel = roleLabel;
 
 const loadEnterpriseTheme = () => {
     if (document.getElementById('enterprise-v26-theme')) return;
     const link = document.createElement('link');
     link.id = 'enterprise-v26-theme';
     link.rel = 'stylesheet';
-    link.href = './css/enterprise-v26.css?v=26';
+    link.href = './css/enterprise-v26.css?v=27';
     document.head.appendChild(link);
 };
 loadEnterpriseTheme();
@@ -55,33 +58,35 @@ window.uploadImageToStorage = (file, options = {}) => Services.uploadImageToStor
 window.processAndEnhanceImage = (file, callback) => Services.processAndEnhanceImage(file, callback);
 window.fetchGeminiAPI = (prompt, base64) => Services.fetchGeminiAPI(prompt, base64);
 
+// Canonical RBAC — legacy "operator" records are intentionally mapped to "technician".
 window.TPMAccess = {
-    role() { return window.currentUser?.role || 'viewer'; },
+    role() {
+        return normalizeRole(window.currentUser?.role);
+    },
+    label() {
+        return roleLabel(this.role());
+    },
     canAccess(screenId) {
         if (['loginScreen', 'signupScreen'].includes(screenId)) return true;
         if (!window.auth?.currentUser) return false;
-
-        const role = this.role();
-        if (role === 'admin' || role === 'engineer') return true;
-
-        const technicianScreens = new Set([
-            'homeScreen', 'settingsScreen', 'tasksScreen', 'tagsScreen', 'fiveSScreen',
-            'jhPortalScreen', 'jhDocumentScreen', 'clitChecklistScreen', 'tpmTeamsScreen',
-            'kaizenScreen', 'kkScreen', 'pmScreen', 'etScreen', 'hseScreen'
-        ]);
-        const auditorScreens = new Set([
-            'homeScreen', 'settingsScreen', 'historyScreen', 'jhPortalScreen', 'jhDocumentScreen',
-            'jhKPIsScreen', 'tpmTeamsScreen', 'kaizenScreen', 'kkScreen'
-        ]);
-
-        if (role === 'technician') return technicianScreens.has(screenId);
-        if (role === 'auditor') return auditorScreens.has(screenId);
-        return ['homeScreen', 'settingsScreen'].includes(screenId);
+        return canAccessRole(this.role(), screenId);
+    },
+    require(...roles) {
+        const allowed = roles.map(normalizeRole);
+        if (allowed.includes(this.role())) return true;
+        this.deny();
+        return false;
     },
     deny() {
         UI.showToast('🔒 لا تملك صلاحية الوصول إلى هذه المساحة.');
         return false;
     }
+};
+
+// Patch the legacy helper as well so old modules use the same role vocabulary.
+window.hasRole = (...allowed) => {
+    const current = normalizeRole(window.currentUser?.role);
+    return allowed.map(normalizeRole).includes(current);
 };
 
 window.addEventListener('load', () => {
@@ -94,12 +99,26 @@ window.addEventListener('load', () => {
         guardedShowScreen.__tpmGuarded = true;
         window.showScreen = guardedShowScreen;
     }
-
     window.showToast = (message) => UI.showToast(message);
 });
 
+// Keep the session object canonical without changing legacy database records in-place.
+const canonicalizeSessionRole = () => {
+    if (!window.currentUser) return;
+    const canonical = normalizeRole(window.currentUser.role);
+    if (window.currentUser.role !== canonical) window.currentUser.role = canonical;
+    window.currentUser.roleLabel = roleLabel(canonical);
+    document.querySelectorAll('[data-current-role]').forEach(el => { el.textContent = roleLabel(canonical); });
+};
+
 window.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem('tpm_theme') === 'light') {
-        document.body.classList.add('light-theme');
-    }
+    if (localStorage.getItem('tpm_theme') === 'light') document.body.classList.add('light-theme');
+    canonicalizeSessionRole();
+    setTimeout(canonicalizeSessionRole, 500);
+    setTimeout(canonicalizeSessionRole, 1500);
+});
+
+auth.onAuthStateChanged(() => {
+    setTimeout(canonicalizeSessionRole, 0);
+    setTimeout(canonicalizeSessionRole, 300);
 });

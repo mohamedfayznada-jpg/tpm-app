@@ -6,6 +6,7 @@ import { Auth } from './auth/auth.js';
 import { Services } from './core/services.js';
 import { Scanner } from './modules/scanner.js';
 import { Settings } from './modules/settings.js';
+import { mountEnterpriseOperations } from './modules/enterprise-operations.js';
 import { TPM_DOMAIN, getTPMPillar } from './core/tpm-domain.js';
 import { normalizeRole, roleLabel, canAccessRole } from './core/role-policy.js';
 
@@ -58,14 +59,9 @@ window.uploadImageToStorage = (file, options = {}) => Services.uploadImageToStor
 window.processAndEnhanceImage = (file, callback) => Services.processAndEnhanceImage(file, callback);
 window.fetchGeminiAPI = (prompt, base64) => Services.fetchGeminiAPI(prompt, base64);
 
-// Canonical RBAC — legacy "operator" records are intentionally mapped to "technician".
 window.TPMAccess = {
-    role() {
-        return normalizeRole(window.currentUser?.role);
-    },
-    label() {
-        return roleLabel(this.role());
-    },
+    role() { return normalizeRole(window.currentUser?.role); },
+    label() { return roleLabel(this.role()); },
     canAccess(screenId) {
         if (['loginScreen', 'signupScreen'].includes(screenId)) return true;
         if (!window.auth?.currentUser) return false;
@@ -83,7 +79,6 @@ window.TPMAccess = {
     }
 };
 
-// Patch the legacy helper as well so old modules use the same role vocabulary.
 window.hasRole = (...allowed) => {
     const current = normalizeRole(window.currentUser?.role);
     return allowed.map(normalizeRole).includes(current);
@@ -100,9 +95,10 @@ window.addEventListener('load', () => {
         window.showScreen = guardedShowScreen;
     }
     window.showToast = (message) => UI.showToast(message);
+    // The operational workspaces are rendered as first-class modules, replacing the old placeholders.
+    mountEnterpriseOperations();
 });
 
-// Keep the session object canonical without changing legacy database records in-place.
 const canonicalizeSessionRole = () => {
     if (!window.currentUser) return;
     const canonical = normalizeRole(window.currentUser.role);

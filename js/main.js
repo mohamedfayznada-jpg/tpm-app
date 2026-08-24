@@ -19,15 +19,18 @@ window.getTPMPillar = getTPMPillar;
 window.normalizeTPMRole = normalizeRole;
 window.getTPMRoleLabel = roleLabel;
 
-const loadEnterpriseTheme = () => {
-    if (document.getElementById('enterprise-v26-theme')) return;
+const loadStylesheet = (id, href) => {
+    if (document.getElementById(id)) return;
     const link = document.createElement('link');
-    link.id = 'enterprise-v26-theme';
+    link.id = id;
     link.rel = 'stylesheet';
-    link.href = './css/enterprise-v26.css?v=27';
+    link.href = href;
     document.head.appendChild(link);
 };
-loadEnterpriseTheme();
+
+// Enterprise baseline + mobile-first layer. The mobile layer is loaded after the baseline intentionally.
+loadStylesheet('enterprise-v26-theme', './css/enterprise-v26.css?v=28');
+loadStylesheet('mobile-v27-theme', './css/mobile-v27.css?v=28');
 
 window.renderProfileAndSettings = () => Settings.renderProfileAndSettings();
 window.switchSettingsTab = (id, button) => Settings.switchSettingsTab(id, button);
@@ -95,7 +98,6 @@ window.addEventListener('load', () => {
         window.showScreen = guardedShowScreen;
     }
     window.showToast = (message) => UI.showToast(message);
-    // The operational workspaces are rendered as first-class modules, replacing the old placeholders.
     mountEnterpriseOperations();
 });
 

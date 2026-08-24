@@ -235,6 +235,7 @@ firebase.auth().onAuthStateChanged(async user => {
             else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
             role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
             role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
+            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
             currentUser = { uid: user.uid, name: savedName, username: finalUsername, role: role, status: status };
             window.currentUser = currentUser;
         }

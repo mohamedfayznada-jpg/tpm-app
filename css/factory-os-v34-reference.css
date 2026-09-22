@@ -33,19 +33,19 @@ body:before{display:none!important}
   padding:0!important;background:linear-gradient(180deg,#10283a 0%,#102536 100%)!important;
   border:0!important;border-radius:0!important;box-shadow:4px 0 22px rgba(15,35,50,.18)!important;
 }
-.sidebar-header{height:104px!important;padding:20px 24px!important;background:transparent!important;border:0!important;display:block!important}
+.sidebar-header{height:92px!important;padding:22px 20px!important;background:transparent!important;border:0!important;display:block!important}
 .sidebar-header .logo-circle{display:none!important}
 .sidebar-header h3{margin:0!important;color:#fff!important;font-size:20px!important;font-weight:900!important;text-align:left!important;letter-spacing:.3px!important}
 .sidebar-header h3:after{content:'Factory OS';display:block;color:#aebdca;font-size:12px;font-weight:600;margin-top:2px;letter-spacing:.5px}
-.sidebar-menu{padding:0 10px 20px!important}
+.sidebar-menu{padding:8px 10px 20px!important}
 .side-item{
   display:flex!important;align-items:center!important;gap:15px!important;min-height:52px!important;
   padding:10px 14px!important;margin:3px 0!important;border:1px solid transparent!important;border-radius:10px!important;
   color:#dce7ef!important;background:transparent!important;box-shadow:none!important;font-size:14px!important;font-weight:700!important;
 }
-.side-item:hover{background:#1b4b70!important;color:#fff!important;border-color:rgba(255,255,255,.05)!important}
-.side-item:first-child{background:linear-gradient(90deg,#1d5f93,#17476c)!important;border-color:#2775ae!important}
-.side-icon{width:28px!important;display:grid!important;place-items:center!important;color:#d9e6ef!important;font-size:23px!important}
+.side-item:hover{background:#1b4b70!important;color:#fff!important;border-color:rgba(255,255,255,.05)!important;transform:translateX(-2px)}
+.side-item{transition:background .16s ease,border-color .16s ease,transform .16s ease}
+.side-item.active{background:linear-gradient(90deg,#1d5f93,#17476c)!important;border-color:#2775ae!important;color:#fff!important;box-shadow:inset 3px 0 0 #54a8f5!important}.side-item:first-child:not(.active){background:transparent!important;border-color:transparent!important}.side-icon{width:28px!important;display:grid!important;place-items:center!important;color:#d9e6ef!important;font-size:23px!important}
 .side-item:first-child .side-icon{color:#fff!important}
 .sidebar-menu:after{content:'Factory OS V5.0\\A Enterprise Edition\\A\\A ● متصل';white-space:pre;display:block;margin:210px 10px 0;padding:18px 14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;color:#cbd7df;font-size:12px;line-height:1.65;background:rgba(255,255,255,.025)}
 .sidebar-overlay{display:none!important}
@@ -107,6 +107,19 @@ body:before{display:none!important}
 .performance-chart canvas{width:100%!important;height:100%!important}
 .chart-empty{display:none;position:absolute;inset:20px;place-items:center;color:#8795a1;background:#f8fafb;border:1px dashed #dce4ea;border-radius:8px}
 .chart-legend{display:flex;justify-content:center;gap:24px;padding:8px 0 16px;color:#687987;font-size:11px}
+.review-list{padding:0 16px}
+.review-row{min-height:68px;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:12px;border-bottom:1px solid #edf1f4}
+.review-row:last-child{border-bottom:0}
+.review-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:20px}
+.review-icon.good{background:#e4f6ed;color:#1d9d64}.review-icon.warn{background:#fff2dc;color:#d99620}.review-icon.bad{background:#ffe6e4;color:#e6504b}
+.review-main{min-width:0}.review-main b{display:block;color:#263947;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.review-main span{display:block;color:#8a98a3;font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.review-score{font-size:17px;font-weight:900}.review-score.good{color:#1d9d64}.review-score.warn{color:#d99620}.review-score.bad{color:#e6504b}
+.data-badge{font-size:10px;font-weight:800;color:#71808d;background:#f4f7f9;border:1px solid #e0e7ec;border-radius:999px;padding:6px 10px;white-space:nowrap}
+.data-empty{min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:#7f8e99;text-align:center;padding:20px}
+.data-empty i{font-size:34px;color:#9aa8b2}.data-empty b{font-size:13px;color:#536574}.data-empty span{font-size:10px}.data-empty.compact{min-height:170px}
+.alert-item.overdue{border-color:#ffd4cf;border-right-color:#e6504b;background:#fff7f6}
+
 .legend-dot{width:10px;height:10px;display:inline-block;border-radius:50%;margin-left:5px}.legend-dot.blue{background:#2583e8}.legend-dot.green{background:#20a66a}
 
 /* ===== Bottom row ===== */

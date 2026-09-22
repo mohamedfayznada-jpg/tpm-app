@@ -1,0 +1,210 @@
+// 💡 مجتمع كايزن (Kaizen Engine)
+// ==========================================
+window.handleKaizenImage = function(e, type) {
+    const f=e.target.files[0]; if(!f) return; showToast('جاري تحضير الصورة...');
+    processAndEnhanceImage(f, function(dataUrl) { kaizenImgs[type] = dataUrl; document.getElementById(type==='before'?'kaizenBeforePreview':'kaizenAfterPreview').innerHTML=`<span style="color:var(--success); font-size:12px; font-weight:bold; display:block; margin-top:10px;"><i class='bx bx-check'></i> تم الإرفاق</span>`; });
+};
+
+window.submitManualKaizen = async function() {
+    const authUser = firebase?.auth?.().currentUser;
+    if (!authUser) return showToast('⚠️ سجّل الدخول أولًا قبل مشاركة كايزن.');
+    const title = document.getElementById('newKaizenTitle')?.value.trim() || '';
+    const dept = document.getElementById('newKaizenDept')?.value || '';
+    const a3 = {
+        impact: document.getElementById('newKaizenImpact')?.value || 'Q',
+        owner: window.sanitizeInput(document.getElementById('newKaizenOwner')?.value.trim() || currentUser.name || 'مستخدم'),
+        problem: window.sanitizeInput(document.getElementById('newKaizenProblem')?.value.trim() || ''),
+        rootCause: window.sanitizeInput(document.getElementById('newKaizenRootCause')?.value.trim() || ''),
+        countermeasure: window.sanitizeInput(document.getElementById('newKaizenCountermeasure')?.value.trim() || ''),
+        expectedBenefit: window.sanitizeInput(document.getElementById('newKaizenExpectedBenefit')?.value.trim() || ''),
+        verification: window.sanitizeInput(document.getElementById('newKaizenVerification')?.value.trim() || ''),
+        standardization: window.sanitizeInput(document.getElementById('newKaizenStandardization')?.value.trim() || ''),
+        stage: 'plan',
+        stageHistory: [{ stage: 'plan', by: currentUser.name || 'مستخدم', at: Date.now(), note: 'تم تسجيل بطاقة A3' }]
+    };
+    if (!title || !a3.problem || !a3.rootCause || !a3.countermeasure || !kaizenImgs.before || !kaizenImgs.after) return showToast('⚠️ أكمل عنوان التحسين والمشكلة والسبب الجذري والإجراء المضاد وأرفق الصورتين');
+
+    const btn = document.getElementById('submitKaizenBtn');
+    const originalLabel = btn.innerHTML;
+    btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري دمج الصور…";
+    btn.disabled = true;
+
+    let uploadedUrl = null;
+    try {
+        const [imgBefore, imgAfter] = await Promise.all([window.loadImageForCanvas(kaizenImgs.before), window.loadImageForCanvas(kaizenImgs.after)]);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 600; canvas.height = 300;
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 600, 300);
+        ctx.drawImage(imgBefore, 0, 0, 295, 300); ctx.drawImage(imgAfter, 305, 0, 295, 300);
+        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(280, 150); ctx.lineTo(320, 130); ctx.lineTo(320, 170); ctx.fill();
+        ctx.fillStyle = 'rgba(239,68,68,0.9)'; ctx.fillRect(10, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('قبل', 25, 32);
+        ctx.fillStyle = 'rgba(16,185,129,0.9)'; ctx.fillRect(530, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('بعد', 545, 32);
+
+        btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري رفع الصورة…";
+        uploadedUrl = await uploadImageToStorage(canvas.toDataURL('image/jpeg', 0.8), { folder: 'kaizen' });
+        if (!uploadedUrl) throw new Error('تعذر رفع صورة كايزن إلى التخزين.');
+
+        const kId = window.uniqueNumericId().toString();
+        const record = {
+            id: kId,
+            dept: window.sanitizeInput(dept),
+            auditor: window.sanitizeInput(currentUser.name || 'مستخدم'),
+            authorUid: authUser.uid,
+            authorName: window.sanitizeInput(currentUser.name || 'مستخدم'),
+            date: new Date().toLocaleDateString('ar-EG'),
+            createdAt: Date.now(),
+            stepsOrder: ['ManualKaizen'],
+            totalPct: 100,
+            improvementStatus: 'plan',
+            a3,
+            results: { ManualKaizen: { images: { img_1: { title: window.sanitizeInput(title), data: uploadedUrl } } } }
+        };
+
+        btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري اعتماد السجل…";
+        await window.syncRecord('history/' + kId, record);
+
+        ['newKaizenTitle', 'newKaizenOwner', 'newKaizenProblem', 'newKaizenRootCause', 'newKaizenCountermeasure', 'newKaizenExpectedBenefit', 'newKaizenVerification', 'newKaizenStandardization'].forEach(id => { const field = document.getElementById(id); if (field) field.value = ''; });
+        document.getElementById('kaizenBeforePreview').innerHTML = '';
+        document.getElementById('kaizenAfterPreview').innerHTML = '';
+        kaizenImgs = { before: null, after: null };
+        document.getElementById('kaizenUploadModal').style.display = 'none';
+        window.awardPoints(40, 'مشاركة كايزن');
+        window.renderKaizenFeed?.();
+        window.renderKaizenA3CommandStats?.();
+        showToast('✅ تم حفظ بطاقة A3 كايزن وصورتها؛ وهي الآن في مرحلة التخطيط.');
+    } catch (error) {
+        console.error('Manual Kaizen save error:', error);
+        if (uploadedUrl) {
+            try { await window.deleteStorageImage(uploadedUrl); } catch (cleanupError) { console.error('Kaizen image cleanup error:', cleanupError); }
+        }
+        showToast(`⚠️ لم يُعتمد كايزن: ${error.message || 'تعذر حفظ السجل في قاعدة البيانات.'}`);
+    } finally {
+        btn.innerHTML = originalLabel;
+        btn.disabled = false;
+    }
+};
+
+window.loadImageForCanvas = function(source) {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('تعذر تجهيز إحدى صور كايزن للدمج.'));
+        image.src = source;
+    });
+};
+
+window.kaizenStageFilter = 'all';
+window.renderKaizenFeed = function() {
+    let c = document.getElementById('kaizenFeedContainer'); if(!c) return;
+    let selectedDept = document.getElementById('kaizenDeptSelect')?.value || 'الكل';
+    const activeStage = window.kaizenStageFilter || 'all';
+    const safe = (value, fallback = '—') => window.escapeTPM(String(value ?? fallback));
+    const records = Array.isArray(historyData) ? historyData : [];
+    
+    let html = records.filter(h => {
+        const stageKey = window.getKaizenStage?.(h)?.key || 'plan';
+        return Array.isArray(h?.stepsOrder) && h.stepsOrder.includes('ManualKaizen') && (selectedDept === 'الكل' || h.dept === selectedDept) && (activeStage === 'all' || stageKey === activeStage);
+    }).slice().reverse().map(k=> {
+        const manual = k?.results?.ManualKaizen;
+        const image = manual?.images?.img_1;
+        if (!image?.data || !image?.title) return '';
+        let lId = String(k.id || ''); let liked = Array.isArray(likesData[lId]) && likesData[lId].includes(currentUser.name); let canEdit = window.hasRole('admin') || window.hasRole('auditor') || (!!currentUser.uid && currentUser.uid === k.authorUid);
+        const stage = window.getKaizenStage?.(k) || { key: 'plan', label: 'PLAN · تخطيط', className: 'plan', nextLabel: 'بدء التنفيذ' };
+        const owner = k.a3?.owner || k.auditor || 'غير محدد';
+        const imageSrc = /^(data:image\/|https?:\/\/)/i.test(String(image.data)) ? safe(image.data, '') : '';
+        if (!imageSrc) return '';
+        const canProgress = window.canAdvanceKaizenPDCA?.(k) && stage.key !== 'standardized';
+        const progressControl = canProgress ? `<button class="btn btn-sm btn-success flex-1" onclick="advanceKaizenPDCA('${safe(k.id)}')"><i class='bx bx-right-arrow-alt'></i> ${safe(stage.nextLabel)}</button>` : '';
+        const a3Summary = k.a3 ? `<div class="kaizen-a3-summary"><div><span>المشكلة</span><b>${safe(k.a3.problem)}</b></div><div><span>السبب الجذري</span><b>${safe(k.a3.rootCause)}</b></div><div><span>الإجراء</span><b>${safe(k.a3.countermeasure)}</b></div></div>` : `<div class="kaizen-a3-summary legacy"><div><span>بطاقة كايزن سابقة</span><b>يمكن اعتمادها في دورة A3 من خلال مرحلة التخطيط.</b></div></div>`;
+        let controls = canEdit ? `<button class="btn btn-sm btn-outline flex-1" onclick="editKaizen('${safe(k.id)}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger flex-1" onclick="deleteKaizen('${safe(k.id)}')"><i class='bx bx-trash'></i> حذف</button>` : '';
+        let comments = Array.isArray(kaizenComments[lId]) ? kaizenComments[lId] : []; let commentsHtml = comments.map(cm => `<div style="background:var(--surface-inset); padding:10px 15px; border-radius:10px; margin-bottom:8px; border-right:3px solid var(--primary); font-size:13px;"><b style="color:var(--primary); display:block; margin-bottom:3px;">${safe(cm?.user)}</b> ${safe(cm?.text, '')} <span style="font-size:10px; color:var(--text-muted); float:left;">${safe(cm?.date)}</span></div>`).join('');
+
+        return `<div class="card glass-card" style="padding:0; overflow:hidden;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:rgba(0,0,0,0.2); border-bottom:1px solid var(--border-glass);">
+                <div style="display:flex; align-items:center; gap:10px;"><i class='bx bx-user-circle' style="font-size:24px; color:var(--gold);"></i><b style="color:var(--text-main); font-size:15px;">${safe(k.auditor, 'مستخدم')}</b></div>
+                <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:flex-end;"><span class="kaizen-stage-chip ${safe(stage.className)}">${safe(stage.label)}</span><span style="font-size:12px; color:var(--text-muted); background:var(--surface-inset); padding:4px 10px; border-radius:12px;"><i class='bx bx-buildings'></i> ${safe(k.dept)} | ${safe(k.date)}</span></div>
+            </div>
+            <div style="padding:20px;">
+                <b style="font-size:16px; color:var(--text-main); display:block; margin-bottom:8px;">${safe(image.title)}</b>
+                <div class="kaizen-owner-line"><i class='bx bx-user-pin'></i><span>مالك التحسين:</span><b>${window.escapeTPM(owner)}</b></div>
+                ${a3Summary}
+                <img src="${imageSrc}" alt="صورة تحسين كايزن" loading="lazy" style="width:100%; border-radius:12px; border:1px solid var(--border-glass); margin-bottom:20px; box-shadow:var(--shadow-raised);">
+                <div class="row-flex" style="margin-bottom:20px;">
+                    <button class="btn btn-sm ${liked?'btn-primary':'btn-outline'} flex-1" onclick="toggleKaizenLike('${lId}')"><i class='bx ${liked?'bxs-like':'bx-like'}'></i> إعجاب (${likesData[lId]?likesData[lId].length:0})</button>
+                    ${progressControl}
+                    ${controls}
+                </div>
+                <div style="border-top: 1px solid var(--border-glass); padding-top: 15px;">
+                    <div style="max-height: 150px; overflow-y: auto; margin-bottom: 15px; padding-right:5px;">${commentsHtml || '<div style="font-size:12px; text-align:center; color:var(--text-muted); padding:10px;">لا توجد تعليقات</div>'}</div>
+                    <div class="row-flex"><input type="text" id="comment_input_${lId}" class="form-control flex-2" placeholder="اكتب تعليقاً..." style="margin:0;"><button class="btn btn-primary btn-sm flex-1" style="margin:0;" onclick="addKaizenComment('${lId}')"><i class='bx bx-send'></i> إرسال</button></div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+    c.innerHTML = html || '<div style="text-align:center; color:var(--text-muted); padding:40px; width:100%;"><i class="bx bx-bulb" style="font-size:50px; display:block; margin-bottom:10px; opacity:0.5;"></i>لا توجد مشاركات مسجلة</div>';
+};
+
+window.toggleKaizenLike = function(id) { if(!likesData[id]) likesData[id]=[]; let i=likesData[id].indexOf(currentUser.name); if(i>-1) likesData[id].splice(i,1); else likesData[id].push(currentUser.name); window.syncRecord('likes/' + id, likesData[id]); };
+window.deleteKaizen = function(id) { if(confirm('تأكيد مسح الكايزن؟')) { window.deleteRecord('history/' + id); showToast('تم الحذف'); } };
+window.editKaizen = function(id) { let k=historyData.find(x=>x.id===id); if(!k) return; let v=prompt('تعديل الوصف:', k.results.ManualKaizen.images.img_1.title); if(v) { k.results.ManualKaizen.images.img_1.title=window.sanitizeInput(v); window.syncRecord('history/' + id, k); showToast('تم التعديل'); } };
+window.addKaizenComment = function(id) { let el=document.getElementById(`comment_input_${id}`); let txt=window.sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; let comment = {user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}; kaizenComments[id].push(comment); window.syncRecord('kaizenComments/' + id, kaizenComments[id]).then(() => { el.value=''; window.awardPoints(2, 'تعليق'); }).catch(error => { kaizenComments[id].pop(); showToast(`⚠️ تعذر حفظ التعليق: ${error.message || 'خطأ في قاعدة البيانات'}`); }); };
+
+// A3 / PDCA Kaizen workflow. Legacy cards default to PLAN and remain readable.
+window.KAIZEN_PDCA_STAGES = [
+    { key: 'plan', label: 'PLAN · تخطيط', className: 'plan', next: 'do', nextLabel: 'بدء التنفيذ' },
+    { key: 'do', label: 'DO · تنفيذ', className: 'do', next: 'check', nextLabel: 'إرسال للتحقق' },
+    { key: 'check', label: 'CHECK · تحقق', className: 'check', next: 'act', nextLabel: 'اعتماد النتيجة' },
+    { key: 'act', label: 'ACT · تثبيت', className: 'act', next: 'standardized', nextLabel: 'تثبيت كمعيار' },
+    { key: 'standardized', label: 'STANDARD · معياري', className: 'standardized', next: null, nextLabel: 'تم التثبيت' }
+];
+window.getKaizenStage = function(kaizen) {
+    const key = kaizen?.a3?.stage || kaizen?.improvementStatus || 'plan';
+    return window.KAIZEN_PDCA_STAGES.find(stage => stage.key === key) || window.KAIZEN_PDCA_STAGES[0];
+};
+window.canAdvanceKaizenPDCA = function(kaizen) {
+    const stage = window.getKaizenStage(kaizen);
+    if (stage.key === 'standardized') return false;
+    const isAdmin = window.hasRole?.('admin');
+    const isOwner = [kaizen?.auditor, kaizen?.a3?.owner].filter(Boolean).includes(currentUser?.name);
+    return ['check', 'act'].includes(stage.key) ? isAdmin : (isAdmin || isOwner);
+};
+window.advanceKaizenPDCA = async function(id) {
+    const kaizen = historyData.find(item => item.id == id);
+    if (!kaizen) return showToast('⚠️ تعذر العثور على بطاقة كايزن');
+    const stage = window.getKaizenStage(kaizen);
+    if (!window.canAdvanceKaizenPDCA(kaizen)) return showToast('⚠️ لا تملك صلاحية نقل هذه البطاقة في الدورة الحالية');
+    if (!stage.next) return showToast('✅ هذا التحسين مثبت بالفعل كمعيار');
+    kaizen.a3 = kaizen.a3 || { owner: kaizen.auditor || currentUser.name || 'مستخدم', stageHistory: [] };
+    if (stage.key === 'check' && !kaizen.a3.verification) return showToast('⚠️ أضف طريقة التحقق قبل اعتماد النتيجة');
+    if (stage.key === 'act' && !kaizen.a3.standardization) return showToast('⚠️ أضف إجراء التثبيت أو OPL قبل تحويل التحسين إلى معيار');
+    const nextStage = window.KAIZEN_PDCA_STAGES.find(item => item.key === stage.next);
+    kaizen.a3.stage = nextStage.key;
+    kaizen.improvementStatus = nextStage.key;
+    kaizen.a3.stageHistory = Array.isArray(kaizen.a3.stageHistory) ? kaizen.a3.stageHistory : [];
+    kaizen.a3.stageHistory.push({ stage: nextStage.key, by: currentUser.name || 'مستخدم', at: Date.now(), note: `انتقال إلى ${nextStage.label}` });
+    if (nextStage.key === 'standardized') { kaizen.standardizedAt = Date.now(); kaizen.standardizedBy = currentUser.name || 'مدير'; }
+    try {
+        await window.syncRecord('history/' + id, kaizen);
+        if (nextStage.key === 'standardized') window.awardPoints(25, 'تثبيت كايزن كمعيار');
+        window.renderKaizenFeed?.();
+        window.renderKaizenA3CommandStats?.();
+        showToast(`✅ تم نقل بطاقة كايزن إلى مرحلة: ${nextStage.label}`);
+    } catch (error) {
+        showToast(`⚠️ تعذر تحديث مرحلة كايزن: ${error.message || 'خطأ في قاعدة البيانات'}`);
+    }
+};
+window.applyKaizenStageFilter = function(stage) {
+    window.kaizenStageFilter = stage || 'all';
+    document.querySelectorAll('.kaizen-stage-steps button').forEach(button => button.classList.toggle('active', button.getAttribute('onclick')?.includes(`'${window.kaizenStageFilter}'`)));
+    window.renderKaizenFeed?.();
+};
+window.renderKaizenA3CommandStats = function() {
+    const container = document.getElementById('kaizenA3CommandStats');
+    if (!container) return;
+    const kaizens = historyData.filter(item => item.stepsOrder?.includes('ManualKaizen'));
+    const count = key => kaizens.filter(item => window.getKaizenStage(item).key === key).length;
+    container.innerHTML = `<div class="kaizen-a3-stat plan"><span>تخطيط</span><b>${count('plan')}</b></div><div class="kaizen-a3-stat do"><span>تنفيذ</span><b>${count('do')}</b></div><div class="kaizen-a3-stat check"><span>تحقق</span><b>${count('check')}</b></div><div class="kaizen-a3-stat act"><span>تثبيت</span><b>${count('act')}</b></div><div class="kaizen-a3-stat standardized"><span>مثبّت كمعيار</span><b>${count('standardized')}</b></div>`;
+};
+
+// ==========================================

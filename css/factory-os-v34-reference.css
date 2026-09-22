@@ -53,7 +53,7 @@ body:before{display:none!important}
 
 /* Keep screens below the fixed chrome; prevent cascade collisions */
 .container.screen{max-width:none!important;margin:0!important;padding:92px 26px 36px 234px!important;min-height:100vh!important}
-#homeScreen{background:var(--ref-bg)!important;display:block!important}
+#homeScreen{background:var(--ref-bg)!important}
 #loginScreen{padding-left:26px!important}
 #homeScreen .factory-dashboard{max-width:1420px;margin:0 auto;direction:rtl}
 
@@ -184,5 +184,19 @@ html,body{width:100%;max-width:100%;overflow-x:hidden!important}
    Inline JS still controls the active class/display, but this CSS
    prevents legacy styles from leaking every screen into the viewport.
 */
+.container.screen{display:none!important}
+.container.screen.active{display:block!important}
+
+/* ===== V34 auth shell ===== */
+body.auth-locked .main-header,
+body.auth-locked .sidebar,
+body.auth-locked .cloud-status{display:none!important}
+body.auth-locked .container.screen{padding-left:26px!important;padding-right:26px!important}
+body.auth-locked #loginScreen,
+body.auth-locked #signupScreen{display:block!important}
+body.auth-locked #loginScreen:not(.active),
+body.auth-locked #signupScreen:not(.active){display:none!important}
+
+/* Single-screen contract must win over legacy selectors. */
 .container.screen{display:none!important}
 .container.screen.active{display:block!important}

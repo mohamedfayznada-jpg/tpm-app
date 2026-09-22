@@ -10,7 +10,7 @@ const auth = firebase.auth();
 let tpmSystemRef = null, tpmSystemListener = null;
 let globalApiKeys = { imgbb: "", gemini: "" };
 let departments = [], historyData = [], tasksData = [], usersData = {}, logsData = [], likesData = {}, tagsData = [], kaizenComments = {}, userPoints = {}, knowledgeBaseData = [], deptPhones = {}, maintenanceEngineers = [], notificationSettings = { onTagAssigned: true, onCriticalTag: true, onTagEscalation: true }; let knowledgeActiveFilter = 'all';
-let currentUser = { name: '', username: '', role: '', status: '' };
+var currentUser = { name: '', username: '', role: '', status: '' };
 let currentAudit = null, isOnline = true, isDataLoaded = false, isInitialLoad = true;
 let radarChartInstance = null, trendChartInstance = null, currentViewedDept = null;
 let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];

@@ -537,7 +537,8 @@ window.openDeptDashboard = function(dept) {
 };
 
 // 📂 محرك الشاشات الداخلية والسجلات (JH Tools Engine)
-// ==========================================window.openJHDocument = async function(type) {
+// ==========================================
+window.openJHDocument = async function(type) {
     currentDocType = type;
     const headerMap = { 
         'CLIT': '🧹 معايير التنظيف والتزييت (CLIT)', 

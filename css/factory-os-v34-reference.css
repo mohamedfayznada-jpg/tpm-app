@@ -149,3 +149,32 @@ body:before{display:none!important}
   .supervisor-box{display:none!important}.factory-hero{padding:24px;min-height:150px}.hero-brand{display:none}
   .kpi-grid{grid-template-columns:1fr}.task-row{grid-template-columns:38px 1fr auto}.task-row>small{display:none}
 }
+
+/* ===== V34 layout containment / navigation hardening ===== */
+html,body{width:100%;max-width:100%;overflow-x:hidden!important}
+.container.screen{box-sizing:border-box!important;width:100%!important;max-width:none!important}
+#homeScreen{box-sizing:border-box!important;overflow-x:hidden!important}
+#homeScreen .factory-dashboard{width:100%!important;max-width:1420px!important;min-width:0!important;box-sizing:border-box!important}
+.factory-hero,.kpi-grid,.dashboard-grid-main,.dashboard-bottom,.panel,.kpi-card{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+.kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.dashboard-grid-main{grid-template-columns:minmax(0,1.18fr) minmax(0,1fr)!important}
+.dashboard-bottom{grid-template-columns:minmax(0,1.15fr) minmax(0,.95fr) minmax(0,1fr)!important}
+.kpi-card>div,.task-row>div,.panel-head>div{min-width:0!important}
+.task-row b,.task-row div span,.panel-head h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.factory-hero{width:100%!important}
+.hero-brand{min-width:0!important}
+.hero-brand strong{font-size:clamp(28px,3vw,40px)!important}
+.main-header{width:100%!important;box-sizing:border-box!important}
+.sidebar{box-sizing:border-box!important}
+@media(max-width:1250px){
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .dashboard-grid-main,.dashboard-bottom{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:800px){
+  .kpi-grid{grid-template-columns:minmax(0,1fr)!important}
+}
+
+/* Navigation buttons must remain clickable above all decorative layers. */
+.main-header,.sidebar,.side-item,.icon-btn,.supervisor-box{pointer-events:auto!important}
+.sidebar{z-index:9000!important}
+.main-header{z-index:9100!important}

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FACTORY OS | Enterprise Edition</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
-    <meta name="theme-color" content="#090b1d">
+    <meta name="theme-color" content="#eef1f2">
     <link rel="manifest" href="manifest.json">
     
     <!-- خطوط جوجل ومكتبة الأيقونات الاحترافية -->
@@ -24,6 +24,7 @@
 
     <!-- V33: visual system moved to dedicated CSS. Legacy inline theme removed. -->
     <link rel="stylesheet" href="styles.css?v=20260813-teamhub1">
+    <link rel="stylesheet" href="css/index-shell.css?v=1">
 </head>
 <body>
     
@@ -31,15 +32,15 @@
          🛸 COMMAND HEADER & SIDEBAR
          ========================================== -->
     <div class="main-header" id="mainHeader">
-        <div class="header-right" style="display:flex; align-items:center; gap:15px;">
+        <div class="header-right">
             <button class="icon-btn" onclick="toggleSidebar()" title="القائمة الجانبية"><i class='bx bx-menu'></i></button>
             <div class="supervisor-box" onclick="showScreen('settingsScreen')">
                 <p>إشراف: م. محمد فايز</p>
-                <div id="adminNotification" style="display:none; width:8px; height:8px; background:var(--glow-danger); border-radius:50%;"></div>
+                <div id="adminNotification"></div>
             </div>
         </div>
         <div class="header-center"><h1 class="tpm-title">الصيانة الإنتاجية الشاملة <span class="tpm-en">TPM</span></h1></div>
-        <div class="header-left" style="display:flex; align-items:center; gap:15px;">
+        <div class="header-left">
             <button class="icon-btn" onclick="goBack()" title="رجوع"><i class='bx bx-arrow-back'></i></button>
             <button class="icon-btn" onclick="showScreen('homeScreen')" title="الرئيسية"><i class='bx bx-home'></i></button>
             <button class="icon-btn danger-icon" onclick="logout()" title="تسجيل الخروج"><i class='bx bx-power-off'></i></button>

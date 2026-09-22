@@ -67,9 +67,9 @@
         </div>
     </div>
 
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageSelection(event)" class="legacy-inline-3">
-    <input type="file" id="galleryInput" accept="image/*" onchange="handleImageSelection(event)" class="legacy-inline-3">
-    <input type="file" id="barcodeInput" accept="image/*" capture="environment" onchange="scanBarcodeFromImage(event)" class="legacy-inline-3">
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageSelection(event)" class="is-hidden">
+    <input type="file" id="galleryInput" accept="image/*" onchange="handleImageSelection(event)" class="is-hidden">
+    <input type="file" id="barcodeInput" accept="image/*" capture="environment" onchange="scanBarcodeFromImage(event)" class="is-hidden">
 
     <!-- ==========================================
          🚨 GLOBAL MODALS (Overlays)
@@ -94,16 +94,16 @@
             <section class="a3-section"><span class="a3-section-label do">D</span><div><h4>Do — الإجراء المضاد وخطة التنفيذ</h4><textarea id="newKaizenCountermeasure" class="form-control" rows="2" placeholder="ما الإجراء الذي نُفذ أو سيُنفذ؟ *"></textarea><textarea id="newKaizenExpectedBenefit" class="form-control" rows="2" placeholder="ما النتيجة أو الفائدة المستهدفة؟ مثال: خفض زمن التغيير 20%"></textarea></div></section>
             <section class="a3-section"><span class="a3-section-label check">C</span><div><h4>Check — طريقة التحقق</h4><textarea id="newKaizenVerification" class="form-control" rows="2" placeholder="كيف سنثبت أن التحسين نجح؟ قياس، مراجعة، أو ملاحظة"></textarea></div></section>
             <section class="a3-section"><span class="a3-section-label act">A</span><div><h4>Act — التثبيت كمعيار</h4><textarea id="newKaizenStandardization" class="form-control" rows="2" placeholder="الإجراء المعياري أو OPL المطلوب لتثبيت التحسين"></textarea></div></section>
-            <div class="row-flex kaizen-photo-row"><div class="flex-1 kaizen-photo-box"><label><i class='bx bx-camera'></i> صورة قبل <b>*</b><input type="file" accept="image/*" onchange="handleKaizenImage(event, 'before')" class="legacy-inline-3"></label><div id="kaizenBeforePreview"></div></div><div class="flex-1 kaizen-photo-box after"><label><i class='bx bx-camera'></i> صورة بعد <b>*</b><input type="file" accept="image/*" onchange="handleKaizenImage(event, 'after')" class="legacy-inline-3"></label><div id="kaizenAfterPreview"></div></div></div>
+            <div class="row-flex kaizen-photo-row"><div class="flex-1 kaizen-photo-box"><label><i class='bx bx-camera'></i> صورة قبل <b>*</b><input type="file" accept="image/*" onchange="handleKaizenImage(event, 'before')" class="is-hidden"></label><div id="kaizenBeforePreview"></div></div><div class="flex-1 kaizen-photo-box after"><label><i class='bx bx-camera'></i> صورة بعد <b>*</b><input type="file" accept="image/*" onchange="handleKaizenImage(event, 'after')" class="is-hidden"></label><div id="kaizenAfterPreview"></div></div></div>
             <div class="row-flex"><button class="btn btn-success flex-2" onclick="submitManualKaizen()" id="submitKaizenBtn"><i class='bx bx-send'></i> إرسال بطاقة كايزن للمراجعة</button><button class="btn btn-danger flex-1" onclick="closeKaizenA3Modal()">إلغاء</button></div>
         </div>
     </div>
     
     <div class="modal-overlay" id="permissionsModal"><div class="modal-content"><h3 class="card-title"><i class='bx bx-lock-alt'></i> تعديل الأذونات</h3><div id="permissionsContainer"></div><div class="row-flex legacy-inline-5"><button class="btn btn-success flex-2" onclick="saveUserPermissions()">حفظ</button><button class="btn btn-danger flex-1" onclick="document.getElementById('permissionsModal').style.display='none'">إلغاء</button></div></div></div>
 
-    <div class="modal-overlay" id="pdcaCreateModal"><div class="modal-content"><h3 class="card-title legacy-inline-6"><i class='bx bx-rocket'></i> إطلاق مشروع تحسين (PDCA)</h3><div class="form-group"><input type="text" id="pdcaTitle" class="form-control" placeholder="عنوان المشروع"></div><div class="row-flex"><select id="pdcaDept" class="form-control flex-1"></select><select id="pdcaImpact" class="form-control flex-1"><option value="P">الإنتاجية</option><option value="Q">الجودة</option><option value="C">التكلفة</option><option value="S">السلامة</option></select></div><div class="row-flex"><input type="number" id="pdcaBefore" class="form-control flex-1" placeholder="قبل"><input type="number" id="pdcaAfter" class="form-control flex-1" placeholder="الهدف"><input type="text" id="pdcaUnit" class="form-control flex-1" placeholder="الوحدة"></div><textarea id="pdcaPlan" class="form-control" rows="2" placeholder="P - خطط"></textarea><textarea id="pdcaDo" class="form-control" rows="2" placeholder="D - نفذ"></textarea><textarea id="pdcaCheck" class="form-control" rows="2" placeholder="C - تحقق"></textarea><textarea id="pdcaAct" class="form-control" rows="2" placeholder="A - اعتمد"></textarea><label class="btn btn-outline full-width"><i class='bx bx-camera'></i> إرفاق صورة<input type="file" onchange="handlePDCAImage(event)" class="legacy-inline-3"></label><div id="pdcaImgPreview"></div><div class="row-flex"><button class="btn btn-success flex-2" onclick="saveNewPDCA()">إطلاق المشروع 🚀</button><button class="btn btn-danger flex-1" onclick="document.getElementById('pdcaCreateModal').style.display='none'">إلغاء</button></div></div></div>
+    <div class="modal-overlay" id="pdcaCreateModal"><div class="modal-content"><h3 class="card-title legacy-inline-6"><i class='bx bx-rocket'></i> إطلاق مشروع تحسين (PDCA)</h3><div class="form-group"><input type="text" id="pdcaTitle" class="form-control" placeholder="عنوان المشروع"></div><div class="row-flex"><select id="pdcaDept" class="form-control flex-1"></select><select id="pdcaImpact" class="form-control flex-1"><option value="P">الإنتاجية</option><option value="Q">الجودة</option><option value="C">التكلفة</option><option value="S">السلامة</option></select></div><div class="row-flex"><input type="number" id="pdcaBefore" class="form-control flex-1" placeholder="قبل"><input type="number" id="pdcaAfter" class="form-control flex-1" placeholder="الهدف"><input type="text" id="pdcaUnit" class="form-control flex-1" placeholder="الوحدة"></div><textarea id="pdcaPlan" class="form-control" rows="2" placeholder="P - خطط"></textarea><textarea id="pdcaDo" class="form-control" rows="2" placeholder="D - نفذ"></textarea><textarea id="pdcaCheck" class="form-control" rows="2" placeholder="C - تحقق"></textarea><textarea id="pdcaAct" class="form-control" rows="2" placeholder="A - اعتمد"></textarea><label class="btn btn-outline full-width"><i class='bx bx-camera'></i> إرفاق صورة<input type="file" onchange="handlePDCAImage(event)" class="is-hidden"></label><div id="pdcaImgPreview"></div><div class="row-flex"><button class="btn btn-success flex-2" onclick="saveNewPDCA()">إطلاق المشروع 🚀</button><button class="btn btn-danger flex-1" onclick="document.getElementById('pdcaCreateModal').style.display='none'">إلغاء</button></div></div></div>
 
-    <div class="modal-overlay" id="pdcaViewModal"><div class="modal-content legacy-inline-7"><div class="legacy-inline-8"><h3 id="viewPdcaTitle" class="card-title legacy-inline-9">--</h3><button class="btn btn-sm btn-danger" onclick="document.getElementById('pdcaViewModal').style.display='none'"><i class='bx bx-x'></i></button></div><div class="row-flex legacy-inline-10"><div class="card flex-1"><p id="viewPdcaDept">--</p><p id="viewPdcaImpact">--</p><p id="viewPdcaOwner">--</p></div><div class="card flex-2 legacy-inline-11"><canvas id="pdcaChart"></canvas></div></div><div class="grid-layout"><div class="card legacy-inline-12"><h4 class="legacy-inline-13">P</h4><p id="viewPdcaPlan" class="legacy-inline-14"></p></div><div class="card legacy-inline-12"><h4 class="legacy-inline-15">D</h4><p id="viewPdcaDo" class="legacy-inline-14"></p></div><div class="card legacy-inline-12"><h4 class="legacy-inline-16">C</h4><p id="viewPdcaCheck" class="legacy-inline-14"></p></div><div class="card legacy-inline-12"><h4 class="legacy-inline-6">A</h4><p id="viewPdcaAct" class="legacy-inline-14"></p></div></div><div id="viewPdcaImgContainer" class="legacy-inline-17"><img id="viewPdcaImg" class="legacy-inline-18"></div></div></div>
+    <div class="modal-overlay" id="pdcaViewModal"><div class="modal-content legacy-inline-7"><div class="legacy-inline-8"><h3 id="viewPdcaTitle" class="card-title u-m0">--</h3><button class="btn btn-sm btn-danger" onclick="document.getElementById('pdcaViewModal').style.display='none'"><i class='bx bx-x'></i></button></div><div class="row-flex legacy-inline-10"><div class="card flex-1"><p id="viewPdcaDept">--</p><p id="viewPdcaImpact">--</p><p id="viewPdcaOwner">--</p></div><div class="card flex-2 legacy-inline-11"><canvas id="pdcaChart"></canvas></div></div><div class="grid-layout"><div class="card legacy-inline-12"><h4 class="legacy-inline-13">P</h4><p id="viewPdcaPlan" class="legacy-inline-14"></p></div><div class="card legacy-inline-12"><h4 class="legacy-inline-15">D</h4><p id="viewPdcaDo" class="legacy-inline-14"></p></div><div class="card legacy-inline-12"><h4 class="legacy-inline-16">C</h4><p id="viewPdcaCheck" class="legacy-inline-14"></p></div><div class="card legacy-inline-12"><h4 class="legacy-inline-6">A</h4><p id="viewPdcaAct" class="legacy-inline-14"></p></div></div><div id="viewPdcaImgContainer" class="legacy-inline-17"><img id="viewPdcaImg" class="legacy-inline-18"></div></div></div>
 
     <div class="modal-overlay" id="manualKPIModal"><div class="modal-content"><h3 class="card-title" id="manualKPIDeptName"><i class='bx bx-edit'></i> إدخال المؤشرات</h3><div id="manualKPIFields"></div><div class="row-flex"><button class="btn btn-success flex-2" onclick="saveManualKPIs()">حفظ المؤشرات</button><button class="btn btn-danger flex-1" onclick="document.getElementById('manualKPIModal').style.display='none'">إلغاء</button></div></div></div>
 
@@ -113,7 +113,7 @@
 
     <div class="modal-overlay" id="editJHRecordModal"><div class="modal-content"><div class="legacy-inline-21"><h3 class="card-title legacy-inline-13"><i class='bx bx-edit'></i> تعديل السجل</h3><button class="btn btn-sm btn-danger" onclick="document.getElementById('editJHRecordModal').style.display='none'"><i class='bx bx-x'></i></button></div><input type="hidden" id="editJhId"><input type="hidden" id="editJhType"><div id="editJhFormFields"></div><button class="btn btn-warning full-width" onclick="updateJHRecordData()">حفظ التعديلات</button></div></div>
 
-    <div class="modal-overlay" id="addBookModal"><div class="modal-content"><h3 class="card-title"><i class='bx bx-plus-circle'></i> رفع مرجع جديد</h3><div class="form-group"><input type="text" id="kbTitle" class="form-control" placeholder="العنوان"></div><div class="form-group"><select id="kbCategory" class="form-control"><option value="JH">JH</option><option value="PM">PM</option><option value="SOP">SOP</option></select></div><label class="btn btn-outline full-width legacy-inline-22"><div id="pdfExtractStatus"><i class='bx bxs-file-pdf'></i> اختر ملف PDF</div><input type="file" accept=".pdf" onchange="handleMaterialUpload(event)" class="legacy-inline-3"></label><div class="row-flex"><button class="btn btn-success flex-2" onclick="saveNewBook()">حفظ</button><button class="btn btn-danger flex-1" onclick="document.getElementById('addBookModal').style.display='none'">إلغاء</button></div></div></div>
+    <div class="modal-overlay" id="addBookModal"><div class="modal-content"><h3 class="card-title"><i class='bx bx-plus-circle'></i> رفع مرجع جديد</h3><div class="form-group"><input type="text" id="kbTitle" class="form-control" placeholder="العنوان"></div><div class="form-group"><select id="kbCategory" class="form-control"><option value="JH">JH</option><option value="PM">PM</option><option value="SOP">SOP</option></select></div><label class="btn btn-outline full-width legacy-inline-22"><div id="pdfExtractStatus"><i class='bx bxs-file-pdf'></i> اختر ملف PDF</div><input type="file" accept=".pdf" onchange="handleMaterialUpload(event)" class="is-hidden"></label><div class="row-flex"><button class="btn btn-success flex-2" onclick="saveNewBook()">حفظ</button><button class="btn btn-danger flex-1" onclick="document.getElementById('addBookModal').style.display='none'">إلغاء</button></div></div></div>
 
     <!-- ==========================================
          🔐 CORE AUTH SCREENS
@@ -162,29 +162,29 @@
          🏠 MAIN DASHBOARD
          ========================================== -->
     <div class="container screen" id="homeScreen">
-        <div class="legacy-inline-30">
+        <div class="is-hidden0">
             <div>
-                <h2 class="legacy-inline-31">لوحة القيادة</h2>
-                <p class="legacy-inline-32">مركز التحكم الرئيسي للمصنع</p>
+                <h2 class="is-hidden1">لوحة القيادة</h2>
+                <p class="is-hidden2">مركز التحكم الرئيسي للمصنع</p>
             </div>
             <button class="btn-scan-huge" onclick="document.getElementById('barcodeInput').click()">
-                <i class='bx bx-barcode-reader' class="legacy-inline-33"></i> مسح باركود
+                <i class='bx bx-barcode-reader' class="is-hidden3"></i> مسح باركود
             </button>
         </div>
 
 
-        <button class="btn btn-danger full-width dashboard-alert-action legacy-inline-34" onclick="showScreen('tagsScreen'); renderTags();"><i class='bx bx-error-circle'></i> إدارة التذاكر والأعطال</button>
-        <div id="searchResults" class="card legacy-inline-3"></div>
+        <button class="btn btn-danger full-width dashboard-alert-action is-hidden4" onclick="showScreen('tagsScreen'); renderTags();"><i class='bx bx-error-circle'></i> إدارة التذاكر والأعطال</button>
+        <div id="searchResults" class="card is-hidden"></div>
         
         <div class="dashboard-stats">
-            <div class="stat-card legacy-inline-35"><div class="stat-icon primary-text"><i class='bx bx-trending-up'></i></div><div class="stat-value primary-text" id="homeAvgScore">0%</div><div class="stat-label">كفاءة المصنع</div></div>
-            <div class="stat-card legacy-inline-36"><div class="stat-icon danger-text"><i class='bx bx-error'></i></div><div class="stat-value danger-text" id="homeOpenTags">0</div><div class="stat-label">أعطال مفتوحة</div></div>
-            <div class="stat-card legacy-inline-37"><div class="stat-icon success-text"><i class='bx bx-check-circle'></i></div><div class="stat-value success-text" id="homeClosedTags">0</div><div class="stat-label">أعطال مغلقة</div></div>
+            <div class="stat-card is-hidden5"><div class="stat-icon primary-text"><i class='bx bx-trending-up'></i></div><div class="stat-value primary-text" id="homeAvgScore">0%</div><div class="stat-label">كفاءة المصنع</div></div>
+            <div class="stat-card is-hidden6"><div class="stat-icon danger-text"><i class='bx bx-error'></i></div><div class="stat-value danger-text" id="homeOpenTags">0</div><div class="stat-label">أعطال مفتوحة</div></div>
+            <div class="stat-card is-hidden7"><div class="stat-icon success-text"><i class='bx bx-check-circle'></i></div><div class="stat-value success-text" id="homeClosedTags">0</div><div class="stat-label">أعطال مغلقة</div></div>
         </div>
 
-        <div class="card btn-role-admin legacy-inline-38">
-            <div class="legacy-inline-39">
-                <h3 class="card-title legacy-inline-9"><i class='bx bx-bot'></i> المستشار التنبؤي (AI)</h3>
+        <div class="card btn-role-admin is-hidden8">
+            <div class="is-hidden9">
+                <h3 class="card-title u-m0"><i class='bx bx-bot'></i> المستشار التنبؤي (AI)</h3>
                 <button class="btn btn-sm btn-outline" onclick="predictMachineFailures()">فحص الآن</button>
             </div>
             <div id="aiPredictionResult" class="legacy-inline-40"></div>
@@ -215,7 +215,7 @@
          ========================================== -->
     <!-- 1. JH Portal -->
     <div class="container screen" id="jhPortalScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <div class="legacy-inline-48">
                 <button class="btn btn-outline btn-sm" onclick="showScreen('homeScreen')">⬅️ عودة</button>
                 <h2 class="legacy-inline-49">👷‍♂️ غرفة عمليات (JH)</h2>
@@ -305,7 +305,7 @@
                 </div>
 
                 <div class="card legacy-inline-56">
-                    <div class="legacy-inline-57">
+                    <div class="section-toolbar-sm">
                         <h4 class="legacy-inline-58"><i class='bx bx-calendar'></i> السجل الميداني</h4>
                         <div class="legacy-inline-59">
                             <button class="btn btn-sm btn-outline" onclick="changeCalendarMonth(-1)"><i class='bx bx-chevron-right'></i></button>
@@ -316,7 +316,7 @@
                     <div id="jhCalendarGrid" class="legacy-inline-61"></div>
                 </div>
                 
-                <div class="grid-layout legacy-inline-62">
+                <div class="grid-layout u-mb-20">
                     <div class="card legacy-inline-63"><canvas id="jhMiniTrendChart"></canvas></div>
                     <div class="card legacy-inline-63"><canvas id="jhTimeChart"></canvas></div>
                     <div class="card legacy-inline-63"><canvas id="jhTagMatrixChart"></canvas></div>
@@ -324,12 +324,12 @@
 
                 <h3 class="section-title legacy-inline-64"><i class='bx bx-briefcase-alt-2'></i> أدوات وسجلات الصيانة الذاتية</h3>
                 <div class="grid-layout legacy-inline-65">
-                    <div class="card text-center legacy-inline-66" onclick="startNewAuditFlowFromPortal()"><div class="legacy-inline-67"><i class='bx bx-edit'></i></div><div class="legacy-inline-68">مراجعة (Audit)</div></div>
-                    <div class="card text-center legacy-inline-69" onclick="openJHDocument('CLIT')"><div class="legacy-inline-67"><i class='bx bx-brush'></i></div><div class="legacy-inline-68">معايير (CLIT)</div></div>
-                    <div class="card text-center legacy-inline-70" onclick="openJHDocument('Contamination')"><div class="legacy-inline-67"><i class='bx bx-water'></i></div><div class="legacy-inline-68">مصادر التلوث</div></div>
-                    <div class="card text-center legacy-inline-71" onclick="openJHDocument('SOC')"><div class="legacy-inline-67"><i class='bx bx-map-pin'></i></div><div class="legacy-inline-68">خريطة (SOC)</div></div>
-                    <div class="card text-center legacy-inline-72" onclick="openJHDocument('Anatomy')"><div class="legacy-inline-67"><i class='bx bx-cogs'></i></div><div class="legacy-inline-68">تشريح المعدة</div></div>
-                    <div class="card text-center legacy-inline-73" onclick="openJHDocument('Safety')"><div class="legacy-inline-67"><i class='bx bx-error-alt'></i></div><div class="legacy-inline-68">خريطة الأمان</div></div>
+                    <div class="card text-center legacy-inline-66" onclick="startNewAuditFlowFromPortal()"><div class="portal-action-icon"><i class='bx bx-edit'></i></div><div class="portal-action-label">مراجعة (Audit)</div></div>
+                    <div class="card text-center legacy-inline-69" onclick="openJHDocument('CLIT')"><div class="portal-action-icon"><i class='bx bx-brush'></i></div><div class="portal-action-label">معايير (CLIT)</div></div>
+                    <div class="card text-center legacy-inline-70" onclick="openJHDocument('Contamination')"><div class="portal-action-icon"><i class='bx bx-water'></i></div><div class="portal-action-label">مصادر التلوث</div></div>
+                    <div class="card text-center legacy-inline-71" onclick="openJHDocument('SOC')"><div class="portal-action-icon"><i class='bx bx-map-pin'></i></div><div class="portal-action-label">خريطة (SOC)</div></div>
+                    <div class="card text-center legacy-inline-72" onclick="openJHDocument('Anatomy')"><div class="portal-action-icon"><i class='bx bx-cogs'></i></div><div class="portal-action-label">تشريح المعدة</div></div>
+                    <div class="card text-center legacy-inline-73" onclick="openJHDocument('Safety')"><div class="portal-action-icon"><i class='bx bx-error-alt'></i></div><div class="portal-action-label">خريطة الأمان</div></div>
                 </div>
                 
                 <h4 class="legacy-inline-74"><i class='bx bx-medal'></i> أبطال الجودة بالقسم</h4>
@@ -340,7 +340,7 @@
 
     <!-- 2. JH Documents & KPIs & Checklists -->
     <div class="container screen" id="jhDocumentScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">⬅️ عودة</button>
             <h2 id="jhDocHeader" class="legacy-inline-75"><i class='bx bx-file-blank'></i> السجل</h2>
         </div>
@@ -381,37 +381,37 @@
 
     <div class="container screen" id="clitChecklistScreen">
         <div class="card legacy-inline-86">
-            <div class="legacy-inline-39">
+            <div class="is-hidden9">
                 <button class="btn btn-sm btn-outline" onclick="showScreen('jhDocumentScreen')">إلغاء</button>
                 <h3 class="legacy-inline-87"><i class='bx bx-list-check'></i> قائمة: <span id="activeChecklistFreq"></span></h3>
                 <span class="legacy-inline-88"><span id="checklistProgress">0</span> / <span id="checklistTotal">0</span></span>
             </div>
             <div class="legacy-inline-89">
-                <div id="checklistProgressBar" class="legacy-inline-90"></div>
+                <div id="checklistProgressBar" class="u-m00"></div>
             </div>
-            <div id="checklistCurrentDate" class="legacy-inline-91"></div>
+            <div id="checklistCurrentDate" class="u-m01"></div>
         </div>
         <div id="checklistItemsContainer"></div>
-        <button class="btn btn-primary full-width legacy-inline-92" onclick="submitFinalChecklist()"><i class='bx bx-save'></i> حفظ وإرسال المراجعة</button>
+        <button class="btn btn-primary full-width u-m02" onclick="submitFinalChecklist()"><i class='bx bx-save'></i> حفظ وإرسال المراجعة</button>
     </div>
 
     <div class="container screen" id="jhKPIsScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">🔙 عودة</button>
             <h2 class="legacy-inline-75"><i class='bx bx-radar'></i> المركز الاستراتيجي للمؤشرات</h2>
             <button class="btn btn-sm btn-success" onclick="exportKPIsToExcel()"><i class='bx bx-download'></i> Excel</button>
         </div>
-        <div class="row-flex legacy-inline-62">
+        <div class="row-flex u-mb-20">
             <select id="kpiMonthFilter" class="form-control flex-1" onchange="reloadEnterpriseKPIs()"></select>
             <select id="kpiDeptFilter" class="form-control flex-1" onchange="reloadEnterpriseKPIs()"><option value="factory">المصنع بالكامل</option></select>
         </div>
         <div class="dashboard-stats">
-            <div class="stat-card legacy-inline-93"><div id="kpiDashOEE" class="stat-value legacy-inline-94">0%</div><div class="stat-label">OEE</div><div id="kpiTrendOEE" class="legacy-inline-95"></div></div>
-            <div class="stat-card legacy-inline-96"><div id="kpiDashAudit" class="stat-value success-text">0%</div><div class="stat-label">Audit</div><div id="kpiTrendAudit" class="legacy-inline-95"></div></div>
-            <div class="stat-card legacy-inline-97"><div id="kpiDashTags" class="stat-value danger-text">0/0</div><div class="stat-label">Tags</div><div id="kpiTrendTags" class="legacy-inline-95"></div></div>
-            <div class="stat-card legacy-inline-98"><div id="kpiDashKaizen" class="stat-value warning-text">0</div><div class="stat-label">Kaizen</div><div id="kpiTrendKaizen" class="legacy-inline-95"></div></div>
+            <div class="stat-card u-m03"><div id="kpiDashOEE" class="stat-value u-m04">0%</div><div class="stat-label">OEE</div><div id="kpiTrendOEE" class="u-m05"></div></div>
+            <div class="stat-card u-m06"><div id="kpiDashAudit" class="stat-value success-text">0%</div><div class="stat-label">Audit</div><div id="kpiTrendAudit" class="u-m05"></div></div>
+            <div class="stat-card u-m07"><div id="kpiDashTags" class="stat-value danger-text">0/0</div><div class="stat-label">Tags</div><div id="kpiTrendTags" class="u-m05"></div></div>
+            <div class="stat-card u-m08"><div id="kpiDashKaizen" class="stat-value warning-text">0</div><div class="stat-label">Kaizen</div><div id="kpiTrendKaizen" class="u-m05"></div></div>
         </div>
-        <div class="row-flex legacy-inline-99">
+        <div class="row-flex u-m09">
             <div class="card flex-1"><h4 class="legacy-inline-100"><i class='bx bx-target-lock'></i> رادار الـ TPM</h4><div class="legacy-inline-101"><canvas id="kpiMaturityRadar"></canvas></div></div>
             <div class="card flex-1"><h4 class="legacy-inline-102"><i class='bx bx-line-chart'></i> تريند الـ OEE</h4><div class="legacy-inline-101"><canvas id="kpiTrendLine"></canvas></div></div>
         </div>
@@ -426,7 +426,7 @@
         </div>
         <div class="card legacy-inline-104">
             <table class="legacy-inline-105">
-                <thead class="legacy-inline-106"><tr><th class="legacy-inline-107">الفئة</th><th class="legacy-inline-108">المؤشر (KPI)</th><th class="legacy-inline-108">الهدف</th><th class="legacy-inline-108">الفعلي</th><th class="legacy-inline-108">الحالة</th></tr></thead>
+                <thead class="legacy-inline-106"><tr><th class="legacy-inline-107">الفئة</th><th class="text-muted">المؤشر (KPI)</th><th class="text-muted">الهدف</th><th class="text-muted">الفعلي</th><th class="text-muted">الحالة</th></tr></thead>
                 <tbody id="enterpriseKPITableBody"></tbody>
             </table>
         </div>
@@ -435,7 +435,7 @@
 
     <!-- 3. 5S Screen -->
     <div class="container screen" id="fiveSScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 class="legacy-inline-87"><i class='bx bx-sparkles'></i> بيئة العمل (5S)</h2>
         </div>
@@ -443,9 +443,9 @@
         <div class="card legacy-inline-110">
             <h3 class="card-title"><i class='bx bx-camera'></i> كاميرا المطابقة (Standard Check)</h3>
             <p class="legacy-inline-111">ارفع صورة الوضع القياسي المثالي، ثم التقط صورة للوضع الحالي واسحب الشريط لاكتشاف الاختلافات الدقيقة.</p>
-            <div class="row-flex legacy-inline-62">
-                <label class="btn flex-1 legacy-inline-112"><i class='bx bx-check-circle'></i> صورة القياسي<input type="file" accept="image/*" onchange="load5SImage(event, 'standard')" class="legacy-inline-3"></label>
-                <label class="btn flex-1 legacy-inline-113"><i class='bx bx-camera'></i> صورة الحالي<input type="file" accept="image/*" capture="environment" onchange="load5SImage(event, 'current')" class="legacy-inline-3"></label>
+            <div class="row-flex u-mb-20">
+                <label class="btn flex-1 legacy-inline-112"><i class='bx bx-check-circle'></i> صورة القياسي<input type="file" accept="image/*" onchange="load5SImage(event, 'standard')" class="is-hidden"></label>
+                <label class="btn flex-1 legacy-inline-113"><i class='bx bx-camera'></i> صورة الحالي<input type="file" accept="image/*" capture="environment" onchange="load5SImage(event, 'current')" class="is-hidden"></label>
             </div>
             <div id="fiveSSliderContainer" class="legacy-inline-114">
                 <img id="imgStandard" src="" class="legacy-inline-115">
@@ -460,15 +460,15 @@
 
     <!-- 4. PM Screen -->
     <div class="container screen" id="pmScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 class="legacy-inline-121"><i class='bx bx-cog'></i> الصيانة المخططة (PM)</h2>
         </div>
 
         <div class="dashboard-stats">
-            <div class="stat-card legacy-inline-97"><div class="stat-value danger-text" id="pmPendingCount">0</div><div class="stat-label">أوامر معلقة</div></div>
+            <div class="stat-card u-m07"><div class="stat-value danger-text" id="pmPendingCount">0</div><div class="stat-label">أوامر معلقة</div></div>
             <div class="stat-card legacy-inline-122"><div class="stat-value warning-text" id="pmProgressCount">0</div><div class="stat-label">قيد التنفيذ</div></div>
-            <div class="stat-card legacy-inline-96"><div class="stat-value success-text" id="pmClosedCount">0</div><div class="stat-label">مغلقة</div></div>
+            <div class="stat-card u-m06"><div class="stat-value success-text" id="pmClosedCount">0</div><div class="stat-label">مغلقة</div></div>
         </div>
         <h3 class="section-title"><i class='bx bx-download'></i> أوامر الشغل الواردة</h3>
         <div id="pmWorkOrdersContainer" class="grid-layout"></div>
@@ -476,7 +476,7 @@
 
     <!-- 5. E&T Screen -->
     <div class="container screen" id="etScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 class="legacy-inline-123"><i class='bx bxs-graduation'></i> التعليم والتدريب (E&T)</h2>
         </div>
@@ -484,13 +484,13 @@
         <div class="card text-center legacy-inline-124">
             <i class='bx bx-hard-hat' class="legacy-inline-125"></i>
             <h3 class="legacy-inline-126">شاشة مصفوفة المهارات قيد التطوير...</h3>
-            <p class="legacy-inline-127">(سيتم دمج نظام تتبع تدريب المشغلين هنا)</p>
+            <p class="form-note">(سيتم دمج نظام تتبع تدريب المشغلين هنا)</p>
         </div>
     </div>
 
     <!-- 6. KK Screen -->
     <div class="container screen" id="kkScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <div class="legacy-inline-48">
                 <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
                 <h2 class="legacy-inline-128"><i class='bx bx-line-chart'></i> التحسين المستمر (KK)</h2>
@@ -502,9 +502,9 @@
 
 
         <div class="dashboard-stats">
-            <div class="stat-card legacy-inline-97"><div class="stat-value danger-text" id="kkTotalLossHours">0</div><div class="stat-label">ساعات التوقف</div></div>
-            <div class="stat-card legacy-inline-96"><div class="stat-value success-text" id="kkTotalLossCost">0</div><div class="stat-label">النزيف المالي</div></div>
-            <div class="stat-card legacy-inline-98"><div class="stat-value warning-text" id="kkActiveProjects">0</div><div class="stat-label">مشاريع (PDCA)</div></div>
+            <div class="stat-card u-m07"><div class="stat-value danger-text" id="kkTotalLossHours">0</div><div class="stat-label">ساعات التوقف</div></div>
+            <div class="stat-card u-m06"><div class="stat-value success-text" id="kkTotalLossCost">0</div><div class="stat-label">النزيف المالي</div></div>
+            <div class="stat-card u-m08"><div class="stat-value warning-text" id="kkActiveProjects">0</div><div class="stat-label">مشاريع (PDCA)</div></div>
         </div>
 
         <div class="row-flex legacy-inline-130">
@@ -516,11 +516,11 @@
         <div id="kkTab-lossTree" class="kk-tab-content">
             <div id="kkLossTreeContainer" class="grid-layout"></div>
         </div>
-        <div id="kkTab-pdca" class="kk-tab-content legacy-inline-3">
-            <button class="btn btn-success full-width legacy-inline-62" onclick="createNewPDCA()"><i class='bx bx-plus-circle'></i> مشروع تحسين جديد</button>
+        <div id="kkTab-pdca" class="kk-tab-content is-hidden">
+            <button class="btn btn-success full-width u-mb-20" onclick="createNewPDCA()"><i class='bx bx-plus-circle'></i> مشروع تحسين جديد</button>
             <div id="kkPdcaContainer" class="grid-layout"></div>
         </div>
-        <div id="kkTab-kkAudit" class="kk-tab-content legacy-inline-3">
+        <div id="kkTab-kkAudit" class="kk-tab-content is-hidden">
             <div class="card text-center legacy-inline-132">
                 <i class='bx bx-bar-chart-alt-2' class="legacy-inline-133"></i>
                 <h3 class="legacy-inline-126">مراجعة نضج فريق الـ KK</h3>
@@ -533,13 +533,13 @@
 
     <!-- 7. HSE Screen -->
     <div class="container screen" id="hseScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 class="legacy-inline-137"><i class='bx bx-shield-quarter'></i> الصحة والسلامة والبيئة (HSE)</h2>
         </div>
         <div class="card legacy-inline-138">
             <h3 class="card-title"><i class='bx bx-shield-check'></i> مساحة HSE</h3>
-            <p class="legacy-inline-108">هذه المساحة مخصصة لفريق الصحة والسلامة والبيئة. سيتم بناء أدواتها وسجلاتها بشكل مستقل عند اعتماد نطاق العمل الخاص بها.</p>
+            <p class="text-muted">هذه المساحة مخصصة لفريق الصحة والسلامة والبيئة. سيتم بناء أدواتها وسجلاتها بشكل مستقل عند اعتماد نطاق العمل الخاص بها.</p>
         </div>
     </div>
 
@@ -564,7 +564,7 @@
 
     <!-- Tags Screen -->
     <div class="container screen" id="tagsScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
             <h2 class="legacy-inline-121"><i class='bx bx-error-circle'></i> إدارة التذاكر والأعطال</h2>
         </div>
@@ -580,7 +580,7 @@
                 <div class="form-group"><label for="newTagSpareParts">قطع الغيار المطلوبة <span>اختياري</span></label><input type="text" id="newTagSpareParts" class="form-control" placeholder="مثال: جوان 25 مم أو سير ناقل"><small class="field-help">دوّنها إن كانت معروفة فقط.</small></div>
                 <div class="form-group"><label for="newTagTeam">فريق TPM المرتبط <span>اختياري</span></label><select id="newTagTeam" class="form-control"><option value="">لا يوجد فريق مرتبط</option></select><small class="field-help">استخدمه للربط والتحليل، وليس بدل القسم.</small></div>
                 <div class="form-group"><label for="newTagEngineer">المسؤول أو مهندس الصيانة <span>اختياري</span></label><select id="newTagEngineer" class="form-control"><option value="">غير مُسند الآن</option></select><small class="field-help">اختر المسؤول عند معرفة من سيتابع الإغلاق.</small></div>
-                <div class="form-group"><label>صورة دليل <span>اختياري</span></label><label class="btn btn-outline full-width tag-image-picker"><i class='bx bx-camera'></i> اختر صورة للحالة<input type="file" accept="image/*" onchange="handleTagImage(event)" class="legacy-inline-3"></label><small class="field-help">صورة واحدة واضحة تساعد في التحقق.</small></div>
+                <div class="form-group"><label>صورة دليل <span>اختياري</span></label><label class="btn btn-outline full-width tag-image-picker"><i class='bx bx-camera'></i> اختر صورة للحالة<input type="file" accept="image/*" onchange="handleTagImage(event)" class="is-hidden"></label><small class="field-help">صورة واحدة واضحة تساعد في التحقق.</small></div>
             </div>
             <div id="tagImagePreview" class="legacy-inline-140"></div>
             <button class="btn btn-danger full-width" onclick="addNewTag()"><i class='bx bx-send'></i> تسجيل التاج</button>
@@ -608,7 +608,7 @@
     <!-- Tasks Screen -->
     <div class="container screen" id="tasksScreen">
         <div id="tasksMainView">
-            <div class="legacy-inline-47">
+            <div class="section-toolbar">
                 <div class="legacy-inline-48">
                     <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
                     <h2 class="legacy-inline-142"><i class='bx bx-task'></i> إدارة المهام</h2>
@@ -617,9 +617,9 @@
             </div>
             
             <div class="dashboard-stats">
-                <div class="stat-card legacy-inline-97"><div id="kpiTasksPendingAll" class="stat-value danger-text">0</div><div class="stat-label">معلقة</div></div>
+                <div class="stat-card u-m07"><div id="kpiTasksPendingAll" class="stat-value danger-text">0</div><div class="stat-label">معلقة</div></div>
                 <div class="stat-card legacy-inline-122"><div id="kpiTasksProgressAll" class="stat-value warning-text">0</div><div class="stat-label">جاري التنفيذ</div></div>
-                <div class="stat-card legacy-inline-96"><div id="kpiTasksDoneAll" class="stat-value success-text">0</div><div class="stat-label">مكتملة</div></div>
+                <div class="stat-card u-m06"><div id="kpiTasksDoneAll" class="stat-value success-text">0</div><div class="stat-label">مكتملة</div></div>
                 <div class="stat-card legacy-inline-143"><div id="kpiTasksOverdueAll" class="stat-value primary-text">0</div><div class="stat-label">متأخرة</div></div>
             </div>
             <div id="tasksCommandSummary" class="tasks-command-summary"></div>
@@ -627,20 +627,20 @@
             <div id="tasksDeptGrid" class="grid-layout"></div>
         </div>
 
-        <div id="tasksDeptView" class="legacy-inline-3">
-            <div class="legacy-inline-47">
+        <div id="tasksDeptView" class="is-hidden">
+            <div class="section-toolbar">
                 <button class="btn btn-sm btn-outline" onclick="closeTasksDept()">⬅️ عودة للأقسام</button>
-                <h2 id="tasksDeptTitle" class="legacy-inline-144">المهام</h2>
+                <h2 id="tasksDeptTitle" class="section-heading-copper">المهام</h2>
             </div>
-            <div class="card btn-role-auditor task-create-card legacy-inline-145">
+            <div class="card btn-role-auditor task-create-card surface-soft">
                 <div class="row-flex">
-                    <input type="text" id="newTaskInput" class="form-control flex-2 legacy-inline-9" placeholder="ماذا يجب أن ينجز؟">
-                    <select id="newTaskPriority" class="form-control flex-1 legacy-inline-9"><option value="high">عالية</option><option value="medium" selected>متوسطة</option><option value="low">منخفضة</option></select>
+                    <input type="text" id="newTaskInput" class="form-control flex-2 u-m0" placeholder="ماذا يجب أن ينجز؟">
+                    <select id="newTaskPriority" class="form-control flex-1 u-m0"><option value="high">عالية</option><option value="medium" selected>متوسطة</option><option value="low">منخفضة</option></select>
                 </div>
                 <div class="row-flex">
-                    <select id="newTaskAssignee" class="form-control flex-1 legacy-inline-9"><option value="">مسؤول التنفيذ</option></select>
-                    <select id="newTaskTeam" class="form-control flex-1 legacy-inline-9"><option value="">فريق TPM (اختياري)</option></select>
-                    <input type="date" id="newTaskDueDate" class="form-control flex-1 legacy-inline-9">
+                    <select id="newTaskAssignee" class="form-control flex-1 u-m0"><option value="">مسؤول التنفيذ</option></select>
+                    <select id="newTaskTeam" class="form-control flex-1 u-m0"><option value="">فريق TPM (اختياري)</option></select>
+                    <input type="date" id="newTaskDueDate" class="form-control flex-1 u-m0">
                     <button class="btn btn-primary flex-1" onclick="addManualTaskDept()"><i class='bx bx-plus'></i> إضافة للمسار</button>
                 </div>
             </div>
@@ -656,7 +656,7 @@
 
     <!-- Kaizen Screen -->
     <div class="container screen" id="kaizenScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <div class="legacy-inline-48">
                 <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
                 <h2 class="legacy-inline-142"><i class='bx bx-bulb'></i> مجتمع كايزن</h2>
@@ -672,14 +672,14 @@
             <div class="kaizen-stage-steps"><button onclick="applyKaizenStageFilter('all')" class="active">الكل</button><button onclick="applyKaizenStageFilter('plan')">P · خطة</button><button onclick="applyKaizenStageFilter('do')">D · تنفيذ</button><button onclick="applyKaizenStageFilter('check')">C · تحقق</button><button onclick="applyKaizenStageFilter('act')">A · تثبيت</button><button onclick="applyKaizenStageFilter('standardized')">معياري</button></div>
         </section>
         <div class="legacy-inline-150">
-            <select id="kaizenDeptSelect" class="form-control legacy-inline-9" onchange="renderKaizenFeed()"><option value="الكل">عرض جميع الأقسام</option></select>
+            <select id="kaizenDeptSelect" class="form-control u-m0" onchange="renderKaizenFeed()"><option value="الكل">عرض جميع الأقسام</option></select>
         </div>
         <div id="kaizenFeedContainer" class="grid-layout"></div>
     </div>
 
     <!-- Knowledge Base Screen -->
     <div class="container screen" id="knowledgeScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <div class="legacy-inline-48">
                 <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
                 <h2 class="legacy-inline-151"><i class='bx bx-brain'></i> عقل المصنع (AI)</h2>
@@ -692,7 +692,7 @@
         
         <div class="card legacy-inline-152">
             <div class="row-flex">
-                <input type="text" id="kbSearchInput" class="form-control flex-2 legacy-inline-9" placeholder="اسأل المستشار الذكي (مثال: كيف أمنع تسريب الزيت؟)...">
+                <input type="text" id="kbSearchInput" class="form-control flex-2 u-m0" placeholder="اسأل المستشار الذكي (مثال: كيف أمنع تسريب الزيت؟)...">
                 <button class="btn btn-primary flex-1" onclick="askFactoryAI()"><i class='bx bx-bot'></i> اسأل</button>
             </div>
             <div id="aiSearchResponse" class="legacy-inline-153">
@@ -732,11 +732,11 @@
         </div>
 
         <div class="row-flex legacy-inline-45">
-            <div class="card flex-1 legacy-inline-145">
+            <div class="card flex-1 surface-soft">
                 <h4 class="legacy-inline-161"><i class='bx bx-radar'></i> رادار توازن JH</h4>
                 <div class="legacy-inline-162"><canvas id="deptRadarChart"></canvas></div>
             </div>
-            <div class="card flex-1 legacy-inline-145">
+            <div class="card flex-1 surface-soft">
                 <h4 class="legacy-inline-163"><i class='bx bx-line-chart'></i> تطور الأداء</h4>
                 <div class="legacy-inline-162"><canvas id="deptTrendChart"></canvas></div>
             </div>
@@ -749,8 +749,8 @@
     <div class="container screen" id="setupScreen">
         <div class="card legacy-inline-164">
             <h3 class="card-title"><i class='bx bx-slider-alt'></i> تكوين المراجعة</h3>
-            <div class="form-group"><label class="legacy-inline-165">القسم:</label><select class="form-control" id="selectDept"></select></div>
-            <div class="form-group"><label class="legacy-inline-165">الماكينة (اختياري):</label><input type="text" id="setupMachine" class="form-control" placeholder="مثال: خط التعبئة 1"></div>
+            <div class="form-group"><label class="form-label-muted">القسم:</label><select class="form-control" id="selectDept"></select></div>
+            <div class="form-group"><label class="form-label-muted">الماكينة (اختياري):</label><input type="text" id="setupMachine" class="form-control" placeholder="مثال: خط التعبئة 1"></div>
             <button class="btn btn-success full-width" onclick="initAuditSequential()"><i class='bx bx-rocket'></i> بدء الفحص</button>
             <button class="btn btn-outline full-width" onclick="showScreen('homeScreen')">إلغاء</button>
         </div>
@@ -758,14 +758,14 @@
 
     <div class="container screen" id="auditScreen">
         <div class="card legacy-inline-166">
-            <div class="legacy-inline-57">
+            <div class="section-toolbar-sm">
                 <h3 id="auditStepTitle" class="legacy-inline-167"></h3>
                 <div id="stepCounter" class="legacy-inline-168"></div>
             </div>
             <div class="legacy-inline-169">
                 <div id="auditProgressBar" class="legacy-inline-170"></div>
             </div>
-            <div class="legacy-inline-39">
+            <div class="is-hidden9">
                 <span class="legacy-inline-14">الكفاءة اللحظية: <b id="cumulativeScoreText" class="legacy-inline-171">0%</b></span>
                 <span id="cumulativePointsText" class="legacy-inline-172">النقاط: 0 / 0</span>
             </div>
@@ -811,9 +811,9 @@
     </div>
 
     <div class="container screen" id="historyScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
-            <h2 class="section-title legacy-inline-144"><i class='bx bx-history'></i> أرشيف المراجعات</h2>
+            <h2 class="section-title section-heading-copper"><i class='bx bx-history'></i> أرشيف المراجعات</h2>
         </div>
         <div id="historyListContainer" class="grid-layout"></div>
     </div>
@@ -825,10 +825,10 @@
                 <h3 class="legacy-inline-194">تقرير تدقيق تقييم (TPM)</h3>
             </div>
             <div class="legacy-inline-195">
-                <div class="legacy-inline-196"><b>📅 التاريخ:</b> <span id="detDate"></span></div>
-                <div class="legacy-inline-196"><b>🏭 القسم:</b> <span id="detDept"></span></div>
-                <div class="legacy-inline-196"><b>⚙️ الماكينة:</b> <span id="detMachine"></span></div>
-                <div class="legacy-inline-196"><b>👤 المراجع:</b> <span id="detAuditor"></span></div>
+                <div class="detail-row"><b>📅 التاريخ:</b> <span id="detDate"></span></div>
+                <div class="detail-row"><b>🏭 القسم:</b> <span id="detDept"></span></div>
+                <div class="detail-row"><b>⚙️ الماكينة:</b> <span id="detMachine"></span></div>
+                <div class="detail-row"><b>👤 المراجع:</b> <span id="detAuditor"></span></div>
             </div>
             <div class="legacy-inline-197">
                 <div class="legacy-inline-46">
@@ -857,9 +857,9 @@
         </div>
         
         <div class="row-flex">
-            <button class="btn btn-primary flex-1 legacy-inline-213" onclick="downloadProfessionalPDF()"><i class='bx bxs-file-pdf'></i> تحميل PDF</button>
-            <button class="btn btn-success flex-1 legacy-inline-213" onclick="shareWhatsApp()"><i class='bx bxl-whatsapp'></i> مشاركة</button>
-            <button class="btn btn-outline flex-1 legacy-inline-213" onclick="showScreen('historyScreen')"><i class='bx bx-archive-in'></i> الأرشيف</button>
+            <button class="btn btn-primary flex-1 action-button" onclick="downloadProfessionalPDF()"><i class='bx bxs-file-pdf'></i> تحميل PDF</button>
+            <button class="btn btn-success flex-1 action-button" onclick="shareWhatsApp()"><i class='bx bxl-whatsapp'></i> مشاركة</button>
+            <button class="btn btn-outline flex-1 action-button" onclick="showScreen('historyScreen')"><i class='bx bx-archive-in'></i> الأرشيف</button>
         </div>
     </div>
 
@@ -893,21 +893,21 @@
             <div class="settings-quick-actions"><button class="btn btn-outline" onclick="showScreen('tagsScreen')"><i class='bx bx-purchase-tag-alt'></i> فتح التاجات</button><button class="btn btn-outline" onclick="showScreen('tasksScreen')"><i class='bx bx-task'></i> فتح المهام</button><button class="btn btn-outline" onclick="toggleDarkMode()"><i class='bx bx-moon'></i> تبديل المظهر</button></div>
         </section>
 
-        <section id="tab-factory-manage" class="settings-tab-content legacy-inline-3">
+        <section id="tab-factory-manage" class="settings-tab-content is-hidden">
             <div class="settings-section-title"><div><span class="eyebrow">الهيكل التشغيلي</span><h3>إدارة الأقسام</h3><p>الأقسام الأساسية ثابتة. أضف هنا فقط الأقسام المساندة أو الخدمية عند الحاجة.</p></div></div>
             <div class="settings-core-card"><div><i class='bx bx-check-shield'></i><b>الأقسام الأربعة الأساسية مفعّلة تلقائيًا</b><span>حقن الكابينة · حقن الباب · الفاكيوم · المواسير</span></div><small>لا يمكن حذفها من هذه الشاشة.</small></div>
             <div class="card settings-form-card"><h4 class="card-title"><i class='bx bx-plus-circle'></i> إضافة قسم مساند</h4><p>مثال: المخازن أو الجودة. سيظهر بعد الحفظ في قوائم التشغيل، ولا يزيل أي قسم قائم.</p><div class="settings-inline-form"><div class="form-group"><label for="newDeptInput">اسم القسم المساند</label><input type="text" id="newDeptInput" class="form-control" placeholder="اكتب اسم القسم الجديد"></div><button class="btn btn-primary" onclick="addOrUpdateDept()"><i class='bx bx-plus'></i> إضافة القسم</button></div><div id="managedDeptsList" class="settings-managed-list"></div></div>
             <div class="settings-control-map"><article><i class='bx bx-clipboard'></i><b>المراجعات</b><span>تستخدم القسم عند بدء المراجعة وتحفظ سجله.</span></article><article><i class='bx bx-purchase-tag-alt'></i><b>التاجات</b><span>القسم مطلوب لتوجيه البلاغ والتحليل.</span></article><article><i class='bx bx-bulb'></i><b>الكايزن</b><span>يسند التحسين إلى القسم المسؤول.</span></article><article><i class='bx bx-task'></i><b>المهام</b><span>تنظم التنفيذ والمتابعة حسب القسم.</span></article></div>
         </section>
 
-        <section id="tab-assignments" class="settings-tab-content legacy-inline-3">
+        <section id="tab-assignments" class="settings-tab-content is-hidden">
             <div class="settings-section-title"><div><span class="eyebrow">المسؤولية والمتابعة</span><h3>الإسناد والتنبيهات</h3><p>أضف مسؤولي الصيانة ليظهروا في نموذج التاج والمهام. تبقى رسائل WhatsApp متوقفة حتى يتم تجهيز الخادم.</p></div></div>
             <div class="card settings-form-card"><h4 class="card-title"><i class='bx bx-hard-hat'></i> مسؤولو الصيانة</h4><div class="settings-inline-form settings-engineer-form"><div class="form-group"><label for="newEngName">اسم المسؤول أو المهندس</label><input type="text" id="newEngName" class="form-control" placeholder="مثال: أحمد محمد"></div><div class="form-group"><label for="newEngPhone">رقم الهاتف</label><input type="tel" id="newEngPhone" class="form-control" placeholder="مثال: 2010xxxxxxx"></div><button class="btn btn-primary" onclick="addEngineer()"><i class='bx bx-plus'></i> إضافة</button></div><div id="managedEngsList" class="settings-managed-list"></div></div>
             <div class="settings-notification-state"><div><span class="eyebrow"><i class='bx bxl-whatsapp'></i> WhatsApp Cloud API</span><h4>الإرسال مؤجل حاليًا</h4><p>لا تُحفظ مفاتيح Meta هنا ولا يرسل التطبيق رسائل حتى يتم تجهيز المتغيرات على الخادم.</p></div><span id="whatsappConnectionBadge" class="integration-badge">غير مهيأ على الخادم</span></div>
             <div class="card settings-form-card"><h4 class="card-title"><i class='bx bx-bell'></i> قواعد الإرسال عند التفعيل</h4><label class="setting-toggle"><input type="checkbox" id="notifyOnTagAssigned" checked> <span>عند إسناد تاج لمسؤول أو مهندس</span></label><label class="setting-toggle"><input type="checkbox" id="notifyOnCriticalTag" checked> <span>عند تسجيل تاج حرج</span></label><label class="setting-toggle"><input type="checkbox" id="notifyOnTagEscalation" checked> <span>عند تأخر التاج أو تصعيده</span></label><button class="btn btn-outline full-width" onclick="saveNotificationSettings()"><i class='bx bx-save'></i> حفظ قواعد الإرسال المستقبلية</button></div>
         </section>
 
-        <section id="tab-governance" class="settings-tab-content legacy-inline-3">
+        <section id="tab-governance" class="settings-tab-content is-hidden">
             <div class="settings-section-title"><div><span class="eyebrow">الحوكمة</span><h3>المستخدمون والبيانات</h3><p>تحكم في صلاحيات الحسابات، وصدّر السجلات من دون عرض مفاتيح أو إعدادات سرية في المتصفح.</p></div></div>
             <div class="card settings-form-card"><h4 class="card-title"><i class='bx bx-user-check'></i> إدارة المستخدمين والصلاحيات</h4><p>وافق على الحسابات الجديدة وحدد دور كل مستخدم وفق احتياج التشغيل.</p><div id="usersListContainer"></div></div>
             <div class="settings-export-card"><div><i class='bx bx-data'></i><b>تصدير بيانات التشغيل</b><span>حمّل نسخة Excel من سجلات التطبيق للمراجعة أو الأرشفة.</span></div><button class="btn btn-success" onclick="exportToCSV()"><i class='bx bx-export'></i> تصدير Excel</button></div>
@@ -917,25 +917,25 @@
     </div>
 
     <div class="container screen" id="profileDetailsScreen">
-        <div class="legacy-inline-47">
+        <div class="section-toolbar">
             <button class="btn btn-outline btn-sm" onclick="showScreen('settingsScreen')">⬅️ عودة</button>
-            <h2 class="legacy-inline-144"><i class='bx bx-id-card'></i> هويتي الرقمية</h2>
+            <h2 class="section-heading-copper"><i class='bx bx-id-card'></i> هويتي الرقمية</h2>
         </div>
         <div class="card text-center legacy-inline-218">
             <div class="legacy-inline-219">
                 <img id="myBigAvatar" src="" class="legacy-inline-220">
                 <label class="icon-btn legacy-inline-221">
-                    <i class='bx bx-camera'></i><input type="file" onchange="updateProfilePic(event)" class="legacy-inline-3">
+                    <i class='bx bx-camera'></i><input type="file" onchange="updateProfilePic(event)" class="is-hidden">
                 </label>
             </div>
             <h3 id="myDisplayName" class="legacy-inline-222">--</h3>
             <span id="myDisplayRank" class="legacy-inline-223">--</span>
             
             <div class="legacy-inline-224">
-                <div class="form-group"><label class="legacy-inline-127">الاسم الكامل:</label><input type="text" id="editName" class="form-control"></div>
-                <div class="form-group"><label class="legacy-inline-127">رقم الواتساب:</label><input type="tel" id="editPhone" class="form-control"></div>
-                <div class="form-group"><label class="legacy-inline-127">القسم:</label><select id="editDept" class="form-control"></select></div>
-                <button class="btn btn-success full-width legacy-inline-213" onclick="savePersonalData()"><i class='bx bx-save'></i> حفظ التغييرات</button>
+                <div class="form-group"><label class="form-note">الاسم الكامل:</label><input type="text" id="editName" class="form-control"></div>
+                <div class="form-group"><label class="form-note">رقم الواتساب:</label><input type="tel" id="editPhone" class="form-control"></div>
+                <div class="form-group"><label class="form-note">القسم:</label><select id="editDept" class="form-control"></select></div>
+                <button class="btn btn-success full-width action-button" onclick="savePersonalData()"><i class='bx bx-save'></i> حفظ التغييرات</button>
             </div>
         </div>
         <h3 class="section-title"><i class='bx bx-history'></i> شريط الإنجازات الميدانية</h3>

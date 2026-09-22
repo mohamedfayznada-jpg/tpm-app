@@ -178,3 +178,11 @@ html,body{width:100%;max-width:100%;overflow-x:hidden!important}
 .main-header,.sidebar,.side-item,.icon-btn,.supervisor-box{pointer-events:auto!important}
 .sidebar{z-index:9000!important}
 .main-header{z-index:9100!important}
+
+/* ===== V34 canonical screen visibility =====
+   Only the active application screen may participate in layout.
+   Inline JS still controls the active class/display, but this CSS
+   prevents legacy styles from leaking every screen into the viewport.
+*/
+.container.screen{display:none!important}
+.container.screen.active{display:block!important}

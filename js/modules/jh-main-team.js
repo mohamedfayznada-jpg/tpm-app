@@ -2,6 +2,7 @@
 // ==========================================
 let jhMainTeam = null;
 let jhMainTeamRoleFiles = {};
+const jhMainTeamListeners = {};
 let jhMainTeamDraftMembers = [];
 
 function jhTeamEmptyRole() {
@@ -84,8 +85,8 @@ window.renderJHMainTeam = function() {
 
 window.loadJHMainTeam = function() {
     if (!firebase.auth().currentUser) return;
-    if (dbListeners.jhMainTeam) db.ref('tpm_system/jh_main_team').off('value', dbListeners.jhMainTeam);
-    dbListeners.jhMainTeam = db.ref('tpm_system/jh_main_team').on('value', snap => {
+    if (jhMainTeamListeners.jhMainTeam) db.ref('tpm_system/jh_main_team').off('value', jhMainTeamListeners.jhMainTeam);
+    jhMainTeamListeners.jhMainTeam = db.ref('tpm_system/jh_main_team').on('value', snap => {
         jhMainTeam = { ...jhTeamDefaultData(), ...(snap.val() || {}) };
         window.renderJHMainTeam();
     });
@@ -236,9 +237,9 @@ window.saveJHMainTeam = async function() {
 firebase.auth().onAuthStateChanged(user => {
     if (user) {
         window.loadJHMainTeam();
-    } else if (dbListeners.jhMainTeam) {
-        db.ref('tpm_system/jh_main_team').off('value', dbListeners.jhMainTeam);
-        delete dbListeners.jhMainTeam;
+    } else if (jhMainTeamListeners.jhMainTeam) {
+        db.ref('tpm_system/jh_main_team').off('value', jhMainTeamListeners.jhMainTeam);
+        delete jhMainTeamListeners.jhMainTeam;
         jhMainTeam = null;
         window.renderJHMainTeam();
     }

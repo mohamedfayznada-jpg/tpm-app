@@ -11,10 +11,6 @@
   --v33-radius:8px;--v33-shadow:0 3px 14px rgba(28,42,51,.055);
 }
 html,body{background:var(--v33-bg)!important;color:var(--v33-body)!important}
-/* Structural visibility — required by the screen router. */
-.screen{display:none}
-.screen.active{display:block!important;position:relative;min-height:calc(100vh - 20px)}
-
 body{font-family:'Cairo',sans-serif!important}
 body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background-image:linear-gradient(rgba(32,53,65,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(32,53,65,.025) 1px,transparent 1px);background-size:32px 32px}
 h1,h2,h3,h4,h5,.section-title,.card-title{font-family:'Tajawal','Cairo',sans-serif!important;color:var(--v33-ink)!important;text-shadow:none!important}

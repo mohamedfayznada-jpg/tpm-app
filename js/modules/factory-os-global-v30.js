@@ -150,7 +150,7 @@ function renderReviewChart(){
   const old=C.getChart(canvas);if(old)old.destroy();
   const scores=rows.map(x=>Number(x.totalPct)||0);
   const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
-  new C(canvas.getContext('2d'),{type:'line',data:{labels:rows.map(x=>String(x.date||'—').replace(/^.*?(٠-٩|[0-9]).*$/,'$&')),datasets:[
+  new C(canvas.getContext('2d'),{type:'line',data:{labels:rows.map(x=>String(x.date||'—')),datasets:[
     {label:'نسبة المراجعة',data:scores,borderColor:'#2583e8',backgroundColor:'rgba(37,131,232,.08)',borderWidth:3,pointRadius:4,tension:.3,fill:false},
     {label:'متوسط النتائج',data:scores.map(()=>avg),borderColor:'#20a66a',backgroundColor:'transparent',borderWidth:2,pointRadius:0,borderDash:[6,5],tension:0,fill:false}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,grid:{color:'#e8edf2'},ticks:{color:'#6d7c89',callback:v=>v+'%'}},x:{grid:{display:false},ticks:{color:'#6d7c89',maxRotation:0}}}}});
@@ -158,14 +158,16 @@ function renderReviewChart(){
 
 let homeDataBound=false;
 function bindHomeData(){
-  if(homeDataBound||!auth.currentUser)return;
-  homeDataBound=true;
-  const refresh=()=>setTimeout(renderHomeData,60);
-  [
-    'departments','tasks','history','tags'
-  ].forEach(path=>db.ref('tpm_system/'+path).on('value',refresh));
-  auth.onAuthStateChanged(user=>{if(user)setTimeout(renderHomeData,100);});
-  setTimeout(renderHomeData,200);
+  if(homeDataBound)return;
+  const bind=()=>{
+    if(homeDataBound||!auth.currentUser)return;
+    homeDataBound=true;
+    const refresh=()=>setTimeout(renderHomeData,60);
+    ['departments','tasks','history','tags'].forEach(path=>db.ref('tpm_system/'+path).on('value',refresh));
+    setTimeout(renderHomeData,100);
+  };
+  if(auth.currentUser) bind();
+  auth.onAuthStateChanged(user=>{if(user)bind();});
 }
 
 function mountHome(){

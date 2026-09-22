@@ -20,37 +20,5 @@ window.showScreen=id=>UI.showScreen(id);window.goBack=()=>UI.goBack();window.sho
 window.syncRecord=(p,d)=>Services.syncRecord(p,d);window.deleteRecord=p=>Services.deleteRecord(p);window.logAction=a=>Services.logAction(a,window.currentUser?.name);window.uploadImageToStorage=(f,o={})=>Services.uploadImageToStorage(f,o);window.processAndEnhanceImage=(f,c)=>Services.processAndEnhanceImage(f,c);window.fetchGeminiAPI=(p,b)=>Services.fetchGeminiAPI(p,b);
 window.TPMAccess={role(){return normalizeRole(window.currentUser?.role)},label(){return roleLabel(this.role())},canAccess(id){if(['loginScreen','signupScreen'].includes(id))return true;if(!window.auth?.currentUser)return false;return canAccessRole(this.role(),id)},require(...roles){const ok=roles.map(normalizeRole).includes(this.role());if(!ok)this.deny();return ok},deny(){UI.showToast('🔒 لا تملك صلاحية الوصول إلى هذه المساحة.');return false}};window.hasRole=(...allowed)=>allowed.map(normalizeRole).includes(normalizeRole(window.currentUser?.role));
 function installBackHistoryGuard(){const original=UI.goBack.bind(UI);UI.goBack=()=>{if(UI.screenHistory.length>1)return original();return undefined};}
-async function bootstrapAuthSession(user){
-  document.body.classList.toggle('auth-locked', !user);
-  if(!user){
-    window.currentUser={name:'',username:'',role:'',status:''};
-    try{UI.showScreen('loginScreen')}catch(e){}
-    return;
-  }
-  try{
-    const snap=await db.ref('tpm_system/users/'+user.uid).once('value');
-    const profile=snap.val()||{};
-    window.currentUser={
-      ...profile,
-      name:profile.name||user.displayName||user.email?.split('@')[0]||'User',
-      username:profile.username||user.email?.split('@')[0]||'',
-      role:normalizeRole(profile.role||profile.requestedRole||'viewer'),
-      status:profile.status||'active',
-      uid:user.uid
-    };
-    canonicalizeSessionRole();
-    if(window.currentUser.status==='pending'){
-      UI.showToast('⏳ الحساب ما زال في انتظار اعتماد المدير.');
-      await auth.signOut();
-      return;
-    }
-    UI.showScreen('homeScreen');
-  }catch(error){
-    console.error('[FACTORY OS] session bootstrap failed:',error);
-    UI.showToast('❌ تعذر تحميل بيانات المستخدم.');
-    await auth.signOut().catch(()=>{});
-  }
-}
-window.addEventListener('load',()=>{configureCharts();const legacy=window.showScreen;if(typeof legacy==='function'&&!legacy.__tpmGuarded){const guarded=id=>{if(!window.TPMAccess.canAccess(id))return window.TPMAccess.deny();return legacy(id)};guarded.__tpmGuarded=true;window.showScreen=guarded}window.showToast=m=>UI.showToast(m);installBackHistoryGuard();mountEnterpriseOperations();mountFactoryOSGlobal();auth.onAuthStateChanged(bootstrapAuthSession)});
 const canonicalizeSessionRole=()=>{if(!window.currentUser)return;const canonical=normalizeRole(window.currentUser.role);if(window.currentUser.role!==canonical)window.currentUser.role=canonical;window.currentUser.roleLabel=roleLabel(canonical);document.querySelectorAll('[data-current-role]').forEach(el=>el.textContent=roleLabel(canonical))};
 window.addEventListener('DOMContentLoaded',()=>{if(localStorage.getItem('tpm_theme')==='light')document.body.classList.add('light-theme');canonicalizeSessionRole();setTimeout(canonicalizeSessionRole,500);setTimeout(canonicalizeSessionRole,1500)});auth.onAuthStateChanged(()=>{setTimeout(canonicalizeSessionRole,0);setTimeout(canonicalizeSessionRole,300)});

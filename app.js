@@ -175,6 +175,7 @@ window.biometricLogin = async function() {
 let dbListeners = {};
 
 firebase.auth().onAuthStateChanged(async user => {
+    document.body.classList.toggle('auth-locked', !user);
     const mainHeader = document.getElementById('mainHeader');
     
     if (user) {

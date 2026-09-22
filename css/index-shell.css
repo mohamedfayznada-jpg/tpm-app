@@ -1,0 +1,7 @@
+/* FACTORY OS — index structural shell
+   Keep page-specific legacy inline declarations isolated while common chrome
+   is controlled from one stylesheet.
+*/
+.header-right,.header-left{display:flex;align-items:center;gap:15px}
+#adminNotification{display:none;width:8px;height:8px;background:var(--v33-red);border-radius:50%}
+#systemAlert{display:none;position:fixed;top:82px;left:50%;transform:translateX(-50%);background:var(--v33-paper);color:var(--v33-copper-2);padding:8px 20px;border-radius:7px;font-size:12px;font-weight:700;z-index:999;box-shadow:var(--v33-shadow);border:1px solid var(--v33-line)}

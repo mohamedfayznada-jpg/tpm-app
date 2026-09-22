@@ -8,9 +8,9 @@ export const UI = {
             this.screenHistory.push(screenId);
         }
 
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
         const target = document.getElementById(screenId);
-        if (target) target.classList.add('active');
+        if (target) { target.classList.add('active'); target.style.display = 'block'; }
         window.scrollTo(0, 0);
     },
 
@@ -18,9 +18,9 @@ export const UI = {
         if (this.screenHistory.length > 1) {
             this.screenHistory.pop();
             const lastScreen = this.screenHistory[this.screenHistory.length - 1];
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
             const target = document.getElementById(lastScreen);
-            if (target) target.classList.add('active');
+            if (target) { target.classList.add('active'); target.style.display = 'block'; }
             window.scrollTo(0, 0);
         } else {
             this.showScreen('homeScreen');

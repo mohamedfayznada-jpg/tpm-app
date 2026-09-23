@@ -1271,126 +1271,207 @@ window.showJHPortal = function() {
     currentJHDept = null;
     const toolbox = document.getElementById('jhToolbox');
     if (toolbox) toolbox.style.display = 'none';
-    
-    let grid = departments.map(d => `
-        <div class="card glass-card" style="padding:20px; text-align:center; cursor:pointer; border-right:4px solid var(--success); transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="selectJHDept('${d}')">
-            <b style="color:var(--success); font-size:16px;"><i class='bx bx-buildings'></i> ${d}</b>        </div>
-    `).join('');
-    
+
     const gridEl = document.getElementById('jhDeptGrid');
-    if (gridEl) gridEl.innerHTML = grid;
-    
+    if (!gridEl) return;
+
+    const safe = v => window.escapeTPM ? window.escapeTPM(String(v || '')) : String(v || '');
+    const fmt = value => Number.isFinite(Number(value)) ? Math.round(Number(value)) + '%' : '—';
+
+    const deptCards = departments.map((d,index) => {
+        const audits = historyData
+            .filter(h => h && h.dept === d && Array.isArray(h.stepsOrder) && !h.stepsOrder.includes('ManualKaizen'))
+            .sort((a,b) => (Number(a.timestamp||0)-Number(b.timestamp||0)) || (String(a.date||'').localeCompare(String(b.date||''))));
+        const last = audits[audits.length-1];
+        const tags = tagsData.filter(t => t && t.dept === d);
+        const openTags = tags.filter(t => !['closed','done','verified'].includes(t.status)).length;
+        const kaizen = historyData.filter(h => h && h.dept === d && Array.isArray(h.stepsOrder) && h.stepsOrder.includes('ManualKaizen')).length;
+        const goal = Number(deptGoalsData[d]);
+        const score = last ? Number(last.totalPct) : null;
+        const state = openTags > 0 ? 'attention' : (last ? 'stable' : 'empty');
+        return `
+          <article class="jh-dept-card-v4 ${state}" tabindex="0" onclick="selectJHDept('${safe(d)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectJHDept('${safe(d)}')}">
+            <div class="jh-dept-topline"><span class="jh-dept-index">0${index+1}</span><span class="jh-dept-state"><i class="bx ${state==='attention'?'bx-error-circle':state==='stable'?'bx-check-circle':'bx-minus-circle'}"></i>${state==='attention'?'يحتاج متابعة':state==='stable'?'بيانات متاحة':'لا توجد مراجعات'}</span></div>
+            <div class="jh-dept-title"><i class='bx bx-buildings'></i><div><h4>${safe(d)}</h4><span>قسم تشغيل ضمن JH</span></div></div>
+            <div class="jh-dept-score-row"><div><small>آخر Audit</small><strong>${last ? fmt(score) : '—'}</strong></div><div><small>الهدف</small><strong>${Number.isFinite(goal) ? fmt(goal) : '—'}</strong></div></div>
+            <div class="jh-dept-bottom"><span><i class="bx bx-purchase-tag-alt"></i>${openTags} تاج مفتوح</span><span><i class="bx bx-bulb"></i>${kaizen} كايزن</span><button type="button">عرض التفاصيل <i class="bx bx-left-arrow-alt"></i></button></div>
+          </article>`;
+    }).join('');
+
+    gridEl.innerHTML = deptCards || '<div class="jh-dept-empty">لا توجد أقسام معرفة في النظام.</div>';
+    const portal = document.getElementById('jhPortalScreen');
+    if (portal) portal.classList.add('jh-v4-ready');
     showScreen('jhPortalScreen');
 };
 
 window.selectJHDept = function(dept) {
     currentJHDept = dept;
     const titleEl = document.getElementById('selectedJHDeptTitle');
-    if(titleEl) titleEl.innerHTML = `<i class='bx bx-radar'></i> داشبورد: ${dept}`;
-    
-    // 1. ☁️ الاتصال بالسحابة وسحب سجل التنفيذ (CLIT)
-    if(isOnline) {
-        db.ref(`tpm_system/clit_executions/${dept}`).on('value', snap => {
+    if (titleEl) titleEl.innerHTML = `<i class='bx bx-buildings'></i> ${window.escapeTPM ? window.escapeTPM(dept) : dept}`;
+
+    const goalEl = document.getElementById('deptGoalDisplay');
+    const goal = Number(deptGoalsData[dept]);
+    if (goalEl) {
+        goalEl.style.display = Number.isFinite(goal) ? 'inline-flex' : 'none';
+        if (Number.isFinite(goal)) goalEl.innerHTML = `المستهدف المعتمد: <b>${Math.round(goal)}%</b>`;
+    }
+
+    const getAuditList = () => historyData
+        .filter(h => h && h.dept === dept && Array.isArray(h.stepsOrder) && !h.stepsOrder.includes('ManualKaizen'))
+        .sort((a,b) => (Number(a.timestamp||0)-Number(b.timestamp||0)) || (String(a.date||'').localeCompare(String(b.date||''))));
+
+    const getTags = () => tagsData.filter(t => t && t.dept === dept);
+
+    const renderJHAnalytics = () => {
+        if (typeof Chart === 'undefined') return;
+
+        const audits = getAuditList();
+        const tags = getTags();
+
+        // 1) Actual audit trend — no fabricated data.
+        try {
+            const ctx = document.getElementById('jhMiniTrendChart');
+            if (ctx) {
+                window.jhMiniChartInstance?.destroy();
+                const list = audits.slice(-8);
+                const labels = list.map(a => a.date || (a.timestamp ? new Date(a.timestamp).toLocaleDateString('ar-EG') : ''));
+                const values = list.map(a => Number(a.totalPct) || 0);
+                window.jhMiniChartInstance = new Chart(ctx,{
+                    type:'line',
+                    data:{labels,datasets:[{
+                        label:'نتيجة المراجعة %',data:values,borderColor:'#1769aa',
+                        backgroundColor:'rgba(23,105,170,.10)',borderWidth:3,fill:true,
+                        tension:.28,pointRadius:4,pointHoverRadius:6,pointBackgroundColor:'#fff',pointBorderWidth:3
+                    }]},
+                    options:{
+                        responsive:true,maintainAspectRatio:false,
+                        interaction:{mode:'index',intersect:false},
+                        plugins:{legend:{display:false},tooltip:{rtl:true,bodyFont:{family:'Cairo'},titleFont:{family:'Cairo'},callbacks:{label:c=>` ${c.parsed.y}% نتيجة المراجعة`}}},
+                        scales:{
+                            y:{min:0,max:100,ticks:{stepSize:20,font:{family:'Cairo'},callback:v=>v+'%'},grid:{color:'#e5edf4'}},
+                            x:{ticks:{font:{family:'Cairo'},color:'#53697b'},grid:{display:false}}
+                        }
+                    }
+                });
+            }
+        } catch(err) { console.error('[JH] audit chart',err); }
+
+        // 2) Actual CLIT completion rate by execution record.
+        try {
+            const ctx = document.getElementById('jhTimeChart');
+            if (ctx) {
+                window.jhTimeChartInstance?.destroy();
+                const records = (Array.isArray(currentJHExecutions) ? currentJHExecutions : [])
+                    .map(ex => {
+                        const tasks = Array.isArray(ex?.tasks) ? ex.tasks : [];
+                        const done = tasks.filter(t => ['done','completed','complete','ok','pass','passed'].includes(String(t?.status||'').toLowerCase())).length;
+                        return { label:ex?.date || '', total:tasks.length, done };
+                    })
+                    .filter(x => x.total > 0).slice(-8);
+                const labels = records.map(x=>x.label);
+                const values = records.map(x=>Math.round((x.done/x.total)*100));
+                window.jhTimeChartInstance = new Chart(ctx,{
+                    type:'bar',
+                    data:{labels,datasets:[{
+                        label:'نسبة الإكمال %',data:values,backgroundColor:'#2e9b72',
+                        borderRadius:7,maxBarThickness:34
+                    }]},
+                    options:{
+                        responsive:true,maintainAspectRatio:false,
+                        plugins:{legend:{display:false},tooltip:{rtl:true,bodyFont:{family:'Cairo'},titleFont:{family:'Cairo'},callbacks:{label:c=>` ${c.parsed.y}% إكمال`}}},
+                        scales:{
+                            y:{min:0,max:100,ticks:{stepSize:20,font:{family:'Cairo'},callback:v=>v+'%'},grid:{color:'#e5edf4'}},
+                            x:{ticks:{font:{family:'Cairo'},color:'#53697b'},grid:{display:false}}
+                        }
+                    }
+                });
+            }
+        } catch(err) { console.error('[JH] CLIT chart',err); }
+
+        // 3) Actual tag flow — open vs closed by source.
+        try {
+            const ctx = document.getElementById('jhTagMatrixChart');
+            if (ctx) {
+                window.jhTagMatrixChartInstance?.destroy();
+                const redOpen=tags.filter(t=>t.color==='red'&&!['closed','done','verified'].includes(t.status)).length;
+                const redClosed=tags.filter(t=>t.color==='red'&&['closed','done','verified'].includes(t.status)).length;
+                const blueOpen=tags.filter(t=>t.color==='blue'&&!['closed','done','verified'].includes(t.status)).length;
+                const blueClosed=tags.filter(t=>t.color==='blue'&&['closed','done','verified'].includes(t.status)).length;
+                window.jhTagMatrixChartInstance = new Chart(ctx,{
+                    type:'bar',
+                    data:{
+                        labels:['تاجات صيانة','تاجات إنتاج'],
+                        datasets:[
+                            {label:'مفتوح',data:[redOpen,blueOpen],backgroundColor:'#e45757',borderRadius:7,maxBarThickness:42},
+                            {label:'مغلق',data:[redClosed,blueClosed],backgroundColor:'#1769aa',borderRadius:7,maxBarThickness:42}
+                        ]
+                    },
+                    options:{
+                        responsive:true,maintainAspectRatio:false,
+                        plugins:{legend:{position:'top',rtl:true,labels:{font:{family:'Cairo'},usePointStyle:true}},tooltip:{rtl:true,bodyFont:{family:'Cairo'},titleFont:{family:'Cairo'}}},
+                        scales:{
+                            y:{beginAtZero:true,ticks:{precision:0,font:{family:'Cairo'}},grid:{color:'#e5edf4'}},
+                            x:{ticks:{font:{family:'Cairo'},color:'#53697b'},grid:{display:false}}
+                        }
+                    }
+                });
+            }
+        } catch(err) { console.error('[JH] tag chart',err); }
+    };
+
+    if (isOnline) {
+        if (window.__jhExecutionRefDept && window.__jhExecutionRefDept !== dept && window.__jhExecutionRef) {
+            try { window.__jhExecutionRef.off(); } catch(_) {}
+        }
+        window.__jhExecutionRefDept = dept;
+        window.__jhExecutionRef = db.ref(`tpm_system/clit_executions/${dept}`);
+        window.__jhExecutionRef.on('value', snap => {
             currentJHExecutions = snap.val() ? Object.values(snap.val()) : [];
-            window.renderJHCalendar(); 
+            window.renderJHCalendar();
+            renderJHAnalytics();
+            updateJHLiveSummary();
         });
     }
 
-    // 2. تجميع الإحصائيات (Stats)
-    const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen')).sort((a,b) => new Date(a.date) - new Date(b.date));
-    const deptTags = tagsData.filter(t => t.dept === dept);
-    const openTags = deptTags.filter(t => t.status !== 'done' && t.status !== 'closed').length;
-    const lastAudit = deptAudits[deptAudits.length-1];
-    const deptKaizens = historyData.filter(h => h.dept === dept && h.stepsOrder.includes('ManualKaizen')).length;
-    
-    if(document.getElementById('deptAuditScore')) document.getElementById('deptAuditScore').innerText = lastAudit ? lastAudit.totalPct + '%' : '0%';
-    if(document.getElementById('deptOpenTags')) document.getElementById('deptOpenTags').innerText = openTags;
-    if(document.getElementById('deptKaizens')) document.getElementById('deptKaizens').innerText = deptKaizens;
-    
-    let auditScoreVal = lastAudit ? lastAudit.totalPct : 0;
-    let calculatedOEE = Math.max(0, Math.round((auditScoreVal * 0.95) - (openTags * 1.5)));
-    const oeeEl = document.getElementById('deptOEE');
-    if(oeeEl) oeeEl.innerText = calculatedOEE + '%';
+    const audits = getAuditList();
+    const tags = getTags();
+    const openTags = tags.filter(t=>!['done','closed','verified'].includes(t.status)).length;
+    const lastAudit = audits[audits.length-1];
+    const kaizens = historyData.filter(h=>h && h.dept===dept && Array.isArray(h.stepsOrder) && h.stepsOrder.includes('ManualKaizen')).length;
 
-    const goalEl = document.getElementById('deptGoalDisplay');
-    if (deptGoalsData[dept]) {
-        if(goalEl) { goalEl.style.display = 'inline-block'; goalEl.innerHTML = `المستهدف: <b>${deptGoalsData[dept]}%</b>`; }
-        if(oeeEl) oeeEl.style.color = calculatedOEE >= deptGoalsData[dept] ? 'var(--success)' : '#00BCD4';
-    } else {
-        if(goalEl) goalEl.style.display = 'none';
-        if(oeeEl) oeeEl.style.color = '#00BCD4';
-    }
+    document.getElementById('deptAuditScore')?.replaceChildren(document.createTextNode(lastAudit ? Math.round(Number(lastAudit.totalPct)||0)+'%' : '—'));
+    document.getElementById('deptOpenTags')?.replaceChildren(document.createTextNode(String(openTags)));
+    document.getElementById('deptKaizens')?.replaceChildren(document.createTextNode(String(kaizens)));
+    const targetEl=document.getElementById('deptOEE');
+    if(targetEl) targetEl.textContent=Number.isFinite(goal) ? Math.round(goal)+'%' : '—';
 
-    // 3. 📈 رسم منحنى التطور (Trend Chart)
-    try {
-        const ctxTrend = document.getElementById('jhMiniTrendChart');
-        if (ctxTrend && typeof Chart !== 'undefined') {
-            if (window.jhMiniChartInstance) window.jhMiniChartInstance.destroy();
-            let last5Audits = deptAudits.slice(-5);
-            let labels = last5Audits.map(a => a.date.split('/')[0] + '/' + a.date.split('/')[1]);
-            let data = last5Audits.map(a => a.totalPct);
-            
-            window.jhMiniChartInstance = new Chart(ctxTrend, { 
-                type: 'line', 
-                data: { 
-                    labels: labels.length > 0 ? labels : ['-'], 
-                    datasets: [{ label: 'كفاءة JH %', data: data.length > 0 ? data : [0], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3 }] 
-                }, 
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, min: 0, max: 100 }, x: { ticks: { color: '#cbd5e1', font: {size: 9} }, grid: {display: false} } }, plugins: { legend: { display: false } } } 
-            });
-            ctxTrend.parentElement.style.display = 'block';
-        }
-    } catch(e) {}
-
-    // 4. ⏱️ رسم تحليل وقت الصيانة (Time/MTTR Chart)
-    try {
-        const ctxTime = document.getElementById('jhTimeChart');
-        if (ctxTime && typeof Chart !== 'undefined') {
-            if (window.jhTimeChartInstance) window.jhTimeChartInstance.destroy();
-            let timeData = [120, 105, 90, 75, Math.max(45, 120 - (deptKaizens * 5) - (auditScoreVal / 2))]; 
-            let timeLabels = ['W1', 'W2', 'W3', 'W4', 'Current'];
-            
-            window.jhTimeChartInstance = new Chart(ctxTime, {
-                type: 'bar',
-                data: { labels: timeLabels, datasets: [{ label: 'وقت الصيانة (د)', data: timeData, backgroundColor: '#00BCD4', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false }, x: { ticks: { color: '#cbd5e1', font:{size:9} }, grid:{display:false} } }, plugins: { legend: { display: false } } }
-            });
-            ctxTime.parentElement.style.display = 'block';
-        }
-    } catch(e) {}
-
-    // 5. 🏷️ رسم مصفوفة التاجات (Tag Matrix Doughnut)
-    try {
-        const ctxMatrix = document.getElementById('jhTagMatrixChart');
-        if (ctxMatrix && typeof Chart !== 'undefined') {
-            if (window.jhTagMatrixChartInstance) window.jhTagMatrixChartInstance.destroy();
-            
-            let redOpen = deptTags.filter(t => t.color === 'red' && t.status !== 'closed').length;
-            let redClosed = deptTags.filter(t => t.color === 'red' && t.status === 'closed').length;
-            let blueOpen = deptTags.filter(t => t.color === 'blue' && t.status !== 'closed').length;
-            let blueClosed = deptTags.filter(t => t.color === 'blue' && t.status === 'closed').length;
-
-            window.jhTagMatrixChartInstance = new Chart(ctxMatrix, {
-                type: 'doughnut',
-                data: {
-                    labels: ['صيانة مفتوح', 'صيانة مغلق', 'إنتاج مفتوح', 'إنتاج مغلق'],
-                    datasets: [{ data: [redOpen, redClosed, blueOpen, blueClosed], backgroundColor: ['#ef4444', '#b91c1c', '#3b82f6', '#1d4ed8'], borderWidth: 0 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { color: '#cbd5e1', font:{size:9, family:'Cairo'}, boxWidth: 10 } } } }
-            });
-            ctxMatrix.parentElement.style.display = 'block';
-        }
-    } catch(e) {}
+    // render once immediately with whatever live execution data is already available
+    renderJHAnalytics();
 
     if(window.renderInternalDeptLeaderboard) window.renderInternalDeptLeaderboard(dept);
-    
+
     const toolbox = document.getElementById('jhToolbox');
-    if(toolbox) {
-        toolbox.style.display = 'block';
-        window.scrollTo({ top: toolbox.offsetTop - 20, behavior: 'smooth' });
+    if (toolbox) {
+        toolbox.style.display='block';
+        toolbox.classList.add('jh-toolbox-v4');
+        window.scrollTo({top:toolbox.offsetTop-20,behavior:'smooth'});
     }
 };
 
+window.updateJHLiveSummary = function(){
+    if(!currentJHDept) return;
+    const el=document.getElementById('jhLiveExecutionSummary');
+    if(!el) return;
+    const executions=Array.isArray(currentJHExecutions)?currentJHExecutions:[];
+    let total=0,done=0,issues=0;
+    executions.forEach(ex=>(Array.isArray(ex?.tasks)?ex.tasks:[]).forEach(t=>{
+        total++;
+        if(['done','completed','complete','ok','pass','passed'].includes(String(t?.status||'').toLowerCase())) done++;
+        if(String(t?.status||'').toLowerCase()==='issue') issues++;
+    }));
+    const pct=total?Math.round(done/total*100):0;
+    el.innerHTML=`<div><span>CLIT المسجل</span><b>${executions.length}</b></div><div><span>بنود مكتملة</span><b>${done}/${total}</b></div><div><span>معدل الإكمال</span><b>${total?pct+'%':'—'}</b></div><div><span>حالات تحتاج إجراء</span><b class="${issues?'is-alert':''}">${issues}</b></div>`;
+};
 window.setDeptGoal = function() {
     if(!currentJHDept) return showToast('⚠️ يرجى اختيار القسم أولاً');
     let currentGoal = deptGoalsData[currentJHDept] || 85;

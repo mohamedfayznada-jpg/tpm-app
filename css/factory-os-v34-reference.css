@@ -1604,3 +1604,199 @@ body:after{
   #printableReportArea canvas{max-width:100%!important}
   #detailedReportScreen .detail-chart-wrap{height:260px!important}
 }
+
+
+/* PRINT REFINEMENT V2 — editorial A4 composition, no stretched typography */
+@media print{
+  @page{size:A4 portrait;margin:9mm 10mm}
+  html,body{
+    width:auto!important;min-width:0!important;height:auto!important;
+    background:#fff!important;overflow:visible!important;
+    font-family:Arial,"Tahoma","Segoe UI",sans-serif!important;
+    font-size:10.5pt!important;line-height:1.5!important;
+    letter-spacing:normal!important;word-spacing:normal!important;
+    -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;
+  }
+  body *{visibility:hidden!important}
+  #detailedReportScreen,#detailedReportScreen *{visibility:visible!important}
+  #detailedReportScreen{
+    display:block!important;position:static!important;width:auto!important;min-height:0!important;
+    margin:0!important;padding:0!important;background:#fff!important;
+    direction:rtl!important;
+  }
+  #printableReportArea{
+    display:block!important;width:190mm!important;max-width:190mm!important;
+    margin:0 auto!important;padding:0!important;
+    border:0!important;border-top:4px solid #f1ad2f!important;border-radius:0!important;
+    box-shadow:none!important;overflow:visible!important;background:#fff!important;
+    direction:rtl!important;unicode-bidi:normal!important;
+  }
+  #printableReportArea *,
+  #printableReportArea *::before,
+  #printableReportArea *::after{
+    box-sizing:border-box!important;
+    transform:none!important;
+    letter-spacing:normal!important;
+    word-spacing:normal!important;
+    font-stretch:normal!important;
+  }
+
+  /* Report masthead */
+  #printableReportArea .legacy-inline-192{
+    padding:9mm 7mm 5mm!important;
+    text-align:center!important;
+    border-bottom:1px solid #dfe6ec!important;
+    page-break-after:avoid!important;
+  }
+  #printableReportArea .legacy-inline-193{
+    margin:0!important;color:#17364f!important;font-size:24pt!important;
+    line-height:1.1!important;font-weight:900!important;letter-spacing:1px!important;
+  }
+  #printableReportArea .legacy-inline-194{
+    margin:5px 0 0!important;color:#536b7e!important;font-size:11pt!important;
+    line-height:1.5!important;font-weight:700!important;
+  }
+
+  /* Metadata strip */
+  #printableReportArea .legacy-inline-195{
+    display:grid!important;grid-template-columns:repeat(4,1fr)!important;
+    gap:0!important;margin:5mm 0!important;padding:3.5mm 4mm!important;
+    border:1px solid #dce5ee!important;border-radius:8px!important;
+    background:#f8fafc!important;direction:rtl!important;
+  }
+  #printableReportArea .legacy-inline-196{
+    min-width:0!important;padding:0 4mm!important;
+    border-left:1px solid #dce5ee!important;
+    color:#526a7e!important;font-size:8.5pt!important;line-height:1.6!important;
+    text-align:right!important;white-space:normal!important;
+  }
+  #printableReportArea .legacy-inline-196:last-child{border-left:0!important}
+  #printableReportArea .legacy-inline-196 b{color:#17364f!important;font-weight:800!important}
+
+  /* Executive summary */
+  #detailedReportScreen .detail-report-hero{
+    display:grid!important;grid-template-columns:34mm minmax(0,1fr) 44mm!important;
+    gap:5mm!important;align-items:center!important;
+    padding:5mm!important;margin:0!important;
+    background:#f8fafc!important;border:1px solid #dce5ee!important;
+    border-radius:8px!important;page-break-inside:avoid!important;
+  }
+  #detailedReportScreen .detail-score-box{
+    min-height:31mm!important;height:31mm!important;border-radius:7px!important;
+  }
+  #detailedReportScreen .detail-score-box strong{
+    font-size:25pt!important;line-height:1!important;
+  }
+  #detailedReportScreen .detail-score-box span{font-size:7.5pt!important;margin-top:2mm!important}
+  #detailedReportScreen .detail-report-summary h2{
+    margin:1mm 0!important;font-size:17pt!important;line-height:1.25!important;
+  }
+  #detailedReportScreen .detail-report-summary p{
+    margin:1.5mm 0 0!important;font-size:8.5pt!important;line-height:1.65!important;
+  }
+  #detailedReportScreen .detail-meta-badges{display:grid!important;gap:2mm!important}
+  #detailedReportScreen .detail-meta-badges span{
+    padding:2.5mm 3mm!important;border-radius:6px!important;
+    font-size:8pt!important;line-height:1.35!important;
+  }
+
+  /* KPI strip */
+  #detailedReportScreen .detail-report-kpis{
+    display:grid!important;grid-template-columns:repeat(4,1fr)!important;
+    gap:3mm!important;padding:4mm 0!important;
+    page-break-inside:avoid!important;
+  }
+  #detailedReportScreen .detail-report-kpis>div{
+    min-height:18mm!important;padding:3mm!important;border-radius:6px!important;
+  }
+  #detailedReportScreen .detail-report-kpis span,
+  #detailedReportScreen .detail-report-kpis small{font-size:7.5pt!important;line-height:1.35!important}
+  #detailedReportScreen .detail-report-kpis strong{
+    font-size:15pt!important;line-height:1.15!important;margin:1mm 0!important;
+  }
+
+  /* Radar page — compact and balanced */
+  #detailedReportScreen .detail-report-chart-panel{
+    margin:0!important;padding:4mm!important;border:1px solid #dce5ee!important;
+    border-radius:7px!important;background:#fff!important;
+    page-break-inside:avoid!important;break-inside:avoid!important;
+    page-break-after:always!important;
+  }
+  #detailedReportScreen .detail-report-chart-panel>header,
+  #detailedReportScreen .detail-opportunity-panel>header{
+    margin-bottom:2mm!important;
+  }
+  #detailedReportScreen .detail-report-chart-panel h3,
+  #detailedReportScreen .detail-opportunity-panel h3{
+    font-size:11.5pt!important;line-height:1.3!important;
+  }
+  #detailedReportScreen .detail-chart-wrap{
+    height:68mm!important;max-height:68mm!important;position:relative!important;
+  }
+  #detailedReportScreen .detail-chart-wrap canvas{
+    max-height:68mm!important;
+  }
+
+  /* Opportunities page */
+  #detailedReportScreen .detail-opportunity-panel{
+    margin:0 0 4mm!important;padding:4mm!important;
+    border:1px solid #dce5ee!important;border-radius:7px!important;
+    background:#fff!important;page-break-inside:avoid!important;
+  }
+  #detailedReportScreen .detail-op-row{
+    grid-template-columns:9mm minmax(0,1fr) 18mm!important;
+    gap:3mm!important;padding:3.2mm 0!important;
+    min-height:0!important;page-break-inside:avoid!important;
+  }
+  #detailedReportScreen .detail-op-row b{font-size:9pt!important;line-height:1.35!important}
+  #detailedReportScreen .detail-op-row p{font-size:7.8pt!important;line-height:1.55!important;margin:1mm 0 0!important}
+  #detailedReportScreen .detail-op-row>strong{font-size:9.5pt!important}
+
+  #detailedReportScreen table.legacy-inline-202{
+    width:100%!important;border-collapse:collapse!important;
+    margin:0 0 5mm!important;page-break-inside:avoid!important;
+  }
+  #detailedReportScreen table.legacy-inline-202 th,
+  #detailedReportScreen table.legacy-inline-202 td{
+    padding:2.6mm!important;font-size:8.2pt!important;line-height:1.4!important;
+  }
+
+  /* Notes start on a clean page instead of being stranded */
+  #detailedReportScreen .legacy-inline-51{
+    page-break-before:always!important;
+    padding:0!important;margin:0!important;
+  }
+  #detailedReportScreen .legacy-inline-207{
+    margin:0 0 4mm!important;padding-bottom:2mm!important;
+    border-bottom:2px solid #17364f!important;
+    color:#17364f!important;font-size:13pt!important;line-height:1.3!important;
+  }
+  #detailedReportScreen #detStepsContainer{padding:0!important}
+  #detailedReportScreen .detail-step-card{
+    margin-bottom:3.5mm!important;padding:3.5mm!important;
+    border-radius:6px!important;page-break-inside:avoid!important;break-inside:avoid!important;
+  }
+  #detailedReportScreen .detail-step-card header{
+    padding-bottom:2mm!important;margin-bottom:2mm!important;
+  }
+  #detailedReportScreen .detail-step-card h4{font-size:10pt!important;line-height:1.35!important}
+  #detailedReportScreen .detail-step-body{gap:4mm!important}
+  #detailedReportScreen .detail-step-body ul{
+    margin:1mm 0!important;padding-right:5mm!important;
+    font-size:8pt!important;line-height:1.6!important;
+  }
+  #detailedReportScreen .detail-step-images{max-width:55mm!important;gap:2mm!important}
+  #detailedReportScreen .detail-step-images img{
+    width:18mm!important;height:18mm!important;border-radius:4px!important;
+  }
+
+  /* Signature stays attached to the notes section */
+  #detailedReportScreen .legacy-inline-209{
+    margin-top:6mm!important;padding-top:4mm!important;
+    border-top:1px solid #dce5ee!important;
+    page-break-inside:avoid!important;break-inside:avoid!important;
+    font-size:8.5pt!important;
+  }
+
+  #detailedReportScreen>.row-flex{display:none!important}
+}

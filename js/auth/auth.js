@@ -17,10 +17,9 @@ export const Auth = {
         const email = usernameInput.includes('@') ? usernameInput : `${usernameInput.toLowerCase().replace(/\s+/g, '')}@tpm.app`;
 
         // 3. تأمين الواجهة أثناء التحميل (Prevent Double Clicks)
-        const btn = document.querySelector('#loginScreen .btn-primary');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جاري المصادقة...';
-        btn.disabled = true;
+        const btn = document.querySelector('#loginScreen .auth-primary-btn, #loginScreen .btn-primary');
+        const originalText = btn?.innerHTML || '';
+        if (btn) { btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جاري المصادقة...'; btn.disabled = true; }
         
         try {
             const persistence = document.getElementById('rememberMe')?.checked
@@ -44,8 +43,7 @@ export const Auth = {
         } catch (error) { 
             console.error("Login Error:", error.code);
             UI.showToast('❌ بيانات الدخول غير صحيحة أو الحساب غير موجود'); 
-            btn.innerHTML = originalText;
-            btn.disabled = false;
+            if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
         }
     },
 

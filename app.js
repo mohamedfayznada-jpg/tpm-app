@@ -61,6 +61,13 @@ window.toggleSidebar = function() {
 window.goBack = function() { showScreen('homeScreen'); };
 window.uniqueNumericId = function() { return Date.now() + Math.floor(Math.random() * 1000); };
 window.sanitizeInput = function(str) { return String(str).replace(/[<>]/g, '').trim(); };
+
+window.escapeTPM = window.escapeTPM || function(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[ch]));
+};
+
 window.syncRecord = async function(path, data) {
     if (!auth.currentUser) throw new Error('سجّل الدخول أولاً قبل حفظ البيانات.');
     await db.ref('tpm_system/' + path).set(data);
@@ -879,249 +886,85 @@ window.downloadProfessionalPDF = async function(){
     }
 
     const buttons=document.querySelectorAll('#detailedReportScreen>.row-flex');
-    buttons.forEach(b=>b.style.visibility='hidden');
+    const previous=[];
+    buttons.forEach((b,i)=>{previous[i]=b.style.display;b.style.display='none';});
 
-    let root=null;
     try{
-        showToast('جاري إنشاء PDF احترافي... ⏳');
+        showToast('جاري إنشاء PDF مباشر... ⏳');
         if(document.fonts?.ready) await document.fonts.ready;
 
-        /*
-         * ROOT FIX:
-         * Never render one giant report canvas and slice it afterward.
-         * Large canvases are the source of the intermittent black/empty
-         * PDF pages in Chromium. Instead, we render each A4 viewport
-         * independently and place that small canvas directly into jsPDF.
-         */
-        const PAGE_W_PX=794;
-        const PAGE_H_PX=1123;
-
-        root=document.createElement('div');
-        root.id='directPdfRoot';
-        Object.assign(root.style,{
-            position:'absolute',
-            left:'0',
-            top:'0',
-            width:PAGE_W_PX+'px',
-            margin:'0',
-            padding:'0',
-            background:'#fff',
-            zIndex:'2147483647',
-            direction:'rtl',
-            boxSizing:'border-box',
-            pointerEvents:'none',
-            overflow:'visible'
-        });
-
-        const viewport=document.createElement('div');
-        viewport.id='directPdfViewport';
-        Object.assign(viewport.style,{
-            position:'relative',
-            width:PAGE_W_PX+'px',
-            height:PAGE_H_PX+'px',
-            margin:'0',
-            padding:'0',
-            background:'#fff',
-            overflow:'hidden',
-            direction:'rtl',
-            boxSizing:'border-box'
-        });
-
-        const clone=source.cloneNode(true);
-        clone.removeAttribute('id');
-        Object.assign(clone.style,{
-            position:'absolute',
-            left:'0',
-            top:'0',
-            display:'block',
-            width:PAGE_W_PX+'px',
-            maxWidth:PAGE_W_PX+'px',
-            minWidth:PAGE_W_PX+'px',
-            margin:'0',
-            padding:'28px 30px 34px',
-            background:'#fff',
-            border:'0',
-            borderTop:'5px solid #f1ad2f',
-            borderRadius:'0',
-            boxShadow:'none',
-            overflow:'visible',
-            direction:'rtl',
-            boxSizing:'border-box',
-            fontFamily:'Cairo, Arial, Tahoma, sans-serif',
-            color:'#1d2d3a',
-            transform:'none',
-            visibility:'visible',
-            opacity:'1'
-        });
-
-        const style=document.createElement('style');
-        style.textContent=`
-          #directPdfViewport,#directPdfViewport *{
-            visibility:visible!important;
-            box-sizing:border-box!important;
-            letter-spacing:normal!important;
-            word-spacing:normal!important;
-            font-stretch:normal!important;
-          }
-          #directPdfViewport{
-            isolation:isolate!important;
-            unicode-bidi:normal!important;
-          }
-          #directPdfViewport *{transform:none!important}
-          #directPdfViewport .detail-report-hero{
-            display:grid!important;
-            grid-template-columns:145px minmax(0,1fr) 170px!important;
-            gap:16px!important;
-            align-items:center!important;
-            padding:20px!important;
-          }
-          #directPdfViewport .detail-report-kpis{
-            display:grid!important;
-            grid-template-columns:repeat(4,1fr)!important;
-            gap:10px!important;
-            padding:14px 0!important;
-          }
-          #directPdfViewport .detail-report-chart-panel,
-          #directPdfViewport .detail-opportunity-panel{
-            margin:0 0 14px!important;
-          }
-          #directPdfViewport .detail-chart-wrap{
-            height:300px!important;
-            max-height:300px!important;
-          }
-          #directPdfViewport .detail-op-row{padding:11px 0!important}
-          #directPdfViewport .legacy-inline-195{
-            display:grid!important;
-            grid-template-columns:repeat(4,1fr)!important;
-            gap:8px!important;
-          }
-          #directPdfViewport .legacy-inline-196{
-            font-size:11px!important;
-            line-height:1.6!important;
-          }
-          #directPdfViewport .legacy-inline-193{
-            font-size:28px!important;
-            line-height:1.15!important;
-          }
-          #directPdfViewport .legacy-inline-194{
-            font-size:13px!important;
-            line-height:1.5!important;
-          }
-          #directPdfViewport .detail-report-summary h2{
-            font-size:25px!important;
-            line-height:1.25!important;
-          }
-          #directPdfViewport .detail-report-summary p{
-            font-size:11px!important;
-            line-height:1.8!important;
-          }
-          #directPdfViewport .detail-step-card{
-            break-inside:avoid!important;
-            page-break-inside:avoid!important;
-          }
-          #directPdfViewport img{
-            max-width:100%!important;
-          }
-        `;
-
-        viewport.appendChild(style);
-        viewport.appendChild(clone);
-        root.appendChild(viewport);
-        document.body.appendChild(root);
-
-        /* Freeze charts as PNG so html2canvas never has to rasterize a live
-           Chart.js canvas. This is both faster and much more deterministic. */
-        const srcCanvases=source.querySelectorAll('canvas');
-        const dstCanvases=clone.querySelectorAll('canvas');
-        srcCanvases.forEach((src,i)=>{
-            const dst=dstCanvases[i];
-            if(!dst) return;
-            try{
-                const img=document.createElement('img');
-                img.src=src.toDataURL('image/png');
-                img.width=src.width;
-                img.height=src.height;
-                img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#fff;';
-                dst.replaceWith(img);
-            }catch(_){}
-        });
-
-        /* Ensure all report images are decoded before page capture. */
-        const reportImages=[...clone.querySelectorAll('img')];
-        await Promise.all(reportImages.map(img=>{
-            if(img.complete) return img.decode?.().catch(()=>{})||Promise.resolve();
-            return new Promise(resolve=>{
-                img.onload=()=>resolve();
-                img.onerror=()=>resolve();
-            });
-        }));
-
+        // Capture the real report node directly. No print engine, no clone,
+        // no foreignObject rendering, and no hidden/off-screen DOM.
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
-        const totalHeight=Math.ceil(clone.getBoundingClientRect().height);
-        const pageCount=Math.max(1,Math.ceil(totalHeight/PAGE_H_PX));
+        const canvas=await window.html2canvas(source,{
+            backgroundColor:'#ffffff',
+            scale:1.8,
+            useCORS:true,
+            allowTaint:false,
+            foreignObjectRendering:false,
+            imageTimeout:20000,
+            logging:false,
+            scrollX:0,
+            scrollY:0,
+            windowWidth:document.documentElement.clientWidth,
+            windowHeight:document.documentElement.clientHeight
+        });
 
         const {jsPDF}=window.jspdf;
         const pdf=new jsPDF({
             orientation:'portrait',
             unit:'mm',
             format:'a4',
-            compress:true,
-            hotfixes:['px_scaling']
+            compress:true
         });
 
-        for(let pageIndex=0;pageIndex<pageCount;pageIndex++){
-            const offset=pageIndex*PAGE_H_PX;
-            clone.style.top=(-offset)+'px';
+        const pageW=210, pageH=297;
+        const margin=7;
+        const usableW=pageW-(margin*2);
+        const usableH=pageH-(margin*2);
 
-            await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+        const pxPerMm=canvas.width/usableW;
+        const pagePx=Math.max(1,Math.floor(usableH*pxPerMm));
 
-            /*
-             * Each capture is exactly one A4 viewport. No giant canvas,
-             * no post-capture slicing, and PNG is used instead of JPEG to
-             * eliminate encoder corruption/black-page artifacts.
-             */
-            const pageCanvas=await window.html2canvas(viewport,{
-                backgroundColor:'#ffffff',
-                scale:1.5,
-                width:PAGE_W_PX,
-                height:PAGE_H_PX,
-                windowWidth:PAGE_W_PX,
-                windowHeight:PAGE_H_PX,
-                scrollX:0,
-                scrollY:0,
-                useCORS:true,
-                allowTaint:false,
-                foreignObjectRendering:false,
-                imageTimeout:15000,
-                logging:false
-            });
+        let offsetY=0;
+        let pageIndex=0;
+
+        while(offsetY<canvas.height){
+            const sliceH=Math.min(pagePx,canvas.height-offsetY);
+            const slice=document.createElement('canvas');
+            slice.width=canvas.width;
+            slice.height=sliceH;
+
+            const sctx=slice.getContext('2d');
+            sctx.fillStyle='#ffffff';
+            sctx.fillRect(0,0,slice.width,slice.height);
+            sctx.drawImage(
+                canvas,
+                0,offsetY,canvas.width,sliceH,
+                0,0,slice.width,slice.height
+            );
 
             if(pageIndex>0) pdf.addPage();
-            const png=pageCanvas.toDataURL('image/png');
-            pdf.addImage(png,'PNG',0,0,210,297,undefined,'FAST');
+
+            const image=slice.toDataURL('image/jpeg',0.95);
+            const heightMm=sliceH/pxPerMm;
+            pdf.addImage(image,'JPEG',margin,margin,usableW,heightMm,undefined,'FAST');
+
+            offsetY+=sliceH;
+            pageIndex++;
         }
 
         pdf.save('تقرير_تدقيق_TPM_تفصيلي.pdf');
-        showToast('✅ تم إنشاء ملف PDF بنجاح');
-    }catch(err){
-        console.error('Professional PDF export error:',err);
-        showToast('⚠️ تعذر إنشاء PDF — راجع Console للتفاصيل');
+        showToast('✅ تم إنشاء PDF بنجاح');
+    }catch(error){
+        console.error('Professional PDF export error:',error);
+        showToast('⚠️ تعذر إنشاء PDF — افتح Console لمعرفة السبب');
     }finally{
-        buttons.forEach(b=>b.style.visibility='');
-        if(root) root.remove();
+        buttons.forEach((b,i)=>b.style.display=previous[i]);
     }
 };
 
-window.toggleLoginPassword = function(){
-    const input=document.getElementById('loginPassword');
-    const button=document.querySelector('#loginScreen .auth-eye i');
-    if(!input) return;
-    const reveal=input.type==='password';
-    input.type=reveal?'text':'password';
-    if(button) button.className=reveal?'bx bx-hide':'bx bx-show';
-};
-    
 window.shareWhatsApp = function() { showToast("جاري تجهيز النص..."); };
 
 // ==========================================

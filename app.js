@@ -887,6 +887,7 @@ window.downloadProfessionalPDF = async function(){
             direction:rtl;box-sizing:border-box;font-family:Cairo,Arial,Tahoma,sans-serif}
           .pdf-export-page{width:794px;min-height:1123px;height:1123px;background:#fff;box-sizing:border-box;
             padding:28px 34px 34px;position:relative;overflow:hidden;border-top:5px solid #f1ad2f}
+          .pdf-export-page,#directPdfExportRoot .pdf-export-page *{visibility:visible!important;opacity:1!important}
           .pdf-export-page *{box-sizing:border-box!important;letter-spacing:normal!important;word-spacing:normal!important;
             transform:none!important}
           .pdf-export-page .legacy-inline-192{padding:12px 0 12px;text-align:center;border-bottom:1px solid #dfe6ec}
@@ -957,7 +958,7 @@ window.downloadProfessionalPDF = async function(){
 
         const pages=[];
         for(let p=0;p<pageNodes.length;p++){
-          const page=document.createElement('section'); page.className='pdf-export-page';
+          const page=document.createElement('section'); page.className='pdf-export-page'; page.id='detailedReportScreen';
           for(const selector of pageNodes[p]){
             const node=pick(selector);
             if(node) page.appendChild(node);

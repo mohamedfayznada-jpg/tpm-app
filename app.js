@@ -789,6 +789,7 @@ window.renderHistoryAnalytics = function() {
     const legend=document.getElementById('reportsRiskLegend');
     if(legend) legend.innerHTML=[['#ef5350','حرج',risk.critical],['#f1ad2f','تحت الهدف',risk.warning],['#20a66a','مستقر',risk.good]].map(x=>`<div><i style="background:${x[0]}"></i><span>${x[1]}</span><b>${x[2]}</b></div>`).join('');
 
+    window.renderHistoryArchive?.();
     const opportunities=[];
     stepRows.forEach(([k,p])=>{opportunities.push({title:window.auditStepLabel(k),score:p,count:stepMap[k].length,text:p<50?'أولوية فورية: فجوة أداء كبيرة تحتاج إجراء تصحيحي.':p<80?'أولوية تحسين: الأداء دون المستوى المستهدف.':'فرصة تحسين مستمرة: الأداء جيد مع قابلية للرفع.'});});
     const oc=document.getElementById('reportsOpportunityList');
@@ -797,7 +798,7 @@ window.renderHistoryAnalytics = function() {
     if(document.getElementById('historyListContainer')) window.renderHistory();
 };
 
-window.renderHistory = function() {
+window.renderHistoryArchive = function() {
     const container=document.getElementById('historyListContainer'); if(!container)return;
     const real=window.getFilteredAuditRecords().slice().reverse();
     container.innerHTML=real.map(a=>{
@@ -812,6 +813,10 @@ window.renderHistory = function() {
             ${canEdit?`<div class="report-card-actions"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();editReport('${window.escapeTPM(a.id)}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteReport('${window.escapeTPM(a.id)}')"><i class='bx bx-trash'></i> حذف</button></div>`:''}
         </article>`;
     }).join('')||'<div class="reports-empty"><i class="bx bx-archive"></i><b>لا توجد مراجعات ضمن الفلتر الحالي</b><span>أنشئ أول مراجعة لبدء التحليل.</span></div>';
+};
+
+window.renderHistory = function() {
+    window.renderHistoryArchive?.();
     window.renderHistoryAnalytics?.();
 };
 

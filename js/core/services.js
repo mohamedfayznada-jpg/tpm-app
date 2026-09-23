@@ -73,7 +73,30 @@ export const Services = {
             const folder = requestedFolder.replace(/[^a-z0-9_-]/g, '').slice(0, 40) || 'general';
             const objectName = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}.${extension}`;
             const reference = firebase.storage().ref(`factory-os/${folder}/${user.uid}/${objectName}`);
-            const snapshot = await reference.put(blob, { contentType, cacheControl: 'public,max-age=31536000,immutable' });
+            // Use an explicit upload task + timeout so a blocked Storage request
+            // can never leave the Kaizen submit button spinning forever.
+            const uploadTask = reference.put(blob, { contentType, cacheControl: 'public,max-age=31536000,immutable' });
+            const snapshot = await new Promise((resolve, reject) => {
+                let settled = false;
+                const finish = (fn, value) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    fn(value);
+                };
+                const timer = setTimeout(() => {
+                    try { uploadTask.cancel(); } catch (_) {}
+                    const timeoutError = new Error('انتهت مهلة رفع الصورة. تحقق من اتصال الإنترنت وFirebase Storage ثم حاول مرة أخرى.');
+                    timeoutError.code = 'storage/timeout';
+                    finish(reject, timeoutError);
+                }, 30000);
+                uploadTask.on(
+                    firebase.storage.TaskEvent.STATE_CHANGED,
+                    () => {},
+                    error => finish(reject, error),
+                    () => finish(resolve, uploadTask.snapshot)
+                );
+            });
             return await snapshot.ref.getDownloadURL();
         } catch (error) {
             console.error('Firebase Storage upload error:', error);

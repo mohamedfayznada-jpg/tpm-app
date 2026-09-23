@@ -975,49 +975,6 @@ window.handleTagImage = function(e) {
     processAndEnhanceImage(f, function(dataUrl) { currentTagImg=dataUrl; document.getElementById('tagImagePreview').innerHTML=`<span style="color:var(--success); font-size:12px; font-weight:bold;"><i class='bx bx-check'></i> صورة جاهزة</span>`; });
 };
 
-window.addNewTag = async function() {
-    let d=document.getElementById('newTagDesc').value, c=document.getElementById('newTagColor').value, dp=document.getElementById('newTagDept').value, m=document.getElementById('newTagMachine').value, sp=document.getElementById('newTagSpareParts').value;
-    if(!d) return showToast('⚠️ أدخل وصف المشكلة');
-    let fullDesc = sp ? `${d} [أجزاء: ${sp}]` : d; let uploadedUrl = null;
-    
-    if (currentTagImg) { showToast('جاري رفع التاج والصورة... ⏳'); uploadedUrl = await uploadImageToStorage(currentTagImg); if(!uploadedUrl) showToast('⚠️ فشل رفع الصورة. سيتم الحفظ كنص.'); }
-    
-    let tId = window.uniqueNumericId().toString();
-    window.syncRecord('tags/' + tId, {id:tId, desc:fullDesc, color:c, dept:dp, machine:m, image:uploadedUrl, status:'open', auditor:currentUser.name, date:new Date().toLocaleDateString('ar-EG'), timestamp: Date.now()});
-    
-    document.getElementById('newTagDesc').value=''; document.getElementById('newTagMachine').value=''; document.getElementById('newTagSpareParts').value=''; currentTagImg = null;
-    let preview = document.getElementById('tagImagePreview'); if(preview) preview.innerHTML = '';
-    window.awardPoints(10, 'إصدار تاج جديد'); if(uploadedUrl || !currentTagImg) showToast('تم إصدار التاج بنجاح ✅');
-};
-
-window.renderTags = function() {
-    let rc = document.getElementById('redTagsContainer'); let bc = document.getElementById('blueTagsContainer');
-    if(!rc || !bc) return;
-    
-    let fDept = document.getElementById('filterTagDept').value; let fMach = document.getElementById('filterTagMachine').value.trim().toLowerCase(); let fStatus = document.getElementById('filterTagStatus') ? document.getElementById('filterTagStatus').value : 'active';
-    let redHtml = '', blueHtml = ''; let currentTime = Date.now(); const THREE_DAYS_MS = 259200000;
-
-    tagsData.forEach(t => {
-        if(fDept !== 'الكل' && t.dept !== fDept) return;
-        if(fMach !== '' && (!t.machine || !t.machine.toLowerCase().includes(fMach))) return;
-        let isClosed = (t.status === 'closed'); if(fStatus === 'active' && isClosed) return; if(fStatus === 'closed' && !isClosed) return;
-
-        let isAged = (!isClosed && t.timestamp && (currentTime - t.timestamp > THREE_DAYS_MS));
-        let canEdit = window.hasRole('admin', 'auditor') || currentUser.name === t.auditor;
-        let controls = canEdit ? `<select class="form-control flex-2" style="font-size:12px; padding:8px; margin:0;" onchange="updateTagState('${t.id}', this.value)"><option value="open" ${t.status==='open'?'selected':''}>مفتوح</option><option value="progress" ${t.status==='progress'?'selected':''}>جاري</option><option value="review" ${t.status==='review'?'selected':''}>مراجعة</option><option value="closed" ${t.status==='closed'?'selected':''}>مغلق</option></select><button class="btn btn-sm btn-outline flex-1" style="margin:0; padding:8px;" onclick="editTag('${t.id}')"><i class='bx bx-edit'></i></button><button class="btn btn-sm btn-danger" style="margin:0; padding:8px; width:45px;" onclick="deleteTag('${t.id}')"><i class='bx bx-trash'></i></button>` : `<span style="font-size:12px; font-weight:bold; color:var(--text-main); padding:6px 12px; background:var(--surface-inset); border-radius:8px;">الحالة: ${t.status}</span>`;
-        
-        let ticketClass = t.color === 'red' ? 'ticket-red' : 'ticket-blue';
-        let warningBadge = isAged ? `<div style="position:absolute; top:10px; left:-25px; background:var(--danger); color:white; font-size:10px; font-weight:bold; padding:2px 25px; transform:rotate(-45deg);">متأخر</div>` : '';
-
-        let cardHtml = `<div class="tag-ticket ${ticketClass}">${warningBadge}<div style="font-size:14px; font-weight:900; color:var(--text-main); margin-bottom:10px;">${t.desc}</div><div style="font-size:11px; color:var(--text-muted); margin-bottom:15px; background:rgba(0,0,0,0.2); padding:8px; border-radius:8px;"><i class='bx bx-buildings'></i> ${t.dept} ${t.machine ? ' | <i class="bx bx-cog"></i> ' + t.machine : ''}<br><i class='bx bx-user'></i> ${t.auditor} | <i class='bx bx-calendar'></i> ${t.date}</div>${t.image ? `<img src="${t.image}" style="width:100%; border-radius:10px; margin-bottom:15px; border:1px solid var(--border-glass); cursor:pointer;" onclick="window.open('${t.image}', '_blank')">` : ''}<div class="row-flex" style="border-top:1px solid var(--border-glass); padding-top:15px;">${controls}</div></div>`;
-
-        if(t.color === 'red') redHtml += cardHtml; else blueHtml += cardHtml;
-    });
-
-    rc.innerHTML = redHtml || '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">لا توجد تاجات صيانة</div>';
-    bc.innerHTML = blueHtml || '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">لا توجد تاجات إنتاج</div>';
-};
-
 window.updateTagState = function(id, st) { let t=tagsData.find(x=>x.id==id); if(t) {t.status=st; window.syncRecord('tags/' + id, t); if(st==='closed') window.awardPoints(20, 'إغلاق تاج');} };
 window.deleteTag = function(id) { if(confirm('تأكيد الحذف نهائياً؟')) { window.deleteRecord('tags/' + id); showToast('تم الحذف'); } };
 window.editTag = function(id) { let t=tagsData.find(x=>x.id==id); if(!t) return; let v=prompt('تعديل الوصف:', t.desc); if(v) { t.desc=window.sanitizeInput(v); window.syncRecord('tags/' + id, t); showToast('تم التعديل'); } };

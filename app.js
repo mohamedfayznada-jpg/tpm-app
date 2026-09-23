@@ -882,7 +882,7 @@ window.downloadProfessionalPDF = async function(){
         host.id='directPdfRenderHost';
         host.dir='rtl';
         Object.assign(host.style,{
-            position:'fixed',left:'0',top:'0',width:'794px',
+            position:'absolute',left:'0',top:'0',width:'794px',
             background:'#fff',padding:'0',margin:'0',zIndex:'2147483647',
             visibility:'visible',opacity:'1',
             direction:'rtl',boxSizing:'border-box',overflow:'visible'
@@ -903,7 +903,9 @@ window.downloadProfessionalPDF = async function(){
         /* Keep the PDF as a designed document, not a print stylesheet. */
         const style=document.createElement('style');
         style.textContent=`
-          #directPdfRenderHost *{box-sizing:border-box!important;letter-spacing:normal!important;word-spacing:normal!important}
+          #directPdfRenderHost,#directPdfRenderHost *{visibility:visible!important;box-sizing:border-box!important;letter-spacing:normal!important;word-spacing:normal!important}
+          #directPdfRenderHost{isolation:isolate!important;}
+          #directPdfRenderHost canvas{background:#fff!important;}
           #directPdfRenderHost .detail-report-hero{display:grid!important;grid-template-columns:145px minmax(0,1fr) 170px!important;gap:16px!important;align-items:center!important;padding:20px!important}
           #directPdfRenderHost .detail-report-kpis{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important;padding:14px 0!important}
           #directPdfRenderHost .detail-report-chart-panel,#directPdfRenderHost .detail-opportunity-panel{margin:0 0 14px!important}
@@ -921,15 +923,21 @@ window.downloadProfessionalPDF = async function(){
         host.appendChild(clone);
         document.body.appendChild(host);
 
-        /* Canvas charts need their current pixels copied explicitly. */
+        /* Replace live canvases with PNG images before foreignObject capture.
+           This avoids Chromium/html2canvas black-canvas rendering while keeping
+           the exact chart pixels. */
         const srcCanvases=source.querySelectorAll('canvas');
         const dstCanvases=clone.querySelectorAll('canvas');
         srcCanvases.forEach((src,i)=>{
             const dst=dstCanvases[i];
             if(!dst) return;
-            const ctx=dst.getContext('2d');
-            dst.width=src.width; dst.height=src.height;
-            try{ctx.drawImage(src,0,0);}catch(_){}
+            try{
+                const img=document.createElement('img');
+                img.src=src.toDataURL('image/png');
+                img.width=src.width; img.height=src.height;
+                img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#fff;';
+                dst.replaceWith(img);
+            }catch(_){}
         });
 
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));

@@ -877,84 +877,228 @@ window.downloadProfessionalPDF = async function(){
         return showToast('⚠️ مكونات إنشاء PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
     }
 
-    const btns=document.querySelectorAll('#detailedReportScreen>.row-flex');
-    const original={
-        position:source.style.position,left:source.style.left,top:source.style.top,
-        width:source.style.width,maxWidth:source.style.maxWidth,
-        margin:source.style.margin,padding:source.style.padding,
-        background:source.style.background,border:source.style.border,
-        borderTop:source.style.borderTop,borderRadius:source.style.borderRadius,
-        boxShadow:source.style.boxShadow,overflow:source.style.overflow,
-        direction:source.style.direction,zIndex:source.style.zIndex,
-        visibility:source.style.visibility,transform:source.style.transform
-    };
+    const buttons=document.querySelectorAll('#detailedReportScreen>.row-flex');
+    buttons.forEach(b=>b.style.visibility='hidden');
 
+    let root=null;
     try{
-        showToast('جاري تجهيز ملف PDF... ⏳');
+        showToast('جاري إنشاء PDF احترافي... ⏳');
         if(document.fonts?.ready) await document.fonts.ready;
 
-        /* Render the REAL report element. This keeps every existing #detailedReportScreen
-           selector, font, RTL rule, spacing rule and chart exactly as designed on screen. */
-        source.style.position='absolute';
-        source.style.left='0';
-        source.style.top='0';
-        source.style.width='794px';
-        source.style.maxWidth='794px';
-        source.style.margin='0';
-        source.style.padding='30px';
-        source.style.background='#fff';
-        source.style.border='0';
-        source.style.borderTop='5px solid #f1ad2f';
-        source.style.borderRadius='0';
-        source.style.boxShadow='none';
-        source.style.overflow='visible';
-        source.style.direction='rtl';
-        source.style.zIndex='2147483647';
-        source.style.visibility='visible';
-        source.style.transform='none';
+        /*
+         * ROOT FIX:
+         * Never render one giant report canvas and slice it afterward.
+         * Large canvases are the source of the intermittent black/empty
+         * PDF pages in Chromium. Instead, we render each A4 viewport
+         * independently and place that small canvas directly into jsPDF.
+         */
+        const PAGE_W_PX=794;
+        const PAGE_H_PX=1123;
 
-        btns.forEach(b=>b.style.display='none');
+        root=document.createElement('div');
+        root.id='directPdfRoot';
+        Object.assign(root.style,{
+            position:'absolute',
+            left:'0',
+            top:'0',
+            width:PAGE_W_PX+'px',
+            margin:'0',
+            padding:'0',
+            background:'#fff',
+            zIndex:'2147483647',
+            direction:'rtl',
+            boxSizing:'border-box',
+            pointerEvents:'none',
+            overflow:'visible'
+        });
+
+        const viewport=document.createElement('div');
+        viewport.id='directPdfViewport';
+        Object.assign(viewport.style,{
+            position:'relative',
+            width:PAGE_W_PX+'px',
+            height:PAGE_H_PX+'px',
+            margin:'0',
+            padding:'0',
+            background:'#fff',
+            overflow:'hidden',
+            direction:'rtl',
+            boxSizing:'border-box'
+        });
+
+        const clone=source.cloneNode(true);
+        clone.removeAttribute('id');
+        Object.assign(clone.style,{
+            position:'absolute',
+            left:'0',
+            top:'0',
+            display:'block',
+            width:PAGE_W_PX+'px',
+            maxWidth:PAGE_W_PX+'px',
+            minWidth:PAGE_W_PX+'px',
+            margin:'0',
+            padding:'28px 30px 34px',
+            background:'#fff',
+            border:'0',
+            borderTop:'5px solid #f1ad2f',
+            borderRadius:'0',
+            boxShadow:'none',
+            overflow:'visible',
+            direction:'rtl',
+            boxSizing:'border-box',
+            fontFamily:'Cairo, Arial, Tahoma, sans-serif',
+            color:'#1d2d3a',
+            transform:'none',
+            visibility:'visible',
+            opacity:'1'
+        });
+
+        const style=document.createElement('style');
+        style.textContent=`
+          #directPdfViewport,#directPdfViewport *{
+            visibility:visible!important;
+            box-sizing:border-box!important;
+            letter-spacing:normal!important;
+            word-spacing:normal!important;
+            font-stretch:normal!important;
+          }
+          #directPdfViewport{
+            isolation:isolate!important;
+            unicode-bidi:normal!important;
+          }
+          #directPdfViewport *{transform:none!important}
+          #directPdfViewport .detail-report-hero{
+            display:grid!important;
+            grid-template-columns:145px minmax(0,1fr) 170px!important;
+            gap:16px!important;
+            align-items:center!important;
+            padding:20px!important;
+          }
+          #directPdfViewport .detail-report-kpis{
+            display:grid!important;
+            grid-template-columns:repeat(4,1fr)!important;
+            gap:10px!important;
+            padding:14px 0!important;
+          }
+          #directPdfViewport .detail-report-chart-panel,
+          #directPdfViewport .detail-opportunity-panel{
+            margin:0 0 14px!important;
+          }
+          #directPdfViewport .detail-chart-wrap{
+            height:300px!important;
+            max-height:300px!important;
+          }
+          #directPdfViewport .detail-op-row{padding:11px 0!important}
+          #directPdfViewport .legacy-inline-195{
+            display:grid!important;
+            grid-template-columns:repeat(4,1fr)!important;
+            gap:8px!important;
+          }
+          #directPdfViewport .legacy-inline-196{
+            font-size:11px!important;
+            line-height:1.6!important;
+          }
+          #directPdfViewport .legacy-inline-193{
+            font-size:28px!important;
+            line-height:1.15!important;
+          }
+          #directPdfViewport .legacy-inline-194{
+            font-size:13px!important;
+            line-height:1.5!important;
+          }
+          #directPdfViewport .detail-report-summary h2{
+            font-size:25px!important;
+            line-height:1.25!important;
+          }
+          #directPdfViewport .detail-report-summary p{
+            font-size:11px!important;
+            line-height:1.8!important;
+          }
+          #directPdfViewport .detail-step-card{
+            break-inside:avoid!important;
+            page-break-inside:avoid!important;
+          }
+          #directPdfViewport img{
+            max-width:100%!important;
+          }
+        `;
+
+        viewport.appendChild(style);
+        viewport.appendChild(clone);
+        root.appendChild(viewport);
+        document.body.appendChild(root);
+
+        /* Freeze charts as PNG so html2canvas never has to rasterize a live
+           Chart.js canvas. This is both faster and much more deterministic. */
+        const srcCanvases=source.querySelectorAll('canvas');
+        const dstCanvases=clone.querySelectorAll('canvas');
+        srcCanvases.forEach((src,i)=>{
+            const dst=dstCanvases[i];
+            if(!dst) return;
+            try{
+                const img=document.createElement('img');
+                img.src=src.toDataURL('image/png');
+                img.width=src.width;
+                img.height=src.height;
+                img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#fff;';
+                dst.replaceWith(img);
+            }catch(_){}
+        });
+
+        /* Ensure all report images are decoded before page capture. */
+        const reportImages=[...clone.querySelectorAll('img')];
+        await Promise.all(reportImages.map(img=>{
+            if(img.complete) return img.decode?.().catch(()=>{})||Promise.resolve();
+            return new Promise(resolve=>{
+                img.onload=()=>resolve();
+                img.onerror=()=>resolve();
+            });
+        }));
 
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
-        const canvas=await window.html2canvas(source,{
-            backgroundColor:'#ffffff',
-            scale:2,
-            useCORS:true,
-            allowTaint:true,
-            foreignObjectRendering:false,
-            imageTimeout:15000,
-            logging:false,
-            scrollX:0,
-            scrollY:0,
-            windowWidth:794
-        });
-
-        if(!canvas.width || !canvas.height) throw new Error('Rendered canvas is empty');
+        const totalHeight=Math.ceil(clone.getBoundingClientRect().height);
+        const pageCount=Math.max(1,Math.ceil(totalHeight/PAGE_H_PX));
 
         const {jsPDF}=window.jspdf;
-        const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
-        const marginX=7, marginY=7, pageW=210, pageH=297;
-        const usableW=pageW-marginX*2, usableH=pageH-marginY*2;
-        const pxPerMm=canvas.width/usableW;
-        const pagePx=Math.max(1,Math.floor(usableH*pxPerMm));
+        const pdf=new jsPDF({
+            orientation:'portrait',
+            unit:'mm',
+            format:'a4',
+            compress:true,
+            hotfixes:['px_scaling']
+        });
 
-        let y=0, page=0;
-        while(y<canvas.height){
-            const sliceH=Math.min(pagePx,canvas.height-y);
-            const slice=document.createElement('canvas');
-            slice.width=canvas.width;
-            slice.height=sliceH;
-            slice.getContext('2d').drawImage(canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH);
+        for(let pageIndex=0;pageIndex<pageCount;pageIndex++){
+            const offset=pageIndex*PAGE_H_PX;
+            clone.style.top=(-offset)+'px';
 
-            if(page>0) pdf.addPage();
-            pdf.addImage(
-                slice.toDataURL('image/jpeg',0.95),
-                'JPEG',marginX,marginY,usableW,
-                sliceH/pxPerMm,undefined,'FAST'
-            );
-            y+=sliceH;
-            page++;
+            await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+            /*
+             * Each capture is exactly one A4 viewport. No giant canvas,
+             * no post-capture slicing, and PNG is used instead of JPEG to
+             * eliminate encoder corruption/black-page artifacts.
+             */
+            const pageCanvas=await window.html2canvas(viewport,{
+                backgroundColor:'#ffffff',
+                scale:1.5,
+                width:PAGE_W_PX,
+                height:PAGE_H_PX,
+                windowWidth:PAGE_W_PX,
+                windowHeight:PAGE_H_PX,
+                scrollX:0,
+                scrollY:0,
+                useCORS:true,
+                allowTaint:false,
+                foreignObjectRendering:true,
+                imageTimeout:15000,
+                logging:false
+            });
+
+            if(pageIndex>0) pdf.addPage();
+            const png=pageCanvas.toDataURL('image/png');
+            pdf.addImage(png,'PNG',0,0,210,297,undefined,'FAST');
         }
 
         pdf.save('تقرير_تدقيق_TPM_تفصيلي.pdf');
@@ -963,8 +1107,8 @@ window.downloadProfessionalPDF = async function(){
         console.error('Professional PDF export error:',err);
         showToast('⚠️ تعذر إنشاء PDF — راجع Console للتفاصيل');
     }finally{
-        Object.entries(original).forEach(([key,val])=>source.style[key]=val);
-        btns.forEach(b=>b.style.display='');
+        buttons.forEach(b=>b.style.visibility='');
+        if(root) root.remove();
     }
 };
 

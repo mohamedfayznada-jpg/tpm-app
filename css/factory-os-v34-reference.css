@@ -1167,3 +1167,27 @@ body:after{
     grid-row:auto!important;
   }
 }
+
+
+/* KAIZEN V1.3 — restore full-width editorial feed */
+#kaizenScreen .kaizen-community-feed{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  margin-top:18px!important;
+}
+#kaizenScreen .kaizen-community-feed > .kaizen-post{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0 0 18px!important;
+}
+#kaizenScreen .kaizen-community-main{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+}
+#kaizenScreen .kaizen-feed-toolbar{
+  width:100%!important;
+}

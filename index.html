@@ -1120,7 +1120,7 @@
     </div>
 
     <!-- Scripts Integration -->
-    <script type="module" src="js/main.js?v=20260922-data-restore2"></script>
+    <script type="module" src="js/main.js?v=20260923-auth-stable"></script>
     <script src="tpm_data.js" defer></script>
     <script src="tpm_teams.js?v=20260923-auth-guard" defer></script>
     <script src="js/modules/tpm-operating-model.js?v=1" defer></script>
@@ -1134,6 +1134,12 @@
 <script src="js/modules/five-s-engine.js?v=1" defer></script>
 <script src="js/modules/jh-main-team.js?v=1" defer></script>
 <script src="js/modules/tag-command-center.js?v=1" defer></script>
-<script src="app.js?v=20260923-auth-fixed" defer></script>
+<script src="app.js?v=20260923-auth-stable" defer></script>
+<script>
+window.addEventListener('DOMContentLoaded',function(){
+  if(typeof window.__tpmModularLogin==='function') window.login=window.__tpmModularLogin;
+  if(typeof window.__tpmModularSignup==='function') window.signup=window.__tpmModularSignup;
+});
+</script>
 </body>
 </html>

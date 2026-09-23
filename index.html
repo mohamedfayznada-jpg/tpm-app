@@ -654,27 +654,54 @@
         </div>
     </div>
 
-    <!-- Kaizen Screen -->
+    <!-- Kaizen Community Screen -->
     <div class="container screen" id="kaizenScreen">
-        <div class="legacy-inline-47">
-            <div class="legacy-inline-48">
-                <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
-                <h2 class="legacy-inline-142"><i class='bx bx-bulb'></i> مجتمع كايزن</h2>
+        <section class="kaizen-community-hero">
+            <div class="kaizen-hero-copy">
+                <span class="eyebrow"><i class='bx bx-bulb'></i> FACTORY IMPROVEMENT COMMUNITY</span>
+                <h1>مجتمع كايزن</h1>
+                <p>المكان اللي التحسين فيه بيتحوّل من فكرة فردية إلى معرفة مشتركة، تجربة قابلة للقياس، ومعيار يرجع بيه المصنع أقوى.</p>
+                <div class="kaizen-hero-actions">
+                    <button class="btn btn-primary" onclick="document.getElementById('kaizenUploadModal').style.display='flex'"><i class='bx bx-plus'></i> شارك تحسينك</button>
+                    <button class="btn btn-outline" onclick="document.getElementById('oplModal').style.display='flex'"><i class='bx bx-book-open'></i> أنشئ OPL</button>
+                </div>
             </div>
-            <div class="legacy-inline-59">
-                <button class="btn btn-primary btn-sm" onclick="document.getElementById('kaizenUploadModal').style.display='flex'"><i class='bx bx-upload'></i> مشاركة</button>
-                <button class="btn btn-outline btn-sm" onclick="document.getElementById('oplModal').style.display='flex'"><i class='bx bx-file'></i> OPL</button>
+            <div class="kaizen-hero-mark">
+                <span>PDCA</span>
+                <b>01</b><b>02</b><b>03</b><b>04</b>
+                <small>IDEA → STANDARD</small>
             </div>
-        </div>
-        <section id="kaizenA3CommandStats" class="kaizen-a3-command-stats"></section>
-        <section class="kaizen-stage-journey" aria-label="رحلة كايزن">
-            <div><span class="eyebrow"><i class='bx bx-git-branch'></i> رحلة التحسين</span><h3>من المشكلة إلى المعيار</h3></div>
-            <div class="kaizen-stage-steps"><button onclick="applyKaizenStageFilter('all')" class="active">الكل</button><button onclick="applyKaizenStageFilter('plan')">P · خطة</button><button onclick="applyKaizenStageFilter('do')">D · تنفيذ</button><button onclick="applyKaizenStageFilter('check')">C · تحقق</button><button onclick="applyKaizenStageFilter('act')">A · تثبيت</button><button onclick="applyKaizenStageFilter('standardized')">معياري</button></div>
         </section>
-        <div class="legacy-inline-150">
-            <select id="kaizenDeptSelect" class="form-control legacy-inline-9" onchange="renderKaizenFeed()"><option value="الكل">عرض جميع الأقسام</option></select>
-        </div>
-        <div id="kaizenFeedContainer" class="grid-layout"></div>
+
+        <section id="kaizenCommunityStats" class="kaizen-community-stats"></section>
+
+        <section class="kaizen-community-grid">
+            <aside class="kaizen-community-rail">
+                <div class="kaizen-challenge-card">
+                    <span class="eyebrow">THIS WEEK</span>
+                    <h3>تحدي الأسبوع</h3>
+                    <strong>قلّل فاقدًا واحدًا<br>يمكن قياسه.</strong>
+                    <p>اختار مشكلة حقيقية، وثّقها بصورة، وحدد رقمًا قبل وبعد. أفضل التحسينات تتحول إلى OPL أو معيار.</p>
+                    <button class="btn btn-warning full-width" onclick="document.getElementById('kaizenUploadModal').style.display='flex'"><i class='bx bx-rocket'></i> ادخل التحدي</button>
+                </div>
+                <div class="kaizen-leaderboard">
+                    <div class="kaizen-panel-title"><span>أكثر المساهمين</span><i class='bx bx-trophy'></i></div>
+                    <div id="kaizenLeaderboard"></div>
+                </div>
+            </aside>
+
+            <main class="kaizen-community-main">
+                <section class="kaizen-stage-journey" aria-label="رحلة التحسين">
+                    <div><span class="eyebrow"><i class='bx bx-git-branch'></i> IMPROVEMENT FLOW</span><h3>من المشكلة إلى المعيار</h3><p>تابع كل تحسين عبر دورة PDCA بدل ما يختفي بعد أول مشاركة.</p></div>
+                    <div class="kaizen-stage-steps"><button onclick="applyKaizenStageFilter('all')" class="active">الكل</button><button onclick="applyKaizenStageFilter('plan')">P · خطة</button><button onclick="applyKaizenStageFilter('do')">D · تنفيذ</button><button onclick="applyKaizenStageFilter('check')">C · تحقق</button><button onclick="applyKaizenStageFilter('act')">A · تثبيت</button><button onclick="applyKaizenStageFilter('standardized')">معياري</button></div>
+                </section>
+                <div class="kaizen-feed-toolbar">
+                    <div><span class="eyebrow">COMMUNITY FEED</span><b>آخر التحسينات</b></div>
+                    <select id="kaizenDeptSelect" class="form-control" onchange="renderKaizenFeed()"><option value="الكل">كل الأقسام</option></select>
+                </div>
+                <div id="kaizenFeedContainer" class="kaizen-community-feed"></div>
+            </main>
+        </section>
     </div>
 
     <!-- Knowledge Base Screen -->

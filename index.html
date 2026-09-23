@@ -121,43 +121,154 @@
     <!-- ==========================================
          🔐 CORE AUTH SCREENS
          ========================================== -->
-    <div class="container screen active" id="loginScreen">
-        <div class="login-wrapper">
-            <div class="logo-circle login-logo"><i class='bx bx-fingerprint' class="legacy-inline-23"></i></div>
-            <h2 class="legacy-inline-24">مرحباً بك</h2>
-            <p class="legacy-inline-25">بوابة الدخول المؤمنة لـ Factory OS</p>
-            <div class="modern-card card">
-                <input type="text" id="loginUsername" class="form-control" placeholder="اسم المستخدم">
-                <input type="password" id="loginPassword" class="form-control" placeholder="كلمة المرور">
-                <div class="legacy-inline-26">
-                    <label><input type="checkbox" id="rememberMe" checked> تذكر بياناتي</label>
+    <!-- ==========================================
+         🔐 FACTORY OS — PREMIUM AUTH EXPERIENCE
+         ========================================== -->
+    <div class="container screen active auth-screen" id="loginScreen">
+        <div class="auth-shell">
+            <div class="auth-ambient auth-ambient-a"></div>
+            <div class="auth-ambient auth-ambient-b"></div>
+
+            <section class="auth-showcase" aria-label="Factory OS">
+                <div class="auth-brand-row">
+                    <div class="auth-brand-mark"><i class='bx bx-cube'></i></div>
+                    <div>
+                        <strong>FACTORY OS</strong>
+                        <span>TPM DIGITAL OPERATING SYSTEM</span>
+                    </div>
                 </div>
-                <button class="btn btn-primary full-width" onclick="login()"><i class='bx bx-log-in'></i> دخول آمن</button>
-                <button class="btn btn-outline full-width" onclick="biometricLogin()"><i class='bx bx-bolt-circle'></i> الدخول السريع</button>
-                <div class="legacy-inline-27">
-                    <span class="legacy-inline-28">أو</span>
+
+                <div class="auth-showcase-copy">
+                    <span class="auth-kicker"><i class='bx bx-radar'></i> FACTORY INTELLIGENCE PLATFORM</span>
+                    <h1>كل قرار في المصنع<br><em>يبدأ من هنا.</em></h1>
+                    <p>منصة تشغيل رقمية تجمع المراجعات، كايزن، JH، التاجات ومؤشرات الأداء في مركز تحكم واحد.</p>
                 </div>
-                <button class="btn btn-outline full-width" onclick="showScreen('signupScreen')"><i class='bx bx-user-plus'></i> إنشاء حساب جديد</button>
-            </div>
+
+                <div class="factory-visual">
+                    <div class="factory-grid"></div>
+                    <div class="factory-line factory-line-1"></div>
+                    <div class="factory-line factory-line-2"></div>
+                    <div class="factory-orbit orbit-one"></div>
+                    <div class="factory-orbit orbit-two"></div>
+                    <div class="factory-core">
+                        <div class="factory-core-ring"></div>
+                        <div class="factory-core-icon"><i class='bx bx-cog'></i></div>
+                        <span>LIVE<br>CONTROL</span>
+                    </div>
+                    <div class="factory-node node-1"><i class='bx bx-check'></i><span>QUALITY</span></div>
+                    <div class="factory-node node-2"><i class='bx bx-bulb'></i><span>KAIZEN</span></div>
+                    <div class="factory-node node-3"><i class='bx bx-shield-quarter'></i><span>TPM</span></div>
+                    <div class="factory-node node-4"><i class='bx bx-line-chart'></i><span>OEE</span></div>
+                </div>
+
+                <div class="auth-metrics">
+                    <div><strong>24/7</strong><span>Operational visibility</span></div>
+                    <div><strong>01</strong><span>Digital control center</span></div>
+                    <div><strong>LIVE</strong><span>Data-driven decisions</span></div>
+                </div>
+            </section>
+
+            <section class="auth-panel">
+                <div class="auth-panel-top">
+                    <div class="auth-status"><span></span> النظام متصل وآمن</div>
+                    <div class="auth-language">AR <i class='bx bx-chevron-down'></i></div>
+                </div>
+
+                <div class="auth-form-heading">
+                    <span class="auth-mini-label">SECURE ACCESS</span>
+                    <h2>مرحبًا بك من جديد</h2>
+                    <p>سجّل دخولك للوصول إلى مركز تشغيل المصنع.</p>
+                </div>
+
+                <div class="auth-form">
+                    <label class="auth-field">
+                        <span>اسم المستخدم</span>
+                        <div class="auth-input-wrap">
+                            <i class='bx bx-user'></i>
+                            <input type="text" id="loginUsername" autocomplete="username" placeholder="أدخل اسم المستخدم">
+                        </div>
+                    </label>
+
+                    <label class="auth-field">
+                        <span>كلمة المرور</span>
+                        <div class="auth-input-wrap">
+                            <i class='bx bx-lock-alt'></i>
+                            <input type="password" id="loginPassword" autocomplete="current-password" placeholder="أدخل كلمة المرور">
+                            <button type="button" class="auth-eye" onclick="toggleLoginPassword()" aria-label="إظهار كلمة المرور"><i class='bx bx-show'></i></button>
+                        </div>
+                    </label>
+
+                    <div class="auth-form-options">
+                        <label class="auth-check"><input type="checkbox" id="rememberMe" checked><span></span> تذكر بياناتي</label>
+                        <span>Encrypted access</span>
+                    </div>
+
+                    <button class="auth-primary-btn" onclick="login()">
+                        <span>دخول إلى Factory OS</span>
+                        <i class='bx bx-left-arrow-alt'></i>
+                    </button>
+
+                    <button class="auth-biometric-btn" onclick="biometricLogin()">
+                        <i class='bx bx-fingerprint'></i>
+                        <span>الدخول السريع</span>
+                        <small>BIOMETRIC</small>
+                    </button>
+
+                    <div class="auth-divider"><span>أو</span></div>
+
+                    <button class="auth-signup-btn" onclick="showScreen('signupScreen')">
+                        <i class='bx bx-user-plus'></i>
+                        <span>إنشاء حساب جديد</span>
+                    </button>
+                </div>
+
+                <div class="auth-panel-footer">
+                    <div><i class='bx bx-shield-alt-2'></i><span>حماية الوصول مفعلة</span></div>
+                    <div><i class='bx bx-cloud-check'></i><span>Cloud Sync Ready</span></div>
+                </div>
+            </section>
         </div>
     </div>
 
-    <div class="container screen" id="signupScreen">
-        <div class="login-wrapper">
-            <h2 class="legacy-inline-29">حساب جديد</h2>
-            <p class="legacy-inline-25">انضم إلى فريق العمل</p>
-            <div class="modern-card card">
-                <input type="text" id="signupFullName" class="form-control" placeholder="الاسم الكامل">
-                <input type="text" id="signupUsername" class="form-control" placeholder="اسم المستخدم (إنجليزي)">
-                <input type="password" id="signupPassword" class="form-control" placeholder="كلمة المرور">
-                <select id="signupRole" class="form-control">
-                    <option value="operator">مشغل</option>
-                    <option value="auditor">مراجع</option>
-                    <option value="admin">مدير</option>
-                </select>
-                <button class="btn btn-success full-width" onclick="signup()"><i class='bx bx-send'></i> إرسال الطلب</button>
-                <button class="btn btn-outline full-width" onclick="showScreen('loginScreen')"><i class='bx bx-arrow-back'></i> العودة للدخول</button>
+    <div class="container screen auth-screen" id="signupScreen">
+        <div class="auth-shell auth-shell-signup">
+            <div class="auth-signup-visual">
+                <div class="auth-brand-row">
+                    <div class="auth-brand-mark"><i class='bx bx-cube'></i></div>
+                    <div><strong>FACTORY OS</strong><span>TPM DIGITAL OPERATING SYSTEM</span></div>
+                </div>
+                <div class="signup-visual-copy">
+                    <span class="auth-kicker"><i class='bx bx-user-plus'></i> TEAM ACCESS</span>
+                    <h1>ابنِ حسابك<br><em>وادخل إلى المنظومة.</em></h1>
+                    <p>حسابك هو بوابتك إلى مهام المصنع، المراجعات، التحسين المستمر ومؤشرات الأداء.</p>
+                </div>
+                <div class="signup-step-list">
+                    <div class="active"><b>01</b><span>أنشئ بياناتك الأساسية</span></div>
+                    <div><b>02</b><span>اختر الدور المناسب</span></div>
+                    <div><b>03</b><span>أرسل طلب الانضمام</span></div>
+                </div>
             </div>
+
+            <section class="auth-panel signup-panel">
+                <div class="auth-panel-top"><div class="auth-status"><span></span> بوابة إنشاء الحساب</div></div>
+                <div class="auth-form-heading">
+                    <span class="auth-mini-label">NEW ACCOUNT</span>
+                    <h2>إنشاء حساب</h2>
+                    <p>أدخل بياناتك لإرسال طلب الانضمام.</p>
+                </div>
+
+                <div class="auth-form">
+                    <label class="auth-field"><span>الاسم الكامل</span><div class="auth-input-wrap"><i class='bx bx-id-card'></i><input type="text" id="signupFullName" placeholder="الاسم الكامل"></div></label>
+                    <label class="auth-field"><span>اسم المستخدم</span><div class="auth-input-wrap"><i class='bx bx-at'></i><input type="text" id="signupUsername" placeholder="بالإنجليزية فقط"></div></label>
+                    <label class="auth-field"><span>كلمة المرور</span><div class="auth-input-wrap"><i class='bx bx-lock-alt'></i><input type="password" id="signupPassword" placeholder="أنشئ كلمة مرور"></div></label>
+                    <label class="auth-field"><span>الدور</span><div class="auth-input-wrap auth-select-wrap"><i class='bx bx-user-pin'></i><select id="signupRole"><option value="operator">مشغل</option><option value="auditor">مراجع</option><option value="admin">مدير</option></select><i class='bx bx-chevron-down auth-select-arrow'></i></div></label>
+
+                    <button class="auth-primary-btn signup-submit-btn" onclick="signup()"><span>إرسال طلب الانضمام</span><i class='bx bx-send'></i></button>
+                    <button class="auth-back-btn" onclick="showScreen('loginScreen')"><i class='bx bx-arrow-right'></i><span>العودة إلى تسجيل الدخول</span></button>
+                </div>
+
+                <div class="auth-panel-footer"><div><i class='bx bx-info-circle'></i><span>سيتم اعتماد الحساب وفق صلاحيات النظام.</span></div></div>
+            </section>
         </div>
     </div>
 

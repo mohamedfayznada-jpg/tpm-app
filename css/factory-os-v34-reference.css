@@ -1573,3 +1573,34 @@ body:after{
  #detailedReportScreen .detail-report-hero{grid-template-columns:1fr!important}.detail-meta-badges{grid-column:auto!important}
  #detailedReportScreen .detail-step-body{grid-template-columns:1fr!important}
 }
+
+
+/* NATIVE PRINT / PDF — preserve Arabic RTL exactly */
+@media print{
+  @page{size:A4 portrait;margin:10mm}
+  html,body{width:210mm!important;min-width:210mm!important;background:#fff!important;overflow:visible!important}
+  body{font-family:Arial,"Tahoma",sans-serif!important;color:#17364f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body *{visibility:hidden!important}
+  #detailedReportScreen,#detailedReportScreen *{visibility:visible!important}
+  #detailedReportScreen{
+    display:block!important;position:static!important;width:100%!important;min-height:0!important;
+    margin:0!important;padding:0!important;background:#fff!important
+  }
+  #printableReportArea{
+    display:block!important;width:190mm!important;max-width:190mm!important;margin:0 auto!important;
+    padding:0!important;border:0!important;box-shadow:none!important;overflow:visible!important;
+    direction:rtl!important;unicode-bidi:plaintext!important;background:#fff!important
+  }
+  #printableReportArea *{box-sizing:border-box!important}
+  #detailedReportScreen>.row-flex{display:none!important}
+  #printableReportArea .legacy-inline-192{page-break-after:avoid!important}
+  #printableReportArea .detail-report-hero{page-break-inside:avoid!important}
+  #printableReportArea .detail-report-kpis{page-break-inside:avoid!important}
+  #printableReportArea .detail-report-chart-panel{page-break-inside:avoid!important}
+  #printableReportArea .detail-opportunity-panel{page-break-inside:avoid!important}
+  #printableReportArea .detail-step-card{page-break-inside:avoid!important;break-inside:avoid!important}
+  #printableReportArea tr{page-break-inside:avoid!important;break-inside:avoid!important}
+  #printableReportArea img{max-width:100%!important}
+  #printableReportArea canvas{max-width:100%!important}
+  #detailedReportScreen .detail-chart-wrap{height:260px!important}
+}

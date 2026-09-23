@@ -3146,3 +3146,231 @@ body:after{
 .sidebar .side-item[data-screen].active:hover{
   background:#245a7d!important;
 }
+
+
+/* =========================================================
+   AUDIT REPORT — INTERACTIVE DECISION CENTER V2
+   ========================================================= */
+#detailedReportScreen{
+  background:#eef2f5!important;
+  min-height:100vh!important;
+  padding-top:88px!important;
+}
+#detailedReportScreen .audit-report-shell{
+  width:min(1180px,100%)!important;
+  margin:0 auto!important;
+  padding:0 0 26px!important;
+  color:#1d2d3a!important;
+  direction:rtl!important;
+}
+#detailedReportScreen .audit-report-topbar{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:12px!important;margin:0 0 12px!important;
+}
+#detailedReportScreen .report-back-btn,
+#detailedReportScreen .report-icon-btn{
+  border:1px solid #dbe4eb!important;background:#fff!important;color:#42596b!important;
+  height:40px!important;border-radius:9px!important;cursor:pointer!important;transition:.18s ease!important;
+  box-shadow:0 2px 8px rgba(20,45,65,.04)!important;
+}
+#detailedReportScreen .report-back-btn{display:flex!important;align-items:center!important;gap:8px!important;padding:0 13px!important;font-weight:800!important}
+#detailedReportScreen .report-icon-btn{width:40px!important;font-size:19px!important}
+#detailedReportScreen .report-back-btn:hover,#detailedReportScreen .report-icon-btn:hover{border-color:#b8cada!important;color:#2583e8!important;transform:translateY(-1px)!important}
+#detailedReportScreen .report-topbar-actions{display:flex!important;gap:8px!important}
+
+#detailedReportScreen .audit-report-brand{
+  display:flex!important;justify-content:space-between!important;align-items:center!important;
+  gap:20px!important;padding:22px 24px!important;background:#17364f!important;color:#fff!important;
+  border-radius:14px 14px 0 0!important;box-shadow:0 8px 24px rgba(20,45,65,.12)!important;
+}
+#detailedReportScreen .audit-report-brand .eyebrow{color:#a9bdd0!important}
+#detailedReportScreen .audit-report-brand h1{margin:6px 0 5px!important;font-size:31px!important;line-height:1.2!important;font-weight:900!important}
+#detailedReportScreen .audit-report-brand p{margin:0!important;color:#c5d4df!important;font-size:12px!important;line-height:1.7!important}
+#detailedReportScreen .audit-report-brand-mark{
+  width:86px!important;height:86px!important;border:1px solid rgba(255,255,255,.16)!important;
+  border-radius:14px!important;display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;color:#f1ad2f!important;background:rgba(255,255,255,.05)!important;
+}
+#detailedReportScreen .audit-report-brand-mark i{font-size:28px!important}
+#detailedReportScreen .audit-report-brand-mark span{font-size:8px!important;line-height:1.2!important;text-align:center!important;font-weight:900!important;letter-spacing:1px!important}
+
+#detailedReportScreen .audit-meta-strip{
+  display:grid!important;grid-template-columns:repeat(4,1fr)!important;background:#fff!important;
+  border:1px solid #dbe4eb!important;border-top:0!important;padding:12px 18px!important;gap:0!important;
+}
+#detailedReportScreen .audit-meta-strip>div{
+  display:grid!important;grid-template-columns:24px 1fr!important;grid-template-areas:"icon label" "icon value"!important;
+  column-gap:9px!important;align-items:center!important;padding:3px 18px!important;border-left:1px solid #e6edf2!important;
+}
+#detailedReportScreen .audit-meta-strip>div:last-child{border-left:0!important}
+#detailedReportScreen .audit-meta-strip i{grid-area:icon!important;grid-row:1/3!important;align-self:center!important;font-size:20px!important;color:#2583e8!important}
+#detailedReportScreen .audit-meta-strip span{grid-area:label!important;font-size:9px!important;color:#8996a1!important}
+#detailedReportScreen .audit-meta-strip b{grid-area:value!important;font-size:12px!important;color:#17364f!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+#detailedReportScreen .audit-executive-card{
+  display:grid!important;grid-template-columns:145px minmax(0,1fr) 210px!important;gap:22px!important;align-items:center!important;
+  padding:20px!important;margin-top:14px!important;background:#fff!important;border:1px solid #dbe4eb!important;
+  border-radius:14px!important;box-shadow:0 5px 18px rgba(20,45,65,.05)!important;
+}
+#detailedReportScreen .audit-score-ring{
+  width:122px!important;height:122px!important;margin:auto!important;border-radius:50%!important;
+  display:grid!important;place-items:center!important;background:conic-gradient(#20a66a var(--score-angle,0deg),#e9eef2 0deg)!important;
+  position:relative!important;
+}
+#detailedReportScreen .audit-score-ring:after{content:'';position:absolute;inset:9px;border-radius:50%;background:#fff!important}
+#detailedReportScreen .audit-score-ring-inner{position:relative;z-index:1;display:flex!important;flex-direction:column!important;align-items:center!important}
+#detailedReportScreen .audit-score-ring-inner strong{font-size:30px!important;line-height:1!important;color:#17364f!important}
+#detailedReportScreen .audit-score-ring-inner span{font-size:9px!important;color:#80909e!important;margin-top:5px!important}
+#detailedReportScreen .audit-executive-copy .eyebrow{color:#f28b18!important}
+#detailedReportScreen .audit-executive-copy h2{margin:3px 0 7px!important;font-size:27px!important;color:#17364f!important}
+#detailedReportScreen .audit-executive-copy p{margin:0!important;color:#6f8090!important;font-size:12px!important;line-height:1.9!important}
+#detailedReportScreen .audit-badge-row{display:flex!important;gap:8px!important;flex-wrap:wrap!important;margin-top:12px!important}
+#detailedReportScreen .audit-badge-row span{
+  display:inline-flex!important;align-items:center!important;gap:5px!important;padding:8px 11px!important;border:1px solid #dbe4eb!important;
+  background:#f8fafc!important;border-radius:8px!important;color:#51697c!important;font-size:10px!important;font-weight:800!important;
+}
+#detailedReportScreen .audit-decision-side{padding:15px!important;border:1px solid #e1e8ee!important;border-radius:10px!important;background:#f8fafc!important}
+#detailedReportScreen .audit-decision-side span{font-size:9px!important;color:#8a98a4!important;display:block!important}
+#detailedReportScreen .audit-decision-side strong{display:block!important;margin:4px 0!important;font-size:18px!important;color:#17364f!important}
+#detailedReportScreen .audit-decision-side small{font-size:9px!important;color:#81909d!important;line-height:1.6!important}
+
+#detailedReportScreen .audit-section-card{
+  background:#fff!important;border:1px solid #dbe4eb!important;border-radius:12px!important;
+  margin-top:14px!important;overflow:hidden!important;box-shadow:0 4px 16px rgba(20,45,65,.04)!important;
+}
+#detailedReportScreen .audit-section-head{
+  width:100%!important;border:0!important;background:#fff!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:12px!important;text-align:right!important;padding:17px 18px!important;cursor:pointer!important;
+}
+#detailedReportScreen .audit-section-head>div{min-width:0!important}
+#detailedReportScreen .audit-section-head h3{margin:3px 0 0!important;color:#17364f!important;font-size:16px!important;font-weight:900!important}
+#detailedReportScreen .audit-section-head .section-icon{
+  width:38px!important;height:38px!important;display:grid!important;place-items:center!important;
+  border-radius:9px!important;background:#f2f7fb!important;color:#2583e8!important;font-size:19px!important;
+}
+#detailedReportScreen .audit-section-head .section-icon i{transition:transform .18s ease!important}
+#detailedReportScreen .audit-section-card.is-collapsed .audit-collapsible-body{display:none!important}
+#detailedReportScreen .audit-section-card.is-collapsed .audit-collapse-trigger .section-icon{background:#eef2f5!important;color:#72808d!important}
+#detailedReportScreen .audit-collapsible-body{padding:0 18px 18px!important}
+
+#detailedReportScreen .audit-kpi-grid{
+  display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important;padding:0 18px 18px!important;
+}
+#detailedReportScreen .audit-kpi-grid>div{
+  position:relative!important;overflow:hidden!important;padding:15px!important;border:1px solid #e1e8ee!important;
+  border-radius:10px!important;background:#f8fafc!important;min-height:98px!important;
+}
+#detailedReportScreen .audit-kpi-grid>div:after{content:'';position:absolute;right:0;top:0;bottom:0;width:4px;background:#2583e8!important}
+#detailedReportScreen .audit-kpi-grid span{display:block!important;color:#7d8b97!important;font-size:9px!important}
+#detailedReportScreen .audit-kpi-grid strong{display:block!important;color:#17364f!important;font-size:25px!important;margin:8px 0 3px!important}
+#detailedReportScreen .audit-kpi-grid small{color:#9aa6af!important;font-size:8px!important}
+
+#detailedReportScreen .audit-chart-toolbar{
+  display:flex!important;justify-content:space-between!important;align-items:center!important;
+  padding:0 2px 10px!important;color:#536b7e!important
+}
+#detailedReportScreen .audit-chart-toolbar span{display:flex!important;align-items:center!important;gap:7px!important;font-size:10px!important;font-weight:900!important}
+#detailedReportScreen .audit-chart-toolbar span i{font-size:16px!important;color:#2583e8!important}
+#detailedReportScreen .audit-chart-toolbar small{font-size:9px!important;color:#98a4ad!important}
+#detailedReportScreen .audit-radar-stage{height:360px!important;position:relative!important;border:1px solid #e5ebf0!important;border-radius:10px!important;background:linear-gradient(180deg,#fbfcfd,#fff)!important;padding:10px!important}
+
+#detailedReportScreen .audit-insight-banner{
+  display:flex!important;align-items:center!important;gap:8px!important;padding:10px 12px!important;margin-bottom:10px!important;
+  background:#fff8ea!important;border:1px solid #f4dfae!important;border-radius:8px!important;color:#7a6337!important;font-size:10px!important;
+}
+#detailedReportScreen .audit-insight-banner i{font-size:17px!important;color:#f1ad2f!important}
+
+#detailedReportScreen .audit-opportunity-card{border:1px solid #e0e7ed!important;border-radius:10px!important;overflow:hidden!important;margin-bottom:8px!important;background:#fff!important}
+#detailedReportScreen .audit-opportunity-card.critical{border-right:4px solid #ef5350!important}
+#detailedReportScreen .audit-opportunity-card.warning{border-right:4px solid #f1ad2f!important}
+#detailedReportScreen .audit-opportunity-card.stable{border-right:4px solid #20a66a!important}
+#detailedReportScreen .audit-opportunity-head{
+  width:100%!important;border:0!important;background:#fff!important;padding:13px 14px!important;display:grid!important;
+  grid-template-columns:35px minmax(0,1fr) 55px 26px!important;gap:9px!important;align-items:center!important;cursor:pointer!important;text-align:right!important;
+}
+#detailedReportScreen .opportunity-rank{font-weight:900!important;color:#a2aeb8!important;font-size:13px!important}
+#detailedReportScreen .opportunity-main b{display:block!important;color:#24435a!important;font-size:12px!important}
+#detailedReportScreen .opportunity-main small{display:block!important;margin-top:3px!important;color:#8d9aa4!important;font-size:9px!important}
+#detailedReportScreen .audit-opportunity-head>strong{text-align:center!important;font-size:15px!important;color:#ef5350!important}
+#detailedReportScreen .audit-opportunity-card.warning .audit-opportunity-head>strong{color:#d99a21!important}
+#detailedReportScreen .audit-opportunity-card.stable .audit-opportunity-head>strong{color:#20a66a!important}
+#detailedReportScreen .audit-opportunity-head>i{color:#93a0ab!important;font-size:18px!important;transition:transform .18s ease!important}
+#detailedReportScreen .audit-opportunity-card.is-open .audit-opportunity-head>i{transform:rotate(180deg)!important}
+#detailedReportScreen .audit-opportunity-body{display:none!important;border-top:1px solid #edf1f4!important;background:#fbfcfd!important;padding:12px 14px!important}
+#detailedReportScreen .audit-opportunity-card.is-open .audit-opportunity-body{display:block!important}
+#detailedReportScreen .audit-opportunity-body p{margin:0!important;color:#536b7e!important;font-size:10px!important;line-height:1.8!important}
+#detailedReportScreen .audit-opportunity-actions{display:flex!important;gap:8px!important;flex-wrap:wrap!important;margin-top:9px!important}
+#detailedReportScreen .audit-opportunity-actions span{display:inline-flex!important;align-items:center!important;gap:4px!important;padding:6px 8px!important;background:#fff!important;border:1px solid #e1e7ec!important;border-radius:7px!important;color:#7c8b96!important;font-size:8px!important}
+
+#detailedReportScreen .audit-table-wrap{overflow:auto!important;border:1px solid #e1e7ec!important;border-radius:9px!important}
+#detailedReportScreen .audit-table-wrap table{width:100%!important;border-collapse:collapse!important;min-width:620px!important}
+#detailedReportScreen .audit-table-wrap th{background:#17364f!important;color:#fff!important;font-size:9px!important;padding:10px 11px!important;text-align:right!important}
+#detailedReportScreen .audit-table-wrap td{padding:11px!important;border-bottom:1px solid #edf1f4!important;font-size:10px!important;color:#50687a!important}
+#detailedReportScreen .audit-table-wrap tbody tr{cursor:pointer!important;transition:.15s ease!important}
+#detailedReportScreen .audit-table-wrap tbody tr:hover{background:#f7fafc!important}
+#detailedReportScreen .matrix-step{display:flex!important;align-items:center!important;gap:6px!important;color:#25435b!important;font-weight:800!important}
+#detailedReportScreen .matrix-step i{color:#2583e8!important;font-size:15px!important}
+#detailedReportScreen .matrix-status{display:inline-flex!important;align-items:center!important;gap:5px!important;font-weight:800!important}
+
+#detailedReportScreen .audit-evidence-card{border:1px solid #e0e7ed!important;border-radius:10px!important;overflow:hidden!important;margin-bottom:9px!important;background:#fff!important}
+#detailedReportScreen .audit-evidence-head{
+  width:100%!important;border:0!important;background:#fff!important;padding:13px!important;display:grid!important;
+  grid-template-columns:38px minmax(0,1fr) auto 22px!important;gap:10px!important;align-items:center!important;text-align:right!important;cursor:pointer!important;
+}
+#detailedReportScreen .audit-step-number{width:32px!important;height:32px!important;display:grid!important;place-items:center!important;border-radius:8px!important;background:#f1f6fa!important;color:#758695!important;font-weight:900!important}
+#detailedReportScreen .audit-evidence-title b{display:block!important;color:#24435a!important;font-size:12px!important}
+#detailedReportScreen .audit-evidence-score{font-weight:900!important;color:var(--score-color)!important;font-size:15px!important}
+#detailedReportScreen .audit-evidence-chevron{color:#96a2ad!important;transition:.18s ease!important}
+#detailedReportScreen .audit-evidence-card.is-open .audit-evidence-chevron{transform:rotate(180deg)!important}
+#detailedReportScreen .audit-evidence-body{display:none!important;padding:0 13px 13px!important;border-top:1px solid #eef2f5!important;background:#fbfcfd!important}
+#detailedReportScreen .audit-evidence-card.is-open .audit-evidence-body{display:grid!important;grid-template-columns:minmax(0,1fr) 250px!important;gap:14px!important;align-items:start!important}
+#detailedReportScreen .audit-evidence-copy{padding-top:13px!important}
+#detailedReportScreen .audit-detail-label{display:flex!important;align-items:center!important;gap:6px!important;color:#536b7e!important;font-size:10px!important;font-weight:900!important}
+#detailedReportScreen .audit-detail-label i{color:#f1ad2f!important}
+#detailedReportScreen .audit-evidence-copy ul{margin:9px 0!important;padding-right:18px!important;color:#607384!important;font-size:10px!important;line-height:1.9!important}
+#detailedReportScreen .audit-evidence-gallery{display:flex!important;flex-wrap:wrap!important;gap:7px!important;padding-top:13px!important}
+#detailedReportScreen .evidence-thumb{border:0!important;padding:0!important;background:transparent!important;cursor:pointer!important}
+#detailedReportScreen .evidence-thumb img{display:block!important;width:74px!important;height:74px!important;object-fit:cover!important;border-radius:8px!important;border:1px solid #dae3ea!important;transition:.18s ease!important}
+#detailedReportScreen .evidence-thumb:hover img{transform:scale(1.03)!important;box-shadow:0 6px 14px rgba(20,45,65,.12)!important}
+#detailedReportScreen .audit-no-evidence{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;min-height:80px!important;color:#a1adb7!important;font-size:9px!important;gap:5px!important}
+
+#detailedReportScreen .audit-signoff-card{
+  display:flex!important;justify-content:space-between!important;align-items:center!important;gap:20px!important;
+  padding:16px 18px!important;margin-top:14px!important;background:#fff!important;border:1px solid #dbe4eb!important;border-radius:12px!important;
+}
+#detailedReportScreen .audit-signoff-card>div:first-child{display:flex!important;align-items:center!important;gap:13px!important}
+#detailedReportScreen .audit-signoff-card>div:first-child>i{font-size:30px!important;color:#20a66a!important}
+#detailedReportScreen .audit-signoff-card h3{margin:3px 0!important;font-size:14px!important;color:#17364f!important}
+#detailedReportScreen .audit-signoff-card p{margin:0!important;font-size:9px!important;color:#8b98a3!important}
+#detailedReportScreen .audit-signature-box{min-width:180px!important;min-height:54px!important;display:grid!important;place-items:center!important;border:1px dashed #cbd7df!important;border-radius:8px!important;background:#fbfcfd!important}
+
+#detailedReportScreen .audit-report-footer-actions{
+  display:flex!important;gap:10px!important;margin-top:14px!important;
+}
+#detailedReportScreen .audit-report-footer-actions .btn{flex:1!important;min-height:46px!important;border-radius:9px!important}
+
+.audit-lightbox{position:fixed!important;inset:0!important;z-index:12000!important;background:rgba(9,22,34,.78)!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:28px!important}
+.audit-lightbox img{max-width:min(90vw,1000px)!important;max-height:86vh!important;object-fit:contain!important;border-radius:10px!important;box-shadow:0 18px 60px rgba(0,0,0,.35)!important}
+.audit-lightbox-close{position:absolute!important;top:22px!important;right:22px!important;width:44px!important;height:44px!important;border:0!important;border-radius:10px!important;background:#fff!important;color:#17364f!important;font-size:24px!important;cursor:pointer!important}
+
+@media(max-width:900px){
+  #detailedReportScreen .audit-meta-strip{grid-template-columns:repeat(2,1fr)!important}
+  #detailedReportScreen .audit-meta-strip>div:nth-child(3),#detailedReportScreen .audit-meta-strip>div:nth-child(4){border-top:1px solid #e6edf2!important}
+  #detailedReportScreen .audit-executive-card{grid-template-columns:120px 1fr!important}
+  #detailedReportScreen .audit-decision-side{grid-column:1/-1!important}
+  #detailedReportScreen .audit-kpi-grid{grid-template-columns:repeat(2,1fr)!important}
+  #detailedReportScreen .audit-evidence-card.is-open .audit-evidence-body{grid-template-columns:1fr!important}
+}
+@media(max-width:620px){
+  #detailedReportScreen{padding-left:10px!important;padding-right:10px!important}
+  #detailedReportScreen .audit-report-brand{padding:18px!important}
+  #detailedReportScreen .audit-report-brand h1{font-size:24px!important}
+  #detailedReportScreen .audit-report-brand-mark{display:none!important}
+  #detailedReportScreen .audit-executive-card{grid-template-columns:1fr!important;text-align:center!important}
+  #detailedReportScreen .audit-badge-row{justify-content:center!important}
+  #detailedReportScreen .audit-kpi-grid{grid-template-columns:1fr 1fr!important}
+  #detailedReportScreen .audit-section-head{padding:14px!important}
+  #detailedReportScreen .audit-evidence-head{grid-template-columns:32px minmax(0,1fr) auto 18px!important}
+  #detailedReportScreen .audit-opportunity-head{grid-template-columns:30px minmax(0,1fr) 48px 20px!important}
+}

@@ -879,7 +879,7 @@ window.downloadProfessionalPDF = async function(){
 
     const actionRow=document.querySelector('#detailedReportScreen>.row-flex');
     const oldVisibility=actionRow?.style.visibility||'';
-    let chartReplacements=[];
+    let chartReplacements=[], bidiPatches=[];
 
     try{
         showToast('جاري إنشاء PDF مباشر... ⏳');
@@ -905,10 +905,11 @@ window.downloadProfessionalPDF = async function(){
         });
 
         /* html2canvas can mishandle RTL bidi when rasterizing Arabic text.
-           Keep the report layout RTL, but render text leaves with LTR bidi
-           handling so Arabic glyph shaping/order remains native and readable. */
-        clone.querySelectorAll('*').forEach(el=>{
+           Keep the report layout RTL, but give text-only leaves native LTR
+           bidi handling during capture. Restore the original inline styles after. */
+        source.querySelectorAll('*').forEach(el=>{
             if(el.children.length===0 && el.textContent.trim()){
+                bidiPatches.push({el,direction:el.style.direction,unicodeBidi:el.style.unicodeBidi});
                 el.style.direction='ltr';
                 el.style.unicodeBidi='plaintext';
             }
@@ -974,6 +975,10 @@ window.downloadProfessionalPDF = async function(){
     }finally{
         chartReplacements.forEach(({img,canvas})=>{
             try{img.replaceWith(canvas);}catch(_){}
+        });
+        bidiPatches.forEach(({el,direction,unicodeBidi})=>{
+            el.style.direction=direction;
+            el.style.unicodeBidi=unicodeBidi;
         });
         if(actionRow) actionRow.style.visibility=oldVisibility;
     }

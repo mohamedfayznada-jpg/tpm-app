@@ -244,7 +244,7 @@ window.saveFinalAudit = async function() {
     }
     
     await db.ref('tpm_system/history/' + currentAudit.id).set(currentAudit); 
-    window.awardPoints(50, 'إتمام مراجعة رسمية (Audit)'); 
+    if (typeof window.awardPoints === 'function') { window.awardPoints(50, 'إتمام مراجعة رسمية (Audit)'); } 
     window.clearAuditDraft(); 
     showToast('✅ تم حفظ التقرير بنجاح وتوليد المهام! جاري تحويلك...');
     

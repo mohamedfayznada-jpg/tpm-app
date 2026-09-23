@@ -656,37 +656,27 @@
 
     <!-- Kaizen Community Screen -->
     <div class="container screen" id="kaizenScreen">
-        <section class="kaizen-community-hero">
-            <div class="kaizen-hero-copy">
-                <span class="eyebrow"><i class='bx bx-bulb'></i> FACTORY IMPROVEMENT COMMUNITY</span>
-                <h1>مجتمع كايزن</h1>
-                <p>المكان اللي التحسين فيه بيتحوّل من فكرة فردية إلى معرفة مشتركة، تجربة قابلة للقياس، ومعيار يرجع بيه المصنع أقوى.</p>
-                <div class="kaizen-hero-actions">
-                    <button class="btn btn-primary" onclick="document.getElementById('kaizenUploadModal').style.display='flex'"><i class='bx bx-plus'></i> شارك تحسينك</button>
-                    <button class="btn btn-outline" onclick="document.getElementById('oplModal').style.display='flex'"><i class='bx bx-book-open'></i> أنشئ OPL</button>
-                </div>
-            </div>
-            <div class="kaizen-hero-mark">
-                <span>PDCA</span>
-                <b>01</b><b>02</b><b>03</b><b>04</b>
-                <small>IDEA → STANDARD</small>
-            </div>
-        </section>
-
-        <section id="kaizenCommunityStats" class="kaizen-community-stats"></section>
+        
 
         <section class="kaizen-community-grid">
             <aside class="kaizen-community-rail">
                 <div class="kaizen-challenge-card">
-                    <span class="eyebrow">THIS WEEK</span>
-                    <h3>تحدي الأسبوع</h3>
-                    <strong>قلّل فاقدًا واحدًا<br>يمكن قياسه.</strong>
-                    <p>اختار مشكلة حقيقية، وثّقها بصورة، وحدد رقمًا قبل وبعد. أفضل التحسينات تتحول إلى OPL أو معيار.</p>
-                    <button class="btn btn-warning full-width" onclick="document.getElementById('kaizenUploadModal').style.display='flex'"><i class='bx bx-rocket'></i> ادخل التحدي</button>
+                    <div class="kaizen-challenge-icon"><i class='bx bx-bulb'></i></div>
+                    <span class="eyebrow">KAIZEN COMMUNITY</span>
+                    <h3>كل فكرة تصنع فرقًا</h3>
+                    <p>شارك مقترحاتك لتحسين بيئة العمل وجودة الإنتاج.</p>
+                    <button class="btn btn-warning full-width" onclick="document.getElementById('kaizenUploadModal').style.display='flex'"><i class='bx bx-plus'></i> مشاركة تحسين جديد</button>
                 </div>
                 <div class="kaizen-leaderboard">
                     <div class="kaizen-panel-title"><span>أكثر المساهمين</span><i class='bx bx-trophy'></i></div>
+                    <button class="kaizen-view-all" onclick="document.getElementById('kaizenFeedContainer')?.scrollIntoView({behavior:'smooth',block:'start'})">عرض الكل</button>
                     <div id="kaizenLeaderboard"></div>
+                </div>
+                <div class="kaizen-week-card">
+                    <div class="kaizen-week-head"><span>🚀</span><b>تحدي الأسبوع</b></div>
+                    <strong>تقليل زمن التوقف في خطوط الإنتاج</strong>
+                    <div class="kaizen-progress"><span style="width:70%"></span></div>
+                    <div class="kaizen-progress-meta"><b>7 / 10</b><span>شارك الآن وكن جزءًا من الحل!</span></div>
                 </div>
             </aside>
 

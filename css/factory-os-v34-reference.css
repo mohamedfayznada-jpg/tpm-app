@@ -3132,3 +3132,17 @@ body:after{
   #tagsScreen .tags-hero-copy h1{font-size:25px!important}
   #tagsScreen .tags-side-column{grid-template-columns:1fr!important}
 }
+
+/* Main navigation active state */
+.sidebar .side-item[data-screen].active{
+  background:#1f4d6d!important;
+  border-color:rgba(37,131,232,.32)!important;
+  color:#fff!important;
+  box-shadow:inset 3px 0 0 #2583e8!important;
+}
+.sidebar .side-item[data-screen].active .side-icon{
+  background:#2583e8!important;color:#fff!important;
+}
+.sidebar .side-item[data-screen].active:hover{
+  background:#245a7d!important;
+}

@@ -11,24 +11,40 @@ window.TPM_TEAM_HUB = [
 window.getTPMActivity = () => null;
 
 // Bridge the new domain layer into the legacy application without removing existing screens.
-(async function bootstrapTPMDomain() {
-  try {
-    const [{ TPMWorkflow }, { TPMFirebase }, { TPMKPI }, { TPMWorkflowUI }] = await Promise.all([
-      import('./js/core/tpm-workflow.js'),
-      import('./js/core/tpm-firebase.js'),
-      import('./js/core/tpm-kpi.js'),
-      import('./js/core/tpm-workflow-ui.js')
-    ]);
-    window.TPMWorkflow = TPMWorkflow;
-    window.TPMFirebase = TPMFirebase;
-    window.TPMKPI = TPMKPI;
-    window.TPMWorkflowUI = TPMWorkflowUI;
-    window.TPMDomainReady = true;
-    window.dispatchEvent(new CustomEvent('tpm:domain-ready'));
-    console.info('[TPM] Continuous Improvement domain connected.');
-  } catch (error) {
-    console.error('[TPM] Domain bootstrap failed:', error);
-    window.TPMDomainReady = false;
-    window.dispatchEvent(new CustomEvent('tpm:domain-error', { detail: error }));
+(function bootstrapTPMDomainAfterAuth() {
+  const start = () => {
+    if (!window.firebase?.auth || !firebase.auth().currentUser) return;
+    if (window.TPMDomainBootstrapStarted) return;
+    window.TPMDomainBootstrapStarted = true;
+
+    (async function bootstrapTPMDomain() {
+      try {
+        const [{ TPMWorkflow }, { TPMFirebase }, { TPMKPI }, { TPMWorkflowUI }] = await Promise.all([
+          import('./js/core/tpm-workflow.js'),
+          import('./js/core/tpm-firebase.js'),
+          import('./js/core/tpm-kpi.js'),
+          import('./js/core/tpm-workflow-ui.js')
+        ]);
+        window.TPMWorkflow = TPMWorkflow;
+        window.TPMFirebase = TPMFirebase;
+        window.TPMKPI = TPMKPI;
+        window.TPMWorkflowUI = TPMWorkflowUI;
+        window.TPMDomainReady = true;
+        window.dispatchEvent(new CustomEvent('tpm:domain-ready'));
+        console.info('[TPM] Continuous Improvement domain connected.');
+      } catch (error) {
+        console.error('[TPM] Domain bootstrap failed:', error);
+        window.TPMDomainReady = false;
+        window.dispatchEvent(new CustomEvent('tpm:domain-error', { detail: error }));
+      }
+    })();
+  };
+
+  if (window.firebase?.auth) {
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) start();
+    });
+  } else {
+    window.addEventListener('load', start, { once: true });
   }
 })();

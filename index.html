@@ -60,14 +60,14 @@
             <h3 class="legacy-inline-2">Factory OS V5.0</h3>
         </div>
         <div class="sidebar-menu">
-            <div class="side-item" onclick="showScreen('homeScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-grid-alt'></i></div>الرئيسية (Hub)</div>
-            <div class="side-item" onclick="showScreen('tasksScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-task'></i></div>إدارة المهام</div>
+            <div class="side-item" data-screen="homeScreen" onclick="showScreen('homeScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-grid-alt'></i></div>الرئيسية (Hub)</div>
+            <div class="side-item" data-screen="tasksScreen" onclick="showScreen('tasksScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-task'></i></div>إدارة المهام</div>
             <div class="side-item" data-screen="tagsScreen" onclick="showScreen('tagsScreen'); renderTags(); toggleSidebar();"><div class="side-icon"><i class='bx bx-purchase-tag-alt'></i></div>التاجات والأعطال</div>
-            <div class="side-item" onclick="showScreen('tpmTeamsScreen'); renderTPMTeams(); toggleSidebar();"><div class="side-icon"><i class='bx bx-group'></i></div>فرق TPM</div>
-            <div class="side-item" onclick="showScreen('historyScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bar-chart-alt-2'></i></div>تقارير المراجعات</div>
-            <div class="side-item" onclick="showScreen('kaizenScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bulb'></i></div>مجتمع كايزن</div>
+            <div class="side-item" data-screen="tpmTeamsScreen" onclick="showScreen('tpmTeamsScreen'); renderTPMTeams(); toggleSidebar();"><div class="side-icon"><i class='bx bx-group'></i></div>فرق TPM</div>
+            <div class="side-item" data-screen="historyScreen" onclick="showScreen('historyScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bar-chart-alt-2'></i></div>تقارير المراجعات</div>
+            <div class="side-item" data-screen="kaizenScreen" onclick="showScreen('kaizenScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bulb'></i></div>مجتمع كايزن</div>
             <div class="side-item btn-role-admin" onclick="showScreen('knowledgeScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-brain'></i></div>عقل المصنع</div>
-            <div class="side-item" onclick="showScreen('settingsScreen'); renderProfileAndSettings(); toggleSidebar();"><div class="side-icon"><i class='bx bx-user-circle'></i></div>حسابي والإعدادات</div>
+            <div class="side-item" data-screen="settingsScreen" onclick="showScreen('settingsScreen'); renderProfileAndSettings(); toggleSidebar();"><div class="side-icon"><i class='bx bx-user-circle'></i></div>حسابي والإعدادات</div>
         </div>
     </div>
 

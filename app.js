@@ -870,99 +870,61 @@ window.downloadProfessionalPDF = async function(){
         return showToast('⚠️ مكونات إنشاء PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
     }
 
-    const btns=document.querySelectorAll('#detailedReportScreen>.row-flex');
-    btns.forEach(b=>b.style.visibility='hidden');
+    const actionRow=document.querySelector('#detailedReportScreen>.row-flex');
+    const oldVisibility=actionRow?.style.visibility||'';
+    let chartReplacements=[];
 
-    let host=null;
     try{
-        showToast('جاري تجهيز ملف PDF... ⏳');
+        showToast('جاري إنشاء PDF مباشر... ⏳');
         if(document.fonts?.ready) await document.fonts.ready;
 
-        host=document.createElement('div');
-        host.id='directPdfRenderHost';
-        host.dir='rtl';
-        Object.assign(host.style,{
-            position:'absolute',left:'0',top:'0',width:'794px',
-            background:'#fff',padding:'0',margin:'0',zIndex:'2147483647',
-            visibility:'visible',opacity:'1',
-            direction:'rtl',boxSizing:'border-box',overflow:'visible'
-        });
+        /* Capture the real on-screen report. Do NOT clone it, move it,
+           hide it, or use foreignObjectRendering: those combinations are
+           what produced the black-page Chromium rasterization. */
+        if(actionRow) actionRow.style.visibility='hidden';
 
-        const clone=source.cloneNode(true);
-        clone.removeAttribute('id');
-        Object.assign(clone.style,{
-            display:'block',width:'794px',maxWidth:'794px',margin:'0',
-            padding:'28px 30px 34px',background:'#fff',
-            border:'0',borderTop:'5px solid #f1ad2f',
-            borderRadius:'0',boxShadow:'none',overflow:'visible',
-            direction:'rtl',boxSizing:'border-box',
-            fontFamily:'Cairo, Arial, Tahoma, sans-serif',
-            color:'#1d2d3a',transform:'none'
-        });
-
-        /* Keep the PDF as a designed document, not a print stylesheet. */
-        const style=document.createElement('style');
-        style.textContent=`
-          #directPdfRenderHost,#directPdfRenderHost *{visibility:visible!important;box-sizing:border-box!important;letter-spacing:normal!important;word-spacing:normal!important}
-          #directPdfRenderHost{isolation:isolate!important;}
-          #directPdfRenderHost canvas{background:#fff!important;}
-          #directPdfRenderHost .detail-report-hero{display:grid!important;grid-template-columns:145px minmax(0,1fr) 170px!important;gap:16px!important;align-items:center!important;padding:20px!important}
-          #directPdfRenderHost .detail-report-kpis{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important;padding:14px 0!important}
-          #directPdfRenderHost .detail-report-chart-panel,#directPdfRenderHost .detail-opportunity-panel{margin:0 0 14px!important}
-          #directPdfRenderHost .detail-chart-wrap{height:300px!important}
-          #directPdfRenderHost .detail-op-row{padding:11px 0!important}
-          #directPdfRenderHost .legacy-inline-195{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important}
-          #directPdfRenderHost .legacy-inline-196{font-size:11px!important;line-height:1.6!important}
-          #directPdfRenderHost .legacy-inline-193{font-size:28px!important;line-height:1.15!important}
-          #directPdfRenderHost .legacy-inline-194{font-size:13px!important;line-height:1.5!important}
-          #directPdfRenderHost .detail-report-summary h2{font-size:25px!important;line-height:1.25!important}
-          #directPdfRenderHost .detail-report-summary p{font-size:11px!important;line-height:1.8!important}
-          #directPdfRenderHost .detail-step-card{break-inside:avoid!important}
-        `;
-        host.appendChild(style);
-        host.appendChild(clone);
-        document.body.appendChild(host);
-
-        /* Replace live canvases with PNG images before foreignObject capture.
-           This avoids Chromium/html2canvas black-canvas rendering while keeping
-           the exact chart pixels. */
-        const srcCanvases=source.querySelectorAll('canvas');
-        const dstCanvases=clone.querySelectorAll('canvas');
-        srcCanvases.forEach((src,i)=>{
-            const dst=dstCanvases[i];
-            if(!dst) return;
+        /* Freeze Chart.js canvases as PNG images during capture, then restore. */
+        const canvases=[...source.querySelectorAll('canvas')];
+        canvases.forEach(canvas=>{
             try{
                 const img=document.createElement('img');
-                img.src=src.toDataURL('image/png');
-                img.width=src.width; img.height=src.height;
+                img.src=canvas.toDataURL('image/png');
+                img.width=canvas.width;
+                img.height=canvas.height;
                 img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#fff;';
-                dst.replaceWith(img);
+                canvas.replaceWith(img);
+                chartReplacements.push({img,canvas});
             }catch(_){}
         });
 
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
-        const canvas=await window.html2canvas(host,{
+        const canvas=await window.html2canvas(source,{
             backgroundColor:'#ffffff',
             scale:2,
             useCORS:true,
             allowTaint:false,
-            foreignObjectRendering:true,
-            imageTimeout:15000,
+            foreignObjectRendering:false,
+            imageTimeout:20000,
             logging:false,
-            width:794,
-            windowWidth:794,
             scrollX:0,
             scrollY:0
         });
 
         const {jsPDF}=window.jspdf;
-        const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+        const pdf=new jsPDF({
+            orientation:'portrait',
+            unit:'mm',
+            format:'a4',
+            compress:true
+        });
+
         const pageW=210, pageH=297;
         const marginX=7, marginY=7;
-        const usableW=pageW-marginX*2, usableH=pageH-marginY*2;
+        const usableW=pageW-marginX*2;
+        const usableH=pageH-marginY*2;
         const pxPerMm=canvas.width/usableW;
-        const pagePx=Math.floor(usableH*pxPerMm);
+        const pagePx=Math.max(1,Math.floor(usableH*pxPerMm));
 
         let y=0, page=0;
         while(y<canvas.height){
@@ -970,10 +932,19 @@ window.downloadProfessionalPDF = async function(){
             const slice=document.createElement('canvas');
             slice.width=canvas.width;
             slice.height=sliceH;
-            slice.getContext('2d').drawImage(canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH);
+            const ctx=slice.getContext('2d');
+            ctx.fillStyle='#fff';
+            ctx.fillRect(0,0,slice.width,slice.height);
+            ctx.drawImage(canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH);
+
             if(page>0) pdf.addPage();
             const hMm=sliceH/pxPerMm;
-            pdf.addImage(slice.toDataURL('image/jpeg',0.94),'JPEG',marginX,marginY,usableW,hMm,undefined,'FAST');
+            pdf.addImage(
+                slice.toDataURL('image/jpeg',0.94),
+                'JPEG',
+                marginX,marginY,usableW,hMm,
+                undefined,'FAST'
+            );
             y+=sliceH;
             page++;
         }
@@ -984,8 +955,10 @@ window.downloadProfessionalPDF = async function(){
         console.error('Professional PDF export error:',err);
         showToast('⚠️ تعذر إنشاء PDF — راجع Console للتفاصيل');
     }finally{
-        btns.forEach(b=>b.style.visibility='');
-        if(host) host.remove();
+        chartReplacements.forEach(({img,canvas})=>{
+            try{img.replaceWith(canvas);}catch(_){}
+        });
+        if(actionRow) actionRow.style.visibility=oldVisibility;
     }
 };
 

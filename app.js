@@ -86,9 +86,9 @@ window.login = async function() {
     const passInp = document.getElementById('loginPassword').value.trim();
     if(!userInp || !passInp) return showToast('⚠️ برجاء كتابة اسم المستخدم وكلمة المرور');
 
-    const btn = document.querySelector('#loginScreen .btn-primary');
-    const origText = btn.innerHTML;
-    btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جاري المصادقة...'; btn.disabled = true;
+    const btn = document.querySelector('#loginScreen .auth-primary-btn');
+    const origText = btn?.innerHTML || '';
+    if(btn){ btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جاري المصادقة...'; btn.disabled = true; }
 
     const email = userInp.includes('@') ? userInp : `${userInp.toLowerCase().replace(/\s+/g, '')}@tpm.app`;
 
@@ -107,7 +107,7 @@ window.login = async function() {
         localStorage.removeItem('tpm_saved_pass');
     } catch (e) {
         showToast('❌ بيانات الدخول غير صحيحة أو الحساب غير موجود');
-        btn.innerHTML = origText; btn.disabled = false;
+        if(btn){ btn.innerHTML = origText; btn.disabled = false; }
     }
 };
 
@@ -121,9 +121,9 @@ window.signup = async function() {
     if (username.length < 3) return showToast("⚠️ اسم المستخدم يجب أن يكون 3 أحرف على الأقل");
     if (password.length < 6) return showToast("⚠️ كلمة المرور ضعيفة! يجب أن تكون 6 أحرف أو أكثر");
 
-    const btn = document.querySelector('#signupScreen .btn-success');
-    const origText = btn.innerHTML;
-    btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جاري إنشاء الحساب...'; btn.disabled = true;
+    const btn = document.querySelector('#signupScreen .auth-signup-submit, #signupScreen .auth-primary-btn, #signupScreen .btn-success');
+    const origText = btn?.innerHTML || '';
+    if(btn){ btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جاري إنشاء الحساب...'; btn.disabled = true; }
 
     try {
         const email = `${username}@tpm.app`;
@@ -139,10 +139,10 @@ window.signup = async function() {
         await db.ref('tpm_system/users/' + userCredential.user.uid).set(newUserObj);
         showToast("✅ تم إرسال طلبك للمدير بنجاح! يرجى انتظار الموافقة.");
         await auth.signOut();
-        setTimeout(() => { showScreen('loginScreen'); btn.innerHTML = origText; btn.disabled = false; }, 2000);
+        setTimeout(() => { showScreen('loginScreen'); if(btn){ btn.innerHTML = origText; btn.disabled = false; } }, 2000);
     } catch (error) {
         let msg = "حدث خطأ أثناء الاتصال"; if (error.code === 'auth/email-already-in-use') msg = "اسم المستخدم هذا محجوز وموجود بالفعل!";
-        showToast("❌ " + msg); btn.innerHTML = origText; btn.disabled = false;
+        showToast("❌ " + msg); if(btn){ btn.innerHTML = origText; btn.disabled = false; }
     }
 };
 

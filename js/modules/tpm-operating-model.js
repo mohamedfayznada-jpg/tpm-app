@@ -144,6 +144,7 @@ window.escapeTPMHub = function(value) {
 window.getTPMHubTeam = function(teamId) {
     return (window.TPM_TEAM_HUB || []).find(team => team.id === teamId) || null;
 };
+if (!window.renderTPMTeams?.isV3) {
 window.renderTPMTeams = function() {
     const teams = window.TPM_TEAM_HUB || [];
     const grid = document.getElementById('tpmTeamsGrid');
@@ -155,6 +156,8 @@ window.renderTPMTeams = function() {
     grid.innerHTML = teams.map(team =>         `<article class="tpm-team-card" style="--team-color:${team.color}" onclick="showTPMTeam('${team.id}')">            <div class="tpm-team-card-head"><div class="tpm-team-icon"><i class='bx ${team.icon}'></i></div><span class="tpm-team-code">${team.code}</span></div>            <h3>${window.escapeTPMHub(team.name)}</h3>            <p>${window.escapeTPMHub(team.description)}</p>            <div class="tpm-team-card-footer"><span class="tpm-formation-state"><i class='bx bx-window-open'></i> مساحة العمل</span><button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); showTPMTeam('${team.id}')">فتح الفريق <i class='bx bx-left-arrow-alt'></i></button></div>        </article>`
     ).join('');
 };
+
+}
 window.showTPMTeam = function(teamId) {
     return window.openTPMExistingWorkspace(teamId);
 };

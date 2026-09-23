@@ -6,7 +6,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 const uid = () => auth.currentUser?.uid || '';
 const role = () => window.normalizeTPMRole?.(window.currentUser?.role) || window.currentUser?.role || 'viewer';
 const canEdit = () => ['admin','engineer','technician'].includes(role());
-const read = async path => (await db.ref(`tpm_system/${path}`).once('value')).val() || {};
+const read = async path => { if (!auth?.currentUser) return {}; return (await db.ref(`tpm_system/${path}`).once('value')).val() || {}; };
 
 const badge = (text, tone='neutral') => `<span class="eo-badge ${tone}">${esc(text)}</span>`;
 const empty = (icon, title, text) => `<div class="eo-empty"><i class="bx ${icon}"></i><h4>${esc(title)}</h4><p>${esc(text)}</p></div>`;
@@ -85,7 +85,7 @@ async function promptSave(kind) {
 }
 
 export function mountEnterpriseOperations() {
-    const mount = () => { renderPM(); renderET(); renderHSE(); };
+    const mount = () => { if (!auth?.currentUser) return; renderPM(); renderET(); renderHSE(); };
     mount();
     document.addEventListener('click', e => { const target=e.target.closest('[data-eo]'); if(target) promptSave(target.dataset.eo); });
     window.renderEnterpriseOperations = mount;

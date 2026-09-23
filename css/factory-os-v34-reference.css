@@ -962,3 +962,176 @@ body:after{
   #kaizenScreen .kaizen-improvement-arrow:after{display:none!important}
   #kaizenScreen .kaizen-compare-panel img{height:240px!important}
 }
+
+/* KAIZEN COMMUNITY — reference-locked editorial post */
+#kaizenScreen{
+  background:#f6f3ed!important;
+  color:#172b3f!important;
+}
+#kaizenScreen .kaizen-community-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 335px!important;
+  gap:18px!important;
+  align-items:start!important;
+}
+#kaizenScreen .kaizen-community-main{min-width:0!important}
+#kaizenScreen .kaizen-community-rail{display:flex!important;flex-direction:column!important;gap:16px!important}
+#kaizenScreen .kaizen-post{
+  background:#fff!important;
+  border:1px solid #dce5ee!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  box-shadow:0 4px 18px rgba(28,52,72,.08)!important;
+  direction:rtl!important;
+  margin-bottom:18px!important;
+}
+#kaizenScreen .kaizen-post-head{
+  min-height:86px!important;
+  padding:18px 22px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:18px!important;
+  background:#fff!important;
+  border-bottom:1px solid #e7edf2!important;
+}
+#kaizenScreen .kaizen-author{display:flex!important;align-items:center!important;gap:12px!important}
+#kaizenScreen .kaizen-avatar{
+  width:48px!important;height:48px!important;border-radius:50%!important;
+  display:grid!important;place-items:center!important;
+  background:#526b88!important;color:#fff!important;font-size:24px!important;
+}
+#kaizenScreen .kaizen-author b{display:block!important;font-size:15px!important;color:#17304a!important}
+#kaizenScreen .kaizen-author span{display:block!important;color:#8191a1!important;font-size:11px!important;margin-top:4px!important}
+#kaizenScreen .kaizen-post-meta{display:flex!important;align-items:center!important;gap:10px!important}
+#kaizenScreen .kaizen-standard-chip{
+  display:inline-flex!important;align-items:center!important;gap:5px!important;
+  border:2px solid #18b67a!important;border-radius:20px!important;
+  color:#087c58!important;background:#f2fffa!important;
+  padding:6px 13px!important;font-size:11px!important;font-weight:900!important;
+}
+#kaizenScreen .kaizen-post-date{color:#8796a5!important;font-size:11px!important}
+#kaizenScreen .kaizen-post-body{padding:22px!important}
+#kaizenScreen .kaizen-post-body h2{
+  margin:0 0 7px!important;color:#152b44!important;
+  font-size:25px!important;line-height:1.35!important;font-weight:900!important;
+}
+#kaizenScreen .kaizen-post-description{
+  margin:0 0 18px!important;color:#73859a!important;font-size:13px!important;line-height:1.9!important;
+}
+#kaizenScreen .kaizen-problem-grid{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:8px!important;margin-bottom:18px!important;
+}
+#kaizenScreen .kaizen-problem-grid>div{
+  min-height:72px!important;padding:12px 15px!important;
+  background:linear-gradient(180deg,#fbfcfe,#f4f7fa)!important;
+  border:1px solid #d6e0ea!important;border-radius:8px!important;
+}
+#kaizenScreen .kaizen-problem-grid span{display:block!important;color:#4f6881!important;font-size:11px!important;font-weight:800!important;margin-bottom:7px!important}
+#kaizenScreen .kaizen-problem-grid b{display:block!important;color:#233c56!important;font-size:13px!important;line-height:1.5!important}
+#kaizenScreen .kaizen-visual-compare{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 125px minmax(0,1fr)!important;
+  gap:10px!important;align-items:center!important;margin:0!important;
+}
+#kaizenScreen .kaizen-visual-compare .kaizen-compare-panel{
+  min-width:0!important;position:relative!important;overflow:hidden!important;
+  border-radius:9px!important;background:#fff!important;border:1px solid #dce5ed!important;
+  box-shadow:none!important;
+}
+#kaizenScreen .kaizen-visual-compare .kaizen-compare-panel img{
+  display:block!important;width:100%!important;height:270px!important;object-fit:cover!important;
+}
+#kaizenScreen .kaizen-visual-compare .kaizen-compare-panel.before{border-top:5px solid #ef4660!important}
+#kaizenScreen .kaizen-visual-compare .kaizen-compare-panel.after{border-top:5px solid #18b67a!important}
+#kaizenScreen .kaizen-visual-compare .kaizen-compare-label{
+  top:10px!important;right:10px!important;min-width:78px!important;
+  padding:7px 14px!important;border-radius:7px!important;
+  font-size:13px!important;font-weight:900!important;
+}
+#kaizenScreen .kaizen-visual-compare .before .kaizen-compare-label{background:#ef4660!important}
+#kaizenScreen .kaizen-visual-compare .after .kaizen-compare-label{background:#18b67a!important}
+#kaizenScreen .kaizen-visual-compare .kaizen-compare-panel small{
+  display:block!important;padding:9px 12px!important;color:#778a9b!important;font-size:10px!important;
+  text-align:right!important;background:#fff!important;
+}
+#kaizenScreen .kaizen-improvement-arrow{
+  width:108px!important;height:108px!important;border-radius:50%!important;
+  background:linear-gradient(135deg,#ffc83d,#f59e0b)!important;
+  border:4px solid #fff!important;
+  box-shadow:0 10px 24px rgba(245,158,11,.3),0 0 0 1px #e2aa34!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  color:#1e2e3d!important;position:relative!important;z-index:2!important;
+}
+#kaizenScreen .kaizen-improvement-arrow i{font-size:50px!important;line-height:.9!important}
+#kaizenScreen .kaizen-improvement-arrow span{font-size:9px!important;font-weight:900!important;line-height:1.35!important;text-align:center!important}
+#kaizenScreen .kaizen-post-actions{
+  margin-top:14px!important;padding:12px 0!important;border-bottom:1px solid #e3e9ef!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;
+}
+#kaizenScreen .kaizen-actions-left,#kaizenScreen .kaizen-actions-right{display:flex!important;align-items:center!important;gap:7px!important;flex-wrap:wrap!important}
+#kaizenScreen .kaizen-action-btn,#kaizenScreen .kaizen-edit-btn,#kaizenScreen .kaizen-delete-btn{
+  min-height:40px!important;padding:8px 13px!important;border:1px solid #d6e0ea!important;
+  background:#fff!important;color:#233c56!important;border-radius:7px!important;
+  font-family:inherit!important;font-weight:800!important;cursor:pointer!important;
+}
+#kaizenScreen .kaizen-action-btn i{font-size:18px!important;vertical-align:middle!important}
+#kaizenScreen .kaizen-action-btn.liked{background:#f04b68!important;border-color:#f04b68!important;color:#fff!important}
+#kaizenScreen .kaizen-edit-btn{background:#fff!important}
+#kaizenScreen .kaizen-delete-btn{background:#fff!important;color:#e74755!important;border-color:#efb7bf!important}
+#kaizenScreen .kaizen-comments{padding-top:15px!important}
+#kaizenScreen .kaizen-comments h3{margin:0 0 12px!important;font-size:15px!important;color:#17304a!important}
+#kaizenScreen .kaizen-comment-list{display:flex!important;flex-direction:column!important;gap:8px!important}
+#kaizenScreen .kaizen-comment-list>div{
+  background:#f5f8fb!important;border:1px solid #dce6ef!important;border-right:3px solid #527da6!important;
+  padding:12px 15px!important;border-radius:7px!important;color:#42586e!important;font-size:12px!important;
+}
+#kaizenScreen .kaizen-comment-list b{color:#466b91!important}
+#kaizenScreen .kaizen-empty-comment{text-align:center!important;color:#91a0ad!important}
+#kaizenScreen .kaizen-comment-compose{display:grid!important;grid-template-columns:1fr 112px!important;gap:8px!important;margin-top:10px!important}
+#kaizenScreen .kaizen-comment-compose input{
+  width:100%!important;height:48px!important;border:1px solid #d1dce6!important;border-radius:7px!important;
+  padding:0 15px!important;background:#fff!important;color:#24384d!important;font-family:inherit!important;
+}
+#kaizenScreen .kaizen-comment-compose button{
+  border:0!important;border-radius:7px!important;background:#1673c9!important;color:#fff!important;
+  font-family:inherit!important;font-weight:900!important;cursor:pointer!important;
+}
+#kaizenScreen .kaizen-community-rail .kaizen-challenge-card{
+  background:linear-gradient(135deg,#ff7a00,#ff6500)!important;border-radius:10px!important;
+  color:#fff!important;padding:22px!important;box-shadow:0 5px 0 #c94c00!important;
+}
+#kaizenScreen .kaizen-community-rail .kaizen-challenge-card h3{color:#fff!important;font-size:24px!important}
+#kaizenScreen .kaizen-community-rail .kaizen-challenge-card strong{color:#fff!important;font-size:17px!important}
+#kaizenScreen .kaizen-community-rail .kaizen-challenge-card p{color:#fff!important;opacity:.92!important;line-height:1.8!important}
+#kaizenScreen .kaizen-community-rail .kaizen-leaderboard{
+  background:#fff!important;border:1px solid #dce5ee!important;border-radius:10px!important;
+  padding:18px!important;box-shadow:0 3px 14px rgba(30,50,70,.07)!important;
+}
+#kaizenScreen .kaizen-community-rail .kaizen-panel-title{
+  color:#172f47!important;border-bottom:2px solid #223b52!important;padding-bottom:12px!important;
+  font-weight:900!important;
+}
+#kaizenScreen .kaizen-stage-journey{
+  background:#fff!important;border:1px solid #dce5ee!important;border-radius:10px!important;
+  padding:16px 20px!important;margin-bottom:12px!important;
+}
+#kaizenScreen .kaizen-stage-steps button{
+  border:1px solid #d5e0ea!important;background:#fff!important;color:#486078!important;
+  border-radius:7px!important;padding:8px 13px!important;font-weight:800!important;
+}
+#kaizenScreen .kaizen-stage-steps button.active{background:#173c59!important;color:#fff!important;border-color:#173c59!important}
+@media(max-width:1100px){
+  #kaizenScreen .kaizen-community-grid{grid-template-columns:1fr!important}
+  #kaizenScreen .kaizen-community-rail{order:2!important}
+}
+@media(max-width:760px){
+  #kaizenScreen .kaizen-post-head{align-items:flex-start!important;flex-direction:column!important}
+  #kaizenScreen .kaizen-problem-grid{grid-template-columns:1fr!important}
+  #kaizenScreen .kaizen-visual-compare{grid-template-columns:1fr!important}
+  #kaizenScreen .kaizen-improvement-arrow{width:76px!important;height:76px!important;justify-self:center!important;transform:rotate(-90deg)!important}
+  #kaizenScreen .kaizen-improvement-arrow span{display:none!important}
+  #kaizenScreen .kaizen-visual-compare .kaizen-compare-panel img{height:220px!important}
+  #kaizenScreen .kaizen-post-actions{align-items:flex-start!important;flex-direction:column!important}
+  #kaizenScreen .kaizen-comment-compose{grid-template-columns:1fr!important}
+}

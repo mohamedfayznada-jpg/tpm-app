@@ -1135,3 +1135,41 @@ body:after{
   #kaizenScreen .kaizen-post-actions{align-items:flex-start!important;flex-direction:column!important}
   #kaizenScreen .kaizen-comment-compose{grid-template-columns:1fr!important}
 }
+
+/* KAIZEN REFERENCE LOCK — v1.2 */
+#kaizenScreen .kaizen-community-hero,#kaizenScreen #kaizenCommunityStats{display:none!important}
+#kaizenScreen .kaizen-community-grid{grid-template-columns:minmax(0,1fr) 335px!important;gap:18px!important;align-items:start!important}
+#kaizenScreen .kaizen-community-main{grid-column:1!important;grid-row:1!important}
+#kaizenScreen .kaizen-community-rail{grid-column:2!important;grid-row:1!important}
+#kaizenScreen .kaizen-post{margin-bottom:18px!important}
+#kaizenScreen .kaizen-post-head{min-height:86px!important;padding:18px 22px!important}
+#kaizenScreen .kaizen-post-body{padding:22px!important}
+#kaizenScreen .kaizen-post-body h2{font-size:25px!important}
+#kaizenScreen .kaizen-visual-compare{grid-template-columns:minmax(0,1fr) 125px minmax(0,1fr)!important;gap:10px!important}
+#kaizenScreen .kaizen-visual-compare .kaizen-compare-panel img{height:270px!important;object-fit:cover!important}
+#kaizenScreen .kaizen-improvement-arrow{width:108px!important;height:108px!important}
+#kaizenScreen .kaizen-community-rail .kaizen-challenge-card{position:relative!important;padding:24px 20px 20px!important;min-height:195px!important;background:linear-gradient(135deg,#ff8612,#ff6900)!important}
+#kaizenScreen .kaizen-challenge-icon{width:54px!important;height:54px!important;border:1px solid rgba(255,255,255,.8)!important;border-radius:12px!important;display:grid!important;place-items:center!important;color:#fff!important;font-size:29px!important;margin-bottom:12px!important}
+#kaizenScreen .kaizen-community-rail .kaizen-challenge-card h3{font-size:24px!important;margin:0 0 6px!important}
+#kaizenScreen .kaizen-community-rail .kaizen-challenge-card p{font-size:12px!important;margin:0 0 18px!important}
+#kaizenScreen .kaizen-community-rail .kaizen-challenge-card .btn{height:52px!important;background:#fff4d8!important;color:#b54f00!important;border:0!important;font-weight:900!important}
+#kaizenScreen .kaizen-community-rail .kaizen-leaderboard{position:relative!important;padding:18px 14px 12px!important}
+#kaizenScreen .kaizen-view-all{position:absolute!important;left:16px!important;top:18px!important;border:0!important;background:none!important;color:#1e73c9!important;font-family:inherit!important;font-size:11px!important;font-weight:900!important;cursor:pointer!important}
+#kaizenScreen .kaizen-panel-title{display:flex!important;justify-content:space-between!important;align-items:center!important}
+#kaizenScreen .kaizen-rank-row{min-height:58px!important;display:grid!important;grid-template-columns:30px 1fr 28px 28px!important;align-items:center!important;gap:7px!important;border-bottom:1px solid #edf1f4!important}
+#kaizenScreen .kaizen-rank-row:last-child{border-bottom:0!important}
+#kaizenScreen .kaizen-rank-row>b{font-size:15px!important;color:#3b5872!important}
+#kaizenScreen .kaizen-rank-row span{display:flex!important;align-items:center!important;gap:8px!important;color:#1d3852!important;font-size:12px!important;font-weight:800!important}
+#kaizenScreen .kaizen-rank-row span i{width:32px!important;height:32px!important;border-radius:50%!important;display:grid!important;place-items:center!important;background:#e8eef4!important;color:#66809b!important;font-size:19px!important}
+#kaizenScreen .kaizen-rank-row strong{font-size:12px!important;color:#55718d!important;text-align:center!important}
+#kaizenScreen .kaizen-rank-row em{font-style:normal!important;text-align:center!important;font-size:16px!important}
+#kaizenScreen .kaizen-week-card{background:#fff!important;border:1px solid #dce5ee!important;border-radius:10px!important;padding:18px!important;box-shadow:0 3px 14px rgba(30,50,70,.07)!important}
+#kaizenScreen .kaizen-week-head{display:flex!important;align-items:center!important;gap:8px!important;color:#1d3852!important;margin-bottom:14px!important}
+#kaizenScreen .kaizen-week-head span{font-size:22px!important}
+#kaizenScreen .kaizen-week-card>strong{display:block!important;color:#27435d!important;font-size:14px!important;line-height:1.7!important;margin-bottom:14px!important}
+#kaizenScreen .kaizen-progress{height:10px!important;border-radius:8px!important;background:#dce5ed!important;overflow:hidden!important}
+#kaizenScreen .kaizen-progress span{display:block!important;height:100%!important;border-radius:8px!important;background:#24b59a!important}
+#kaizenScreen .kaizen-progress-meta{display:flex!important;justify-content:space-between!important;align-items:center!important;margin-top:10px!important;gap:10px!important}
+#kaizenScreen .kaizen-progress-meta b{color:#176fca!important;font-size:12px!important}
+#kaizenScreen .kaizen-progress-meta span{color:#61768a!important;font-size:10px!important}
+@media(max-width:1100px){#kaizenScreen .kaizen-community-grid{grid-template-columns:1fr!important}#kaizenScreen .kaizen-community-main,#kaizenScreen .kaizen-community-rail{grid-column:1!important;grid-row:auto!important}}

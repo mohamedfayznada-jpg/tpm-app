@@ -776,3 +776,112 @@ body:after{
 #tasksScreen #tasksDeptGrid h4 i{color:var(--ux-orange)!important;margin-left:5px!important}
 @media(max-width:1100px){#tasksScreen #tasksDeptGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:700px){#tasksScreen .task-folder-head{align-items:flex-start!important}#tasksScreen .task-folder-title{font-size:13px!important}#tasksScreen .task-folder-check{font-size:12px!important}#tasksScreen #tasksDeptGrid{grid-template-columns:1fr!important}}
+
+/* ============================================================
+   KAIZEN COMMUNITY — dedicated visual system
+   ============================================================ */
+#kaizenScreen{max-width:1580px!important;direction:rtl!important}
+#kaizenScreen,#kaizenScreen *{box-sizing:border-box!important}
+#kaizenScreen h1,#kaizenScreen h2,#kaizenScreen h3,#kaizenScreen h4,#kaizenScreen p,#kaizenScreen span,#kaizenScreen b,#kaizenScreen label,#kaizenScreen button,#kaizenScreen select{font-family:'Tajawal','Cairo',sans-serif!important}
+.kaizen-community-hero{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 310px!important;gap:0!important;min-height:270px!important;
+  margin-bottom:18px!important;background:var(--ux-ink)!important;color:#fff!important;border:0!important;
+  border-left:9px solid var(--ux-orange)!important;box-shadow:10px 10px 0 #d7d1c6!important;overflow:hidden!important;
+}
+.kaizen-hero-copy{padding:34px 38px!important;display:flex!important;flex-direction:column!important;justify-content:center!important}
+.kaizen-hero-copy h1{margin:6px 0 8px!important;font-size:clamp(36px,4vw,62px)!important;line-height:1!important;letter-spacing:-2px!important;color:#fff!important}
+.kaizen-hero-copy p{max-width:760px!important;margin:0!important;color:#b9c3c9!important;font-size:14px!important;line-height:2!important}
+.kaizen-hero-actions{display:flex!important;gap:9px!important;flex-wrap:wrap!important;margin-top:22px!important}
+.kaizen-hero-mark{position:relative!important;display:grid!important;grid-template-columns:1fr 1fr!important;grid-template-rows:1fr 1fr 1fr!important;gap:0!important;padding:30px!important;background:#17232b!important;border-right:1px solid #34414a!important}
+.kaizen-hero-mark:before{content:"";position:absolute;inset:24px;border:1px solid #41505a!important;pointer-events:none!important}
+.kaizen-hero-mark span{grid-column:1/-1!important;align-self:center!important;justify-self:center!important;font:900 48px/1 Arial,sans-serif!important;color:var(--ux-orange)!important;letter-spacing:4px!important;z-index:1!important}
+.kaizen-hero-mark b{font:900 18px/1 Arial,sans-serif!important;color:#dfe5e8!important;align-self:end!important;justify-self:center!important;z-index:1!important}
+.kaizen-hero-mark small{grid-column:1/-1!important;align-self:end!important;justify-self:center!important;color:#87959e!important;letter-spacing:2px!important;font-size:9px!important;z-index:1!important}
+.kaizen-community-stats{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;margin-bottom:18px!important}
+.kaizen-community-stat{position:relative!important;min-height:108px!important;padding:18px 20px!important;background:var(--ux-white)!important;border:1px solid var(--ux-line)!important;border-top:5px solid var(--ux-orange)!important;box-shadow:4px 4px 0 #d7d1c6!important}
+.kaizen-community-stat:nth-child(2){border-top-color:var(--ux-blue)!important}.kaizen-community-stat:nth-child(3){border-top-color:var(--ux-green)!important}.kaizen-community-stat:nth-child(4){border-top-color:var(--ux-yellow)!important}
+.kaizen-community-stat span{display:block!important;color:var(--ux-muted)!important;font-size:11px!important;font-weight:800!important}
+.kaizen-community-stat b{display:block!important;margin-top:5px!important;color:var(--ux-ink)!important;font:900 34px/1 Arial,sans-serif!important}
+.kaizen-community-stat i{position:absolute!important;left:17px!important;bottom:14px!important;font-size:25px!important;color:var(--ux-orange)!important;opacity:.8!important}
+.kaizen-community-grid{display:grid!important;grid-template-columns:290px minmax(0,1fr)!important;gap:18px!important;align-items:start!important}
+.kaizen-community-rail{display:grid!important;gap:16px!important}
+.kaizen-challenge-card{background:var(--ux-orange)!important;color:var(--ux-ink)!important;padding:24px!important;box-shadow:7px 7px 0 var(--ux-ink)!important}
+.kaizen-challenge-card .eyebrow{color:var(--ux-ink)!important}
+.kaizen-challenge-card h3{margin:5px 0 14px!important;font-size:23px!important}
+.kaizen-challenge-card strong{display:block!important;font-size:24px!important;line-height:1.35!important}
+.kaizen-challenge-card p{font-size:12px!important;line-height:1.8!important;margin:13px 0 18px!important}
+.kaizen-leaderboard{background:var(--ux-white)!important;border:1px solid var(--ux-line)!important;box-shadow:5px 5px 0 #d7d1c6!important;padding:16px!important}
+.kaizen-panel-title{display:flex!important;justify-content:space-between!important;align-items:center!important;padding-bottom:12px!important;margin-bottom:5px!important;border-bottom:2px solid var(--ux-ink)!important;font-weight:900!important}
+.kaizen-panel-title i{font-size:21px!important;color:var(--ux-orange)!important}
+.kaizen-rank-row{display:grid!important;grid-template-columns:30px 1fr 30px!important;align-items:center!important;gap:7px!important;padding:11px 0!important;border-bottom:1px solid var(--ux-line)!important}
+.kaizen-rank-row:last-child{border-bottom:0!important}
+.kaizen-rank-row> b{font:900 11px Arial,sans-serif!important;color:var(--ux-orange)!important}
+.kaizen-rank-row span{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:12px!important}
+.kaizen-rank-row span i{margin-left:5px!important;color:var(--ux-blue)!important}
+.kaizen-rank-row strong{text-align:left!important;font:900 15px Arial,sans-serif!important;color:var(--ux-ink)!important}
+.kaizen-community-main{min-width:0!important}
+#kaizenScreen .kaizen-stage-journey{margin:0 0 15px!important;padding:20px!important;border-radius:0!important;background:var(--ux-ink)!important;border:0!important;border-right:7px solid var(--ux-orange)!important;box-shadow:5px 5px 0 #d7d1c6!important}
+#kaizenScreen .kaizen-stage-journey h3{font-size:23px!important;color:#fff!important;margin:5px 0!important}
+#kaizenScreen .kaizen-stage-journey p{font-size:11px!important;color:#9eabb3!important;margin:0!important}
+#kaizenScreen .kaizen-stage-steps{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:5px!important;margin-top:12px!important}
+#kaizenScreen .kaizen-stage-steps button{border-radius:0!important;min-height:44px!important;border:1px solid #46535b!important;background:#1b272f!important;color:#aeb9c0!important}
+#kaizenScreen .kaizen-stage-steps button.active{background:var(--ux-orange)!important;color:var(--ux-ink)!important;border-color:var(--ux-orange)!important}
+.kaizen-feed-toolbar{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:15px!important;margin:18px 0 10px!important;padding:0 2px!important}
+.kaizen-feed-toolbar b{display:block!important;margin-top:3px!important;font-size:22px!important;color:var(--ux-ink)!important}
+.kaizen-feed-toolbar select{width:220px!important;min-height:42px!important}
+#kaizenScreen .kaizen-community-feed{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important}
+#kaizenScreen .kaizen-community-feed>*{min-width:0!important;border-radius:0!important;border:1px solid var(--ux-line)!important;background:var(--ux-white)!important;box-shadow:5px 5px 0 #d7d1c6!important;overflow:hidden!important}
+#kaizenScreen .kaizen-community-feed>div:first-child{grid-column:1/-1!important}
+#kaizenScreen .kaizen-community-feed img{display:block!important;width:100%!important;max-height:360px!important;object-fit:cover!important}
+#kaizenScreen .kaizen-community-feed .kaizen-a3-summary{border-top:1px solid var(--ux-line)!important}
+#kaizenScreen .kaizen-community-feed .row-flex{align-items:center!important;flex-wrap:wrap!important;gap:7px!important}
+#kaizenScreen .kaizen-community-feed .form-control{min-width:0!important}
+.kaizen-empty-mini{padding:18px!important;text-align:center!important;color:var(--ux-muted)!important;font-size:12px!important}
+#kaizenUploadModal{padding:18px!important}
+#kaizenUploadModal .kaizen-a3-modal{
+  width:min(900px,calc(100vw - 36px))!important;max-width:none!important;max-height:calc(100vh - 36px)!important;
+  border-radius:0!important;border:0!important;background:#fff!important;box-shadow:12px 12px 0 var(--ux-orange)!important;
+  padding:26px!important;overflow:auto!important;direction:rtl!important;
+}
+#kaizenUploadModal .kaizen-a3-modal-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:20px!important;padding-bottom:16px!important;border-bottom:4px solid var(--ux-ink)!important}
+#kaizenUploadModal .card-title{font-size:25px!important;margin:5px 0!important;color:var(--ux-ink)!important}
+#kaizenUploadModal .field-help{color:var(--ux-muted)!important}
+#kaizenUploadModal .kaizen-a3-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+#kaizenUploadModal .a3-section{display:grid!important;grid-template-columns:42px minmax(0,1fr)!important;gap:12px!important;padding:15px 0!important;border-top:2px solid var(--ux-line)!important}
+#kaizenUploadModal .a3-section h4{color:var(--ux-ink)!important;font-size:14px!important}
+#kaizenUploadModal textarea{min-height:70px!important;line-height:1.8!important}
+#kaizenUploadModal .kaizen-photo-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}
+#kaizenUploadModal .kaizen-photo-box{min-width:0!important;padding:14px!important;border-radius:0!important;background:#f5f2ea!important;border:2px dashed #e1b2a9!important}
+#kaizenUploadModal .kaizen-photo-box.after{border-color:#9ad5bd!important}
+#kaizenUploadModal .kaizen-photo-box label{display:block!important;color:#d94a43!important;padding:8px!important;font-size:13px!important}
+#kaizenUploadModal .kaizen-photo-box.after label{color:#209b69!important}
+#kaizenUploadModal .kaizen-photo-box input[type=file]{display:block!important;width:100%!important;margin-top:8px!important;cursor:pointer!important;font-size:11px!important}
+.kaizen-upload-preview{margin-top:10px!important;background:#fff!important;border:1px solid var(--ux-line)!important;padding:7px!important}
+.kaizen-upload-preview img{display:block!important;width:100%!important;height:150px!important;object-fit:cover!important}
+.kaizen-upload-preview div{padding:7px 3px 1px!important;font-size:11px!important;color:var(--ux-green)!important;font-weight:900!important}
+.kaizen-upload-error{display:block!important;margin-top:8px!important;color:var(--ux-red)!important;font-size:11px!important;font-weight:800!important}
+@media(max-width:1050px){
+  .kaizen-community-grid{grid-template-columns:1fr!important}
+  .kaizen-community-rail{grid-template-columns:1fr 1fr!important}
+  .kaizen-challenge-card{min-height:100%!important}
+}
+@media(max-width:800px){
+  .kaizen-community-hero{grid-template-columns:1fr!important}
+  .kaizen-hero-mark{display:none!important}
+  .kaizen-community-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #kaizenScreen .kaizen-community-feed{grid-template-columns:1fr!important}
+  #kaizenScreen .kaizen-community-feed>div:first-child{grid-column:auto!important}
+  #kaizenScreen .kaizen-stage-steps{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  #kaizenUploadModal .kaizen-a3-grid,#kaizenUploadModal .kaizen-photo-row{grid-template-columns:1fr!important}
+  .kaizen-feed-toolbar{align-items:stretch!important;flex-direction:column!important}
+  .kaizen-feed-toolbar select{width:100%!important}
+}
+@media(max-width:520px){
+  .kaizen-community-stats{grid-template-columns:1fr 1fr!important}
+  .kaizen-community-rail{grid-template-columns:1fr!important}
+  .kaizen-hero-copy{padding:25px 20px!important}
+  .kaizen-hero-copy h1{font-size:36px!important}
+  #kaizenScreen .kaizen-stage-steps{grid-template-columns:1fr 1fr!important}
+  #kaizenUploadModal .kaizen-a3-modal{width:calc(100vw - 20px)!important;padding:18px!important}
+  #kaizenUploadModal .kaizen-a3-modal-head{align-items:flex-start!important;flex-direction:column!important}
+}

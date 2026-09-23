@@ -1091,7 +1091,7 @@ window.downloadProfessionalPDF = async function(){
                 scrollY:0,
                 useCORS:true,
                 allowTaint:false,
-                foreignObjectRendering:true,
+                foreignObjectRendering:false,
                 imageTimeout:15000,
                 logging:false
             });

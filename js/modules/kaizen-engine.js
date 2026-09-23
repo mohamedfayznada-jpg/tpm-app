@@ -140,6 +140,7 @@ window.loadImageForCanvas = function(source) {
 
 window.kaizenStageFilter = 'all';
 window.renderKaizenFeed = function() {
+    window.renderKaizenCommunity?.();
     let c = document.getElementById('kaizenFeedContainer'); if(!c) return;
     let selectedDept = document.getElementById('kaizenDeptSelect')?.value || 'الكل';
     const activeStage = window.kaizenStageFilter || 'all';

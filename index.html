@@ -828,11 +828,60 @@
     </div>
 
     <div class="container screen" id="historyScreen">
-        <div class="legacy-inline-47">
-            <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
-            <h2 class="section-title legacy-inline-144"><i class='bx bx-history'></i> أرشيف المراجعات</h2>
-        </div>
-        <div id="historyListContainer" class="grid-layout"></div>
+        <section class="reports-command-head">
+            <div>
+                <span class="eyebrow"><i class='bx bx-bar-chart-alt-2'></i> AUDIT INTELLIGENCE</span>
+                <h2><i class='bx bx-history'></i> مركز تقارير المراجعات</h2>
+                <p>حوّل نتائج المراجعات إلى مؤشرات قابلة للتنفيذ: الاتجاهات، نقاط الضعف، فرص التحسين، وأولويات القرار.</p>
+            </div>
+            <div class="reports-head-actions">
+                <button class="btn btn-outline" onclick="showScreen('homeScreen')"><i class='bx bx-home'></i> الرئيسية</button>
+                <button class="btn btn-primary" onclick="showScreen('setupScreen')"><i class='bx bx-plus'></i> مراجعة جديدة</button>
+            </div>
+        </section>
+
+        <section class="reports-filter-bar">
+            <div class="reports-filter-title"><i class='bx bx-filter-alt'></i><b>تحليل البيانات</b><span id="reportsDataStamp">متزامن مع Firebase</span></div>
+            <div class="reports-filters">
+                <select id="reportsDeptFilter" class="form-control" onchange="window.renderHistoryAnalytics?.()"><option value="all">كل الأقسام</option></select>
+                <select id="reportsPeriodFilter" class="form-control" onchange="window.renderHistoryAnalytics?.()">
+                    <option value="all">كل الفترات</option><option value="30">آخر 30 يوم</option><option value="90">آخر 90 يوم</option><option value="365">آخر سنة</option>
+                </select>
+            </div>
+        </section>
+
+        <section id="reportsKpiGrid" class="reports-kpi-grid"></section>
+
+        <section class="reports-chart-grid">
+            <article class="reports-panel reports-panel-wide">
+                <header><div><span class="eyebrow">TREND</span><h3>اتجاه نتائج المراجعات</h3></div><span class="reports-panel-note">متوسط النسبة حسب تاريخ المراجعة</span></header>
+                <div class="reports-chart-wrap"><canvas id="auditTrendChart"></canvas></div>
+            </article>
+            <article class="reports-panel">
+                <header><div><span class="eyebrow">DEPARTMENT</span><h3>أداء الأقسام</h3></div></header>
+                <div class="reports-chart-wrap"><canvas id="auditDeptChart"></canvas></div>
+            </article>
+            <article class="reports-panel">
+                <header><div><span class="eyebrow">PDCA / STEPS</span><h3>أضعف محاور المراجعة</h3></div></header>
+                <div class="reports-chart-wrap"><canvas id="auditStepChart"></canvas></div>
+            </article>
+        </section>
+
+        <section class="reports-insight-grid">
+            <article class="reports-panel">
+                <header><div><span class="eyebrow">DECISION SUPPORT</span><h3>فرص التحسين ذات الأولوية</h3></div><i class='bx bx-target-lock'></i></header>
+                <div id="reportsOpportunityList"></div>
+            </article>
+            <article class="reports-panel">
+                <header><div><span class="eyebrow">RISK MIX</span><h3>توزيع مستوى الأداء</h3></div></header>
+                <div class="reports-risk-layout"><canvas id="auditRiskChart"></canvas><div id="reportsRiskLegend"></div></div>
+            </article>
+        </section>
+
+        <section class="reports-archive-head">
+            <div><div><span class="eyebrow">AUDIT ARCHIVE</span><h3>أحدث المراجعات</h3></div><span id="reportsArchiveCount"></span></div>
+        </section>
+        <div id="historyListContainer" class="reports-history-grid"></div>
     </div>
 
     <div class="container screen" id="detailedReportScreen">
@@ -847,17 +896,14 @@
                 <div class="legacy-inline-196"><b>⚙️ الماكينة:</b> <span id="detMachine"></span></div>
                 <div class="legacy-inline-196"><b>👤 المراجع:</b> <span id="detAuditor"></span></div>
             </div>
-            <div class="legacy-inline-197">
-                <div class="legacy-inline-46">
-                    <h1 id="detPct" class="legacy-inline-198">0%</h1>
-                    <span class="legacy-inline-199">النسبة النهائية</span>
-                </div>
-                <div class="legacy-inline-200"></div>
-                <div class="legacy-inline-46">
-                    <h2 id="detGrade" class="legacy-inline-201">--</h2>
-                    <span class="legacy-inline-199">التقييم العام</span>
-                </div>
+            <div class="detail-report-hero">
+                <div class="detail-score-box"><strong id="detPct">0%</strong><span>النتيجة النهائية</span></div>
+                <div class="detail-report-summary"><span class="eyebrow">EXECUTIVE AUDIT REPORT</span><h2 id="detGrade">--</h2><p id="detDecisionSummary">ملخص تنفيذي للمراجعة واتجاه القرار.</p></div>
+                <div class="detail-meta-badges"><span id="detPriorityBadge">أولوية: —</span><span id="detRiskBadge">مستوى المخاطر: —</span></div>
             </div>
+            <section class="detail-report-kpis" id="detDecisionKpis"></section>
+            <section class="detail-report-chart-panel"><header><div><span class="eyebrow">PERFORMANCE PROFILE</span><h3>بصمة أداء المراجعة</h3></div></header><div class="detail-chart-wrap"><canvas id="detailRadarChart"></canvas></div></section>
+            <section class="detail-opportunity-panel"><header><div><span class="eyebrow">ACTIONABLE INSIGHTS</span><h3>فرص التحسين وخطة القرار</h3></div></header><div id="detOpportunityContainer"></div></section>
             <table class="legacy-inline-202">
                 <thead class="legacy-inline-203"><tr><th class="legacy-inline-204">الخطوة</th><th class="legacy-inline-205">الدرجة المستحقة</th><th class="legacy-inline-205">نسبة الإنجاز</th></tr></thead>
                 <tbody id="detStepsTableBody" class="legacy-inline-206"></tbody>

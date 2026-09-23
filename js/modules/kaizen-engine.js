@@ -110,8 +110,21 @@ window.submitManualKaizen = async function() {
     btn.disabled = true;
 
     let uploadedUrl = null;
+    let uploadedBeforeUrl = null;
+    let uploadedAfterUrl = null;
     try {
-        const [imgBefore, imgAfter] = await Promise.all([window.loadImageForCanvas(kaizenImgs.before), window.loadImageForCanvas(kaizenImgs.after)]);
+        const kId = 'kaizen_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+        const [imgBefore, imgAfter] = await Promise.all([
+            window.loadImageForCanvas(kaizenImgs.before),
+            window.loadImageForCanvas(kaizenImgs.after)
+        ]);
+
+        // Upload the original before/after assets separately so the UI can render
+        // the same two large panels shown in the reference design.
+        if (btn) btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري رفع صورة قبل…";
+        uploadedBeforeUrl = await uploadImageToStorage(kaizenImgs.before,{folder:'kaizen/before'});
+        if (btn) btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري رفع صورة بعد…";
+        uploadedAfterUrl = await uploadImageToStorage(kaizenImgs.after,{folder:'kaizen/after'});
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 900; canvas.height = 420;
@@ -130,6 +143,31 @@ window.submitManualKaizen = async function() {
         ctx.beginPath(); ctx.moveTo(105,-28); ctx.lineTo(-35,-28); ctx.lineTo(-35,-62); ctx.lineTo(-115,0); ctx.lineTo(-35,62); ctx.lineTo(-35,28); ctx.lineTo(105,28); ctx.closePath();
         ctx.fill(); ctx.stroke(); ctx.restore();
 
+        btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري رفع بطاقة المقارنة…";
+        uploadedUrl = await uploadImageToStorage(canvas.toDataURL('image/jpeg',0.88),{folder:'kaizen/combined'});
+
+        const record = {
+            id: kId,
+            type: 'kaizen',
+            authorUid: authUser.uid,
+            authorName: currentUser.name || 'مستخدم',
+            auditor: currentUser.name || 'مستخدم',
+            dept: window.sanitizeInput(dept),
+            createdAt: Date.now(),
+            date: new Date().toLocaleString('ar-EG'),
+            stepsOrder: ['ManualKaizen'],
+            a3,
+            results: {
+                ManualKaizen: {
+                    images: {
+                        img_1: { title: window.sanitizeInput(title), data: uploadedUrl },
+                        before: { data: uploadedBeforeUrl },
+                        after: { data: uploadedAfterUrl }
+                    }
+                }
+            }
+        };
+
         btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري اعتماد السجل…";
         await window.syncRecord('history/' + kId, record);
 
@@ -144,8 +182,10 @@ window.submitManualKaizen = async function() {
         showToast('✅ تم حفظ بطاقة A3 كايزن وصورتها؛ وهي الآن في مرحلة التخطيط.');
     } catch (error) {
         console.error('Manual Kaizen save error:', error);
-        if (uploadedUrl) {
-            try { await window.deleteStorageImage(uploadedUrl); } catch (cleanupError) { console.error('Kaizen image cleanup error:', cleanupError); }
+        for (const assetUrl of [uploadedUrl, uploadedBeforeUrl, uploadedAfterUrl]) {
+            if (assetUrl) {
+                try { await window.deleteStorageImage(assetUrl); } catch (cleanupError) { console.error('Kaizen image cleanup error:', cleanupError); }
+            }
         }
         showToast(`⚠️ لم يُعتمد كايزن: ${error.message || 'تعذر حفظ السجل في قاعدة البيانات.'}`);
     } finally {

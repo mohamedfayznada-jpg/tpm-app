@@ -84,7 +84,7 @@ window.TPM_TEAM_HUB = [
         '</article>';
     }).join('') || '<div class="teams-empty-state"><i class="bx bx-group"></i><h3>لا توجد فرق TPM</h3><p>لم يتم تحميل هيكل الفرق بعد.</p></div>';
 };
-window.renderTPMTeams.isV3 = true;\n\nwindow.openTPMTeamWorkspace = function(teamId) {\n    const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId);\n    if (!team) return window.showToast?.('⚠️ الفريق غير موجود');\n    const target = document.getElementById(team.workspace);\n    if (!target) return window.showToast?.('⚠️ مساحة الفريق غير متاحة حاليًا');\n    window.showScreen(team.workspace);\n};\n\nwindow.getTPMActivity = () => null;
+window.renderTPMTeams.isV4 = true;\n\nwindow.openTPMTeamWorkspace = function(teamId) {\n    const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId);\n    if (!team) return window.showToast?.('⚠️ الفريق غير موجود');\n    const target = document.getElementById(team.workspace);\n    if (!target) return window.showToast?.('⚠️ مساحة الفريق غير متاحة حاليًا');\n    window.showScreen(team.workspace);\n};\n\nwindow.getTPMActivity = () => null;
 
 // Bridge the new domain layer into the legacy application without removing existing screens.
 (function bootstrapTPMDomainAfterAuth() {

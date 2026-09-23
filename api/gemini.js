@@ -72,16 +72,30 @@ export default async function handler(req) {
         }],
       };
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': `https://${process.env.VERCEL_URL || 'tpm-app.vercel.app'}`,
-          'X-Title': 'Factory OS TPM',
-        },
-        body: JSON.stringify(payload),
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 9000);
+      let response;
+      try {
+        response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': `https://${process.env.VERCEL_URL || 'tpm-app.vercel.app'}`,
+            'X-Title': 'Factory OS TPM',
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+      } catch (providerError) {
+        if (providerError?.name === 'AbortError') {
+          console.warn('[TPM AI] Provider timeout.');
+          continue;
+        }
+        throw providerError;
+      } finally {
+        clearTimeout(timeout);
+      }
 
       const data = await response.json().catch(() => ({}));
       const candidateText = data?.choices?.[0]?.message?.content;

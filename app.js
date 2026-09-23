@@ -874,23 +874,25 @@ window.downloadProfessionalPDF = async function(){
     const source=document.getElementById('printableReportArea');
     if(!source) return showToast('⚠️ تعذر العثور على التقرير');
     if(!window.html2canvas || !window.jspdf?.jsPDF){
-        return showToast('⚠️ مكونات إنشاء PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
+        return showToast('⚠️ مكونات PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
     }
 
     const actionRow=document.querySelector('#detailedReportScreen>.row-flex');
     const oldVisibility=actionRow?.style.visibility||'';
-    let chartReplacements=[], bidiPatches=[];
+    let chartReplacements=[];
 
     try{
         showToast('جاري إنشاء PDF مباشر... ⏳');
         if(document.fonts?.ready) await document.fonts.ready;
 
-        /* Capture the real on-screen report. Do NOT clone it, move it,
-           hide it, or use foreignObjectRendering: those combinations are
-           what produced the black-page Chromium rasterization. */
         if(actionRow) actionRow.style.visibility='hidden';
 
-        /* Freeze Chart.js canvases as PNG images during capture, then restore. */
+        /*
+         * ROOT FIX:
+         * Do not rewrite Arabic direction at all.
+         * The report already has correct RTL/bidi in the live DOM.
+         * Reversing leaf nodes to LTR was corrupting Arabic shaping/order.
+         */
         const canvases=[...source.querySelectorAll('canvas')];
         canvases.forEach(canvas=>{
             try{
@@ -904,20 +906,9 @@ window.downloadProfessionalPDF = async function(){
             }catch(_){}
         });
 
-        /* html2canvas can mishandle RTL bidi when rasterizing Arabic text.
-           Keep the report layout RTL, but give text-only leaves native LTR
-           bidi handling during capture. Restore the original inline styles after. */
-        source.querySelectorAll('*').forEach(el=>{
-            if(el.children.length===0 && el.textContent.trim()){
-                bidiPatches.push({el,direction:el.style.direction,unicodeBidi:el.style.unicodeBidi});
-                el.style.direction='ltr';
-                el.style.unicodeBidi='plaintext';
-            }
-        });
-
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
-        const canvas=await window.html2canvas(source,{
+        const raster=await window.html2canvas(source,{
             backgroundColor:'#ffffff',
             scale:2,
             useCORS:true,
@@ -929,6 +920,19 @@ window.downloadProfessionalPDF = async function(){
             scrollY:0
         });
 
+        /* Crop transparent/empty bottom space without touching layout. */
+        const ctx=raster.getContext('2d');
+        const px=ctx.getImageData(0,0,raster.width,raster.height).data;
+        let bottom=raster.height-1;
+        outer:
+        for(;bottom>0;bottom--){
+            for(let x=0;x<raster.width;x++){
+                const i=(bottom*raster.width+x)*4;
+                if(px[i]!==255 || px[i+1]!==255 || px[i+2]!==255 || px[i+3]!==0) break outer;
+            }
+        }
+        const contentHeight=Math.max(1,bottom+1);
+
         const {jsPDF}=window.jspdf;
         const pdf=new jsPDF({
             orientation:'portrait',
@@ -937,48 +941,48 @@ window.downloadProfessionalPDF = async function(){
             compress:true
         });
 
-        const pageW=210, pageH=297;
-        const marginX=7, marginY=7;
-        const usableW=pageW-marginX*2;
-        const usableH=pageH-marginY*2;
-        const pxPerMm=canvas.width/usableW;
-        const pagePx=Math.max(1,Math.floor(usableH*pxPerMm));
+        const pageW=210,pageH=297,margin=7;
+        const usableW=pageW-margin*2,usableH=pageH-margin*2;
+        const pxPerMm=raster.width/usableW;
+        const pagePx=Math.floor(usableH*pxPerMm);
 
-        let y=0, page=0;
-        while(y<canvas.height){
-            const sliceH=Math.min(pagePx,canvas.height-y);
+        let y=0,page=0;
+        while(y<contentHeight){
+            const sliceH=Math.min(pagePx,contentHeight-y);
             const slice=document.createElement('canvas');
-            slice.width=canvas.width;
+            slice.width=raster.width;
             slice.height=sliceH;
-            const ctx=slice.getContext('2d');
-            ctx.fillStyle='#fff';
-            ctx.fillRect(0,0,slice.width,slice.height);
-            ctx.drawImage(canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH);
+            const sctx=slice.getContext('2d');
+            sctx.fillStyle='#fff';
+            sctx.fillRect(0,0,slice.width,slice.height);
+            sctx.drawImage(raster,0,y,raster.width,sliceH,0,0,raster.width,sliceH);
 
             if(page>0) pdf.addPage();
             const hMm=sliceH/pxPerMm;
+
+            /*
+             * PNG is intentional here. JPEG can turn large white/transparent
+             * raster slices into black blocks in some Chromium/jsPDF paths.
+             */
             pdf.addImage(
-                slice.toDataURL('image/jpeg',0.94),
-                'JPEG',
-                marginX,marginY,usableW,hMm,
+                slice.toDataURL('image/png'),
+                'PNG',
+                margin,margin,usableW,hMm,
                 undefined,'FAST'
             );
+
             y+=sliceH;
             page++;
         }
 
         pdf.save('تقرير_تدقيق_TPM_تفصيلي.pdf');
-        showToast('✅ تم إنشاء ملف PDF بنجاح');
+        showToast('✅ تم إنشاء PDF بنجاح');
     }catch(err){
         console.error('Professional PDF export error:',err);
         showToast('⚠️ تعذر إنشاء PDF — راجع Console للتفاصيل');
     }finally{
         chartReplacements.forEach(({img,canvas})=>{
             try{img.replaceWith(canvas);}catch(_){}
-        });
-        bidiPatches.forEach(({el,direction,unicodeBidi})=>{
-            el.style.direction=direction;
-            el.style.unicodeBidi=unicodeBidi;
         });
         if(actionRow) actionRow.style.visibility=oldVisibility;
     }

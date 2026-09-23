@@ -8,7 +8,10 @@ window.TPM_TEAM_HUB = [
   { id: 'hse', code: 'HSE', name: 'الصحة والسلامة والبيئة', icon: 'bx-shield-quarter', color: '#22c55e', workspace: 'hseScreen', description: 'إدارة المخاطر، متابعة الإجراءات الوقائية، ودعم بيئة العمل الآمنة.', mission:'منع الحوادث قبل وقوعها' }
 ];
 
-/* ---------------------------------------------------------\n   TPM TEAMS COMMAND HUB — fast, data-driven renderer\n   --------------------------------------------------------- */\nwindow.renderTPMTeams = function() {
+/* ---------------------------------------------------------
+   TPM TEAMS COMMAND HUB — fast, data-driven renderer
+   --------------------------------------------------------- */
+window.renderTPMTeams = function() {
     const grid = document.getElementById('tpmTeamsGrid');
     const ribbon = document.getElementById('tpmTeamKpis');
     if (!grid || !ribbon) return;
@@ -84,7 +87,17 @@ window.TPM_TEAM_HUB = [
         '</article>';
     }).join('') || '<div class="teams-empty-state"><i class="bx bx-group"></i><h3>لا توجد فرق TPM</h3><p>لم يتم تحميل هيكل الفرق بعد.</p></div>';
 };
-window.renderTPMTeams.isV4 = true;\n\nwindow.openTPMTeamWorkspace = function(teamId) {\n    const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId);\n    if (!team) return window.showToast?.('⚠️ الفريق غير موجود');\n    const target = document.getElementById(team.workspace);\n    if (!target) return window.showToast?.('⚠️ مساحة الفريق غير متاحة حاليًا');\n    window.showScreen(team.workspace);\n};\n\nwindow.getTPMActivity = () => null;
+window.renderTPMTeams.isV4 = true;
+
+window.openTPMTeamWorkspace = function(teamId) {
+    const team = (window.TPM_TEAM_HUB || []).find(item => item.id === teamId);
+    if (!team) return window.showToast?.('⚠️ الفريق غير موجود');
+    const target = document.getElementById(team.workspace);
+    if (!target) return window.showToast?.('⚠️ مساحة الفريق غير متاحة حاليًا');
+    window.showScreen(team.workspace);
+};
+
+window.getTPMActivity = () => null;
 
 // Bridge the new domain layer into the legacy application without removing existing screens.
 (function bootstrapTPMDomainAfterAuth() {

@@ -7,8 +7,11 @@ export const Auth = {
     // 🔐 محرك تسجيل الدخول (Login Engine)
     // ==========================================
     async login() {
-        const usernameInput = document.getElementById('loginUsername').value.trim();
-        const passwordInput = document.getElementById('loginPassword').value.trim();
+        const usernameEl = document.getElementById('loginUsername');
+        const passwordEl = document.getElementById('loginPassword');
+        if (!usernameEl || !passwordEl) return UI.showToast('⚠️ واجهة تسجيل الدخول غير جاهزة. حدّث الصفحة.');
+        const usernameInput = usernameEl.value.trim();
+        const passwordInput = passwordEl.value.trim();
         
         // 1. الفحص الوقائي (Validation)
         if (!usernameInput || !passwordInput) return UI.showToast('⚠️ برجاء كتابة اسم المستخدم وكلمة المرور');

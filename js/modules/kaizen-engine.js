@@ -82,8 +82,8 @@ window.submitManualKaizen = async function() {
         ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 600, 300);
         ctx.drawImage(imgBefore, 0, 0, 295, 300); ctx.drawImage(imgAfter, 305, 0, 295, 300);
         ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(280, 150); ctx.lineTo(320, 130); ctx.lineTo(320, 170); ctx.fill();
-        ctx.fillStyle = 'rgba(239,68,68,0.9)'; ctx.fillRect(10, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('قبل', 25, 32);
-        ctx.fillStyle = 'rgba(16,185,129,0.9)'; ctx.fillRect(530, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('بعد', 545, 32);
+        ctx.fillStyle = 'rgba(239,68,68,0.9)'; ctx.fillRect(10, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('بعد', 25, 32);
+        ctx.fillStyle = 'rgba(16,185,129,0.9)'; ctx.fillRect(530, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('قبل', 545, 32);
 
         btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري رفع الصورة…";
         uploadedUrl = await uploadImageToStorage(canvas.toDataURL('image/jpeg', 0.8), { folder: 'kaizen' });

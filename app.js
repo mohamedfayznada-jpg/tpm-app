@@ -838,6 +838,7 @@ window.viewDetailedReport = function(id) {
     document.getElementById('detDate').innerText=a.date||'—';
     const totalPct=Math.round(Number(a.totalPct||0));
     document.getElementById('detPct').innerText=totalPct+'%';
+    const ring=document.querySelector('#detailedReportScreen .audit-score-ring'); if(ring) ring.style.setProperty('--score-angle',Math.max(0,Math.min(100,totalPct))*3.6+'deg');
     const grade=totalPct>=90?'ممتاز':totalPct>=80?'جيد جداً':totalPct>=70?'جيد':totalPct>=50?'مقبول':'ضعيف';
     const gradeEl=document.getElementById('detGrade'); gradeEl.innerText=grade; gradeEl.style.color=totalPct>=80?'#20a66a':totalPct>=50?'#f1ad2f':'#ef5350';
 
@@ -846,8 +847,11 @@ window.viewDetailedReport = function(id) {
     const weak=rows.slice().sort((x,y)=>x.p-y.p), critical=weak.filter(x=>x.p<50).length;
     const priority=critical?'عالية':weak.some(x=>x.p<80)?'متوسطة':'منخفضة', risk=critical?'مرتفع':weak.some(x=>x.p<80)?'متوسط':'منخفض';
     document.getElementById('detDecisionSummary').innerText=totalPct>=80?'الأداء العام ضمن المستوى المستهدف، مع فرص تحسين محددة في المحاور الأقل نتيجة.':'النتيجة أقل من المستوى المستهدف؛ يوصى بتركيز خطة الإجراء على المحاور ذات الفجوة الأكبر ومتابعة الإغلاق.';
-    document.getElementById('detPriorityBadge').innerText='أولوية: '+priority;
-    document.getElementById('detRiskBadge').innerText='مستوى المخاطر: '+risk;
+    document.getElementById('detPriorityBadge').innerHTML='<i class=\'bx bx-target-lock\'></i> أولوية: '+priority;
+    document.getElementById('detRiskBadge').innerHTML='<i class=\'bx bx-error-circle\'></i> مستوى المخاطر: '+risk;
+    const ds=document.getElementById('detDecisionState'), dh=document.getElementById('detDecisionHint');
+    if(ds) ds.textContent=totalPct>=80?'مستقر':totalPct>=50?'تحسين مطلوب':'إجراء عاجل';
+    if(dh) dh.textContent=critical?'توجد فجوة حرجة تتطلب إجراءً ومتابعة.':weak.some(x=>x.p<80)?'توجد فجوات محددة تحتاج خطة تحسين.':'المستوى العام مستقر مع متابعة الاستدامة.';
     const dk=document.getElementById('detDecisionKpis'); if(dk)dk.innerHTML=[['النتيجة النهائية',totalPct+'%','الدرجة المسجلة'],['متوسط المحاور',avgStep+'%','متوسط نتائج البنود'],['فجوات حرجة',critical,'محاور أقل من 50%'],['محاور التحسين',weak.filter(x=>x.p<80).length,'أقل من 80%']].map(x=>`<div><span>${x[0]}</span><strong>${x[1]}</strong><small>${x[2]}</small></div>`).join('');
 
     window.__detailAuditCharts=window.__detailAuditCharts||{};
@@ -903,6 +907,7 @@ window.viewDetailedReport = function(id) {
         </article>`;
     }).join('')||'<div class="reports-empty">لا توجد فرص محددة.</div>';
 
+    ['auditPerformanceSection','auditOpportunitySection','auditScoreSection','auditEvidenceSection'].forEach((id)=>document.getElementById(id)?.classList.remove('is-collapsed'));
     const sigDiv=document.getElementById('detSignatureImg');if(a.signature)sigDiv.innerHTML=`<img src="${a.signature}" style="height:80px;max-width:200px" alt="توقيع المراجع">`;else sigDiv.innerHTML='<div style="color:#94a3b8;font-size:12px">لا يوجد توقيع</div>';
     window.__activeDetailedAuditId=String(a.id);
     showScreen('detailedReportScreen');

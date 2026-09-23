@@ -795,7 +795,6 @@ window.renderHistoryAnalytics = function() {
     const oc=document.getElementById('reportsOpportunityList');
     if(oc) oc.innerHTML=opportunities.slice(0,6).map((o,i)=>`<div class="report-opportunity-row"><span class="report-op-rank">${String(i+1).padStart(2,'0')}</span><div><b>${window.escapeTPM(o.title)}</b><p>${o.text} • ${o.count} مراجعة</p></div><strong class="${o.score<50?'red':o.score<80?'amber':'green'}">${o.score}%</strong></div>`).join('')||'<div class="reports-empty">لا توجد بيانات كافية لبناء فرص التحسين.</div>';
 
-    if(document.getElementById('historyListContainer')) window.renderHistory();
 };
 
 window.renderHistoryArchive = function() {

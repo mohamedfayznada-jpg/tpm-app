@@ -857,7 +857,14 @@ window.viewDetailedReport = function(id) {
     });
     document.getElementById('detStepsTableBody').innerHTML=tableHtml;
     document.getElementById('detStepsContainer').innerHTML=detailsHtml||'<div class="reports-empty">لا توجد تفاصيل مسجلة.</div>';
-    const opp=document.getElementById('detOpportunityContainer');if(opp)opp.innerHTML=weak.slice(0,5).map((x,i)=>`<div class="detail-op-row"><span>${String(i+1).padStart(2,'0')}</span><div><b>${window.escapeTPM(window.auditStepLabel(x.k))}</b><p>${x.p<50?'إجراء تصحيحي عاجل + مالك + موعد إغلاق.':x.p<80?'إجراء تحسين ومتابعة تحقق خلال دورة المراجعة القادمة.':'استمرار المعيار مع تحسين تدريجي.'}</p></div><strong>${x.p}%</strong></div>`).join('')||'<div class="reports-empty">لا توجد فرص محددة.</div>';
+    const opp=document.getElementById('detOpportunityContainer');
+    if(opp)opp.innerHTML=weak.slice(0,5).map((x,i)=>{
+        const sourceRecord=results?.[x.k]||{};
+        const actual=Array.isArray(sourceRecord.improvements)?sourceRecord.improvements.filter(Boolean):[];
+        const fallback=x.p<50?'إجراء تصحيحي عاجل مع تحديد المالك وموعد الإغلاق والتحقق من الفاعلية.':x.p<80?'تنفيذ إجراء تحسين محدد، ثم إعادة التحقق من المحور خلال دورة المراجعة القادمة.':'الحفاظ على المعيار الحالي مع تحسين تدريجي ومتابعة الاستدامة.';
+        const detail=actual.length?actual.join(' — '):fallback;
+        return `<div class="detail-op-row"><span>${String(i+1).padStart(2,'0')}</span><div><b>${window.escapeTPM(window.auditStepLabel(x.k))}</b><p>${window.escapeTPM(detail)}</p></div><strong>${x.p}%</strong></div>`;
+    }).join('')||'<div class="reports-empty">لا توجد فرص محددة.</div>';
     const sigDiv=document.getElementById('detSignatureImg');if(a.signature)sigDiv.innerHTML=`<img src="${a.signature}" style="height:80px;max-width:200px" alt="توقيع المراجع">`;else sigDiv.innerHTML='<div style="color:#94a3b8;font-size:12px">لا يوجد توقيع</div>';
     window.__activeDetailedAuditId=String(a.id);
     showScreen('detailedReportScreen');
@@ -895,6 +902,16 @@ window.downloadProfessionalPDF = async function(){
                 canvas.replaceWith(img);
                 chartReplacements.push({img,canvas});
             }catch(_){}
+        });
+
+        /* html2canvas can mishandle RTL bidi when rasterizing Arabic text.
+           Keep the report layout RTL, but render text leaves with LTR bidi
+           handling so Arabic glyph shaping/order remains native and readable. */
+        clone.querySelectorAll('*').forEach(el=>{
+            if(el.children.length===0 && el.textContent.trim()){
+                el.style.direction='ltr';
+                el.style.unicodeBidi='plaintext';
+            }
         });
 
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));

@@ -885,3 +885,80 @@ body:after{
   #kaizenUploadModal .kaizen-a3-modal{width:calc(100vw - 20px)!important;padding:18px!important}
   #kaizenUploadModal .kaizen-a3-modal-head{align-items:flex-start!important;flex-direction:column!important}
 }
+
+/* KAIZEN V1.1 — premium before/after comparison */
+#kaizenScreen .kaizen-before-after-view{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:10px!important;
+  width:100%!important;
+  margin:4px 0 22px!important;
+  direction:ltr!important;
+}
+#kaizenScreen .kaizen-compare-panel{
+  position:relative!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  background:#f8fafb!important;
+  border:1px solid var(--ux-line)!important;
+  box-shadow:0 5px 0 #d7d1c6!important;
+}
+#kaizenScreen .kaizen-compare-panel img{
+  display:block!important;
+  width:100%!important;
+  height:330px!important;
+  object-fit:cover!important;
+}
+#kaizenScreen .kaizen-compare-panel.before{border-top:5px solid #ef5350!important}
+#kaizenScreen .kaizen-compare-panel.after{border-top:5px solid #20a66a!important}
+#kaizenScreen .kaizen-compare-label{
+  position:absolute!important;
+  z-index:2!important;
+  top:12px!important;
+  right:12px!important;
+  min-width:72px!important;
+  padding:7px 12px!important;
+  text-align:center!important;
+  color:#fff!important;
+  font:900 13px 'Tajawal',sans-serif!important;
+  box-shadow:0 3px 8px rgba(0,0,0,.15)!important;
+}
+#kaizenScreen .before .kaizen-compare-label{background:#ef5350!important}
+#kaizenScreen .after .kaizen-compare-label{background:#20a66a!important}
+#kaizenScreen .kaizen-improvement-arrow{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:92px!important;
+  height:92px!important;
+  border-radius:50%!important;
+  background:linear-gradient(135deg,#ffca3a,#f59e0b)!important;
+  border:5px solid #fff!important;
+  box-shadow:0 8px 18px rgba(245,158,11,.28),0 0 0 1px #e2a629!important;
+  transform:rotate(0deg)!important;
+  position:relative!important;
+  z-index:3!important;
+}
+#kaizenScreen .kaizen-improvement-arrow:after{
+  content:"تحسين"!important;
+  position:absolute!important;
+  bottom:-24px!important;
+  font:900 9px 'Tajawal',sans-serif!important;
+  color:#8a6410!important;
+  letter-spacing:.4px!important;
+}
+#kaizenScreen .kaizen-improvement-arrow i{
+  font-size:55px!important;
+  color:#17232b!important;
+}
+#kaizenScreen .kaizen-community-feed>div{
+  direction:rtl!important;
+}
+@media(max-width:800px){
+  #kaizenScreen .kaizen-before-after-view{grid-template-columns:1fr!important;gap:12px!important}
+  #kaizenScreen .kaizen-improvement-arrow{width:64px!important;height:64px!important;transform:rotate(-90deg)!important;justify-self:center!important}
+  #kaizenScreen .kaizen-improvement-arrow i{font-size:42px!important}
+  #kaizenScreen .kaizen-improvement-arrow:after{display:none!important}
+  #kaizenScreen .kaizen-compare-panel img{height:240px!important}
+}

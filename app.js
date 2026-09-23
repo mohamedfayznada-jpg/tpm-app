@@ -864,10 +864,100 @@ window.viewDetailedReport = function(id) {
 };
 
 window.downloadProfessionalPDF = async function(){
-    const area=document.getElementById('printableReportArea');if(!area)return;
-    const buttons=document.querySelectorAll('#detailedReportScreen > .row-flex');buttons.forEach(b=>b.style.display='none');
-    const oldTitle=document.title;document.title='تقرير_تدقيق_TPM_تفصيلي';
-    try{await new Promise(resolve=>setTimeout(resolve,350));await html2pdf().set({margin:[0.18,0.18,0.22,0.18],filename:'تقرير_تدقيق_TPM_تفصيلي.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0},jsPDF:{unit:'in',format:'a4',orientation:'portrait',compress:true},pagebreak:{mode:['css','legacy'],avoid:['.detail-step-card','.reports-panel']}}).from(area).save();}finally{buttons.forEach(b=>b.style.display='flex');document.title=oldTitle;}
+    const area=document.getElementById('printableReportArea');
+    if(!area) return;
+
+    const buttons=document.querySelectorAll('#detailedReportScreen > .row-flex');
+    buttons.forEach(b=>b.style.display='none');
+
+    const oldTitle=document.title;
+    document.title='تقرير_تدقيق_TPM_تفصيلي';
+
+    try{
+        /*
+         * PDF FIX:
+         * Do NOT use html2pdf().from(element) here.
+         * html2pdf's cloning pipeline can corrupt Arabic RTL shaping/ordering.
+         * We first rasterize the already-rendered DOM with html2canvas, then
+         * place the resulting visual pages into jsPDF. This preserves Arabic,
+         * charts, images, RTL layout and the exact on-screen appearance.
+         */
+        if(typeof window.html2canvas !== 'function' || !window.jspdf?.jsPDF){
+            throw new Error('PDF renderer libraries are not available');
+        }
+
+        if(document.fonts?.ready) await document.fonts.ready;
+        await new Promise(resolve=>setTimeout(resolve,250));
+
+        const canvas=await window.html2canvas(area,{
+            scale:2,
+            useCORS:true,
+            allowTaint:false,
+            backgroundColor:'#ffffff',
+            imageTimeout:15000,
+            logging:false,
+            scrollX:0,
+            scrollY:0,
+            windowWidth:document.documentElement.clientWidth,
+            windowHeight:document.documentElement.clientHeight
+        });
+
+        const {jsPDF}=window.jspdf;
+        const pdf=new jsPDF({
+            unit:'mm',
+            format:'a4',
+            orientation:'portrait',
+            compress:true
+        });
+
+        const pageWidth=210;
+        const pageHeight=297;
+        const imageWidth=pageWidth;
+        const imageHeight=(canvas.height*imageWidth)/canvas.width;
+        const pagePixelHeight=Math.floor(canvas.width*(pageHeight/pageWidth));
+
+        let offsetY=0;
+        let pageIndex=0;
+
+        while(offsetY<canvas.height){
+            const sliceHeight=Math.min(pagePixelHeight,canvas.height-offsetY);
+            const pageCanvas=document.createElement('canvas');
+            pageCanvas.width=canvas.width;
+            pageCanvas.height=sliceHeight;
+
+            const ctx=pageCanvas.getContext('2d');
+            ctx.fillStyle='#ffffff';
+            ctx.fillRect(0,0,pageCanvas.width,pageCanvas.height);
+            ctx.drawImage(
+                canvas,
+                0,offsetY,canvas.width,sliceHeight,
+                0,0,pageCanvas.width,sliceHeight
+            );
+
+            const sliceHeightMm=(sliceHeight/canvas.width)*pageWidth;
+            if(pageIndex>0) pdf.addPage();
+
+            pdf.addImage(
+                pageCanvas.toDataURL('image/jpeg',0.96),
+                'JPEG',
+                0,0,
+                pageWidth,sliceHeightMm,
+                undefined,
+                'FAST'
+            );
+
+            offsetY+=sliceHeight;
+            pageIndex++;
+        }
+
+        pdf.save('تقرير_تدقيق_TPM_تفصيلي.pdf');
+    }catch(error){
+        console.error('Professional PDF export failed:',error);
+        if(typeof showToast==='function') showToast('⚠️ تعذر إنشاء PDF. حاول مرة أخرى.');
+    }finally{
+        buttons.forEach(b=>b.style.display='flex');
+        document.title=oldTitle;
+    }
 };
 
 window.shareWhatsApp = function() { showToast("جاري تجهيز النص..."); };

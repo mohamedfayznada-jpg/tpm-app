@@ -1,12 +1,5 @@
 // 💡 مجتمع كايزن (Kaizen Engine)
 // ==========================================
-// Module state: keep these variables explicitly scoped to this classic script.
-// This prevents ReferenceError when creating/editing a Kaizen from the A3 modal.
-var kaizenImgs = window.kaizenImgs || { before: null, after: null };
-var kaizenEditId = window.kaizenEditId || null;
-window.kaizenImgs = kaizenImgs;
-window.kaizenEditId = kaizenEditId;
-
 window.handleKaizenImage = function(e, type) {
     const file = e?.target?.files?.[0];
     if (!file) return;

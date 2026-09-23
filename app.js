@@ -14,7 +14,7 @@ var currentUser = { name: '', username: '', role: '', status: '' };
 let currentAudit = null, isOnline = true, isDataLoaded = false, isInitialLoad = true;
 let radarChartInstance = null, trendChartInstance = null, currentViewedDept = null;
 let currentStepSelections = {}, currentStepImages = {}, currentStepImprovements = [];
-let currentTagImg = null, currentTaskDept = null, kaizenImgs = { before: null, after: null }, fiveSImages = { standard: null, current: null };
+let currentTagImg = null, currentTaskDept = null, kaizenImgs = { before: null, after: null }, kaizenEditId = null, fiveSImages = { standard: null, current: null };
 let sigCanvas, sigCtx, isDrawing = false, canvasRect = null;
 let screenHistory = ['homeScreen'];
 let jhMiniChartInstance = null;

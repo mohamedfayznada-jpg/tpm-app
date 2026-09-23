@@ -957,9 +957,13 @@ window.downloadProfessionalPDF = async function(){
         return showToast('⚠️ مكونات إنشاء PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
     }
 
-    const buttons=document.querySelectorAll('#detailedReportScreen>.row-flex');
+    const uiOnly=document.querySelectorAll('#detailedReportScreen .report-ui-only');
     const previous=[];
-    buttons.forEach((b,i)=>{previous[i]=b.style.display;b.style.display='none';});
+    uiOnly.forEach((b,i)=>{previous[i]=b.style.display;b.style.display='none';});
+    const collapsibles=['auditPerformanceSection','auditOpportunitySection','auditScoreSection','auditEvidenceSection']
+      .map(id=>document.getElementById(id)).filter(Boolean);
+    const previousCollapsed=collapsibles.map(el=>el.classList.contains('is-collapsed'));
+    collapsibles.forEach(el=>el.classList.remove('is-collapsed'));
 
     try{
         showToast('جاري إنشاء PDF مباشر... ⏳');
@@ -1033,7 +1037,8 @@ window.downloadProfessionalPDF = async function(){
         console.error('Professional PDF export error:',error);
         showToast('⚠️ تعذر إنشاء PDF — افتح Console لمعرفة السبب');
     }finally{
-        buttons.forEach((b,i)=>b.style.display=previous[i]);
+        uiOnly.forEach((b,i)=>b.style.display=previous[i]);
+        collapsibles.forEach((el,i)=>el.classList.toggle('is-collapsed',previousCollapsed[i]));
     }
 };
 

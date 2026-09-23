@@ -812,36 +812,60 @@ window.renderHistory = function() {
             ${canEdit?`<div class="report-card-actions"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();editReport('${window.escapeTPM(a.id)}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteReport('${window.escapeTPM(a.id)}')"><i class='bx bx-trash'></i> حذف</button></div>`:''}
         </article>`;
     }).join('')||'<div class="reports-empty"><i class="bx bx-archive"></i><b>لا توجد مراجعات ضمن الفلتر الحالي</b><span>أنشئ أول مراجعة لبدء التحليل.</span></div>';
+    window.renderHistoryAnalytics?.();
 };
 
-window.renderHistoryAnalytics = window.renderHistoryAnalytics;
 window.deleteReport = function(id) { if(confirm('تأكيد الحذف النهائي للتقرير؟')) { window.deleteRecord('history/' + id); showToast('تم الحذف بنجاح'); } };
-window.editReport = function(id) { let rep = historyData.find(h => h.id === id); if(!rep) return; currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; window.renderCurrentAuditStep(); };
+window.editReport = function(id) { let rep = historyData.find(h => String(h.id) === String(id)); if(!rep) return; currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; window.renderCurrentAuditStep(); };
 
 window.viewDetailedReport = function(id) {
-    let a = historyData.find(h => h.id === id); if(!a) return;
-    document.getElementById('detDept').innerText = a.dept; document.getElementById('detMachine').innerText = a.machine || 'عام'; document.getElementById('detAuditor').innerText = a.auditor; document.getElementById('detDate').innerText = a.date;
-    const totalPct = a.totalPct || 0; document.getElementById('detPct').innerText = totalPct + '%';
-    let grade = "ضعيف"; if (totalPct >= 90) grade = "ممتاز"; else if (totalPct >= 80) grade = "جيد جداً"; else if (totalPct >= 70) grade = "جيد"; else if (totalPct >= 50) grade = "مقبول";
-    document.getElementById('detGrade').innerText = grade; document.getElementById('detGrade').style.color = totalPct >= 80 ? '#10b981' : (totalPct >= 50 ? '#f59e0b' : '#ef4444');
+    const a=historyData.find(h=>String(h.id)===String(id)); if(!a)return;
+    document.getElementById('detDept').innerText=a.dept||'غير محدد';
+    document.getElementById('detMachine').innerText=a.machine||'عام';
+    document.getElementById('detAuditor').innerText=a.auditor||'—';
+    document.getElementById('detDate').innerText=a.date||'—';
+    const totalPct=Math.round(Number(a.totalPct||0));
+    document.getElementById('detPct').innerText=totalPct+'%';
+    const grade=totalPct>=90?'ممتاز':totalPct>=80?'جيد جداً':totalPct>=70?'جيد':totalPct>=50?'مقبول':'ضعيف';
+    const gradeEl=document.getElementById('detGrade'); gradeEl.innerText=grade; gradeEl.style.color=totalPct>=80?'#20a66a':totalPct>=50?'#f1ad2f':'#ef5350';
 
-    let tableHtml = ''; let detailsHtml = '';
-    a.stepsOrder.forEach(k => {
-        let r = a.results[k]; if (!r) return;
-        let p = r.skipped ? 0 : Math.round((r.score / r.max) * 100); let statusText = r.skipped ? 'تخطي' : `${r.score} / ${r.max}`; let pColor = p >= 80 ? '#10b981' : (p >= 50 ? '#f59e0b' : '#ef4444');
-        tableHtml += `<tr><td style="padding:12px; border:1px solid #cbd5e1; font-weight:bold; color:#0f172a;">${k}</td><td style="padding:12px; border:1px solid #cbd5e1; font-weight:bold; color:#0f172a;">${statusText}</td><td style="padding:12px; border:1px solid #cbd5e1; font-weight:900; color:${pColor};">${p}%</td></tr>`;
-        if (!r.skipped) {
-            let imps = (r.improvements && r.improvements.length > 0) ? r.improvements.map(i => `<div style="font-size:14px; margin-bottom:8px; color:#1e293b;"><i class='bx bx-check-circle' style="color:#f59e0b;"></i> ${i}</div>`).join('') : '<div style="color:#10b981; font-weight:bold; text-align:center;">أداء مثالي</div>';
-            let imgsHtml = ''; if(r.images) { Object.values(r.images).forEach(img => { if (img.data) imgsHtml += `<img src="${img.data}" style="height:100px; width:100px; object-fit:cover; margin:5px; border-radius:8px; border:1px solid #cbd5e1;">`; }); }
-            detailsHtml += `<div style="margin-bottom:20px; padding:20px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; border-right:4px solid ${pColor};"><div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px dashed #cbd5e1; padding-bottom:10px;"><b style="color:#0f172a;">${k}</b><b style="color:${pColor};">${p}%</b></div><div style="margin-bottom:15px;">${imps}</div><div style="text-align:center;">${imgsHtml}</div></div>`;
-        }
+    const rows=(a.stepsOrder||[]).filter(k=>k!=='ManualKaizen').map(k=>{const r=a.results?.[k];if(!r)return null;const p=r.skipped?0:(Number(r.max)?Math.round(Number(r.score||0)/Number(r.max)*100):0);return {k,r,p};}).filter(Boolean);
+    const avgStep=rows.length?Math.round(rows.reduce((s,x)=>s+x.p,0)/rows.length):0;
+    const weak=rows.slice().sort((x,y)=>x.p-y.p), critical=weak.filter(x=>x.p<50).length;
+    const priority=critical?'عالية':weak.some(x=>x.p<80)?'متوسطة':'منخفضة', risk=critical?'مرتفع':weak.some(x=>x.p<80)?'متوسط':'منخفض';
+    document.getElementById('detDecisionSummary').innerText=totalPct>=80?'الأداء العام ضمن المستوى المستهدف، مع فرص تحسين محددة في المحاور الأقل نتيجة.':'النتيجة أقل من المستوى المستهدف؛ يوصى بتركيز خطة الإجراء على المحاور ذات الفجوة الأكبر ومتابعة الإغلاق.';
+    document.getElementById('detPriorityBadge').innerText='أولوية: '+priority;
+    document.getElementById('detRiskBadge').innerText='مستوى المخاطر: '+risk;
+    const dk=document.getElementById('detDecisionKpis'); if(dk)dk.innerHTML=[['النتيجة النهائية',totalPct+'%','الدرجة المسجلة'],['متوسط المحاور',avgStep+'%','متوسط نتائج البنود'],['فجوات حرجة',critical,'محاور أقل من 50%'],['محاور التحسين',weak.filter(x=>x.p<80).length,'أقل من 80%']].map(x=>`<div><span>${x[0]}</span><strong>${x[1]}</strong><small>${x[2]}</small></div>`).join('');
+
+    window.__detailAuditCharts=window.__detailAuditCharts||{};
+    if(window.__detailAuditCharts.radar){try{window.__detailAuditCharts.radar.destroy()}catch(e){}}
+    const radar=document.getElementById('detailRadarChart');
+    if(radar&&window.Chart)window.__detailAuditCharts.radar=new Chart(radar,{type:'radar',data:{labels:rows.map(x=>window.auditStepLabel(x.k)),datasets:[{label:'نتيجة المحور %',data:rows.map(x=>x.p),borderColor:'#2583e8',backgroundColor:'rgba(37,131,232,.16)',pointBackgroundColor:'#2583e8',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:20,callback:v=>v+'%'},pointLabels:{font:{family:'Cairo',size:11,weight:'700'}}}},plugins:{legend:{display:false}}}});
+
+    let tableHtml='',detailsHtml='';
+    rows.forEach(({k,r,p})=>{
+        const pColor=p>=80?'#20a66a':p>=50?'#f1ad2f':'#ef5350';
+        const imps=Array.isArray(r.improvements)&&r.improvements.length?r.improvements.map(i=>`<li>${window.escapeTPM(i)}</li>`).join(''):'<li>لم يتم تسجيل فرصة تحسين مباشرة في هذا المحور.</li>';
+        let imgsHtml='';if(r.images)Object.values(r.images).forEach(img=>{if(img?.data)imgsHtml+=`<img src="${img.data}" alt="دليل المراجعة">`;});
+        tableHtml+=`<tr><td>${window.escapeTPM(window.auditStepLabel(k))}</td><td>${r.skipped?'تخطي':(r.score||0)+' / '+(r.max||0)}</td><td style="color:${pColor};font-weight:900">${p}%</td></tr>`;
+        detailsHtml+=`<article class="detail-step-card"><header><div><span class="eyebrow">AUDIT STEP</span><h4>${window.escapeTPM(window.auditStepLabel(k))}</h4></div><strong style="color:${pColor}">${p}%</strong></header><div class="detail-step-body"><div><b>الملاحظات / فرص التحسين</b><ul>${imps}</ul></div>${imgsHtml?`<div class="detail-step-images">${imgsHtml}</div>`:''}</div></article>`;
     });
-    document.getElementById('detStepsTableBody').innerHTML = tableHtml; document.getElementById('detStepsContainer').innerHTML = detailsHtml;
-    const sigDiv = document.getElementById('detSignatureImg'); if (a.signature) { sigDiv.innerHTML = `<img src="${a.signature}" style="height:80px; max-width:200px;">`; } else { sigDiv.innerHTML = '<div style="color:#94a3b8; font-size:12px;">لا يوجد توقيع</div>'; }
+    document.getElementById('detStepsTableBody').innerHTML=tableHtml;
+    document.getElementById('detStepsContainer').innerHTML=detailsHtml||'<div class="reports-empty">لا توجد تفاصيل مسجلة.</div>';
+    const opp=document.getElementById('detOpportunityContainer');if(opp)opp.innerHTML=weak.slice(0,5).map((x,i)=>`<div class="detail-op-row"><span>${String(i+1).padStart(2,'0')}</span><div><b>${window.escapeTPM(window.auditStepLabel(x.k))}</b><p>${x.p<50?'إجراء تصحيحي عاجل + مالك + موعد إغلاق.':x.p<80?'إجراء تحسين ومتابعة تحقق خلال دورة المراجعة القادمة.':'استمرار المعيار مع تحسين تدريجي.'}</p></div><strong>${x.p}%</strong></div>`).join('')||'<div class="reports-empty">لا توجد فرص محددة.</div>';
+    const sigDiv=document.getElementById('detSignatureImg');if(a.signature)sigDiv.innerHTML=`<img src="${a.signature}" style="height:80px;max-width:200px" alt="توقيع المراجع">`;else sigDiv.innerHTML='<div style="color:#94a3b8;font-size:12px">لا يوجد توقيع</div>';
+    window.__activeDetailedAuditId=String(a.id);
     showScreen('detailedReportScreen');
 };
 
-window.downloadProfessionalPDF = function() { window.scrollTo(0,0); const btns = document.querySelectorAll('#detailedReportScreen .row-flex'); btns.forEach(b => b.style.display = 'none'); html2pdf().set({margin:0.2, filename:'تقرير_مراجعة.pdf', image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:'in', format:'a4', orientation:'portrait'}}).from(document.getElementById('printableReportArea')).save().then(()=>{ btns.forEach(b => b.style.display = 'flex'); }); };
+window.downloadProfessionalPDF = async function(){
+    const area=document.getElementById('printableReportArea');if(!area)return;
+    const buttons=document.querySelectorAll('#detailedReportScreen > .row-flex');buttons.forEach(b=>b.style.display='none');
+    const oldTitle=document.title;document.title='تقرير_تدقيق_TPM_تفصيلي';
+    try{await new Promise(resolve=>setTimeout(resolve,350));await html2pdf().set({margin:[0.18,0.18,0.22,0.18],filename:'تقرير_تدقيق_TPM_تفصيلي.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0},jsPDF:{unit:'in',format:'a4',orientation:'portrait',compress:true},pagebreak:{mode:['css','legacy'],avoid:['.detail-step-card','.reports-panel']}}).from(area).save();}finally{buttons.forEach(b=>b.style.display='flex');document.title=oldTitle;}
+};
+
 window.shareWhatsApp = function() { showToast("جاري تجهيز النص..."); };
 
 // ==========================================

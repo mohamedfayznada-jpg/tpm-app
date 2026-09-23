@@ -1112,6 +1112,15 @@ window.downloadProfessionalPDF = async function(){
     }
 };
 
+window.toggleLoginPassword = function(){
+    const input=document.getElementById('loginPassword');
+    const button=document.querySelector('#loginScreen .auth-eye i');
+    if(!input) return;
+    const reveal=input.type==='password';
+    input.type=reveal?'text':'password';
+    if(button) button.className=reveal?'bx bx-hide':'bx bx-show';
+};
+    
 window.shareWhatsApp = function() { showToast("جاري تجهيز النص..."); };
 
 // ==========================================

@@ -856,28 +856,95 @@ window.viewDetailedReport = function(id) {
     if(radar&&window.Chart)window.__detailAuditCharts.radar=new Chart(radar,{type:'radar',data:{labels:rows.map(x=>window.auditStepLabel(x.k)),datasets:[{label:'نتيجة المحور %',data:rows.map(x=>x.p),borderColor:'#2583e8',backgroundColor:'rgba(37,131,232,.16)',pointBackgroundColor:'#2583e8',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:20,callback:v=>v+'%'},pointLabels:{font:{family:'Cairo',size:11,weight:'700'}}}},plugins:{legend:{display:false}}}});
 
     let tableHtml='',detailsHtml='';
-    rows.forEach(({k,r,p})=>{
+    rows.forEach(({k,r,p},idx)=>{
         const pColor=p>=80?'#20a66a':p>=50?'#f1ad2f':'#ef5350';
+        const status=p>=80?'مستقر':p>=50?'يحتاج تحسين':'حرج';
+        const statusIcon=p>=80?'bx-check-circle':p>=50?'bx-wrench':'bx-error-circle';
         const imps=Array.isArray(r.improvements)&&r.improvements.length?r.improvements.map(i=>`<li>${window.escapeTPM(i)}</li>`).join(''):'<li>لم يتم تسجيل فرصة تحسين مباشرة في هذا المحور.</li>';
-        let imgsHtml='';if(r.images)Object.values(r.images).forEach(img=>{if(img?.data)imgsHtml+=`<img src="${img.data}" alt="دليل المراجعة">`;});
-        tableHtml+=`<tr><td>${window.escapeTPM(window.auditStepLabel(k))}</td><td>${r.skipped?'تخطي':(r.score||0)+' / '+(r.max||0)}</td><td style="color:${pColor};font-weight:900">${p}%</td></tr>`;
-        detailsHtml+=`<article class="detail-step-card"><header><div><span class="eyebrow">AUDIT STEP</span><h4>${window.escapeTPM(window.auditStepLabel(k))}</h4></div><strong style="color:${pColor}">${p}%</strong></header><div class="detail-step-body"><div><b>الملاحظات / فرص التحسين</b><ul>${imps}</ul></div>${imgsHtml?`<div class="detail-step-images">${imgsHtml}</div>`:''}</div></article>`;
+        let imgsHtml='';if(r.images)Object.values(r.images).forEach(img=>{if(img?.data)imgsHtml+=`<button type="button" class="evidence-thumb" onclick="openAuditEvidence(this)"><img src="${img.data}" alt="دليل المراجعة"></button>`;});
+        tableHtml+=`<tr onclick="focusAuditStep(${idx})"><td><span class="matrix-step"><i class='bx bx-right-top-arrow-circle'></i>${window.escapeTPM(window.auditStepLabel(k))}</span></td><td><b>${r.skipped?'تخطي':(r.score||0)+' / '+(r.max||0)}</b></td><td><strong style="color:${pColor}">${p}%</strong></td><td><span class="matrix-status" style="color:${pColor}"><i class='bx ${statusIcon}'></i>${status}</span></td></tr>`;
+        detailsHtml+=`<article class="audit-evidence-card detail-step-card" id="auditStepCard-${idx}">
+          <button class="audit-evidence-head" type="button" onclick="toggleAuditEvidence(${idx})">
+            <span class="audit-step-number">${String(idx+1).padStart(2,'0')}</span>
+            <span class="audit-evidence-title"><span class="eyebrow">AUDIT STEP</span><b>${window.escapeTPM(window.auditStepLabel(k))}</b></span>
+            <span class="audit-evidence-score" style="--score-color:${pColor}">${p}%</span>
+            <i class='bx bx-chevron-down audit-evidence-chevron'></i>
+          </button>
+          <div class="audit-evidence-body">
+            <div class="audit-evidence-copy">
+              <span class="audit-detail-label"><i class='bx bx-bulb'></i> الملاحظات وفرص التحسين</span>
+              <ul>${imps}</ul>
+            </div>
+            ${imgsHtml?`<div class="audit-evidence-gallery">${imgsHtml}</div>`: '<div class="audit-no-evidence"><i class="bx bx-image-alt"></i><span>لا توجد صور مرفقة</span></div>'}
+          </div>
+        </article>`;
     });
     document.getElementById('detStepsTableBody').innerHTML=tableHtml;
     document.getElementById('detStepsContainer').innerHTML=detailsHtml||'<div class="reports-empty">لا توجد تفاصيل مسجلة.</div>';
+
     const opp=document.getElementById('detOpportunityContainer');
     if(opp)opp.innerHTML=weak.slice(0,5).map((x,i)=>{
         const sourceRecord=a.results?.[x.k]||{};
         const actual=Array.isArray(sourceRecord.improvements)?sourceRecord.improvements.filter(Boolean):[];
         const fallback=x.p<50?'إجراء تصحيحي عاجل مع تحديد المالك وموعد الإغلاق والتحقق من الفاعلية.':x.p<80?'تنفيذ إجراء تحسين محدد، ثم إعادة التحقق من المحور خلال دورة المراجعة القادمة.':'الحفاظ على المعيار الحالي مع تحسين تدريجي ومتابعة الاستدامة.';
         const detail=actual.length?actual.join(' — '):fallback;
-        return `<div class="detail-op-row"><span>${String(i+1).padStart(2,'0')}</span><div><b>${window.escapeTPM(window.auditStepLabel(x.k))}</b><p>${window.escapeTPM(detail)}</p></div><strong>${x.p}%</strong></div>`;
+        const sev=x.p<50?'critical':x.p<80?'warning':'stable';
+        return `<article class="audit-opportunity-card ${sev}">
+            <button class="audit-opportunity-head" type="button" onclick="toggleOpportunity(this)">
+                <span class="opportunity-rank">${String(i+1).padStart(2,'0')}</span>
+                <span class="opportunity-main"><b>${window.escapeTPM(window.auditStepLabel(x.k))}</b><small>${x.p<50?'فجوة حرجة':x.p<80?'أقل من المستوى المستهدف':'تحسين استدامة'}</small></span>
+                <strong>${x.p}%</strong>
+                <i class='bx bx-chevron-down'></i>
+            </button>
+            <div class="audit-opportunity-body">
+                <p>${window.escapeTPM(detail)}</p>
+                <div class="audit-opportunity-actions"><span><i class='bx bx-target-lock'></i> أولوية ${x.p<50?'عالية':x.p<80?'متوسطة':'منخفضة'}</span><span><i class='bx bx-check-square'></i> يحتاج متابعة</span></div>
+            </div>
+        </article>`;
     }).join('')||'<div class="reports-empty">لا توجد فرص محددة.</div>';
+
     const sigDiv=document.getElementById('detSignatureImg');if(a.signature)sigDiv.innerHTML=`<img src="${a.signature}" style="height:80px;max-width:200px" alt="توقيع المراجع">`;else sigDiv.innerHTML='<div style="color:#94a3b8;font-size:12px">لا يوجد توقيع</div>';
     window.__activeDetailedAuditId=String(a.id);
     showScreen('detailedReportScreen');
 };
 
+window.toggleReportSection = function(id){
+    const el=document.getElementById(id); if(!el)return;
+    const collapsed=el.classList.toggle('is-collapsed');
+    const icon=el.querySelector('.audit-collapse-trigger .section-icon i');
+    if(icon) icon.className=collapsed?'bx bx-chevron-left':'bx bx-chevron-down';
+};
+window.toggleAllReportSections = function(){
+    const sections=['auditPerformanceSection','auditOpportunitySection','auditScoreSection','auditEvidenceSection'];
+    const active=sections.map(id=>document.getElementById(id)).filter(Boolean);
+    const collapse=active.some(x=>!x.classList.contains('is-collapsed'));
+    active.forEach(el=>el.classList.toggle('is-collapsed',collapse));
+    active.forEach(el=>{
+        const icon=el.querySelector('.audit-collapse-trigger .section-icon i');
+        if(icon) icon.className=collapse?'bx bx-chevron-left':'bx bx-chevron-down';
+    });
+};
+window.toggleAuditEvidence = function(idx){
+    const card=document.getElementById('auditStepCard-'+idx); if(!card)return;
+    card.classList.toggle('is-open');
+};
+window.focusAuditStep = function(idx){
+    const card=document.getElementById('auditStepCard-'+idx); if(!card)return;
+    document.getElementById('auditEvidenceSection')?.classList.remove('is-collapsed');
+    card.classList.add('is-open');
+    card.scrollIntoView({behavior:'smooth',block:'center'});
+};
+window.toggleOpportunity = function(btn){
+    btn.closest('.audit-opportunity-card')?.classList.toggle('is-open');
+};
+window.openAuditEvidence = function(btn){
+    const img=btn.querySelector('img'); if(!img)return;
+    const overlay=document.createElement('div');
+    overlay.className='audit-lightbox';
+    overlay.innerHTML=`<button class="audit-lightbox-close" onclick="this.parentElement.remove()"><i class='bx bx-x'></i></button><img src="${img.src}" alt="${img.alt||'دليل المراجعة'}">`;
+    overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+    document.body.appendChild(overlay);
+};
 window.downloadProfessionalPDF = async function(){
     const source=document.getElementById('printableReportArea');
     if(!source) return showToast('⚠️ تعذر العثور على التقرير');

@@ -28,7 +28,7 @@
     <!-- V33: visual system moved to dedicated CSS. Legacy inline theme removed. -->
     <link rel="stylesheet" href="styles.css?v=20260922-foundation2">
     <link rel="stylesheet" href="css/index-shell.css?v=1">
-    <link rel="stylesheet" href="css/legacy-inline-extracted-v2.css?v=1">\n    <link rel="stylesheet" href="css/factory-os-v34-reference.css?v=18">
+    <link rel="stylesheet" href="css/legacy-inline-extracted-v2.css?v=1">\n    <link rel="stylesheet" href="css/factory-os-v34-reference.css?v=19">
 </head>
 <body>
     
@@ -62,6 +62,7 @@
         <div class="sidebar-menu">
             <div class="side-item" onclick="showScreen('homeScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-grid-alt'></i></div>الرئيسية (Hub)</div>
             <div class="side-item" onclick="showScreen('tasksScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-task'></i></div>إدارة المهام</div>
+            <div class="side-item" onclick="showScreen('tagsScreen'); renderTags(); toggleSidebar();"><div class="side-icon"><i class='bx bx-purchase-tag-alt'></i></div>التاجات والأعطال</div>
             <div class="side-item" onclick="showScreen('tpmTeamsScreen'); renderTPMTeams(); toggleSidebar();"><div class="side-icon"><i class='bx bx-group'></i></div>فرق TPM</div>
             <div class="side-item" onclick="showScreen('historyScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bar-chart-alt-2'></i></div>تقارير المراجعات</div>
             <div class="side-item" onclick="showScreen('kaizenScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bulb'></i></div>مجتمع كايزن</div>
@@ -711,45 +712,131 @@
 
     <!-- Tags Screen -->
     <div class="container screen" id="tagsScreen">
-        <div class="legacy-inline-47">
-            <button class="btn btn-sm btn-outline" onclick="showScreen('homeScreen')">⬅️ عودة</button>
-            <h2 class="legacy-inline-121"><i class='bx bx-error-circle'></i> إدارة التذاكر والأعطال</h2>
-        </div>
-        
-        <div class="card btn-role-operator tag-intake-card legacy-inline-139">
-            <div class="tag-intake-header"><div><span class="eyebrow"><i class='bx bx-purchase-tag-alt'></i> سجل بلاغ تشغيلي</span><h4 class="card-title"><i class='bx bx-plus'></i> إصدار تاج جديد</h4></div><p>الحقول المعلَّمة بـ <b>*</b> مطلوبة حتى يصل البلاغ إلى القسم الصحيح.</p></div>
-            <div class="form-group"><label for="newTagDesc">ما المشكلة أو حالة عدم المطابقة؟ <b>*</b></label><textarea id="newTagDesc" class="form-control" rows="3" placeholder="مثال: تسريب زيت من وصلة المضخة ويؤثر في نظافة منطقة العمل"></textarea><small class="field-help">اكتب العيب ومكانه وأثره باختصار واضح.</small></div>
-            <div class="tag-intake-grid">
-                <div class="form-group"><label for="newTagColor">نوع التاج <b>*</b></label><select id="newTagColor" class="form-control"><option value="red">تاج صيانة — أحمر</option><option value="blue">تاج إنتاج — أزرق</option></select><small class="field-help">حدد الجهة التي ستبدأ المعالجة.</small></div>
-                <div class="form-group"><label for="newTagDept">القسم التشغيلي <b>*</b></label><select id="newTagDept" class="form-control"></select><small class="field-help">اختر القسم الذي ظهرت فيه الحالة.</small></div>
-                <div class="form-group"><label for="newTagPriority">درجة الأولوية <b>*</b></label><select id="newTagPriority" class="form-control"><option value="critical">حرج — خطر أو توقف</option><option value="high" selected>عالية — تحتاج معالجة سريعة</option><option value="medium">متوسطة — ضمن خطة قريبة</option><option value="low">منخفضة — تحسين غير عاجل</option></select><small class="field-help">تحدد ترتيب المتابعة والتصعيد.</small></div>
-                <div class="form-group"><label for="newTagMachine">المعدة أو الموقع <span>اختياري</span></label><input type="text" id="newTagMachine" class="form-control" placeholder="مثال: ماكينة حقن 02 أو منطقة التجميع"><small class="field-help">يسهّل الوصول لمكان البلاغ.</small></div>
-                <div class="form-group"><label for="newTagSpareParts">قطع الغيار المطلوبة <span>اختياري</span></label><input type="text" id="newTagSpareParts" class="form-control" placeholder="مثال: جوان 25 مم أو سير ناقل"><small class="field-help">دوّنها إن كانت معروفة فقط.</small></div>
-                <div class="form-group"><label for="newTagTeam">فريق TPM المرتبط <span>اختياري</span></label><select id="newTagTeam" class="form-control"><option value="">لا يوجد فريق مرتبط</option></select><small class="field-help">استخدمه للربط والتحليل، وليس بدل القسم.</small></div>
-                <div class="form-group"><label for="newTagEngineer">المسؤول أو مهندس الصيانة <span>اختياري</span></label><select id="newTagEngineer" class="form-control"><option value="">غير مُسند الآن</option></select><small class="field-help">اختر المسؤول عند معرفة من سيتابع الإغلاق.</small></div>
-                <div class="form-group"><label>صورة دليل <span>اختياري</span></label><label class="btn btn-outline full-width tag-image-picker"><i class='bx bx-camera'></i> اختر صورة للحالة<input type="file" accept="image/*" onchange="handleTagImage(event)" class="legacy-inline-3"></label><small class="field-help">صورة واحدة واضحة تساعد في التحقق.</small></div>
+        <section class="tags-command-hero">
+            <div class="tags-hero-copy">
+                <span class="eyebrow"><i class='bx bx-purchase-tag-alt'></i> INCIDENT &amp; ABNORMALITY CONTROL</span>
+                <h1>مركز التاجات والأعطال</h1>
+                <p>سجّل الحالة، وجّهها للقسم الصحيح، تابع الإسناد ووقت الاستجابة، ثم أغلقها بعد التحقق. كل بطاقة هنا مرتبطة بسجل التشغيل الفعلي.</p>
+                <div class="tags-hero-actions">
+                    <button class="btn tags-hero-primary" onclick="document.getElementById('newTagDesc')?.focus()"><i class='bx bx-plus-circle'></i> تسجيل تاج جديد</button>
+                    <button class="btn tags-hero-secondary" onclick="renderTags(); renderTagCommandCenter?.()"><i class='bx bx-refresh'></i> تحديث مباشر</button>
+                </div>
             </div>
-            <div id="tagImagePreview" class="legacy-inline-140"></div>
-            <button class="btn btn-danger full-width" onclick="addNewTag()"><i class='bx bx-send'></i> تسجيل التاج</button>
-        </div>
-
-        <div id="tagCommandStats" class="tag-command-stats"></div>
-        <section class="tag-control-deck" aria-label="مركز قيادة التاجات">
-            <div class="tag-control-deck-head"><div><span class="eyebrow"><i class='bx bx-radar'></i> مركز قيادة التاجات</span><h3>الاستجابة والإسناد والتحقق</h3></div><button class="btn btn-outline btn-sm" onclick="applyTagQuickView('all')"><i class='bx bx-refresh'></i> كل البلاغات</button></div>
-            <div class="tag-quick-views"><button class="tag-quick-view critical" onclick="applyTagQuickView('critical')"><i class='bx bx-alarm-exclamation'></i><span>حرجة الآن</span><b id="tagQuickCritical">0</b></button><button class="tag-quick-view unassigned" onclick="applyTagQuickView('unassigned')"><i class='bx bx-user-x'></i><span>غير مُسندة</span><b id="tagQuickUnassigned">0</b></button><button class="tag-quick-view overdue" onclick="applyTagQuickView('overdue')"><i class='bx bx-timer'></i><span>تجاوزت المهلة</span><b id="tagQuickOverdue">0</b></button><button class="tag-quick-view review" onclick="applyTagQuickView('review')"><i class='bx bx-search-alt-2'></i><span>بانتظار التحقق</span><b id="tagQuickReview">0</b></button></div>
-            <div id="tagEscalationQueue" class="tag-escalation-queue"></div>
+            <div class="tags-hero-status">
+                <div class="tags-live-indicator"><span></span> LIVE DATA</div>
+                <strong id="tagsHeroOpenCount">0</strong>
+                <small>بلاغ مفتوح الآن</small>
+                <div class="tags-hero-mini"><span><i class='bx bx-alarm-exclamation'></i><b id="tagsHeroCriticalCount">0</b> حرجة</span><span><i class='bx bx-timer'></i><b id="tagsHeroOverdueCount">0</b> متجاوزة</span></div>
+            </div>
         </section>
-        <section class="tag-filter-panel" aria-label="فلاتر التاجات"><div class="tag-filter-title"><i class='bx bx-filter-alt'></i><b>تصفية سجل التاجات</b><span>اعرض البلاغات التي تحتاجها فقط</span></div><div class="tag-filter-grid">
-            <label>القسم<select id="filterTagDept" class="form-control" onchange="renderTags()"><option value="الكل">كل الأقسام</option></select></label>
-            <label>حالة التاج<select id="filterTagStatus" class="form-control" onchange="renderTags()"><option value="active">مفتوح / جاري</option><option value="closed">مغلقة فقط</option></select></label>
-            <label>الأولوية<select id="filterTagPriority" class="form-control" onchange="renderTags()"><option value="all">كل الأولويات</option><option value="critical">حرج</option><option value="high">عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select></label>
-            <label>بحث<input type="text" id="filterTagMachine" class="form-control" placeholder="اسم المعدة أو المسؤول أو كلمة من الوصف" onkeyup="renderTags()"></label>
-        </div></section>
 
-        <div class="grid-layout">
-            <div class="kanban-col"><h4 class="todo-head"><i class='bx bx-error'></i> تاجات الصيانة</h4><div id="redTagsContainer"></div></div>
-            <div class="kanban-col"><h4 class="progress-head legacy-inline-141"><i class='bx bx-cog'></i> تاجات الإنتاج</h4><div id="blueTagsContainer"></div></div>
-        </div>
+        <section id="tagCommandStats" class="tag-command-stats tags-kpi-ribbon" aria-label="مؤشرات التاجات">
+            <article class="tags-kpi tags-kpi-total"><i class='bx bx-purchase-tag'></i><div><span>إجمالي التاجات</span><strong id="tagStatTotal">0</strong><small>كل السجلات</small></div></article>
+            <article class="tags-kpi tags-kpi-open"><i class='bx bx-error-circle'></i><div><span>مفتوحة / جارية</span><strong id="tagStatOpen">0</strong><small>تحتاج متابعة</small></div></article>
+            <article class="tags-kpi tags-kpi-critical"><i class='bx bx-alarm-exclamation'></i><div><span>حرجة</span><strong id="tagStatCritical">0</strong><small>أعلى أولوية</small></div></article>
+            <article class="tags-kpi tags-kpi-overdue"><i class='bx bx-time-five'></i><div><span>متجاوزة SLA</span><strong id="tagStatOverdue">0</strong><small>تحتاج تصعيد</small></div></article>
+            <article class="tags-kpi tags-kpi-closed"><i class='bx bx-check-circle'></i><div><span>مغلقة / متحققة</span><strong id="tagStatClosed">0</strong><small>تم الإغلاق</small></div></article>
+        </section>
+
+        <section class="tags-workspace">
+            <div class="tags-main-column">
+                <article class="tags-intake-panel card btn-role-operator">
+                    <div class="tags-section-heading">
+                        <div>
+                            <span class="eyebrow"><i class='bx bx-plus-circle'></i> NEW INCIDENT</span>
+                            <h2>تسجيل تاج جديد</h2>
+                            <p>ابدأ بوصف الحالة ثم حدّد الأولوية والقسم والمسؤولية. الحقول الأساسية مطلوبة.</p>
+                        </div>
+                        <span class="tags-required-badge"><i class='bx bx-check-shield'></i> إجراء سريع</span>
+                    </div>
+
+                    <div class="tags-intake-highlight">
+                        <i class='bx bx-info-circle'></i>
+                        <span><b>قاعدة التسجيل:</b> اكتب المشكلة كما يراها التشغيل على أرض الواقع، وأضف المعدة أو الموقع وقطع الغيار عندما تكون معروفة.</span>
+                    </div>
+
+                    <div class="form-group tags-desc-field">
+                        <label for="newTagDesc">ما المشكلة أو حالة عدم المطابقة؟ <b>*</b></label>
+                        <textarea id="newTagDesc" class="form-control" rows="3" placeholder="مثال: تسريب زيت من وصلة المضخة ويؤثر في نظافة منطقة العمل"></textarea>
+                        <small class="field-help">وصف واضح = إسناد أسرع + تحليل أفضل.</small>
+                    </div>
+
+                    <div class="tag-intake-grid tags-form-grid">
+                        <div class="form-group"><label for="newTagColor">نوع التاج <b>*</b></label><select id="newTagColor" class="form-control"><option value="red">تاج صيانة — أحمر</option><option value="blue">تاج إنتاج — أزرق</option></select><small class="field-help">حدد الجهة التي ستبدأ المعالجة.</small></div>
+                        <div class="form-group"><label for="newTagDept">القسم التشغيلي <b>*</b></label><select id="newTagDept" class="form-control"></select><small class="field-help">القسم الذي ظهرت فيه الحالة.</small></div>
+                        <div class="form-group"><label for="newTagPriority">درجة الأولوية <b>*</b></label><select id="newTagPriority" class="form-control"><option value="critical">حرج — خطر أو توقف</option><option value="high" selected>عالية — تحتاج معالجة سريعة</option><option value="medium">متوسطة — ضمن خطة قريبة</option><option value="low">منخفضة — تحسين غير عاجل</option></select><small class="field-help">تحدد ترتيب المتابعة وSLA.</small></div>
+                        <div class="form-group"><label for="newTagMachine">المعدة أو الموقع <span>اختياري</span></label><input type="text" id="newTagMachine" class="form-control" placeholder="ماكينة حقن 02 أو منطقة التجميع"><small class="field-help">يسهّل الوصول لمكان البلاغ.</small></div>
+                        <div class="form-group"><label for="newTagSpareParts">قطع الغيار المطلوبة <span>اختياري</span></label><input type="text" id="newTagSpareParts" class="form-control" placeholder="جوان 25 مم أو سير ناقل"><small class="field-help">دوّنها إن كانت معروفة.</small></div>
+                        <div class="form-group"><label for="newTagTeam">فريق TPM المرتبط <span>اختياري</span></label><select id="newTagTeam" class="form-control"><option value="">لا يوجد فريق مرتبط</option></select><small class="field-help">للربط والتحليل فقط.</small></div>
+                        <div class="form-group"><label for="newTagEngineer">المسؤول أو مهندس الصيانة <span>اختياري</span></label><select id="newTagEngineer" class="form-control"><option value="">غير مُسند الآن</option></select><small class="field-help">اختر المسؤول عند معرفة المتابع.</small></div>
+                        <div class="form-group"><label>صورة دليل <span>اختياري</span></label><label class="btn btn-outline full-width tag-image-picker"><i class='bx bx-camera'></i> اختر صورة للحالة<input type="file" accept="image/*" onchange="handleTagImage(event)" class="legacy-inline-3"></label><small class="field-help">صورة واضحة تساعد في التحقق.</small></div>
+                    </div>
+                    <div id="tagImagePreview" class="tag-image-preview"></div>
+                    <div class="tags-submit-row">
+                        <span><i class='bx bx-shield-quarter'></i> البلاغ يُحفظ في سجل التشغيل السحابي</span>
+                        <button class="btn tags-submit-btn" onclick="addNewTag()"><i class='bx bx-send'></i> تسجيل التاج</button>
+                    </div>
+                </article>
+
+                <section class="tag-control-deck tags-command-panel" aria-label="مركز متابعة التاجات">
+                    <div class="tags-section-heading compact">
+                        <div><span class="eyebrow"><i class='bx bx-radar'></i> RESPONSE CONTROL</span><h3>لوحة الاستثناءات والإسناد</h3><p>ابدأ من الاستثناء الأكثر تأثيرًا بدل البحث داخل كل السجلات.</p></div>
+                        <button class="btn btn-outline btn-sm" onclick="applyTagQuickView('all')"><i class='bx bx-layer'></i> كل البلاغات</button>
+                    </div>
+                    <div class="tag-quick-views">
+                        <button class="tag-quick-view critical" onclick="applyTagQuickView('critical')"><i class='bx bx-alarm-exclamation'></i><span>حرجة الآن</span><b id="tagQuickCritical">0</b><small>Priority Critical</small></button>
+                        <button class="tag-quick-view unassigned" onclick="applyTagQuickView('unassigned')"><i class='bx bx-user-x'></i><span>غير مُسندة</span><b id="tagQuickUnassigned">0</b><small>تحتاج مالك متابعة</small></button>
+                        <button class="tag-quick-view overdue" onclick="applyTagQuickView('overdue')"><i class='bx bx-timer'></i><span>تجاوزت المهلة</span><b id="tagQuickOverdue">0</b><small>تحتاج تصعيد</small></button>
+                        <button class="tag-quick-view review" onclick="applyTagQuickView('review')"><i class='bx bx-search-alt-2'></i><span>بانتظار التحقق</span><b id="tagQuickReview">0</b><small>جاهزة للمراجع</small></button>
+                    </div>
+                    <div id="tagEscalationQueue" class="tag-escalation-queue"></div>
+                </section>
+
+                <section class="tag-filter-panel tags-filter-panel" aria-label="فلاتر التاجات">
+                    <div class="tag-filter-title"><div><span class="eyebrow"><i class='bx bx-filter-alt'></i> FILTER &amp; SEARCH</span><b>البحث والتصفية</b><span>اعرض البلاغات التي تحتاجها فقط</span></div><button class="tags-reset-filter" onclick="applyTagQuickView('all')"><i class='bx bx-reset'></i> إعادة ضبط</button></div>
+                    <div class="tag-filter-grid tags-filter-grid">
+                        <label>القسم<select id="filterTagDept" class="form-control" onchange="renderTags()"><option value="الكل">كل الأقسام</option></select></label>
+                        <label>حالة التاج<select id="filterTagStatus" class="form-control" onchange="renderTags()"><option value="active">مفتوح / جاري</option><option value="closed">مغلقة فقط</option></select></label>
+                        <label>الأولوية<select id="filterTagPriority" class="form-control" onchange="renderTags()"><option value="all">كل الأولويات</option><option value="critical">حرج</option><option value="high">عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select></label>
+                        <label class="tag-search-field">بحث سريع<input type="text" id="filterTagMachine" class="form-control" placeholder="المعدة أو المسؤول أو كلمة من الوصف" onkeyup="renderTags()"></label>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="tags-side-column">
+                <article class="tags-side-card tags-side-guide">
+                    <div class="tags-side-icon"><i class='bx bx-bolt-circle'></i></div>
+                    <span class="eyebrow">RESPONSE LOGIC</span>
+                    <h3>مسار التاج</h3>
+                    <div class="tags-flow">
+                        <span>01 <b>تسجيل</b></span><i class='bx bx-left-arrow-alt'></i><span>02 <b>إسناد</b></span><i class='bx bx-left-arrow-alt'></i><span>03 <b>معالجة</b></span><i class='bx bx-left-arrow-alt'></i><span>04 <b>تحقق</b></span>
+                    </div>
+                    <p>الهدف: لا يوجد تاج مفتوح بدون مالك واضح وموعد استجابة معروف.</p>
+                </article>
+                <article class="tags-side-card tags-side-sla">
+                    <div class="tags-side-card-head"><span><i class='bx bx-timer'></i> SLA</span><b>زمن الاستجابة</b></div>
+                    <div class="tags-sla-row"><span>حرج</span><strong>4 س</strong></div>
+                    <div class="tags-sla-row"><span>عالية</span><strong>24 س</strong></div>
+                    <div class="tags-sla-row"><span>متوسطة</span><strong>72 س</strong></div>
+                    <div class="tags-sla-row"><span>منخفضة</span><strong>168 س</strong></div>
+                </article>
+                <article class="tags-side-card tags-side-note">
+                    <i class='bx bx-check-shield'></i>
+                    <div><b>الإغلاق المنضبط</b><span>التاج ينتقل للإغلاق بعد المعالجة ثم المراجعة والتحقق.</span></div>
+                </article>
+            </aside>
+        </section>
+
+        <section class="tags-board-section">
+            <div class="tags-board-head">
+                <div><span class="eyebrow"><i class='bx bx-columns'></i> LIVE TAG BOARD</span><h2>سجل البلاغات الحالي</h2><p>تاجات الصيانة والإنتاج مع نفس بيانات التشغيل الحقيقية.</p></div>
+                <div class="tags-board-legend"><span><i class="tag-dot red"></i> صيانة</span><span><i class="tag-dot blue"></i> إنتاج</span><span><i class="tag-dot green"></i> مغلق / متحقق</span></div>
+            </div>
+            <div class="grid-layout tags-kanban-grid">
+                <section class="kanban-col tags-board-col tags-maintenance-col"><header class="tags-board-col-head red"><div><i class='bx bx-wrench'></i><div><strong>تاجات الصيانة</strong><small>Maintenance</small></div></div><b id="redTagsCount">0</b></header><div id="redTagsContainer"></div></section>
+                <section class="kanban-col tags-board-col tags-production-col"><header class="tags-board-col-head blue"><div><i class='bx bx-cog'></i><div><strong>تاجات الإنتاج</strong><small>Production</small></div></div><b id="blueTagsCount">0</b></header><div id="blueTagsContainer"></div></section>
+            </div>
+        </section>
     </div>
 
     <!-- Tasks Screen -->

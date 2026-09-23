@@ -874,117 +874,150 @@ window.downloadProfessionalPDF = async function(){
     const source=document.getElementById('printableReportArea');
     if(!source) return showToast('⚠️ تعذر العثور على التقرير');
     if(!window.html2canvas || !window.jspdf?.jsPDF){
-        return showToast('⚠️ مكونات PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
+        return showToast('⚠️ مكونات إنشاء PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
     }
 
-    const actionRow=document.querySelector('#detailedReportScreen>.row-flex');
-    const oldVisibility=actionRow?.style.visibility||'';
-    let chartReplacements=[];
-
+    let renderRoot=null;
     try{
-        showToast('جاري إنشاء PDF مباشر... ⏳');
+        showToast('جاري تجهيز التقرير بصيغة PDF... ⏳');
         if(document.fonts?.ready) await document.fonts.ready;
 
-        if(actionRow) actionRow.style.visibility='hidden';
+        const css=`
+          .pdf-export-root{position:absolute;left:-12000px;top:0;width:794px;background:#fff;color:#1d2d3a;
+            direction:rtl;box-sizing:border-box;font-family:Cairo,Arial,Tahoma,sans-serif}
+          .pdf-export-page{width:794px;min-height:1123px;height:1123px;background:#fff;box-sizing:border-box;
+            padding:28px 34px 34px;position:relative;overflow:hidden;border-top:5px solid #f1ad2f}
+          .pdf-export-page *{box-sizing:border-box!important;letter-spacing:normal!important;word-spacing:normal!important;
+            transform:none!important}
+          .pdf-export-page .legacy-inline-192{padding:12px 0 12px;text-align:center;border-bottom:1px solid #dfe6ec}
+          .pdf-export-page .legacy-inline-193{margin:0;color:#17364f;font-size:28px;line-height:1.15;font-weight:900}
+          .pdf-export-page .legacy-inline-194{margin:5px 0 0;color:#536b7e;font-size:13px;line-height:1.5;font-weight:700}
+          .pdf-export-page .legacy-inline-195{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;
+            margin:16px 0!important;padding:12px!important;border:1px solid #dce5ee!important;border-radius:8px!important;background:#f8fafc!important}
+          .pdf-export-page .legacy-inline-196{min-width:0;padding:0 10px;border-left:1px solid #dce5ee;
+            color:#526a7e;font-size:10px;line-height:1.6;text-align:right}
+          .pdf-export-page .legacy-inline-196:last-child{border-left:0}
+          .pdf-export-page .legacy-inline-196 b{color:#17364f;font-weight:800}
+          .pdf-export-page .detail-report-hero{display:grid!important;grid-template-columns:145px minmax(0,1fr) 170px!important;
+            gap:16px!important;align-items:center!important;padding:18px!important;margin:0!important;
+            background:linear-gradient(135deg,#f8fbfd,#fff)!important;border:1px solid #dce5ee!important;border-radius:9px!important}
+          .pdf-export-page .detail-score-box{display:flex!important;flex-direction:column!important;align-items:center!important;
+            justify-content:center!important;min-height:108px!important;background:#17364f!important;color:#fff!important;border-radius:9px!important}
+          .pdf-export-page .detail-score-box strong{font-size:40px!important;line-height:1!important}
+          .pdf-export-page .detail-score-box span{font-size:10px!important;opacity:.8!important;margin-top:6px!important}
+          .pdf-export-page .detail-report-summary h2{margin:4px 0!important;color:#17364f!important;font-size:24px!important;line-height:1.25!important}
+          .pdf-export-page .detail-report-summary p{margin:5px 0!important;color:#718292!important;font-size:11px!important;line-height:1.75!important}
+          .pdf-export-page .detail-meta-badges{display:grid!important;gap:8px!important}
+          .pdf-export-page .detail-meta-badges span{padding:9px 11px!important;border:1px solid #dce5ee!important;border-radius:7px!important;
+            background:#fff!important;color:#526a7e!important;font-size:10px!important;font-weight:900!important}
+          .pdf-export-page .detail-report-kpis{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:9px!important;padding:13px 0!important}
+          .pdf-export-page .detail-report-kpis>div{padding:10px!important;background:#f8fafc!important;border:1px solid #e2e8ee!important;border-radius:7px!important}
+          .pdf-export-page .detail-report-kpis span,.pdf-export-page .detail-report-kpis small{display:block!important;color:#7c8b98!important;font-size:9px!important}
+          .pdf-export-page .detail-report-kpis strong{display:block!important;color:#17364f!important;font-size:19px!important;margin:3px 0!important}
+          .pdf-export-page .detail-report-chart-panel,.pdf-export-page .detail-opportunity-panel{margin:0 0 13px!important;padding:14px!important;
+            border:1px solid #dce5ee!important;border-radius:9px!important;background:#fff!important}
+          .pdf-export-page .detail-report-chart-panel>header,.pdf-export-page .detail-opportunity-panel>header{
+            display:flex!important;justify-content:space-between!important;align-items:center!important;margin-bottom:8px!important}
+          .pdf-export-page .detail-report-chart-panel h3,.pdf-export-page .detail-opportunity-panel h3{margin:3px 0!important;
+            color:#17364f!important;font-size:15px!important;font-weight:900!important}
+          .pdf-export-page .detail-chart-wrap{height:305px!important;position:relative!important}
+          .pdf-export-page .detail-op-row{display:grid!important;grid-template-columns:35px minmax(0,1fr) 55px!important;gap:10px!important;
+            align-items:center!important;padding:10px 0!important;border-bottom:1px solid #edf1f4!important}
+          .pdf-export-page .detail-op-row b{color:#25435b!important;font-size:12px!important}
+          .pdf-export-page .detail-op-row p{margin:3px 0!important;color:#718292!important;font-size:10px!important;line-height:1.55!important}
+          .pdf-export-page .detail-op-row>strong{text-align:center!important;color:#ef5350!important;font-size:12px!important}
+          .pdf-export-page table{width:100%!important;border-collapse:collapse!important;margin:0 0 14px!important}
+          .pdf-export-page table th{padding:9px!important;background:#17364f!important;color:#fff!important;font-size:10px!important}
+          .pdf-export-page table td{padding:8px!important;border:1px solid #dbe3ea!important;color:#20384e!important;font-size:10px!important}
+          .pdf-export-page .legacy-inline-207{margin:0 0 10px!important;padding-bottom:7px!important;border-bottom:2px solid #17364f!important;
+            color:#17364f!important;font-size:16px!important}
+          .pdf-export-page .detail-step-card{margin-bottom:10px!important;padding:11px!important;border:1px solid #dce5ee!important;
+            border-right:4px solid #2583e8!important;border-radius:7px!important;background:#fff!important}
+          .pdf-export-page .detail-step-card header{display:flex!important;justify-content:space-between!important;align-items:center!important;
+            border-bottom:1px dashed #dce5ee!important;padding-bottom:7px!important;margin-bottom:7px!important}
+          .pdf-export-page .detail-step-card h4{margin:3px 0!important;color:#17364f!important;font-size:13px!important}
+          .pdf-export-page .detail-step-body{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:12px!important}
+          .pdf-export-page .detail-step-body ul{margin:5px 0!important;padding-right:16px!important;color:#465d70!important;font-size:9px!important;line-height:1.65!important}
+          .pdf-export-page .detail-step-images{display:flex!important;gap:5px!important;flex-wrap:wrap!important;max-width:190px!important}
+          .pdf-export-page .detail-step-images img{width:58px!important;height:58px!important;object-fit:cover!important;border-radius:5px!important}
+          .pdf-export-footer{position:absolute;bottom:13px;left:34px;right:34px;border-top:1px solid #e2e8ee;padding-top:6px;
+            display:flex;justify-content:space-between;color:#8a98a5;font-size:8px;direction:ltr}
+        `;
 
-        /*
-         * ROOT FIX:
-         * Do not rewrite Arabic direction at all.
-         * The report already has correct RTL/bidi in the live DOM.
-         * Reversing leaf nodes to LTR was corrupting Arabic shaping/order.
-         */
-        const canvases=[...source.querySelectorAll('canvas')];
-        canvases.forEach(canvas=>{
-            try{
-                const img=document.createElement('img');
-                img.src=canvas.toDataURL('image/png');
-                img.width=canvas.width;
-                img.height=canvas.height;
-                img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#fff;';
-                canvas.replaceWith(img);
-                chartReplacements.push({img,canvas});
-            }catch(_){}
-        });
+        renderRoot=document.createElement('div');
+        renderRoot.className='pdf-export-root';
+        const style=document.createElement('style'); style.textContent=css; renderRoot.appendChild(style);
+
+        const pick=(selector)=>source.querySelector(selector)?.cloneNode(true);
+        const pageNodes=[
+          ['legacy-inline-192','legacy-inline-195','.detail-report-hero','.detail-report-kpis','.detail-report-chart-panel'],
+          ['detail-opportunity-panel','legacy-inline-202'],
+          ['legacy-inline-51','legacy-inline-209']
+        ];
+
+        const pages=[];
+        for(let p=0;p<pageNodes.length;p++){
+          const page=document.createElement('section'); page.className='pdf-export-page';
+          for(const selector of pageNodes[p]){
+            const node=pick(selector);
+            if(node) page.appendChild(node);
+          }
+          const footer=document.createElement('div');
+          footer.className='pdf-export-footer';
+          footer.innerHTML='<span>FACTORY OS · TPM AUDIT REPORT</span><span>PAGE '+(p+1)+'</span>';
+          page.appendChild(footer);
+          renderRoot.appendChild(page);
+          pages.push(page);
+        }
+        document.body.appendChild(renderRoot);
+
+        /* Convert charts to images before capture. */
+        const srcCanvases=source.querySelectorAll('canvas');
+        const pageCanvases=pages.map(pg=>pg.querySelector('canvas'));
+        let ci=0;
+        for(const dst of pageCanvases){
+          if(!dst) continue;
+          const src=srcCanvases[ci++];
+          if(!src) continue;
+          try{
+            const img=document.createElement('img');
+            img.src=src.toDataURL('image/png');
+            img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#fff;';
+            dst.replaceWith(img);
+          }catch(_){}
+        }
 
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
-        const raster=await window.html2canvas(source,{
+        const {jsPDF}=window.jspdf;
+        const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+
+        for(let i=0;i<pages.length;i++){
+          const page=pages[i];
+          const canvas=await window.html2canvas(page,{
             backgroundColor:'#ffffff',
-            scale:2,
+            scale:1.5,
             useCORS:true,
             allowTaint:false,
             foreignObjectRendering:false,
-            imageTimeout:20000,
+            imageTimeout:10000,
             logging:false,
-            scrollX:0,
-            scrollY:0
-        });
-
-        /* Crop transparent/empty bottom space without touching layout. */
-        const ctx=raster.getContext('2d');
-        const px=ctx.getImageData(0,0,raster.width,raster.height).data;
-        let bottom=raster.height-1;
-        outer:
-        for(;bottom>0;bottom--){
-            for(let x=0;x<raster.width;x++){
-                const i=(bottom*raster.width+x)*4;
-                if(px[i]!==255 || px[i+1]!==255 || px[i+2]!==255 || px[i+3]!==0) break outer;
-            }
-        }
-        const contentHeight=Math.max(1,bottom+1);
-
-        const {jsPDF}=window.jspdf;
-        const pdf=new jsPDF({
-            orientation:'portrait',
-            unit:'mm',
-            format:'a4',
-            compress:true
-        });
-
-        const pageW=210,pageH=297,margin=7;
-        const usableW=pageW-margin*2,usableH=pageH-margin*2;
-        const pxPerMm=raster.width/usableW;
-        const pagePx=Math.floor(usableH*pxPerMm);
-
-        let y=0,page=0;
-        while(y<contentHeight){
-            const sliceH=Math.min(pagePx,contentHeight-y);
-            const slice=document.createElement('canvas');
-            slice.width=raster.width;
-            slice.height=sliceH;
-            const sctx=slice.getContext('2d');
-            sctx.fillStyle='#fff';
-            sctx.fillRect(0,0,slice.width,slice.height);
-            sctx.drawImage(raster,0,y,raster.width,sliceH,0,0,raster.width,sliceH);
-
-            if(page>0) pdf.addPage();
-            const hMm=sliceH/pxPerMm;
-
-            /*
-             * PNG is intentional here. JPEG can turn large white/transparent
-             * raster slices into black blocks in some Chromium/jsPDF paths.
-             */
-            pdf.addImage(
-                slice.toDataURL('image/png'),
-                'PNG',
-                margin,margin,usableW,hMm,
-                undefined,'FAST'
-            );
-
-            y+=sliceH;
-            page++;
+            width:794,
+            height:1123,
+            scrollX:0,scrollY:0
+          });
+          const data=canvas.toDataURL('image/jpeg',0.95);
+          if(i>0) pdf.addPage();
+          pdf.addImage(data,'JPEG',0,0,210,297,undefined,'FAST');
         }
 
         pdf.save('تقرير_تدقيق_TPM_تفصيلي.pdf');
-        showToast('✅ تم إنشاء PDF بنجاح');
+        showToast('✅ تم إنشاء ملف PDF بنجاح');
     }catch(err){
         console.error('Professional PDF export error:',err);
         showToast('⚠️ تعذر إنشاء PDF — راجع Console للتفاصيل');
     }finally{
-        chartReplacements.forEach(({img,canvas})=>{
-            try{img.replaceWith(canvas);}catch(_){}
-        });
-        if(actionRow) actionRow.style.visibility=oldVisibility;
+        if(renderRoot) renderRoot.remove();
     }
 };
 

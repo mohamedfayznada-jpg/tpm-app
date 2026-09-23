@@ -11,6 +11,10 @@ export const UI = {
         document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
         const target = document.getElementById(screenId);
         if (target) { target.classList.add('active'); target.style.display = 'block'; }
+
+        document.querySelectorAll('.side-item[data-screen]').forEach(item => {
+            item.classList.toggle('active', item.dataset.screen === screenId);
+        });
         window.scrollTo(0, 0);
     },
 
@@ -21,6 +25,9 @@ export const UI = {
             document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
             const target = document.getElementById(lastScreen);
             if (target) { target.classList.add('active'); target.style.display = 'block'; }
+            document.querySelectorAll('.side-item[data-screen]').forEach(item => {
+                item.classList.toggle('active', item.dataset.screen === lastScreen);
+            });
             window.scrollTo(0, 0);
         } else {
             this.showScreen('homeScreen');

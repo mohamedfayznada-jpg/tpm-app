@@ -9,12 +9,12 @@ window.renderTasks = function() {
         if(t.isFolder) {
             let total = t.subTasks ? t.subTasks.length : 0; let done = t.subTasks ? t.subTasks.filter(s=>s.status==='done').length : 0;
             htmlFolders += `
-                <div class="card glass-card" style="border-right: 4px solid var(--gold); margin-bottom:15px; padding:15px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--border-glass); padding-bottom:10px;">
-                        <b style="color:var(--gold); font-size:14px;"><i class='bx bx-folder'></i> ${t.task}</b>
-                        <div style="display:flex; gap:10px; align-items:center;"><span style="background:var(--surface-inset); padding:4px 10px; border-radius:8px; font-size:11px;">${done}/${total}</span>${deleteBtnHTML}</div>
+                <div class="card glass-card task-folder-card">
+                    <div class="task-folder-head">
+                        <b class="task-folder-title"><i class='bx bx-folder'></i> ${t.task}</b>
+                        <div class="task-folder-meta"><span class="task-folder-count">${done}/${total}</span>${deleteBtnHTML}</div>
                     </div>
-                    ${t.subTasks ? t.subTasks.map((s,i)=>`<div style="font-size:13px; padding:8px 0; border-bottom:1px solid var(--border-glass);"><label style="cursor:pointer; display:flex; gap:10px; align-items:flex-start; ${s.status==='done'?'text-decoration:line-through; color:var(--text-muted);':''}"><input type="checkbox" style="margin-top:4px;" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask('${t.id}', ${i})"> <span style="flex:1; line-height:1.5;">${s.text}</span></label></div>`).join('') : ''}
+                    ${t.subTasks ? t.subTasks.map((s,i)=>`<div class="task-folder-subtask"><label class="task-folder-check ${s.status==='done'?'is-done':''}"><input type="checkbox" class="task-folder-checkbox" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask('${t.id}', ${i})"> <span class="task-folder-text">${s.text}</span></label></div>`).join('') : ''}
                 </div>`;
         } else {
             const status = t.status || 'pending'; counts[status]++;
@@ -24,7 +24,7 @@ window.renderTasks = function() {
             else if(status === 'done') actions = `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus('${t.id}', 'pending')"><i class='bx bx-undo'></i> إعادة</button>`;
 
             cols[status] += `
-            <div class="kanban-item">
+            <div class="kanban-item task-kanban-card">
                 <div style="font-weight:bold; margin-bottom:10px; font-size:14px;">${t.task}</div>
                 ${t.image ? `<img src="${t.image}" style="width:100%; border-radius:10px; margin-bottom:10px; border:1px solid var(--border-glass); cursor:pointer;" onclick="window.open('${t.image}')">` : ''}
                 <div style="font-size:11px; color:var(--text-muted); margin-bottom:15px;"><i class='bx bx-buildings'></i> ${t.dept}</div>

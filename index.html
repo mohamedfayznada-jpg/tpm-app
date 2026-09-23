@@ -411,11 +411,11 @@
                     <div id="deptGoalDisplay" class="legacy-inline-55"></div>
                 </div>
 
-                <div class="dashboard-stats">
-                    <div class="stat-card"><div class="stat-value success-text" id="deptAuditScore">0%</div><div class="stat-label">المراجعة</div></div>
-                    <div class="stat-card"><div class="stat-value primary-text" id="deptOEE">0%</div><div class="stat-label">OEE</div></div>
-                    <div class="stat-card"><div class="stat-value danger-text" id="deptOpenTags">0</div><div class="stat-label">التاجات المفتوحة</div></div>
-                    <div class="stat-card"><div class="stat-value warning-text" id="deptKaizens">0</div><div class="stat-label">الكايزن</div></div>
+                <div class="dashboard-stats jh-dept-kpi-strip">
+                    <div class="stat-card"><div class="stat-icon success-text"><i class='bx bx-badge-check'></i></div><div class="stat-value success-text" id="deptAuditScore">0%</div><div class="stat-label">آخر نتيجة Audit</div></div>
+                    <div class="stat-card"><div class="stat-icon primary-text"><i class='bx bx-target-lock'></i></div><div class="stat-value primary-text" id="deptOEE">—</div><div class="stat-label">المستهدف المعتمد</div></div>
+                    <div class="stat-card"><div class="stat-icon danger-text"><i class='bx bx-purchase-tag-alt'></i></div><div class="stat-value danger-text" id="deptOpenTags">0</div><div class="stat-label">تاجات مفتوحة</div></div>
+                    <div class="stat-card"><div class="stat-icon warning-text"><i class='bx bx-bulb'></i></div><div class="stat-value warning-text" id="deptKaizens">0</div><div class="stat-label">كايزن مسجلة</div></div>
                 </div>
 
                 <div class="card legacy-inline-56">
@@ -430,11 +430,20 @@
                     <div id="jhCalendarGrid" class="legacy-inline-61"></div>
                 </div>
                 
-                <div class="grid-layout legacy-inline-62">
-                    <div class="card legacy-inline-63"><canvas id="jhMiniTrendChart"></canvas></div>
-                    <div class="card legacy-inline-63"><canvas id="jhTimeChart"></canvas></div>
-                    <div class="card legacy-inline-63"><canvas id="jhTagMatrixChart"></canvas></div>
-                </div>
+                <section class="jh-analytics-board">
+                    <article class="jh-chart-card jh-chart-wide">
+                        <div class="jh-chart-head"><div><span>PERFORMANCE TREND</span><h4>تطور نتائج المراجعات</h4><small>آخر 8 مراجعات مسجلة للقسم</small></div><i class='bx bx-line-chart'></i></div>
+                        <div class="jh-chart-canvas"><canvas id="jhMiniTrendChart"></canvas></div>
+                    </article>
+                    <article class="jh-chart-card">
+                        <div class="jh-chart-head"><div><span>CLIT EXECUTION</span><h4>معدل تنفيذ الفحص</h4><small>نسبة البنود المكتملة من سجلات التنفيذ</small></div><i class='bx bx-list-check'></i></div>
+                        <div class="jh-chart-canvas"><canvas id="jhTimeChart"></canvas></div>
+                    </article>
+                    <article class="jh-chart-card">
+                        <div class="jh-chart-head"><div><span>TAG FLOW</span><h4>حركة التاجات</h4><small>مفتوح مقابل مغلق حسب المصدر</small></div><i class='bx bx-purchase-tag-alt'></i></div>
+                        <div class="jh-chart-canvas"><canvas id="jhTagMatrixChart"></canvas></div>
+                    </article>
+                </section>
 
                 <h3 class="section-title legacy-inline-64"><i class='bx bx-briefcase-alt-2'></i> أدوات وسجلات الصيانة الذاتية</h3>
                 <div class="grid-layout legacy-inline-65">

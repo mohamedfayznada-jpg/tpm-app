@@ -859,7 +859,7 @@ window.viewDetailedReport = function(id) {
     document.getElementById('detStepsContainer').innerHTML=detailsHtml||'<div class="reports-empty">لا توجد تفاصيل مسجلة.</div>';
     const opp=document.getElementById('detOpportunityContainer');
     if(opp)opp.innerHTML=weak.slice(0,5).map((x,i)=>{
-        const sourceRecord=results?.[x.k]||{};
+        const sourceRecord=a.results?.[x.k]||{};
         const actual=Array.isArray(sourceRecord.improvements)?sourceRecord.improvements.filter(Boolean):[];
         const fallback=x.p<50?'إجراء تصحيحي عاجل مع تحديد المالك وموعد الإغلاق والتحقق من الفاعلية.':x.p<80?'تنفيذ إجراء تحسين محدد، ثم إعادة التحقق من المحور خلال دورة المراجعة القادمة.':'الحفاظ على المعيار الحالي مع تحسين تدريجي ومتابعة الاستدامة.';
         const detail=actual.length?actual.join(' — '):fallback;

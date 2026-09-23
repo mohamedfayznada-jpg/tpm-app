@@ -877,118 +877,154 @@ window.downloadProfessionalPDF = async function(){
         return showToast('⚠️ مكونات إنشاء PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
     }
 
-    const buttons=document.querySelectorAll('#detailedReportScreen>.row-flex');
-    buttons.forEach(b=>b.style.visibility='hidden');
+    const actionRow=document.querySelectorAll('#detailedReportScreen>.row-flex');
+    actionRow.forEach(el=>el.style.visibility='hidden');
 
+    const wait=ms=>new Promise(r=>setTimeout(r,ms));
     let host=null;
     try{
-        showToast('جاري إنشاء PDF مباشر... ⏳');
+        showToast('جاري تجهيز PDF احترافي... ⏳');
         if(document.fonts?.ready) await document.fonts.ready;
 
         host=document.createElement('div');
-        host.id='directPdfRenderHost';
+        host.id='directPdfPagesHost';
         Object.assign(host.style,{
-            position:'fixed',left:'0',top:'0',width:'794px',
-            background:'#fff',padding:'0',margin:'0',
-            zIndex:'2147483647',visibility:'visible',opacity:'1',
-            direction:'rtl',boxSizing:'border-box',overflow:'visible'
+            position:'fixed',left:'-100000px',top:'0',width:'794px',
+            background:'#fff',padding:'0',margin:'0',zIndex:'-1',
+            direction:'rtl',visibility:'visible'
         });
 
-        const clone=source.cloneNode(true);
-        clone.removeAttribute('id');
-        Object.assign(clone.style,{
-            display:'block',width:'794px',maxWidth:'794px',margin:'0',
-            padding:'28px 30px 34px',background:'#fff',
-            border:'0',borderTop:'5px solid #f1ad2f',
-            borderRadius:'0',boxShadow:'none',overflow:'visible',
-            direction:'rtl',boxSizing:'border-box',
-            fontFamily:'Cairo, Arial, Tahoma, sans-serif',
-            color:'#1d2d3a',transform:'none'
-        });
-
-        const style=document.createElement('style');
-        style.textContent=`
-          #directPdfRenderHost,#directPdfRenderHost *{
-            visibility:visible!important;box-sizing:border-box!important;
-            letter-spacing:normal!important;word-spacing:normal!important;
+        const baseStyle=document.createElement('style');
+        baseStyle.textContent=`
+          #directPdfPagesHost{font-family:Cairo,Arial,Tahoma,sans-serif;color:#1d2d3a;background:#fff;direction:rtl}
+          #directPdfPagesHost .pdf-page{
+            width:794px;min-height:1123px;padding:38px 42px 42px;
+            box-sizing:border-box;background:#fff;direction:rtl;overflow:hidden;
           }
-          #directPdfRenderHost{isolation:isolate!important}
-          #directPdfRenderHost .detail-report-hero{display:grid!important;grid-template-columns:145px minmax(0,1fr) 170px!important;gap:16px!important;align-items:center!important;padding:20px!important}
-          #directPdfRenderHost .detail-report-kpis{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important;padding:14px 0!important}
-          #directPdfRenderHost .detail-report-chart-panel,#directPdfRenderHost .detail-opportunity-panel{margin:0 0 14px!important}
-          #directPdfRenderHost .detail-chart-wrap{height:300px!important}
-          #directPdfRenderHost .detail-op-row{padding:11px 0!important}
-          #directPdfRenderHost .legacy-inline-195{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important}
-          #directPdfRenderHost .legacy-inline-196{font-size:11px!important;line-height:1.6!important}
-          #directPdfRenderHost .legacy-inline-193{font-size:28px!important;line-height:1.15!important}
-          #directPdfRenderHost .legacy-inline-194{font-size:13px!important;line-height:1.5!important}
-          #directPdfRenderHost .detail-report-summary h2{font-size:25px!important;line-height:1.25!important}
-          #directPdfRenderHost .detail-report-summary p{font-size:11px!important;line-height:1.8!important}
-          #directPdfRenderHost .detail-step-card{break-inside:avoid!important}
+          #directPdfPagesHost .pdf-page + .pdf-page{margin-top:20px}
+          #directPdfPagesHost .pdf-masthead{text-align:center;padding-bottom:20px;border-bottom:1px solid #dce5ee}
+          #directPdfPagesHost .pdf-masthead h1{margin:0;color:#17364f;font-size:29px;line-height:1.15;font-weight:900}
+          #directPdfPagesHost .pdf-masthead h3{margin:7px 0 0;color:#536b7e;font-size:13px;line-height:1.5}
+          #directPdfPagesHost .legacy-inline-195{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:18px 0!important;padding:12px!important;background:#f8fafc!important;border:1px solid #dce5ee!important;border-radius:9px!important}
+          #directPdfPagesHost .legacy-inline-196{font-size:11px!important;line-height:1.6!important}
+          #directPdfPagesHost .detail-report-hero{display:grid!important;grid-template-columns:145px minmax(0,1fr) 170px!important;gap:16px!important;align-items:center!important;padding:20px!important}
+          #directPdfPagesHost .detail-report-kpis{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important;padding:14px 0!important}
+          #directPdfPagesHost .detail-report-chart-panel,#directPdfPagesHost .detail-opportunity-panel{margin:0 0 14px!important}
+          #directPdfPagesHost .detail-chart-wrap{height:270px!important}
+          #directPdfPagesHost .detail-op-row{padding:10px 0!important;break-inside:avoid}
+          #directPdfPagesHost table{width:100%!important;border-collapse:collapse!important}
+          #directPdfPagesHost table th,#directPdfPagesHost table td{padding:8px!important}
+          #directPdfPagesHost .detail-step-card{break-inside:avoid!important;margin-bottom:12px!important}
+          #directPdfPagesHost .detail-step-body{grid-template-columns:1fr auto!important}
+          #directPdfPagesHost .detail-step-body ul{font-size:11px!important;line-height:1.8!important}
+          #directPdfPagesHost .detail-step-images img{width:78px!important;height:78px!important}
+          #directPdfPagesHost .pdf-section-title{margin:0 0 14px;padding-bottom:9px;border-bottom:2px solid #17364f;color:#17364f;font-size:18px;font-weight:900}
+          #directPdfPagesHost .pdf-footer{margin-top:18px;padding-top:14px;border-top:1px solid #dce5ee;text-align:center;color:#536b7e;font-size:11px}
         `;
-        host.appendChild(style);
-        host.appendChild(clone);
+        host.appendChild(baseStyle);
         document.body.appendChild(host);
 
-        /* Convert live charts to PNG so html2canvas never has to paint Chart.js canvases. */
-        const srcCanvases=source.querySelectorAll('canvas');
-        const dstCanvases=clone.querySelectorAll('canvas');
-        srcCanvases.forEach((src,i)=>{
-            const dst=dstCanvases[i];
-            if(!dst) return;
-            try{
-                const img=document.createElement('img');
-                img.src=src.toDataURL('image/png');
-                img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#fff;';
-                dst.replaceWith(img);
-            }catch(_){}
+        const copyNode=(node)=>node ? node.cloneNode(true) : null;
+        const canvasToImg=(root)=>{
+            const canvases=source.querySelectorAll('canvas');
+            const clones=root.querySelectorAll('canvas');
+            clones.forEach((dst,i)=>{
+                const src=canvases[i];
+                if(!src) return;
+                try{
+                    const img=document.createElement('img');
+                    img.src=src.toDataURL('image/png');
+                    img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#fff;';
+                    dst.replaceWith(img);
+                }catch(_){}
+            });
+        };
+        const makePage=()=>{
+            const p=document.createElement('div');
+            p.className='pdf-page';
+            host.appendChild(p);
+            return p;
+        };
+
+        const mast=source.querySelector('.legacy-inline-192');
+        const meta=source.querySelector('.legacy-inline-195');
+        const hero=source.querySelector('.detail-report-hero');
+        const kpis=source.querySelector('.detail-report-kpis');
+        const chart=source.querySelector('.detail-report-chart-panel');
+        const opp=source.querySelector('.detail-opportunity-panel');
+        const table=source.querySelector('table');
+        const notes=source.querySelector('.legacy-inline-51');
+        const signature=source.querySelector('.legacy-inline-209');
+
+        /* PAGE 1 — executive overview */
+        let p=makePage();
+        let n=copyNode(mast); if(n){n.classList.add('pdf-masthead');p.appendChild(n)}
+        n=copyNode(meta); if(n)p.appendChild(n);
+        n=copyNode(hero); if(n)p.appendChild(n);
+        n=copyNode(kpis); if(n)p.appendChild(n);
+        n=copyNode(chart); if(n)p.appendChild(n);
+
+        /* PAGE 2 — decision opportunities + score table */
+        p=makePage();
+        const title=document.createElement('h2'); title.className='pdf-section-title'; title.textContent='فرص التحسين وخطة القرار'; p.appendChild(title);
+        n=copyNode(opp); if(n)p.appendChild(n);
+        n=copyNode(table); if(n)p.appendChild(n);
+
+        /* PAGE 3+ — detailed audit notes, chunked to avoid ugly page cuts */
+        const cards=notes?.querySelectorAll('.detail-step-card')||[];
+        let chunk=[];
+        const flush=()=>{
+            if(!chunk.length) return;
+            const pg=makePage();
+            const h=document.createElement('h2'); h.className='pdf-section-title'; h.textContent='📝 الملاحظات وفرص التحسين'; pg.appendChild(h);
+            chunk.forEach(card=>pg.appendChild(card.cloneNode(true)));
+            chunk=[];
+        };
+        cards.forEach((card,idx)=>{
+            chunk.push(card);
+            if(chunk.length>=3) flush();
         });
+        flush();
 
-        await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+        if(signature){
+            p=makePage();
+            const sig=copyNode(signature);
+            p.appendChild(sig);
+            const foot=document.createElement('div'); foot.className='pdf-footer'; foot.textContent='FACTORY OS • TPM Audit Report'; p.appendChild(foot);
+        }
 
-        /* Normal html2canvas renderer is deliberately used here.
-           foreignObjectRendering is what was producing black/empty pages. */
-        const canvas=await window.html2canvas(clone,{
-            backgroundColor:'#ffffff',
-            scale:2,
-            useCORS:true,
-            allowTaint:false,
-            foreignObjectRendering:false,
-            imageTimeout:15000,
-            logging:false,
-            width:794,
-            windowWidth:794,
-            scrollX:0,
-            scrollY:0
-        });
+        canvasToImg(host);
+        await wait(250);
 
+        const pages=[...host.querySelectorAll('.pdf-page')];
         const {jsPDF}=window.jspdf;
         const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
-        const pageW=210,pageH=297,marginX=7,marginY=7;
-        const usableW=pageW-marginX*2,usableH=pageH-marginY*2;
-        const pxPerMm=canvas.width/usableW;
-        const pagePx=Math.floor(usableH*pxPerMm);
-
-        let y=0,page=0;
-        while(y<canvas.height){
-            const sliceH=Math.min(pagePx,canvas.height-y);
-            const slice=document.createElement('canvas');
-            slice.width=canvas.width;slice.height=sliceH;
-            const ctx=slice.getContext('2d');
-            ctx.fillStyle='#fff';ctx.fillRect(0,0,slice.width,slice.height);
-            ctx.drawImage(canvas,0,y,canvas.width,sliceH,0,0,slice.width,slice.height);
-            if(page>0) pdf.addPage();
-            pdf.addImage(slice.toDataURL('image/jpeg',0.94),'JPEG',marginX,marginY,usableW,sliceH/pxPerMm,undefined,'FAST');
-            y+=sliceH;page++;
+        const pageW=210,pageH=297,margin=0;
+        const renderW=794,renderH=1123;
+        for(let i=0;i<pages.length;i++){
+            const canvas=await window.html2canvas(pages[i],{
+                backgroundColor:'#ffffff',
+                scale:2,
+                useCORS:true,
+                allowTaint:false,
+                foreignObjectRendering:false,
+                logging:false,
+                width:renderW,
+                windowWidth:renderW,
+                height:renderH,
+                scrollX:0,scrollY:0
+            });
+            if(i>0) pdf.addPage();
+            pdf.addImage(canvas.toDataURL('image/jpeg',0.94),'JPEG',margin,margin,pageW,pageH,undefined,'FAST');
         }
 
         pdf.save('تقرير_تدقيق_TPM_تفصيلي.pdf');
-        showToast('✅ تم إنشاء PDF بنجاح');
+        showToast('✅ تم إنشاء PDF منسق بنجاح');
     }catch(err){
         console.error('Professional PDF export error:',err);
         showToast('⚠️ تعذر إنشاء PDF — راجع Console للتفاصيل');
     }finally{
-        buttons.forEach(b=>b.style.visibility='');
+        actionRow.forEach(el=>el.style.visibility='');
         if(host) host.remove();
     }
 };

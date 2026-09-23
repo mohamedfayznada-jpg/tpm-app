@@ -187,7 +187,33 @@ window.submitManualKaizen = async function() {
                 try { await window.deleteStorageImage(assetUrl); } catch (cleanupError) { console.error('Kaizen image cleanup error:', cleanupError); }
             }
         }
-        showToast(`⚠️ لم يُعتمد كايزن: ${error.message || 'تعذر حفظ السجل في قاعدة البيانات.'}`);
+        const errorMessage = error?.message || 'تعذر حفظ السجل في قاعدة البيانات.';
+        console.error('Manual Kaizen save error details:', {
+            message: errorMessage,
+            code: error?.code || null,
+            name: error?.name || null,
+            stack: error?.stack || null
+        });
+        let debugPanel = document.getElementById('kaizenDebugPanel');
+        if (!debugPanel) {
+            debugPanel = document.createElement('div');
+            debugPanel.id = 'kaizenDebugPanel';
+            debugPanel.style.cssText = 'position:fixed;right:24px;bottom:24px;z-index:99999;width:min(560px,calc(100vw - 48px));background:#fff;border:2px solid #ef5350;border-radius:12px;box-shadow:0 12px 35px rgba(0,0,0,.25);padding:16px;direction:rtl;font-family:Cairo,Tajawal,sans-serif;';
+            document.body.appendChild(debugPanel);
+        }
+        debugPanel.innerHTML = `
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid #f0d3d3;padding-bottom:10px;margin-bottom:10px;">
+                <strong style="color:#c62828;font-size:15px;">⚠️ تعذر حفظ كايزن</strong>
+                <button type="button" onclick="this.closest('#kaizenDebugPanel')?.remove()" style="border:0;background:#fbe9e7;color:#b71c1c;border-radius:7px;padding:5px 9px;cursor:pointer;">إغلاق</button>
+            </div>
+            <div style="color:#263238;font-size:13px;line-height:1.8;">
+                <b>الخطأ:</b> ${window.escapeTPM(errorMessage)}
+            </div>
+            ${error?.code ? `<div style="margin-top:6px;color:#6d4c41;font-size:12px;"><b>Code:</b> ${window.escapeTPM(error.code)}</div>` : ''}
+            <div style="margin-top:10px;background:#fff8f7;border:1px solid #f3dddd;border-radius:8px;padding:9px;color:#795548;font-size:11px;">
+                التفاصيل الكاملة موجودة في Developer Console (F12 → Console).
+            </div>`;
+        showToast(`⚠️ لم يُعتمد كايزن: ${errorMessage}`);
     } finally {
         btn.innerHTML = originalLabel;
         btn.disabled = false;

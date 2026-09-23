@@ -82,6 +82,7 @@ window.hasRole = function(...allowed) { return currentUser && currentUser.role &
 // 🔐 محرك المصادقة والحماية (Enterprise Auth Flow)
 // ==========================================
 window.login = async function() {
+    if (typeof window.__tpmModularLogin === 'function') return window.__tpmModularLogin();
     const userInp = document.getElementById('loginUsername').value.trim();
     const passInp = document.getElementById('loginPassword').value.trim();
     if(!userInp || !passInp) return showToast('⚠️ برجاء كتابة اسم المستخدم وكلمة المرور');

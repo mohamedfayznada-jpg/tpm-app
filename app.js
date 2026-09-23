@@ -882,8 +882,9 @@ window.downloadProfessionalPDF = async function(){
         host.id='directPdfRenderHost';
         host.dir='rtl';
         Object.assign(host.style,{
-            position:'fixed',left:'-100000px',top:'0',width:'794px',
-            background:'#fff',padding:'0',margin:'0',zIndex:'-1',
+            position:'fixed',left:'0',top:'0',width:'794px',
+            background:'#fff',padding:'0',margin:'0',zIndex:'2147483647',
+            visibility:'visible',opacity:'1',
             direction:'rtl',boxSizing:'border-box',overflow:'visible'
         });
 

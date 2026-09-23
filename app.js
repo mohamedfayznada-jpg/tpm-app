@@ -1475,7 +1475,7 @@ window.updateJHLiveSummary = function(){
 window.setDeptGoal = function() {
     if(!currentJHDept) return showToast('⚠️ يرجى اختيار القسم أولاً');
     let currentGoal = deptGoalsData[currentJHDept] || 85;
-    let newGoal = prompt(`أدخل النسبة المئوية للمستهدف (Target OEE) لقسم ${currentJHDept}:\n(مثال: 85)`, currentGoal);
+    let newGoal = prompt(`أدخل النسبة المئوية للمستهدف (Target JH) لقسم ${currentJHDept}:\n(مثال: 85)`, currentGoal);
     if (newGoal && !isNaN(newGoal) && newGoal > 0 && newGoal <= 100) {
         window.syncRecord(`dept_goals/${currentJHDept}`, parseInt(newGoal));
         showToast('تم تحديث المستهدف بنجاح 🎯');

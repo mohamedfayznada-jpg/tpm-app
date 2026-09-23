@@ -196,6 +196,13 @@ window.renderKaizenFeed = function() {
         const commentsCount = comments.length;
         const beforeUrl = image?.before?.data ? safe(image.before.data,'') : '';
         const afterUrl = image?.after?.data ? safe(image.after.data,'') : '';
+        const comparisonMarkup = beforeUrl && afterUrl ? `
+                    <div class="kaizen-compare-panel after"><div class="kaizen-compare-label">بعد</div><img src="${afterUrl}" alt="بعد" loading="lazy"><small>نتائج مستقرة ضمن الحدود</small></div>
+                    <div class="kaizen-improvement-arrow"><i class='bx bx-left-arrow-alt'></i><span>من المشكلة<br>إلى التحسين</span></div>
+                    <div class="kaizen-compare-panel before"><div class="kaizen-compare-label">قبل</div><img src="${beforeUrl}" alt="قبل" loading="lazy"><small>تذبذب كبير في النتائج</small></div>` : `
+                    <div class="kaizen-compare-panel after legacy-crop"><div class="kaizen-compare-label">بعد</div><img src="${imageSrc}" alt="بعد" loading="lazy"></div>
+                    <div class="kaizen-improvement-arrow"><i class='bx bx-left-arrow-alt'></i><span>من المشكلة<br>إلى التحسين</span></div>
+                    <div class="kaizen-compare-panel before legacy-crop"><div class="kaizen-compare-label">قبل</div><img src="${imageSrc}" alt="قبل" loading="lazy"></div>`;
         return `<article class="kaizen-post">
             <header class="kaizen-post-head">
                 <div class="kaizen-author">
@@ -216,11 +223,7 @@ window.renderKaizenFeed = function() {
                     <div><span>الإجراء</span><b>${safe(k.a3?.countermeasure || '—')}</b></div>
                 </div>
                 <div class="kaizen-visual-compare">
-                    ${beforeUrl && afterUrl ? `
-                    <div class="kaizen-compare-panel after"><div class="kaizen-compare-label">بعد</div><img src="${afterUrl}" alt="بعد" loading="lazy"><small>نتائج مستقرة ضمن الحدود</small></div>
-                    <div class="kaizen-improvement-arrow"><i class='bx bx-left-arrow-alt'></i><span>من المشكلة<br>إلى التحسين</span></div>
-                    <div class="kaizen-compare-panel before"><div class="kaizen-compare-label">قبل</div><img src="${beforeUrl}" alt="قبل" loading="lazy"><small>تذبذب كبير في النتائج</small></div>` : `
-                    <div class="kaizen-single-image"><img src="${imageSrc}" alt="صورة كايزن" loading="lazy"></div>`}
+                    ${comparisonMarkup}
                 </div>
                 <div class="kaizen-post-actions">
                     <div class="kaizen-actions-left">

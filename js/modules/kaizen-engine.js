@@ -81,11 +81,11 @@ window.submitManualKaizen = async function() {
             existing.results.ManualKaizen = existing.results.ManualKaizen || { images: {} };
             existing.results.ManualKaizen.images = existing.results.ManualKaizen.images || {};
             existing.results.ManualKaizen.images.img_1 = { ...(existing.results.ManualKaizen.images.img_1 || {}), title: window.sanitizeInput(title) };
-            if (kaizenImgs.before && /^data:image\\//i.test(kaizenImgs.before)) {
+            if (kaizenImgs.before && /^data:image\//i.test(kaizenImgs.before)) {
                 if (btn) btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري رفع صورة قبل…";
                 existing.results.ManualKaizen.images.before = { data: await uploadImageToStorage(kaizenImgs.before,{folder:'kaizen/before'}) };
             }
-            if (kaizenImgs.after && /^data:image\\//i.test(kaizenImgs.after)) {
+            if (kaizenImgs.after && /^data:image\//i.test(kaizenImgs.after)) {
                 if (btn) btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري رفع صورة بعد…";
                 existing.results.ManualKaizen.images.after = { data: await uploadImageToStorage(kaizenImgs.after,{folder:'kaizen/after'}) };
             }

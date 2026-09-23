@@ -1119,44 +1119,118 @@
     </div>
 
     <div class="container screen" id="detailedReportScreen">
-        <div id="printableReportArea" class="legacy-inline-191">
-            <div class="legacy-inline-192">
-                <h1 class="legacy-inline-193">FACTORY OS</h1>
-                <h3 class="legacy-inline-194">تقرير تدقيق تقييم (TPM)</h3>
+        <div class="audit-report-shell" id="printableReportArea">
+            <div class="audit-report-topbar report-ui-only">
+                <button class="report-back-btn" onclick="showScreen('historyScreen')"><i class='bx bx-arrow-back'></i><span>العودة للتقارير</span></button>
+                <div class="report-topbar-actions">
+                    <button class="report-icon-btn" title="فتح/غلق كل الأقسام" onclick="toggleAllReportSections()"><i class='bx bx-collapse-alt'></i></button>
+                    <button class="report-icon-btn" title="تحميل PDF" onclick="downloadProfessionalPDF()"><i class='bx bxs-file-pdf'></i></button>
+                    <button class="report-icon-btn" title="مشاركة" onclick="shareWhatsApp()"><i class='bx bx-share-alt'></i></button>
+                </div>
             </div>
-            <div class="legacy-inline-195">
-                <div class="legacy-inline-196"><b>📅 التاريخ:</b> <span id="detDate"></span></div>
-                <div class="legacy-inline-196"><b>🏭 القسم:</b> <span id="detDept"></span></div>
-                <div class="legacy-inline-196"><b>⚙️ الماكينة:</b> <span id="detMachine"></span></div>
-                <div class="legacy-inline-196"><b>👤 المراجع:</b> <span id="detAuditor"></span></div>
+
+            <div class="audit-report-brand">
+                <div>
+                    <span class="eyebrow"><i class='bx bx-shield-quarter'></i> FACTORY OS · TPM INTELLIGENCE</span>
+                    <h1>تقرير تدقيق الأداء</h1>
+                    <p>تحليل تنفيذي تفاعلي للمراجعة، المخاطر، وفجوات التحسين.</p>
+                </div>
+                <div class="audit-report-brand-mark"><i class='bx bx-line-chart'></i><span>TPM<br>REPORT</span></div>
             </div>
-            <div class="detail-report-hero">
-                <div class="detail-score-box"><strong id="detPct">0%</strong><span>النتيجة النهائية</span></div>
-                <div class="detail-report-summary"><span class="eyebrow">EXECUTIVE AUDIT REPORT</span><h2 id="detGrade">--</h2><p id="detDecisionSummary">ملخص تنفيذي للمراجعة واتجاه القرار.</p></div>
-                <div class="detail-meta-badges"><span id="detPriorityBadge">أولوية: —</span><span id="detRiskBadge">مستوى المخاطر: —</span></div>
+
+            <div class="audit-meta-strip">
+                <div><i class='bx bx-calendar'></i><span>التاريخ</span><b id="detDate"></b></div>
+                <div><i class='bx bx-buildings'></i><span>القسم</span><b id="detDept"></b></div>
+                <div><i class='bx bx-cog'></i><span>الماكينة</span><b id="detMachine"></b></div>
+                <div><i class='bx bx-user-check'></i><span>المراجع</span><b id="detAuditor"></b></div>
             </div>
-            <section class="detail-report-kpis" id="detDecisionKpis"></section>
-            <section class="detail-report-chart-panel"><header><div><span class="eyebrow">PERFORMANCE PROFILE</span><h3>بصمة أداء المراجعة</h3></div></header><div class="detail-chart-wrap"><canvas id="detailRadarChart"></canvas></div></section>
-            <section class="detail-opportunity-panel"><header><div><span class="eyebrow">ACTIONABLE INSIGHTS</span><h3>فرص التحسين وخطة القرار</h3></div></header><div id="detOpportunityContainer"></div></section>
-            <table class="legacy-inline-202">
-                <thead class="legacy-inline-203"><tr><th class="legacy-inline-204">الخطوة</th><th class="legacy-inline-205">الدرجة المستحقة</th><th class="legacy-inline-205">نسبة الإنجاز</th></tr></thead>
-                <tbody id="detStepsTableBody" class="legacy-inline-206"></tbody>
-            </table>
-            <div class="legacy-inline-51">
-                <h3 class="legacy-inline-207">📝 الملاحظات وفرص التحسين</h3>
-                <div id="detStepsContainer" class="legacy-inline-208"></div>
+
+            <div class="audit-executive-card">
+                <div class="audit-score-ring">
+                    <div class="audit-score-ring-inner"><strong id="detPct">0%</strong><span>النتيجة</span></div>
+                </div>
+                <div class="audit-executive-copy">
+                    <span class="eyebrow">EXECUTIVE DECISION</span>
+                    <h2 id="detGrade">--</h2>
+                    <p id="detDecisionSummary">ملخص تنفيذي للمراجعة واتجاه القرار.</p>
+                    <div class="audit-badge-row">
+                        <span id="detPriorityBadge"><i class='bx bx-target-lock'></i> أولوية: —</span>
+                        <span id="detRiskBadge"><i class='bx bx-error-circle'></i> مستوى المخاطر: —</span>
+                    </div>
+                </div>
+                <div class="audit-decision-side">
+                    <span>حالة القرار</span>
+                    <strong id="detDecisionState">مراجعة</strong>
+                    <small id="detDecisionHint">تحليل مستمر حسب مستوى الفجوة.</small>
+                </div>
             </div>
-            <div class="legacy-inline-209">
-                <b class="legacy-inline-210">توقيع المراجع المعتمد</b><br>
-                <div id="detSignatureImg" class="legacy-inline-211"></div>
-                <div class="legacy-inline-212"></div>
-            </div>
+
+            <section class="audit-section-card audit-kpi-section">
+                <div class="audit-section-head">
+                    <div><span class="eyebrow">AT A GLANCE</span><h3>ملخص الأداء</h3></div>
+                    <span class="section-icon"><i class='bx bx-grid-alt'></i></span>
+                </div>
+                <div class="audit-kpi-grid" id="detDecisionKpis"></div>
+            </section>
+
+            <section class="audit-section-card" id="auditPerformanceSection">
+                <button class="audit-section-head audit-collapse-trigger" onclick="toggleReportSection('auditPerformanceSection')">
+                    <div><span class="eyebrow">PERFORMANCE PROFILE</span><h3>بصمة أداء المراجعة</h3></div>
+                    <span class="section-icon"><i class='bx bx-chevron-down'></i></span>
+                </button>
+                <div class="audit-collapsible-body">
+                    <div class="audit-chart-toolbar">
+                        <span><i class='bx bx-radar'></i> مقارنة المحاور</span>
+                        <small>100% = المستوى المستهدف</small>
+                    </div>
+                    <div class="detail-chart-wrap audit-radar-stage"><canvas id="detailRadarChart"></canvas></div>
+                </div>
+            </section>
+
+            <section class="audit-section-card" id="auditOpportunitySection">
+                <button class="audit-section-head audit-collapse-trigger" onclick="toggleReportSection('auditOpportunitySection')">
+                    <div><span class="eyebrow">ACTIONABLE INSIGHTS</span><h3>فرص التحسين وخطة القرار</h3></div>
+                    <span class="section-icon"><i class='bx bx-chevron-down'></i></span>
+                </button>
+                <div class="audit-collapsible-body">
+                    <div class="audit-insight-banner"><i class='bx bx-bulb'></i><span>اضغط على أي فرصة لعرض تفاصيلها والإجراء المقترح.</span></div>
+                    <div id="detOpportunityContainer"></div>
+                </div>
+            </section>
+
+            <section class="audit-section-card" id="auditScoreSection">
+                <button class="audit-section-head audit-collapse-trigger" onclick="toggleReportSection('auditScoreSection')">
+                    <div><span class="eyebrow">AUDIT MATRIX</span><h3>مصفوفة نتائج المحاور</h3></div>
+                    <span class="section-icon"><i class='bx bx-table'></i></span>
+                </button>
+                <div class="audit-collapsible-body">
+                    <div class="audit-table-wrap">
+                        <table>
+                            <thead><tr><th>المحور</th><th>الدرجة</th><th>الإنجاز</th><th>الحالة</th></tr></thead>
+                            <tbody id="detStepsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="audit-section-card" id="auditEvidenceSection">
+                <button class="audit-section-head audit-collapse-trigger" onclick="toggleReportSection('auditEvidenceSection')">
+                    <div><span class="eyebrow">FIELD EVIDENCE</span><h3>الملاحظات وأدلة المراجعة</h3></div>
+                    <span class="section-icon"><i class='bx bx-image-alt'></i></span>
+                </button>
+                <div class="audit-collapsible-body" id="detStepsContainer"></div>
+            </section>
+
+            <section class="audit-signoff-card">
+                <div><div><span class="eyebrow">AUDIT SIGN-OFF</span><h3>اعتماد المراجعة</h3><p>توقيع المراجع المعتمد وتثبيت النسخة النهائية من التقرير.</p></div><i class='bx bx-check-shield'></i></div>
+                <div class="audit-signature-box" id="detSignatureImg"></div>
+            </section>
         </div>
-        
-        <div class="row-flex">
-            <button class="btn btn-primary flex-1 legacy-inline-213" onclick="downloadProfessionalPDF()"><i class='bx bxs-file-pdf'></i> تحميل PDF</button>
-            <button class="btn btn-success flex-1 legacy-inline-213" onclick="shareWhatsApp()"><i class='bx bxl-whatsapp'></i> مشاركة</button>
-            <button class="btn btn-outline flex-1 legacy-inline-213" onclick="showScreen('historyScreen')"><i class='bx bx-archive-in'></i> الأرشيف</button>
+
+        <div class="audit-report-footer-actions report-ui-only">
+            <button class="btn btn-primary" onclick="downloadProfessionalPDF()"><i class='bx bxs-file-pdf'></i> تحميل PDF</button>
+            <button class="btn btn-success" onclick="shareWhatsApp()"><i class='bx bx-share-alt'></i> مشاركة</button>
+            <button class="btn btn-outline" onclick="showScreen('historyScreen')"><i class='bx bx-archive-in'></i> الأرشيف</button>
         </div>
     </div>
 

@@ -873,79 +873,101 @@ window.viewDetailedReport = function(id) {
 window.downloadProfessionalPDF = async function(){
     const source=document.getElementById('printableReportArea');
     if(!source) return showToast('⚠️ تعذر العثور على التقرير');
-    if(!window.html2pdf) return showToast('⚠️ مكتبة PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
+    if(!window.html2canvas || !window.jspdf?.jsPDF){
+        return showToast('⚠️ مكونات إنشاء PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
+    }
 
-    const old={
-        direction:source.style.direction,
-        fontFamily:source.style.fontFamily,
-        width:source.style.width,
-        maxWidth:source.style.maxWidth,
-        margin:source.style.margin,
-        background:source.style.background,
-        visibility:source.style.visibility
-    };
-
+    const actionBar=document.querySelector('#detailedReportScreen>.row-flex');
+    const originalCss=source.getAttribute('style')||'';
+    const restoredCanvases=[];
     try{
-        showToast('جاري إنشاء ملف PDF... ⏳');
+        showToast('جاري إنشاء PDF مباشر... ⏳');
         if(document.fonts?.ready) await document.fonts.ready;
 
-        /*
-         * IMPORTANT:
-         * Export the real report DOM as-is. No print layout, no cloned report,
-         * no foreignObject and no manual page slicing. This keeps the on-screen
-         * composition stable and lets html2canvas rasterize Arabic with the
-         * already-loaded Cairo font.
-         */
-        source.style.direction='rtl';
-        source.style.fontFamily='Cairo, Arial, Tahoma, sans-serif';
-        source.style.width='auto';
-        source.style.maxWidth='none';
+        /* IMPORTANT:
+           Render the REAL report node, not a detached clone.
+           This keeps every #detailedReportScreen CSS rule intact.
+           A desktop viewport is forced so mobile @media rules do not
+           compress/reflow the report during capture. */
+        source.style.width='794px';
+        source.style.maxWidth='794px';
         source.style.margin='0';
         source.style.background='#fff';
-        source.style.visibility='visible';
+        source.style.direction='rtl';
+        source.style.overflow='visible';
+        source.style.boxSizing='border-box';
+
+        if(actionBar) actionBar.style.visibility='hidden';
+
+        /* Convert live Chart.js canvases to PNGs so the HTML renderer
+           cannot turn them into black blocks. Restore them afterward. */
+        source.querySelectorAll('canvas').forEach(canvas=>{
+            try{
+                const img=document.createElement('img');
+                img.src=canvas.toDataURL('image/png');
+                img.width=canvas.width;
+                img.height=canvas.height;
+                img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#fff;';
+                canvas.parentNode.replaceChild(img,canvas);
+                restoredCanvases.push({img,canvas,parent:img.parentNode});
+            }catch(err){ console.warn('Chart image conversion skipped:',err); }
+        });
 
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
-        const opt={
-            margin:[7,7,7,7],
-            filename:'تقرير_تدقيق_TPM_تفصيلي.pdf',
-            image:{type:'jpeg',quality:0.96},
-            html2canvas:{
-                scale:2,
-                useCORS:true,
-                allowTaint:false,
-                backgroundColor:'#ffffff',
-                foreignObjectRendering:false,
-                imageTimeout:20000,
-                logging:false,
-                scrollX:0,
-                scrollY:0
-            },
-            jsPDF:{
-                unit:'mm',
-                format:'a4',
-                orientation:'portrait',
-                compress:true
-            },
-            pagebreak:{
-                mode:['css','legacy'],
-                avoid:['.detail-step-card','.detail-report-hero','.detail-report-kpis','.detail-report-chart-panel','.detail-opportunity-panel']
-            }
-        };
+        const canvas=await window.html2canvas(source,{
+            backgroundColor:'#ffffff',
+            scale:2,
+            useCORS:true,
+            allowTaint:false,
+            foreignObjectRendering:true,
+            imageTimeout:15000,
+            logging:false,
+            windowWidth:1365,
+            windowHeight:900,
+            scrollX:0,
+            scrollY:0
+        });
 
-        await window.html2pdf().set(opt).from(source).save();
+        const {jsPDF}=window.jspdf;
+        const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+        const pageW=210,pageH=297;
+        const marginX=7,marginY=7;
+        const usableW=pageW-marginX*2,usableH=pageH-marginY*2;
+        const pxPerMm=canvas.width/usableW;
+        const pagePx=Math.max(1,Math.floor(usableH*pxPerMm));
+
+        let y=0,page=0;
+        while(y<canvas.height){
+            const sliceH=Math.min(pagePx,canvas.height-y);
+            const slice=document.createElement('canvas');
+            slice.width=canvas.width;
+            slice.height=sliceH;
+            slice.getContext('2d').drawImage(
+                canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH
+            );
+            if(page>0) pdf.addPage();
+            pdf.addImage(
+                slice.toDataURL('image/jpeg',0.95),
+                'JPEG',marginX,marginY,usableW,sliceH/pxPerMm,
+                undefined,'FAST'
+            );
+            y+=sliceH;
+            page++;
+        }
+
+        pdf.save('تقرير_تدقيق_TPM_تفصيلي.pdf');
         showToast('✅ تم إنشاء ملف PDF بنجاح');
     }catch(err){
         console.error('Professional PDF export error:',err);
         showToast('⚠️ تعذر إنشاء PDF — راجع Console للتفاصيل');
     }finally{
-        source.style.direction=old.direction;
-        source.style.fontFamily=old.fontFamily;
-        source.style.width=old.width;
-        source.style.maxWidth=old.maxWidth;
-        source.style.margin=old.margin;
-        source.style.background=old.background;
-        source.style.visibility=old.visibility;
+        /* Restore the report exactly as it was before export. */
+        source.setAttribute('style',originalCss);
+        restoredCanvases.reverse().forEach(item=>{
+            try{ item.img.replaceWith(item.canvas); }catch(_){}
+        });
+        if(actionBar) actionBar.style.visibility='';
     }
 };
 

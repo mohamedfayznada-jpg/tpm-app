@@ -332,7 +332,7 @@ window.renderKaizenCommunity = function() {
         <div class="kaizen-community-stat"><span>تحسينات مثبتة</span><b>${stageCount('standardized')}</b><i class='bx bx-badge-check'></i></div>
         <div class="kaizen-community-stat"><span>مساهمون</span><b>${Object.keys(contributors).length}</b><i class='bx bx-group'></i></div>`;
     if (board) board.innerHTML = ranked.length ? ranked.map((entry,index)=>`
-        <div class="kaizen-rank-row"><b>${index+1}</b><span><i class='bx bx-user-circle'></i>${window.escapeTPM(entry[0])}</span><strong>${entry[1]}</strong><em>${index===0?'🥇':index===1?'🥈':index===2?'🥉':'🏅'}</em></div>`).join('') : '<div class="kaizen-empty-mini">لسه مفيش مساهمات. كن أول واحد.</div>';
+        <div class="kaizen-rank-row"><b>0${index+1}</b><span><i class='bx bx-user-circle'></i>${window.escapeTPM(entry[0])}</span><strong>${entry[1]}</strong></div>`).join('') : '<div class="kaizen-empty-mini">لسه مفيش مساهمات. كن أول واحد.</div>';
 };
 
 // A3 / PDCA Kaizen workflow. Legacy cards default to PLAN and remain readable.

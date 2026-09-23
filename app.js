@@ -863,24 +863,121 @@ window.viewDetailedReport = function(id) {
     showScreen('detailedReportScreen');
 };
 
-window.downloadProfessionalPDF = function(){
-    /*
-     * Native browser printing is intentionally used for PDF export.
-     * It preserves Arabic shaping, RTL bidi ordering, fonts and canvas
-     * charts correctly. The browser's print dialog provides "Save as PDF".
-     */
-    const oldTitle=document.title;
-    document.title='تقرير_تدقيق_TPM_تفصيلي';
-    window.__printingAuditReport=true;
-    setTimeout(()=>{
-        try{ window.print(); }
-        finally{
-            setTimeout(()=>{
-                window.__printingAuditReport=false;
-                document.title=oldTitle;
-            },1000);
+window.downloadProfessionalPDF = async function(){
+    const source=document.getElementById('printableReportArea');
+    if(!source) return showToast('⚠️ تعذر العثور على التقرير');
+    if(!window.html2canvas || !window.jspdf?.jsPDF){
+        return showToast('⚠️ مكونات إنشاء PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
+    }
+
+    const btns=document.querySelectorAll('#detailedReportScreen>.row-flex');
+    btns.forEach(b=>b.style.visibility='hidden');
+
+    let host=null;
+    try{
+        showToast('جاري تجهيز ملف PDF... ⏳');
+        if(document.fonts?.ready) await document.fonts.ready;
+
+        host=document.createElement('div');
+        host.id='directPdfRenderHost';
+        host.dir='rtl';
+        Object.assign(host.style,{
+            position:'fixed',left:'-100000px',top:'0',width:'794px',
+            background:'#fff',padding:'0',margin:'0',zIndex:'-1',
+            direction:'rtl',boxSizing:'border-box',overflow:'visible'
+        });
+
+        const clone=source.cloneNode(true);
+        clone.removeAttribute('id');
+        Object.assign(clone.style,{
+            display:'block',width:'794px',maxWidth:'794px',margin:'0',
+            padding:'28px 30px 34px',background:'#fff',
+            border:'0',borderTop:'5px solid #f1ad2f',
+            borderRadius:'0',boxShadow:'none',overflow:'visible',
+            direction:'rtl',boxSizing:'border-box',
+            fontFamily:'Cairo, Arial, Tahoma, sans-serif',
+            color:'#1d2d3a',transform:'none'
+        });
+
+        /* Keep the PDF as a designed document, not a print stylesheet. */
+        const style=document.createElement('style');
+        style.textContent=`
+          #directPdfRenderHost *{box-sizing:border-box!important;letter-spacing:normal!important;word-spacing:normal!important}
+          #directPdfRenderHost .detail-report-hero{display:grid!important;grid-template-columns:145px minmax(0,1fr) 170px!important;gap:16px!important;align-items:center!important;padding:20px!important}
+          #directPdfRenderHost .detail-report-kpis{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important;padding:14px 0!important}
+          #directPdfRenderHost .detail-report-chart-panel,#directPdfRenderHost .detail-opportunity-panel{margin:0 0 14px!important}
+          #directPdfRenderHost .detail-chart-wrap{height:300px!important}
+          #directPdfRenderHost .detail-op-row{padding:11px 0!important}
+          #directPdfRenderHost .legacy-inline-195{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important}
+          #directPdfRenderHost .legacy-inline-196{font-size:11px!important;line-height:1.6!important}
+          #directPdfRenderHost .legacy-inline-193{font-size:28px!important;line-height:1.15!important}
+          #directPdfRenderHost .legacy-inline-194{font-size:13px!important;line-height:1.5!important}
+          #directPdfRenderHost .detail-report-summary h2{font-size:25px!important;line-height:1.25!important}
+          #directPdfRenderHost .detail-report-summary p{font-size:11px!important;line-height:1.8!important}
+          #directPdfRenderHost .detail-step-card{break-inside:avoid!important}
+        `;
+        host.appendChild(style);
+        host.appendChild(clone);
+        document.body.appendChild(host);
+
+        /* Canvas charts need their current pixels copied explicitly. */
+        const srcCanvases=source.querySelectorAll('canvas');
+        const dstCanvases=clone.querySelectorAll('canvas');
+        srcCanvases.forEach((src,i)=>{
+            const dst=dstCanvases[i];
+            if(!dst) return;
+            const ctx=dst.getContext('2d');
+            dst.width=src.width; dst.height=src.height;
+            try{ctx.drawImage(src,0,0);}catch(_){}
+        });
+
+        await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+        const canvas=await window.html2canvas(host,{
+            backgroundColor:'#ffffff',
+            scale:2,
+            useCORS:true,
+            allowTaint:false,
+            foreignObjectRendering:true,
+            imageTimeout:15000,
+            logging:false,
+            width:794,
+            windowWidth:794,
+            scrollX:0,
+            scrollY:0
+        });
+
+        const {jsPDF}=window.jspdf;
+        const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+        const pageW=210, pageH=297;
+        const marginX=7, marginY=7;
+        const usableW=pageW-marginX*2, usableH=pageH-marginY*2;
+        const pxPerMm=canvas.width/usableW;
+        const pagePx=Math.floor(usableH*pxPerMm);
+
+        let y=0, page=0;
+        while(y<canvas.height){
+            const sliceH=Math.min(pagePx,canvas.height-y);
+            const slice=document.createElement('canvas');
+            slice.width=canvas.width;
+            slice.height=sliceH;
+            slice.getContext('2d').drawImage(canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH);
+            if(page>0) pdf.addPage();
+            const hMm=sliceH/pxPerMm;
+            pdf.addImage(slice.toDataURL('image/jpeg',0.94),'JPEG',marginX,marginY,usableW,hMm,undefined,'FAST');
+            y+=sliceH;
+            page++;
         }
-    },150);
+
+        pdf.save('تقرير_تدقيق_TPM_تفصيلي.pdf');
+        showToast('✅ تم إنشاء ملف PDF بنجاح');
+    }catch(err){
+        console.error('Professional PDF export error:',err);
+        showToast('⚠️ تعذر إنشاء PDF — راجع Console للتفاصيل');
+    }finally{
+        btns.forEach(b=>b.style.visibility='');
+        if(host) host.remove();
+    }
 };
 
 window.shareWhatsApp = function() { showToast("جاري تجهيز النص..."); };

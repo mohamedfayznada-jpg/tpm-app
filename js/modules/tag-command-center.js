@@ -20,8 +20,32 @@ window.renderTagCommandCenter = function() {
     const unassigned = open.filter(tag => !tag.engineer);
     const overdue = open.filter(tag => window.getTagSLA(tag).overdue);
     const review = open.filter(tag => tag.status === 'review');
-    const counters = { tagQuickCritical: critical.length, tagQuickUnassigned: unassigned.length, tagQuickOverdue: overdue.length, tagQuickReview: review.length };
-    Object.entries(counters).forEach(([id, value]) => { const el = document.getElementById(id); if (el) el.textContent = value; });
+    const closed = tagsData.filter(tag => ['closed', 'verified'].includes(tag.status));
+    const counters = {
+        tagQuickCritical: critical.length,
+        tagQuickUnassigned: unassigned.length,
+        tagQuickOverdue: overdue.length,
+        tagQuickReview: review.length,
+        tagStatTotal: tagsData.length,
+        tagStatOpen: open.length,
+        tagStatCritical: critical.length,
+        tagStatOverdue: overdue.length,
+        tagStatClosed: closed.length,
+        tagsHeroOpenCount: open.length,
+        tagsHeroCriticalCount: critical.length,
+        tagsHeroOverdueCount: overdue.length
+    };
+    Object.entries(counters).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    });
+
+    const redCount = tagsData.filter(tag => tag.color === 'red').length;
+    const blueCount = tagsData.filter(tag => tag.color === 'blue').length;
+    const redEl = document.getElementById('redTagsCount');
+    const blueEl = document.getElementById('blueTagsCount');
+    if (redEl) redEl.textContent = redCount;
+    if (blueEl) blueEl.textContent = blueCount;
     const queue = document.getElementById('tagEscalationQueue'); if (!queue) return;
     const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
     const actionList = [...overdue, ...critical.filter(tag => !overdue.includes(tag)), ...unassigned.filter(tag => !overdue.includes(tag) && !critical.includes(tag))]

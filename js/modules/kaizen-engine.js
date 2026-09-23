@@ -78,32 +78,21 @@ window.submitManualKaizen = async function() {
         const [imgBefore, imgAfter] = await Promise.all([window.loadImageForCanvas(kaizenImgs.before), window.loadImageForCanvas(kaizenImgs.after)]);
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 600; canvas.height = 300;
-        ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 600, 300);
-        ctx.drawImage(imgBefore, 0, 0, 295, 300); ctx.drawImage(imgAfter, 305, 0, 295, 300);
-        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(280, 150); ctx.lineTo(320, 130); ctx.lineTo(320, 170); ctx.fill();
-        ctx.fillStyle = 'rgba(239,68,68,0.9)'; ctx.fillRect(10, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('بعد', 25, 32);
-        ctx.fillStyle = 'rgba(16,185,129,0.9)'; ctx.fillRect(530, 10, 60, 30); ctx.fillStyle = 'white'; ctx.font = 'bold 16px Cairo'; ctx.fillText('قبل', 545, 32);
-
-        btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري رفع الصورة…";
-        uploadedUrl = await uploadImageToStorage(canvas.toDataURL('image/jpeg', 0.8), { folder: 'kaizen' });
-        if (!uploadedUrl) throw new Error('تعذر رفع صورة كايزن إلى التخزين.');
-
-        const kId = window.uniqueNumericId().toString();
-        const record = {
-            id: kId,
-            dept: window.sanitizeInput(dept),
-            auditor: window.sanitizeInput(currentUser.name || 'مستخدم'),
-            authorUid: authUser.uid,
-            authorName: window.sanitizeInput(currentUser.name || 'مستخدم'),
-            date: new Date().toLocaleDateString('ar-EG'),
-            createdAt: Date.now(),
-            stepsOrder: ['ManualKaizen'],
-            totalPct: 100,
-            improvementStatus: 'plan',
-            a3,
-            results: { ManualKaizen: { images: { img_1: { title: window.sanitizeInput(title), data: uploadedUrl } } } }
-        };
+        canvas.width = 900; canvas.height = 420;
+        ctx.fillStyle = '#f6f2e9'; ctx.fillRect(0, 0, 900, 420);
+        // RTL visual order: BEFORE on the right → AFTER on the left.
+        ctx.drawImage(imgAfter, 460, 55, 420, 310);
+        ctx.drawImage(imgBefore, 20, 55, 420, 310);
+        ctx.fillStyle = 'rgba(239,68,68,0.96)'; ctx.fillRect(765, 18, 105, 38);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Cairo'; ctx.fillText('قبل', 800, 44);
+        ctx.fillStyle = 'rgba(16,185,129,0.96)'; ctx.fillRect(30, 18, 105, 38);
+        ctx.fillStyle = '#fff'; ctx.fillText('بعد', 65, 44);
+        // Premium arrow points from BEFORE (right) toward AFTER (left).
+        ctx.save();
+        ctx.translate(450, 210);
+        ctx.fillStyle = '#f59e0b'; ctx.strokeStyle = '#fff7df'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(105,-28); ctx.lineTo(-35,-28); ctx.lineTo(-35,-62); ctx.lineTo(-115,0); ctx.lineTo(-35,62); ctx.lineTo(-35,28); ctx.lineTo(105,28); ctx.closePath();
+        ctx.fill(); ctx.stroke(); ctx.restore();
 
         btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> جاري اعتماد السجل…";
         await window.syncRecord('history/' + kId, record);
@@ -190,12 +179,56 @@ window.renderKaizenFeed = function() {
     c.innerHTML = html || '<div style="text-align:center; color:var(--text-muted); padding:40px; width:100%;"><i class="bx bx-bulb" style="font-size:50px; display:block; margin-bottom:10px; opacity:0.5;"></i>لا توجد مشاركات مسجلة</div>';
 };
 
-window.toggleKaizenLike = function(id) { if(!likesData[id]) likesData[id]=[]; let i=likesData[id].indexOf(currentUser.name); if(i>-1) likesData[id].splice(i,1); else likesData[id].push(currentUser.name); window.syncRecord('likes/' + id, likesData[id]); };
+window.toggleKaizenLike = async function(id) {
+    if(!currentUser?.name) return showToast('⚠️ سجّل الدخول أولًا.');
+    if(!likesData[id]) likesData[id]=[];
+    const i=likesData[id].indexOf(currentUser.name);
+    if(i>-1) likesData[id].splice(i,1); else likesData[id].push(currentUser.name);
+    try { await window.syncRecord('likes/' + id, likesData[id]); window.renderKaizenFeed?.(); }
+    catch(error){ showToast('⚠️ تعذر حفظ الإعجاب.'); console.error(error); }
+};
 window.deleteKaizen = function(id) { if(confirm('تأكيد مسح الكايزن؟')) { window.deleteRecord('history/' + id); showToast('تم الحذف'); } };
-window.editKaizen = function(id) { let k=historyData.find(x=>x.id===id); if(!k) return; let v=prompt('تعديل الوصف:', k.results.ManualKaizen.images.img_1.title); if(v) { k.results.ManualKaizen.images.img_1.title=window.sanitizeInput(v); window.syncRecord('history/' + id, k); showToast('تم التعديل'); } };
-window.addKaizenComment = function(id) { let el=document.getElementById(`comment_input_${id}`); let txt=window.sanitizeInput(el.value); if(!txt) return; if(!kaizenComments[id]) kaizenComments[id]=[]; let comment = {user:currentUser.name, text:txt, date:new Date().toLocaleTimeString('ar-EG')}; kaizenComments[id].push(comment); window.syncRecord('kaizenComments/' + id, kaizenComments[id]).then(() => { el.value=''; if (typeof window.awardPoints === 'function') window.awardPoints(2, 'تعليق'); }).catch(error => { kaizenComments[id].pop(); showToast(`⚠️ تعذر حفظ التعليق: ${error.message || 'خطأ في قاعدة البيانات'}`); }); };
+window.editKaizen = function(id) {
+    const k=historyData.find(x=>String(x.id)===String(id));
+    if(!k) return showToast('⚠️ لم يتم العثور على بطاقة كايزن.');
+    const a3=k.a3||{};
+    kaizenEditId=String(id);
+    const set=(fid,val)=>{const el=document.getElementById(fid);if(el)el.value=val||'';};
+    set('newKaizenTitle',k.results?.ManualKaizen?.images?.img_1?.title);
+    set('newKaizenDept',k.dept); set('newKaizenImpact',a3.impact); set('newKaizenOwner',a3.owner);
+    set('newKaizenProblem',a3.problem); set('newKaizenRootCause',a3.rootCause);
+    set('newKaizenCountermeasure',a3.countermeasure); set('newKaizenExpectedBenefit',a3.expectedBenefit);
+    set('newKaizenVerification',a3.verification); set('newKaizenStandardization',a3.standardization);
+    kaizenImgs={
+        before:a3.beforeImage||k.results?.ManualKaizen?.images?.before?.data||null,
+        after:a3.afterImage||k.results?.ManualKaizen?.images?.after?.data||null
+    };
+    const bp=document.getElementById('kaizenBeforePreview'), ap=document.getElementById('kaizenAfterPreview');
+    if(bp && kaizenImgs.before) bp.innerHTML=`<div class="kaizen-upload-preview"><img src="${kaizenImgs.before}" alt="قبل"><div>الصورة الحالية — قبل</div></div>`;
+    if(ap && kaizenImgs.after) ap.innerHTML=`<div class="kaizen-upload-preview"><img src="${kaizenImgs.after}" alt="بعد"><div>الصورة الحالية — بعد</div></div>`;
+    const modal=document.getElementById('kaizenUploadModal'); if(modal) modal.style.display='flex';
+    const btn=document.getElementById('submitKaizenBtn'); if(btn) btn.innerHTML="<i class='bx bx-save'></i> حفظ تعديلات كايزن";
+};
+window.addKaizenComment = async function(id) {
+    const el=document.getElementById(`comment_input_${id}`);
+    const txt=window.sanitizeInput(el?.value || '');
+    if(!txt) return showToast('⚠️ اكتب تعليقًا أولًا.');
+    if(!kaizenComments[id]) kaizenComments[id]=[];
+    const comment={user:currentUser.name,text:txt,date:new Date().toLocaleTimeString('ar-EG')};
+    kaizenComments[id].push(comment);
+    try{
+        await window.syncRecord('kaizenComments/' + id, kaizenComments[id]);
+        if(el) el.value='';
+        if(typeof window.awardPoints==='function') window.awardPoints(2,'تعليق');
+        window.renderKaizenFeed?.();
+    }catch(error){
+        kaizenComments[id].pop();
+        showToast(`⚠️ تعذر حفظ التعليق: ${error.message || 'خطأ في قاعدة البيانات'}`);
+    }
+};
 
 window.closeKaizenA3Modal = function() {
+    kaizenEditId=null;
     const modal = document.getElementById('kaizenUploadModal');
     if (modal) modal.style.display = 'none';
     ['newKaizenTitle','newKaizenOwner','newKaizenProblem','newKaizenRootCause','newKaizenCountermeasure','newKaizenExpectedBenefit','newKaizenVerification','newKaizenStandardization'].forEach(id => {

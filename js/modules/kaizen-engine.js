@@ -190,27 +190,60 @@ window.renderKaizenFeed = function() {
         let controls = canEdit ? `<button class="btn btn-sm btn-outline flex-1" onclick="editKaizen('${safe(k.id)}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger flex-1" onclick="deleteKaizen('${safe(k.id)}')"><i class='bx bx-trash'></i> حذف</button>` : '';
         let comments = Array.isArray(kaizenComments[lId]) ? kaizenComments[lId] : []; let commentsHtml = comments.map(cm => `<div style="background:var(--surface-inset); padding:10px 15px; border-radius:10px; margin-bottom:8px; border-right:3px solid var(--primary); font-size:13px;"><b style="color:var(--primary); display:block; margin-bottom:3px;">${safe(cm?.user)}</b> ${safe(cm?.text, '')} <span style="font-size:10px; color:var(--text-muted); float:left;">${safe(cm?.date)}</span></div>`).join('');
 
-        return `<div class="card glass-card" style="padding:0; overflow:hidden;">
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:rgba(0,0,0,0.2); border-bottom:1px solid var(--border-glass);">
-                <div style="display:flex; align-items:center; gap:10px;"><i class='bx bx-user-circle' style="font-size:24px; color:var(--gold);"></i><b style="color:var(--text-main); font-size:15px;">${safe(k.auditor, 'مستخدم')}</b></div>
-                <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:flex-end;"><span class="kaizen-stage-chip ${safe(stage.className)}">${safe(stage.label)}</span><span style="font-size:12px; color:var(--text-muted); background:var(--surface-inset); padding:4px 10px; border-radius:12px;"><i class='bx bx-buildings'></i> ${safe(k.dept)} | ${safe(k.date)}</span></div>
-            </div>
-            <div style="padding:20px;">
-                <b style="font-size:16px; color:var(--text-main); display:block; margin-bottom:8px;">${safe(image.title)}</b>
-                <div class="kaizen-owner-line"><i class='bx bx-user-pin'></i><span>مالك التحسين:</span><b>${window.escapeTPM(owner)}</b></div>
-                ${a3Summary}
-                <div class="kaizen-before-after-view">${image?.before?.data && image?.after?.data ? `<div class="kaizen-compare-panel after"><div class="kaizen-compare-label">بعد</div><img src="${safe(image.after.data,'')}" alt="بعد" loading="lazy"></div><div class="kaizen-improvement-arrow" aria-hidden="true"><i class='bx bx-left-arrow-alt'></i></div><div class="kaizen-compare-panel before"><div class="kaizen-compare-label">قبل</div><img src="${safe(image.before.data,'')}" alt="قبل" loading="lazy"></div>` : `<img src="${imageSrc}" alt="صورة تحسين كايزن" loading="lazy" style="width:100%;border-radius:12px;border:1px solid var(--border-glass);">`}</div>
-                <div class="row-flex" style="margin-bottom:20px;">
-                    <button class="btn btn-sm ${liked?'btn-primary':'btn-outline'} flex-1" onclick="toggleKaizenLike('${lId}')"><i class='bx ${liked?'bxs-like':'bx-like'}'></i> إعجاب (${likesData[lId]?likesData[lId].length:0})</button>
-                    ${progressControl}
-                    ${controls}
+        const description = k.description || k.summary || k.a3?.expectedBenefit || 'تم توثيق المشكلة وتحليل السبب الجذري وتنفيذ إجراء تحسيني بهدف تحقيق نتيجة قابلة للقياس.';
+        const dateText = k.createdAt ? new Date(k.createdAt).toLocaleString('ar-EG',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : safe(k.date);
+        const author = safe(k.auditor || k.authorName || 'مستخدم');
+        const commentsCount = comments.length;
+        const beforeUrl = image?.before?.data ? safe(image.before.data,'') : '';
+        const afterUrl = image?.after?.data ? safe(image.after.data,'') : '';
+        return `<article class="kaizen-post">
+            <header class="kaizen-post-head">
+                <div class="kaizen-author">
+                    <div class="kaizen-avatar"><i class='bx bx-user'></i></div>
+                    <div><b>${author}</b><span>${dateText}</span></div>
                 </div>
-                <div style="border-top: 1px solid var(--border-glass); padding-top: 15px;">
-                    <div style="max-height: 150px; overflow-y: auto; margin-bottom: 15px; padding-right:5px;">${commentsHtml || '<div style="font-size:12px; text-align:center; color:var(--text-muted); padding:10px;">لا توجد تعليقات</div>'}</div>
-                    <div class="row-flex"><input type="text" id="comment_input_${lId}" class="form-control flex-2" placeholder="اكتب تعليقاً..." style="margin:0;"><button class="btn btn-primary btn-sm flex-1" style="margin:0;" onclick="addKaizenComment('${lId}')"><i class='bx bx-send'></i> إرسال</button></div>
+                <div class="kaizen-post-meta">
+                    <span class="kaizen-standard-chip"><i class='bx bx-check-circle'></i> معياري • STANDARD</span>
+                    <span class="kaizen-post-date"><i class='bx bx-calendar'></i> حق كايزن</span>
                 </div>
+            </header>
+            <div class="kaizen-post-body">
+                <h2>${safe(image.title)}</h2>
+                <p class="kaizen-post-description">${safe(description)}</p>
+                <div class="kaizen-problem-grid">
+                    <div><span>المشكلة</span><b>${safe(k.a3?.problem || '—')}</b></div>
+                    <div><span>السبب الجذري</span><b>${safe(k.a3?.rootCause || '—')}</b></div>
+                    <div><span>الإجراء</span><b>${safe(k.a3?.countermeasure || '—')}</b></div>
+                </div>
+                <div class="kaizen-visual-compare">
+                    ${beforeUrl && afterUrl ? `
+                    <div class="kaizen-compare-panel after"><div class="kaizen-compare-label">بعد</div><img src="${afterUrl}" alt="بعد" loading="lazy"><small>نتائج مستقرة ضمن الحدود</small></div>
+                    <div class="kaizen-improvement-arrow"><i class='bx bx-left-arrow-alt'></i><span>من المشكلة<br>إلى التحسين</span></div>
+                    <div class="kaizen-compare-panel before"><div class="kaizen-compare-label">قبل</div><img src="${beforeUrl}" alt="قبل" loading="lazy"><small>تذبذب كبير في النتائج</small></div>` : `
+                    <div class="kaizen-single-image"><img src="${imageSrc}" alt="صورة كايزن" loading="lazy"></div>`}
+                </div>
+                <div class="kaizen-post-actions">
+                    <div class="kaizen-actions-left">
+                        <button class="kaizen-action-btn ${liked?'liked':''}" onclick="toggleKaizenLike('${lId}')"><i class='bx ${liked?'bxs-heart':'bx-heart'}'></i><span>أعجبني</span> <b>${likesData[lId]?likesData[lId].length:0}</b></button>
+                        <button class="kaizen-action-btn" onclick="document.getElementById('comment_input_${lId}')?.focus()"><i class='bx bx-message-rounded'></i><span>تعليق</span> <b>${commentsCount}</b></button>
+                        <button class="kaizen-action-btn" onclick="navigator.clipboard?.writeText(location.href);showToast('تم نسخ رابط المشاركة')"><i class='bx bx-share-alt'></i><span>مشاركة</span></button>
+                    </div>
+                    <div class="kaizen-actions-right">
+                        ${canEdit ? `<button class="kaizen-edit-btn" onclick="editKaizen('${safe(k.id)}')"><i class='bx bx-edit'></i> تعديل</button>` : ''}
+                        ${canProgress ? progressControl : ''}
+                        ${canEdit ? `<button class="kaizen-delete-btn" onclick="deleteKaizen('${safe(k.id)}')"><i class='bx bx-trash'></i> حذف</button>` : ''}
+                    </div>
+                </div>
+                <section class="kaizen-comments">
+                    <h3>التعليقات (${commentsCount})</h3>
+                    <div class="kaizen-comment-list">${commentsHtml || '<div class="kaizen-empty-comment">ابدأ النقاش حول التحسين...</div>'}</div>
+                    <div class="kaizen-comment-compose">
+                        <input type="text" id="comment_input_${lId}" placeholder="اكتب تعليقك هنا...">
+                        <button onclick="addKaizenComment('${lId}')"><i class='bx bx-send'></i> إرسال</button>
+                    </div>
+                </section>
             </div>
-        </div>`;
+        </article>`;
     }).join('');
     c.innerHTML = html || '<div style="text-align:center; color:var(--text-muted); padding:40px; width:100%;"><i class="bx bx-bulb" style="font-size:50px; display:block; margin-bottom:10px; opacity:0.5;"></i>لا توجد مشاركات مسجلة</div>';
 };

@@ -338,11 +338,23 @@
         </div>
 
 
-        <button class="btn btn-primary full-width legacy-inline-50" onclick="openJHKPIsScreen()">
-            <i class='bx bx-radar'></i> لوحة مؤشرات النضج للركيزة (JH KPIs)
-        </button>
+        <section class="jh-portal-hero">
+            <div class="jh-portal-hero-main">
+                <span class="jh-portal-kicker"><i class='bx bx-radar'></i> JH / AUTONOMOUS MAINTENANCE</span>
+                <h2>مركز قيادة الصيانة الذاتية</h2>
+                <p>تابع نضج الأقسام، التنفيذ الميداني، التاجات، ونتائج المراجعات من شاشة واحدة. كل رقم في هذه الصفحة مرتبط بالسجلات الفعلية.</p>
+                <div class="jh-portal-actions">
+                    <button class="btn jh-primary-action" onclick="openJHKPIsScreen()"><i class='bx bx-radar'></i> لوحة مؤشرات JH</button>
+                    <button class="btn jh-secondary-action btn-role-admin" onclick="setDeptGoal()"><i class='bx bx-target-lock'></i> ضبط مستهدف القسم</button>
+                </div>
+            </div>
+            <div class="jh-hero-side">
+                <div><span>الأقسام</span><b>04</b><small>نطاق التشغيل الحالي</small></div>
+                <div><span>منهجية العمل</span><b>CLIT</b><small>تنفيذ + تحقق + تصعيد</small></div>
+            </div>
+        </section>
 
-        <h3 class="section-title">📂 اختر القسم للمتابعة:</h3>
+        <h3 class="section-title jh-section-heading"><span><i class='bx bx-buildings'></i> أقسام JH</span><small>اختر القسم لفتح لوحة الميدان</small></h3>
         <div id="jhDeptGrid" class="grid-layout legacy-inline-51"></div>
 
         <section id="jhMainTeamSection" class="jh-team-section" aria-labelledby="jhMainTeamTitle">
@@ -411,6 +423,7 @@
                     <div id="deptGoalDisplay" class="legacy-inline-55"></div>
                 </div>
 
+                <div id="jhLiveExecutionSummary" class="jh-live-summary"></div>
                 <div class="dashboard-stats jh-dept-kpi-strip">
                     <div class="stat-card"><div class="stat-icon success-text"><i class='bx bx-badge-check'></i></div><div class="stat-value success-text" id="deptAuditScore">0%</div><div class="stat-label">آخر نتيجة Audit</div></div>
                     <div class="stat-card"><div class="stat-icon primary-text"><i class='bx bx-target-lock'></i></div><div class="stat-value primary-text" id="deptOEE">—</div><div class="stat-label">المستهدف المعتمد</div></div>

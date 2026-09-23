@@ -701,22 +701,120 @@ window.clearSignature = function() { if(sigCtx) { sigCtx.fillStyle = "#ffffff"; 
 // ==========================================
 // 📊 أرشيف التقارير (History Engine)
 // ==========================================
-window.renderHistory = function() {
-    const container = document.getElementById('historyListContainer'); if (!container) return; 
-    let real = historyData.filter(h=>!h.stepsOrder.includes('ManualKaizen')).reverse();
-    let html = real.map(a => {
-        let controls = (window.hasRole('admin') || currentUser.name === a.auditor) ? `<div style="margin-top:15px; display:flex; gap:10px; border-top:1px solid var(--border-glass); padding-top:15px;"><button class="btn btn-sm btn-outline flex-1" onclick="event.stopPropagation(); editReport('${a.id}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger flex-1" onclick="event.stopPropagation(); deleteReport('${a.id}')"><i class='bx bx-trash'></i> حذف</button></div>` : '';
-        let colorClass = a.totalPct >= 80 ? 'success' : (a.totalPct >= 50 ? 'warning' : 'danger');
-        return `
-        <div class="card glass-card" style="cursor:pointer; padding: 20px; border-right: 4px solid var(--${colorClass});" onclick="viewDetailedReport('${a.id}')">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <div><h3 style="color:var(--text-main); font-size:16px; margin:0 0 8px;"><i class='bx bx-buildings'></i> ${a.dept}</h3><div style="font-size:12px; color:var(--text-muted); display:flex; flex-direction:column; gap:4px;"><span><i class='bx bx-user'></i> ${a.auditor}</span><span><i class='bx bx-calendar'></i> ${a.date}</span><span><i class='bx bx-cog'></i> ${a.machine || 'عام'}</span></div></div>
-                <div style="font-size:26px; font-weight:900; color:var(--${colorClass}); background:rgba(255,255,255,0.05); padding:10px 15px; border-radius:16px; border:1px solid var(--border-glass);">${a.totalPct}%</div>
-            </div>${controls}
-        </div>`;
-    }).join('');
-    container.innerHTML = html || '<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:14px; width:100%;"><i class="bx bx-archive" style="font-size:50px; display:block; margin-bottom:10px;"></i> لا توجد تقارير في الأرشيف حالياً</div>';
+window.__auditCharts = window.__auditCharts || {};
+
+window.auditStepLabel = function(key) {
+    const map = {
+        'JH': 'JH / التحسين الذاتي', 'JHPortal': 'JH / التحسين الذاتي',
+        'AM': 'الصيانة الذاتية', 'PM': 'الصيانة المخططة', 'QM': 'الصيانة الجودة',
+        'ET': 'التعليم والتدريب', 'HSE': 'السلامة والبيئة', 'KK': 'تحسين الخسائر',
+        '5S': '5S / التنظيم', 'Safety': 'السلامة', 'Quality': 'الجودة',
+        'Production': 'الإنتاج', 'ManualKaizen': 'كايزن'
+    };
+    return map[key] || String(key || 'محور غير محدد').replace(/_/g,' ');
 };
+
+window.auditDateValue = function(a) {
+    const raw = a?.createdAt || a?.timestamp || a?.date;
+    const d = raw ? new Date(raw) : null;
+    return d && !Number.isNaN(d.getTime()) ? d : null;
+};
+
+window.getFilteredAuditRecords = function() {
+    const dept = document.getElementById('reportsDeptFilter')?.value || 'all';
+    const period = document.getElementById('reportsPeriodFilter')?.value || 'all';
+    const cutoff = period !== 'all' ? Date.now() - Number(period) * 86400000 : 0;
+    return (Array.isArray(historyData) ? historyData : []).filter(a => {
+        if (!a || !Array.isArray(a.stepsOrder) || a.stepsOrder.includes('ManualKaizen')) return false;
+        if (dept !== 'all' && String(a.dept || '') !== dept) return false;
+        const d = window.auditDateValue(a);
+        if (cutoff && d && d.getTime() < cutoff) return false;
+        return true;
+    });
+};
+
+window.destroyAuditChart = function(id) {
+    if (window.__auditCharts[id]) { try { window.__auditCharts[id].destroy(); } catch(e) {} delete window.__auditCharts[id]; }
+};
+
+window.renderHistoryAnalytics = function() {
+    const records = window.getFilteredAuditRecords();
+    const total = records.length;
+    const avg = total ? Math.round(records.reduce((s,a)=>s+Number(a.totalPct||0),0)/total) : 0;
+    const pass = total ? Math.round(records.filter(a=>Number(a.totalPct||0)>=80).length/total*100) : 0;
+    const critical = records.filter(a=>Number(a.totalPct||0)<50).length;
+    const recent = records.slice().sort((a,b)=>(window.auditDateValue(b)?.getTime()||0)-(window.auditDateValue(a)?.getTime()||0))[0];
+
+    const kpi = document.getElementById('reportsKpiGrid');
+    if(kpi) kpi.innerHTML = [
+        ['إجمالي المراجعات', total, 'مراجعة مسجلة', 'blue', 'bx-file-find'],
+        ['متوسط الأداء', avg+'%', 'متوسط النتيجة', avg>=80?'green':avg>=50?'amber':'red', 'bx-trending-up'],
+        ['نسبة الاجتياز', pass+'%', 'مراجعات ≥ 80%', pass>=80?'green':'amber', 'bx-check-shield'],
+        ['حالات حرجة', critical, 'أقل من 50%', critical?'red':'green', 'bx-error-circle']
+    ].map(x=>`<div class="reports-kpi-card ${x[3]}"><div class="reports-kpi-icon"><i class='bx ${x[4]}'></i></div><div><span>${x[0]}</span><strong>${x[1]}</strong><small>${x[2]}</small></div></div>`).join('');
+
+    const deptSel=document.getElementById('reportsDeptFilter');
+    if(deptSel){
+        const selected=deptSel.value||'all';
+        const depts=[...new Set((Array.isArray(historyData)?historyData:[]).filter(a=>a&&!a.stepsOrder?.includes('ManualKaizen')).map(a=>a.dept).filter(Boolean))].sort();
+        deptSel.innerHTML='<option value="all">كل الأقسام</option>'+depts.map(d=>`<option value="${window.escapeTPM(d)}">${window.escapeTPM(d)}</option>`).join('');
+        if(depts.includes(selected)||selected==='all') deptSel.value=selected; else deptSel.value='all';
+    }
+    const stamp=document.getElementById('reportsDataStamp'); if(stamp) stamp.textContent=`متزامن • آخر تحديث ${new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}`;
+    const count=document.getElementById('reportsArchiveCount'); if(count) count.textContent=`${total} مراجعة${total===1?'':'ات'} ضمن الفلتر الحالي`;
+
+    const sorted=records.slice().sort((a,b)=>(window.auditDateValue(a)?.getTime()||0)-(window.auditDateValue(b)?.getTime()||0));
+    const trendLabels=sorted.map(a=>{const d=window.auditDateValue(a); return d?d.toLocaleDateString('ar-EG',{day:'2-digit',month:'2-digit'}):String(a.date||'').slice(0,10)});
+    const trendData=sorted.map(a=>Number(a.totalPct||0));
+    window.destroyAuditChart('trend');
+    const tc=document.getElementById('auditTrendChart');
+    if(tc && window.Chart) window.__auditCharts.trend=new Chart(tc,{type:'line',data:{labels:trendLabels,datasets:[{label:'النتيجة %',data:trendData,borderColor:'#2583e8',backgroundColor:'rgba(37,131,232,.10)',fill:true,tension:.35,pointRadius:4,pointHoverRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{rtl:true}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
+
+    const deptMap={}; records.forEach(a=>{const d=a.dept||'غير محدد';(deptMap[d] ||= []).push(Number(a.totalPct||0));});
+    const deptRows=Object.entries(deptMap).map(([d,v])=>[d,Math.round(v.reduce((x,y)=>x+y,0)/v.length)]).sort((a,b)=>b[1]-a[1]);
+    window.destroyAuditChart('dept');
+    const dc=document.getElementById('auditDeptChart');
+    if(dc&&window.Chart) window.__auditCharts.dept=new Chart(dc,{type:'bar',data:{labels:deptRows.map(x=>x[0]),datasets:[{label:'المتوسط %',data:deptRows.map(x=>x[1]),backgroundColor:'#2583e8',borderRadius:7}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}}}});
+
+    const stepMap={}; records.forEach(a=>{(a.stepsOrder||[]).forEach(k=>{const r=a.results?.[k];if(!r||r.skipped||!Number(r.max))return;(stepMap[k] ||= []).push(Number(r.score)/Number(r.max)*100);});});
+    const stepRows=Object.entries(stepMap).map(([k,v])=>[k,Math.round(v.reduce((x,y)=>x+y,0)/v.length)]).sort((a,b)=>a[1]-b[1]).slice(0,8);
+    window.destroyAuditChart('steps');
+    const sc=document.getElementById('auditStepChart');
+    if(sc&&window.Chart) window.__auditCharts.steps=new Chart(sc,{type:'bar',data:{labels:stepRows.map(x=>window.auditStepLabel(x[0])),datasets:[{label:'المتوسط %',data:stepRows.map(x=>x[1]),backgroundColor:stepRows.map(x=>x[1]<50?'#ef5350':x[1]<80?'#f1ad2f':'#20a66a'),borderRadius:7}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}}}});
+
+    const risk={critical:records.filter(a=>Number(a.totalPct||0)<50).length,warning:records.filter(a=>Number(a.totalPct||0)>=50&&Number(a.totalPct||0)<80).length,good:records.filter(a=>Number(a.totalPct||0)>=80).length};
+    window.destroyAuditChart('risk');
+    const rc=document.getElementById('auditRiskChart');
+    if(rc&&window.Chart) window.__auditCharts.risk=new Chart(rc,{type:'doughnut',data:{labels:['حرج <50%','تحت الهدف 50–79%','مستقر ≥80%'],datasets:[{data:[risk.critical,risk.warning,risk.good],backgroundColor:['#ef5350','#f1ad2f','#20a66a'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false}}}});
+    const legend=document.getElementById('reportsRiskLegend');
+    if(legend) legend.innerHTML=[['#ef5350','حرج',risk.critical],['#f1ad2f','تحت الهدف',risk.warning],['#20a66a','مستقر',risk.good]].map(x=>`<div><i style="background:${x[0]}"></i><span>${x[1]}</span><b>${x[2]}</b></div>`).join('');
+
+    const opportunities=[];
+    stepRows.forEach(([k,p])=>{opportunities.push({title:window.auditStepLabel(k),score:p,count:stepMap[k].length,text:p<50?'أولوية فورية: فجوة أداء كبيرة تحتاج إجراء تصحيحي.':p<80?'أولوية تحسين: الأداء دون المستوى المستهدف.':'فرصة تحسين مستمرة: الأداء جيد مع قابلية للرفع.'});});
+    const oc=document.getElementById('reportsOpportunityList');
+    if(oc) oc.innerHTML=opportunities.slice(0,6).map((o,i)=>`<div class="report-opportunity-row"><span class="report-op-rank">${String(i+1).padStart(2,'0')}</span><div><b>${window.escapeTPM(o.title)}</b><p>${o.text} • ${o.count} مراجعة</p></div><strong class="${o.score<50?'red':o.score<80?'amber':'green'}">${o.score}%</strong></div>`).join('')||'<div class="reports-empty">لا توجد بيانات كافية لبناء فرص التحسين.</div>';
+
+    if(document.getElementById('historyListContainer')) window.renderHistory();
+};
+
+window.renderHistory = function() {
+    const container=document.getElementById('historyListContainer'); if(!container)return;
+    const real=window.getFilteredAuditRecords().slice().reverse();
+    container.innerHTML=real.map(a=>{
+        const pct=Number(a.totalPct||0), cls=pct>=80?'green':pct>=50?'amber':'red';
+        const d=window.auditDateValue(a); const dateText=d?d.toLocaleDateString('ar-EG',{year:'numeric',month:'2-digit',day:'2-digit'}):window.escapeTPM(a.date||'—');
+        const canEdit=window.hasRole('admin')||currentUser.name===a.auditor;
+        return `<article class="report-archive-card" onclick="viewDetailedReport('${window.escapeTPM(a.id)}')">
+            <div class="report-card-top"><div><span class="report-dept"><i class='bx bx-buildings'></i>${window.escapeTPM(a.dept||'غير محدد')}</span><h3>${window.escapeTPM(a.machine||'مراجعة تشغيلية')}</h3></div><strong class="report-score ${cls}">${pct}%</strong></div>
+            <div class="report-card-meta"><span><i class='bx bx-user'></i>${window.escapeTPM(a.auditor||'—')}</span><span><i class='bx bx-calendar'></i>${dateText}</span></div>
+            <div class="report-mini-progress"><span class="${cls}" style="width:${Math.max(0,Math.min(100,pct))}%"></span></div>
+            <div class="report-card-footer"><span>${(a.stepsOrder||[]).filter(k=>k!=='ManualKaizen').length} محاور مراجعة</span><span>فتح التقرير <i class='bx bx-left-arrow-alt'></i></span></div>
+            ${canEdit?`<div class="report-card-actions"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();editReport('${window.escapeTPM(a.id)}')"><i class='bx bx-edit'></i> تعديل</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteReport('${window.escapeTPM(a.id)}')"><i class='bx bx-trash'></i> حذف</button></div>`:''}
+        </article>`;
+    }).join('')||'<div class="reports-empty"><i class="bx bx-archive"></i><b>لا توجد مراجعات ضمن الفلتر الحالي</b><span>أنشئ أول مراجعة لبدء التحليل.</span></div>';
+};
+
+window.renderHistoryAnalytics = window.renderHistoryAnalytics;
 window.deleteReport = function(id) { if(confirm('تأكيد الحذف النهائي للتقرير؟')) { window.deleteRecord('history/' + id); showToast('تم الحذف بنجاح'); } };
 window.editReport = function(id) { let rep = historyData.find(h => h.id === id); if(!rep) return; currentAudit = JSON.parse(JSON.stringify(rep)); currentAudit.currentStepIndex = 0; window.renderCurrentAuditStep(); };
 

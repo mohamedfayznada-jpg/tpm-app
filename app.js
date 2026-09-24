@@ -951,94 +951,73 @@ window.openAuditEvidence = function(btn){
     document.body.appendChild(overlay);
 };
 window.downloadProfessionalPDF = async function(){
-    const source=document.getElementById('printableReportArea');
-    if(!source) return showToast('⚠️ تعذر العثور على التقرير');
+    const area=document.getElementById('printableReportArea');
+    if(!area) return showToast('⚠️ تعذر العثور على التقرير');
     if(!window.html2canvas || !window.jspdf?.jsPDF){
-        return showToast('⚠️ مكونات إنشاء PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
+        return showToast('⚠️ مكونات PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
     }
 
-    const uiOnly=document.querySelectorAll('#detailedReportScreen .report-ui-only');
-    const previous=[];
-    uiOnly.forEach((b,i)=>{previous[i]=b.style.display;b.style.display='none';});
-    const collapsibles=['auditPerformanceSection','auditOpportunitySection','auditScoreSection','auditEvidenceSection']
-      .map(id=>document.getElementById(id)).filter(Boolean);
-    const previousCollapsed=collapsibles.map(el=>el.classList.contains('is-collapsed'));
-    collapsibles.forEach(el=>el.classList.remove('is-collapsed'));
-
+    const actionRow=document.querySelector('#detailedReportScreen>.row-flex');
+    const oldDisplay=actionRow?.style.display;
     try{
         showToast('جاري إنشاء PDF مباشر... ⏳');
         if(document.fonts?.ready) await document.fonts.ready;
 
-        // Capture the real report node directly. No print engine, no clone,
-        // no foreignObject rendering, and no hidden/off-screen DOM.
+        /* Capture the ACTUAL visible report. No clone, no foreignObject,
+           no print engine, and no off-screen rendering. This keeps the
+           browser's already-correct Arabic/RTL layout exactly as seen. */
+        if(actionRow) actionRow.style.display='none';
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
-        const canvas=await window.html2canvas(source,{
+        const canvas=await window.html2canvas(area,{
             backgroundColor:'#ffffff',
-            scale:1.8,
+            scale:2,
             useCORS:true,
             allowTaint:false,
             foreignObjectRendering:false,
-            imageTimeout:20000,
+            imageTimeout:15000,
             logging:false,
             scrollX:0,
-            scrollY:0,
-            windowWidth:document.documentElement.clientWidth,
-            windowHeight:document.documentElement.clientHeight
+            scrollY:0
         });
+
+        if(!canvas || !canvas.width || !canvas.height) throw new Error('Empty PDF canvas');
 
         const {jsPDF}=window.jspdf;
-        const pdf=new jsPDF({
-            orientation:'portrait',
-            unit:'mm',
-            format:'a4',
-            compress:true
-        });
-
-        const pageW=210, pageH=297;
-        const margin=7;
-        const usableW=pageW-(margin*2);
-        const usableH=pageH-(margin*2);
-
+        const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+        const pageW=210, pageH=297, margin=7;
+        const usableW=pageW-margin*2, usableH=pageH-margin*2;
         const pxPerMm=canvas.width/usableW;
         const pagePx=Math.max(1,Math.floor(usableH*pxPerMm));
 
-        let offsetY=0;
-        let pageIndex=0;
-
-        while(offsetY<canvas.height){
-            const sliceH=Math.min(pagePx,canvas.height-offsetY);
+        let y=0, page=0;
+        while(y<canvas.height){
+            const h=Math.min(pagePx,canvas.height-y);
             const slice=document.createElement('canvas');
             slice.width=canvas.width;
-            slice.height=sliceH;
+            slice.height=h;
+            const ctx=slice.getContext('2d',{alpha:false});
+            ctx.fillStyle='#ffffff';
+            ctx.fillRect(0,0,slice.width,slice.height);
+            ctx.drawImage(canvas,0,y,canvas.width,h,0,0,canvas.width,h);
 
-            const sctx=slice.getContext('2d');
-            sctx.fillStyle='#ffffff';
-            sctx.fillRect(0,0,slice.width,slice.height);
-            sctx.drawImage(
-                canvas,
-                0,offsetY,canvas.width,sliceH,
-                0,0,slice.width,slice.height
+            if(page) pdf.addPage();
+            pdf.addImage(
+                slice.toDataURL('image/jpeg',0.96),
+                'JPEG',margin,margin,usableW,h/pxPerMm,
+                undefined,'FAST'
             );
-
-            if(pageIndex>0) pdf.addPage();
-
-            const image=slice.toDataURL('image/jpeg',0.95);
-            const heightMm=sliceH/pxPerMm;
-            pdf.addImage(image,'JPEG',margin,margin,usableW,heightMm,undefined,'FAST');
-
-            offsetY+=sliceH;
-            pageIndex++;
+            y+=h;
+            page++;
         }
 
         pdf.save('تقرير_تدقيق_TPM_تفصيلي.pdf');
         showToast('✅ تم إنشاء PDF بنجاح');
-    }catch(error){
-        console.error('Professional PDF export error:',error);
-        showToast('⚠️ تعذر إنشاء PDF — افتح Console لمعرفة السبب');
+    }catch(err){
+        console.error('Direct PDF export error:',err);
+        showToast('⚠️ تعذر إنشاء PDF — راجع Console للتفاصيل');
     }finally{
-        uiOnly.forEach((b,i)=>b.style.display=previous[i]);
-        collapsibles.forEach((el,i)=>el.classList.toggle('is-collapsed',previousCollapsed[i]));
+        if(actionRow) actionRow.style.display=oldDisplay;
     }
 };
 

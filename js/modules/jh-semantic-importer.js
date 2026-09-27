@@ -99,21 +99,27 @@
       const ws=wb.Sheets[name];
       const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false,raw:false});
       const nonEmpty=matrix.map((row,index)=>({index,row})).filter(x=>rowHasData(x.row));
-      const sampleIndexes=[...new Set([
-        ...nonEmpty.slice(0,18).map(x=>x.index),
-        ...nonEmpty.slice(Math.max(0,Math.floor(nonEmpty.length/2)-4),Math.floor(nonEmpty.length/2)+4).map(x=>x.index),
-        ...nonEmpty.slice(-12).map(x=>x.index)
-      ])].sort((a,b)=>a-b);
+      const likelyHeader=[];
+      nonEmpty.forEach(({index,row})=>{
+        const joined=row.map(v=>norm(v)).join(' ');
+        if(/رقم.*نقط|اسم.*نقط|الإجراء|الاجراء|دورية|frequency|operation|action|standard|الحالة المثلى|التدهور|tools|ادوات/.test(joined))likelyHeader.push(index);
+      });
+      const sampleSet=new Set([
+        ...nonEmpty.slice(0,24).map(x=>x.index),
+        ...nonEmpty.slice(-18).map(x=>x.index),
+        ...likelyHeader.flatMap(i=>Array.from({length:14},(_,k)=>i+k).filter(n=>n>=0&&n<matrix.length))
+      ]);
+      const sampleIndexes=[...sampleSet].sort((a,b)=>a-b).slice(0,180);
       const rows=sampleIndexes.map(index=>{
         const row=matrix[index]||[],cells=[];
         row.forEach((v,c)=>{if(String(v??'').trim()!=='')cells.push(XLSX.utils.encode_col(c)+'='+cellPreview(v));});
         return 'R'+(index+1)+': '+cells.join(' | ');
       });
-      const merges=(ws['!merges']||[]).slice(0,30).map(m=>XLSX.utils.encode_range(m));
-      return {name,ref:ws['!ref']||'',rows:matrix.length,columns:matrix.reduce((m,r)=>Math.max(m,r?.length||0),0),nonEmptyRows:nonEmpty.length,merges,sample:rows.join('\n')};
+      const merges=(ws['!merges']||[]).slice(0,80).map(m=>XLSX.utils.encode_range(m));
+      return {name,ref:ws['!ref']||'',rows:matrix.length,columns:matrix.reduce((m,r)=>Math.max(m,r?.length||0),0),nonEmptyRows:nonEmpty.length,likelyHeaderRows:likelyHeader.map(i=>i+1),merges,sample:rows.join('\n')};
     });
     let digest=JSON.stringify({workbookSheets:sheets.length,sheets});
-    if(digest.length>24000)digest=digest.slice(0,24000)+'\n[TRUNCATED DIGEST]';
+    if(digest.length>48000)digest=digest.slice(0,48000)+'\n[TRUNCATED DIGEST]';
     return digest;
   }
 
@@ -131,9 +137,9 @@
       '1. Do not ask the user to map columns, choose rows, or confirm anything.\n'+
       '2. Inspect ALL sheets and all evidence in the digest. Prefer tables that actually contain operational map records.\n'+
       '3. You may return multiple blocks from the same sheet if it contains separate tables.\n'+
-      '4. Identify the true header row(s) and data range for every block.\n'+
-      '5. Map fields by meaning, not position. Arabic, English, abbreviations, synonyms and TPM/JH terminology are valid clues.\n'+
-      '6. Never invent cell values. Every imported value must come from an existing workbook cell.\n'+
+      '5. Identify the true header row(s) and data range for every block.\n'+
+      '6. Map fields by meaning, not position. Arabic, English, abbreviations, synonyms and TPM/JH terminology are valid clues.\n'+
+      '7. Never invent cell values. Every imported value must come from an existing workbook cell.\n'+
       '7. Required fields MUST have a defensible source column. If a required field cannot be found, reject that block.\n'+
       '8. Ignore titles, decorative rows, instructions, signatures, totals/subtotals, page numbers, and repeated headers.\n'+
       '9. Merged cells may carry machine/area context; the importer will preserve merged-cell context.\n'+
@@ -161,6 +167,7 @@
       const name=String(sheetPlan?.sheet||'');
       if(!name||!wb.Sheets[name]||!Array.isArray(sheetPlan.blocks))continue;
       const matrix=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:'',blankrows:false,raw:false});
+      const ws=wb.Sheets[name];
       for(const block of sheetPlan.blocks){
         if(!block||!block.mapping)continue;
         const start=Math.max(1,Number(block.dataStartRow)||0),end=Math.min(matrix.length,Number(block.dataEndRow)||0);
@@ -169,14 +176,32 @@
         for(const [field,meta] of Object.entries(block.mapping)){
           if(!allowed.has(field))continue;
           const column=colToIndex(meta?.column),confidence=Math.max(0,Math.min(100,Number(meta?.confidence)||0));
-          if(column>=0&&column<80&&confidence>=45)mapping[field]={column,confidence};
+          if(column>=0&&column<120&&confidence>=45)mapping[field]={column,confidence};
         }
-        const missing=Object.entries(schema.fields).filter(([f,m])=>m.required&&!mapping[f]).map(([f])=>f);
+        const context={};
+        for(const [field,meta] of Object.entries(block.context||{})){
+          if(!allowed.has(field))continue;
+          const sourceCell=String(meta?.sourceCell||'').trim();
+          const value=String(meta?.value??'').trim();
+          const confidence=Math.max(0,Math.min(100,Number(meta?.confidence)||0));
+          let verified=value;
+          if(sourceCell&&ws[sourceCell])verified=String(ws[sourceCell].v??'').trim();
+          if(verified&&confidence>=45)context[field]={value:verified,sourceCell,confidence};
+        }
+        const missing=Object.entries(schema.fields)
+          .filter(([f,m])=>m.required&&!mapping[f]&&!context[f]).map(([f])=>f);
         if(missing.length)continue;
-        out.push({sheet:name,matrix,headerRows:Array.isArray(block.headerRows)?block.headerRows.map(Number).filter(Boolean):[],dataStartRow:start,dataEndRow:end,repeatHeaderRows:Array.isArray(block.repeatHeaderRows)?block.repeatHeaderRows.map(Number):[],skipRows:Array.isArray(block.skipRows)?block.skipRows.map(Number):[],mapping,confidence:Math.max(0,Math.min(100,Number(block.confidence)||Number(plan.confidence)||0))});
+        out.push({
+          sheet:name,matrix,headerRows:Array.isArray(block.headerRows)?block.headerRows.map(Number).filter(Boolean):[],
+          dataStartRow:start,dataEndRow:end,
+          repeatHeaderRows:Array.isArray(block.repeatHeaderRows)?block.repeatHeaderRows.map(Number):[],
+          skipRows:Array.isArray(block.skipRows)?block.skipRows.map(Number):[],
+          mapping,context,
+          confidence:Math.max(0,Math.min(100,Number(block.confidence)||Number(plan.confidence)||0))
+        });
       }
     }
-    if(!out.length)throw new Error('لم يجد الذكاء الاصطناعي جدولًا صالحًا يحتوي على الحقول المطلوبة.');
+    if(!out.length)throw new Error('لم يجد الذكاء الاصطناعي جدولًا صالحًا يحتوي على البيانات المطلوبة.');
     const strong=out.filter(b=>b.confidence>=70);
     if(!strong.length)throw new Error('تم العثور على بيانات، لكن درجة الثقة منخفضة لحفظها بأمان.');
     return {confidence:Math.max(...out.map(b=>b.confidence)),blocks:out};
@@ -211,10 +236,21 @@
       for(let rowNo=block.dataStartRow;rowNo<=block.dataEndRow;rowNo++){
         if(repeats.has(rowNo)||skips.has(rowNo))continue;
         const row=materialized[rowNo-1]||[];if(!rowHasData(row))continue;
-        const raw={};for(const [field,map] of Object.entries(block.mapping))raw[field]=row[map.column]??'';
+        const raw={};
+        for(const [field,map] of Object.entries(block.mapping))raw[field]=row[map.column]??'';
+        for(const [field,ctx] of Object.entries(block.context||{}))if(String(raw[field]??'').trim()==='')raw[field]=ctx.value;
         if(Object.entries(schema.fields).some(([field,meta])=>meta.required&&!String(raw[field]??'').trim()))continue;
         const sourceKey=block.sheet+':'+rowNo+':'+type;if(seen.has(sourceKey))continue;seen.add(sourceKey);
-        const base={id:window.uniqueNumericId().toString(),date:new Date().toLocaleDateString('ar-EG'),user,uid,createdAt:Date.now(),updatedAt:Date.now(),createdByUid:uid,updatedByUid:uid,updatedByName:user,schemaVersion:4,imported:true,importMethod:'ai-semantic',importSource:fileName,importSheet:block.sheet,importRow:rowNo,importConfidence:Math.round(block.confidence),importMapping:Object.fromEntries(Object.entries(block.mapping).map(([f,m])=>[f,{column:XLSX.utils.encode_col(m.column),confidence:m.confidence}]))};
+        const base={
+          id:window.uniqueNumericId().toString(),date:new Date().toLocaleDateString('ar-EG'),user,uid,
+          createdAt:Date.now(),updatedAt:Date.now(),createdByUid:uid,updatedByUid:uid,updatedByName:user,
+          schemaVersion:5,imported:true,importMethod:'ai-semantic',importSource:fileName,
+          importSheet:block.sheet,importRow:rowNo,importConfidence:Math.round(block.confidence),
+          importMapping:{
+            ...Object.fromEntries(Object.entries(block.mapping).map(([f,m])=>[f,{column:XLSX.utils.encode_col(m.column),confidence:m.confidence}])),
+            ...Object.fromEntries(Object.entries(block.context||{}).map(([f,m])=>[f,{sourceCell:m.sourceCell||'',confidence:m.confidence,mode:'context'}]))
+          }
+        };
         for(const field of Object.keys(schema.fields))base[field]=normalizeControlled(type,field,raw[field]);
         records.push(base);
       }

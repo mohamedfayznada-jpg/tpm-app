@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="styles.css?v=20260927-teams-motion1">
     <link rel="stylesheet" href="css/index-shell.css?v=1">
     <link rel="stylesheet" href="css/legacy-inline-extracted-v2.css?v=1">\n    <link rel="stylesheet" href="css/factory-os-v34-reference.css?v=21">
-    <link rel="stylesheet" href="css/jh-command-center.css?v=3">
+    <link rel="stylesheet" href="css/jh-command-center.css?v=4">
     <link rel="stylesheet" href="css/tpm-teams-premium.css?v=2">
 </head>
 <body>
@@ -548,7 +548,7 @@
     <!-- 2. JH Documents & KPIs & Checklists -->
     <div class="container screen" id="jhDocumentScreen">
         <div class="legacy-inline-47">
-            <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">⬅️ عودة</button>
+            <button class="btn btn-sm btn-outline" onclick="goBack()">⬅️ عودة</button>
             <h2 id="jhDocHeader" class="legacy-inline-75"><i class='bx bx-file-blank'></i> السجل</h2>
         </div>
         <div id="jhDocActionArea" class="card btn-role-auditor"></div>
@@ -583,13 +583,32 @@
             <button class="btn btn-sm btn-outline clit-freq-btn" onclick="filterCLITFreq('أسبوعي', this)">أسبوعي</button>
             <button class="btn btn-sm btn-outline clit-freq-btn" onclick="filterCLITFreq('شهري', this)">شهري</button>
         </div>
+        <section id="clitMapWorkspace" class="clit-map-workspace" hidden>
+            <div class="clit-map-head">
+                <div>
+                    <span class="clit-map-kicker">CLIT MAP</span>
+                    <h3>خريطة نقاط الفحص</h3>
+                    <p>اختر المنطقة أو نوع العملية لعرض نقاطها مباشرة.</p>
+                </div>
+                <div class="clit-map-head-actions"><button type="button" class="clit-map-reset" onclick="resetCLITMapFilters()"><i class='bx bx-reset'></i> إعادة الضبط</button><button type="button" class="clit-map-execute" onclick="startCLITChecklist()"><i class='bx bx-play'></i> بدء التنفيذ</button></div>
+            </div>
+            <div class="clit-map-stats" id="clitMapStats"></div>
+            <div class="clit-map-controls">
+                <label class="clit-map-search"><i class='bx bx-search'></i><input id="clitMapSearch" type="search" placeholder="ابحث في المنطقة أو الجزء أو الإجراء"></label>
+                <div class="clit-map-filter-stack"><div id="clitMapZoneChips" class="clit-map-chips"></div><div id="clitMapFrequencyChips" class="clit-map-chips"></div></div>
+            </div>
+            <div class="clit-map-body">
+                <aside id="clitMapZones" class="clit-map-zones" aria-label="مناطق CLIT"></aside>
+                <div id="clitMapPoints" class="clit-map-points" aria-live="polite"></div>
+            </div>
+        </section>
         <div id="jhDocListContainer"></div>
     </div>
 
     <div class="container screen" id="clitChecklistScreen">
         <div class="card legacy-inline-86">
             <div class="legacy-inline-39">
-                <button class="btn btn-sm btn-outline" onclick="showScreen('jhDocumentScreen')">إلغاء</button>
+                <button class="btn btn-sm btn-outline" onclick="goBack()">إلغاء</button>
                 <h3 class="legacy-inline-87"><i class='bx bx-list-check'></i> قائمة: <span id="activeChecklistFreq"></span></h3>
                 <span class="legacy-inline-88"><span id="checklistProgress">0</span> / <span id="checklistTotal">0</span></span>
             </div>
@@ -604,7 +623,7 @@
 
     <div class="container screen" id="jhKPIsScreen">
         <div class="legacy-inline-47">
-            <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">🔙 عودة</button>
+            <button class="btn btn-sm btn-outline" onclick="goBack()">🔙 عودة</button>
             <h2 class="legacy-inline-75"><i class='bx bx-radar'></i> المركز الاستراتيجي للمؤشرات</h2>
             <button class="btn btn-sm btn-success" onclick="exportKPIsToExcel()"><i class='bx bx-download'></i> Excel</button>
         </div>

@@ -43,7 +43,19 @@ window.showToast = function(msg) {
     container.appendChild(toast); setTimeout(() => toast.remove(), 4000);
 };
 
-window.showScreen = function(screenId) {
+window.__tpmNavigation = window.__tpmNavigation || { stack: [], current: null, suppressPush: false };
+
+window.showScreen = function(screenId, options = {}) {
+    const nav = window.__tpmNavigation;
+    const previous = nav.current;
+    const shouldPush = !options.fromBack && !nav.suppressPush && previous && previous !== screenId;
+
+    if (shouldPush) {
+        nav.stack.push(previous);
+        if (nav.stack.length > 30) nav.stack.shift();
+    }
+
+    nav.current = screenId;
     document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
     const target = document.getElementById(screenId);
     if(target) {
@@ -88,7 +100,17 @@ window.toggleSidebar = function() {
     sidebar.classList.toggle('active');
 };
 
-window.goBack = function() { showScreen('homeScreen'); };
+window.goBack = function() {
+    const nav = window.__tpmNavigation || { stack: [], current: null };
+    while (nav.stack.length) {
+        const previous = nav.stack.pop();
+        if (previous && previous !== nav.current && document.getElementById(previous)) {
+            showScreen(previous, { fromBack:true });
+            return;
+        }
+    }
+    showScreen('homeScreen', { fromBack:true });
+};
 window.uniqueNumericId = function() { return Date.now() + Math.floor(Math.random() * 1000); };
 window.sanitizeInput = function(str) { return String(str).replace(/[<>]/g, '').trim(); };
 

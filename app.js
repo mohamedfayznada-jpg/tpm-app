@@ -71,8 +71,21 @@ window.showScreen = function(screenId) {
 };
 
 window.toggleSidebar = function() {
-    const sidebar = document.getElementById('mainSidebar'); const overlay = document.getElementById('sidebarOverlay');
-    if(sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
+    const sidebar = document.getElementById('mainSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if(!sidebar) return;
+
+    const isDesktop = window.matchMedia && window.matchMedia('(min-width: 801px)').matches;
+
+    if(isDesktop) {
+        sidebar.classList.toggle('sidebar-collapsed');
+        document.body.classList.toggle('sidebar-collapsed', sidebar.classList.contains('sidebar-collapsed'));
+        if(overlay) overlay.classList.remove('active');
+        return;
+    }
+
+    if(overlay) overlay.classList.toggle('active');
+    sidebar.classList.toggle('active');
 };
 
 window.goBack = function() { showScreen('homeScreen'); };

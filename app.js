@@ -46,7 +46,22 @@ window.showToast = function(msg) {
 window.showScreen = function(screenId) {
     document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
     const target = document.getElementById(screenId);
-    if(target) { target.classList.add('active'); target.style.display = 'block'; }
+    if(target) {
+        target.classList.add('active');
+        target.style.display = 'block';
+        if(screenId === 'tpmTeamsScreen') {
+            target.style.setProperty('display', 'block', 'important');
+            target.style.setProperty('visibility', 'visible', 'important');
+            target.style.setProperty('opacity', '1', 'important');
+            target.style.setProperty('transform', 'none', 'important');
+            target.style.setProperty('animation', 'none', 'important');
+            target.style.setProperty('position', 'relative', 'important');
+            target.style.setProperty('z-index', '10', 'important');
+            document.body.classList.add('tpm-teams-open');
+        } else {
+            document.body.classList.remove('tpm-teams-open');
+        }
+    }
     if(screenId === 'tpmTeamsScreen' && typeof window.renderTPMTeams === 'function') window.renderTPMTeams();
     if(screenId === 'settingsScreen' && typeof window.renderSettingsControlLists === 'function') window.renderSettingsControlLists();
     document.querySelectorAll('#mainSidebar .side-item').forEach(item => item.classList.remove('active')); const activeItem = [...document.querySelectorAll('#mainSidebar .side-item')].find(item => (item.getAttribute('onclick') || '').includes("'" + screenId + "'")); if(activeItem) activeItem.classList.add('active');

@@ -68,6 +68,18 @@
   function getModal(){return document.getElementById('jhSemanticImportModal');}
   function setStatus(html){const el=document.getElementById('jhImportStatus');if(el)el.innerHTML=html||'';}
   function setImportSummary(html){const el=document.getElementById('jhImportSummary');if(el)el.innerHTML=html||'';}
+  function openModal(type){
+    state={type:type||window.__jhActiveDocType||'CLIT',fileName:'',workbook:null,analysis:null,normalized:[],stats:null};
+    const modal=getModal();if(!modal)return;
+    const title=document.getElementById('jhImportTitle');
+    if(title)title.innerHTML='<i class="bx bx-brain"></i> الاستيراد الذكي — '+esc(SCHEMAS[state.type]?.label||state.type);
+    const input=document.getElementById('jhImportFile');if(input)input.value='';
+    setStatus('');
+    renderAIResult(null);
+    modal.style.display='flex';
+  }
+  function closeModal(){const modal=getModal();if(modal)modal.style.display='none';}
+
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
   function colToIndex(value){

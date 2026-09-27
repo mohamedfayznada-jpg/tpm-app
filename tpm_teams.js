@@ -56,12 +56,14 @@ window.renderTPMTeams = function() {
         { icon:'bx-alarm-exclamation', value:overdueTasks, label:'مهام متأخرة', note: overdueTasks ? 'تحتاج تصعيدًا' : 'لا توجد متأخرات' },
         { icon:'bx-purchase-tag-alt', value:linkedTags, label:'تاجات مفتوحة', note:'مرتبطة بمسارات الفريق' }
     ];
-    ribbon.innerHTML = kpis.map(k =>
-        '<article class="tpm-kpi-chip">' +
-          '<div class="tpm-kpi-icon"><i class="bx ' + k.icon + '"></i></div>' +
-          '<div class="tpm-kpi-copy"><span>' + k.label + '</span><b>' + k.value + '</b><small>' + k.note + '</small></div>' +
-        '</article>'
-    ).join('');
+    if (ribbon) {
+        ribbon.innerHTML = kpis.map(k =>
+            '<article class="tpm-kpi-chip">' +
+              '<div class="tpm-kpi-icon"><i class="bx ' + k.icon + '"></i></div>' +
+              '<div class="tpm-kpi-copy"><span>' + k.label + '</span><b>' + k.value + '</b><small>' + k.note + '</small></div>' +
+            '</article>'
+        ).join('');
+    }
 
     grid.innerHTML = teams.map(team => {
         const ts = taskStats[team.id] || { total:0, active:0, done:0, overdue:0 };

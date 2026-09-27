@@ -69,21 +69,14 @@ window.renderTPMTeams = function() {
         const progress = ts.total ? Math.round((ts.done / ts.total) * 100) : 0;
         const ready = !!document.getElementById(team.workspace);
         const dataState = ts.overdue ? 'alert' : (ts.active ? 'active' : 'quiet');
-        return '<article class="tpm-team-card tpm-team-card-v4" style="--team-color:' + team.color + '" data-state="' + dataState + '" data-team-id="' + team.id + '" tabindex="0" onclick="openTPMTeamWorkspace(\'' + team.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openTPMTeamWorkspace(\'' + team.id + '\')}">' +
-          '<div class="tpm-team-accent"></div>' +
-          '<div class="tpm-team-card-head">' +
-            '<div class="tpm-team-icon"><i class="bx ' + team.icon + '"></i></div>' +
-            '<div class="tpm-team-card-head-copy"><span class="tpm-team-code">' + window.escapeTPM(team.code) + '</span><span class="tpm-team-status ' + (ready ? 'ready' : 'muted') + '"><i class="bx ' + (ready ? 'bx-check-circle' : 'bx-error-circle') + '"></i>' + (ready ? 'متاحة الآن' : 'غير مهيأة') + '</span></div>' +
+        return '<article class="tpm-team-card tpm-team-card-v5" style="--team-color:' + team.color + '" data-state="' + dataState + '" data-team-id="' + team.id + '" tabindex="0" role="button" aria-label="فتح فريق ' + window.escapeTPM(team.name) + '" onclick="openTPMTeamWorkspace(\'' + team.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openTPMTeamWorkspace(\'' + team.id + '\')}">' +
+          '<div class="tpm-v5-topline"><span class="tpm-v5-code">' + window.escapeTPM(team.code) + '</span><span class="tpm-v5-status ' + (ready ? 'ready' : 'muted') + '"><i class="bx ' + (ready ? 'bx-check-circle' : 'bx-error-circle') + '"></i>' + (ready ? 'جاهز للعمل' : 'غير مهيأ') + '</span></div>' +
+          '<div class="tpm-v5-icon"><i class="bx ' + team.icon + '"></i></div>' +
+          '<div class="tpm-v5-body"><h3>' + window.escapeTPM(team.name) + '</h3><p>' + window.escapeTPM(team.description || 'مساحة تشغيل لفريق TPM.') + '</p></div>' +
+          '<div class="tpm-v5-bottom">' +
+            '<div class="tpm-v5-metrics"><span><b>' + ts.active + '</b><small>مهام</small></span><span><b>' + zs.open + '</b><small>تاجات</small></span><span><b>' + progress + '%</b><small>إغلاق</small></span></div>' +
+            '<button type="button" class="tpm-v5-open" onclick="event.stopPropagation();openTPMTeamWorkspace(\'' + team.id + '\')"><span>دخول مساحة الفريق</span><i class="bx bx-left-arrow-alt"></i></button>' +
           '</div>' +
-          '<div class="tpm-team-card-copy"><h3>' + window.escapeTPM(team.name) + '</h3><p>' + window.escapeTPM(team.description || 'مساحة تشغيل لفريق TPM.') + '</p></div>' +
-          '<div class="tpm-team-mission"><span>المهمة الأساسية</span><b>' + window.escapeTPM(team.mission || 'تحسين الأداء التشغيلي') + '</b></div>' +
-          '<div class="tpm-team-data-row">' +
-            '<div><span>مهام مفتوحة</span><b>' + ts.active + '</b></div>' +
-            '<div><span>تاجات</span><b>' + zs.open + '</b></div>' +
-            '<div><span>إغلاق المهام</span><b>' + progress + '%</b></div>' +
-          '</div>' +
-          '<div class="tpm-team-progress"><span style="width:' + progress + '%"></span></div>' +
-          '<div class="tpm-team-card-footer"><span class="tpm-team-health ' + (ts.overdue ? 'alert' : 'good') + '"><i class="bx ' + (ts.overdue ? 'bx-alarm-exclamation' : 'bx-check-circle') + '"></i>' + (ts.overdue ? ts.overdue + ' متأخرة' : 'المسار تحت المتابعة') + '</span><button type="button" class="tpm-team-open-btn" onclick="event.stopPropagation();openTPMTeamWorkspace(\'' + team.id + '\')">فتح الفريق <i class="bx bx-left-arrow-alt"></i></button></div>' +
         '</article>';
     }).join('') || '<div class="teams-empty-state"><i class="bx bx-group"></i><h3>لا توجد فرق TPM</h3><p>لم يتم تحميل هيكل الفرق بعد.</p></div>';
 };

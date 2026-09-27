@@ -1,7 +1,7 @@
 // مسار الملف: js/main.js
 import { ENV } from './config/env.js';
 import { db, auth } from './core/firebase-init.js';
-import { UI } from './utils/ui.js';
+import { UI } from './utils/ui.js?v=20260927-tpm-route-fix1';
 import { Auth } from './auth/auth.js';
 import { Services } from './core/services.js';
 import { Scanner } from './modules/scanner.js';

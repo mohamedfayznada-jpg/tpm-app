@@ -6,7 +6,7 @@ function jhRecordEscape(value) {
 // ==========================================
 let clitSelectedZone = 'الكل'; let clitSelectedOp = 'الكل'; let clitSelectedFreq = 'الكل'; let currentDocType = ''; let activeChecklistTasks = [];
 
-window.openJHDocument = async function(type) {
+window.openJHDocumentCLITMap = async function(type) {
     currentDocType = type;
     const headerMap = {'CLIT':'🧹 خرائط CLIT','Contamination':'🛢️ مصادر التلوث','SOC':'🧗‍♂️ أماكن صعبة الوصول','Safety':'⚠️ خريطة الأمان','Anatomy':'⚙️ تشريح الماكينة'};
     const header=document.getElementById('jhDocHeader'); if(header) header.innerText=headerMap[type]||'السجل';

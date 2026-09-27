@@ -14,7 +14,7 @@ window.TPM_TEAM_HUB = [
 window.renderTPMTeams = function() {
     const grid = document.getElementById('tpmTeamsGrid');
     const ribbon = document.getElementById('tpmTeamKpis');
-    if (!grid || !ribbon) return;
+    if (!grid) return;
 
     const teams = Array.isArray(window.TPM_TEAM_HUB) ? window.TPM_TEAM_HUB : [];
     const tasks = Array.isArray(window.tasksData) ? window.tasksData : [];

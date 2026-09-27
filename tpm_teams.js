@@ -11,10 +11,36 @@ window.TPM_TEAM_HUB = [
 /* ---------------------------------------------------------
    TPM TEAMS COMMAND HUB — fast, data-driven renderer
    --------------------------------------------------------- */
+window.ensureTPMTeamsGateway = function() {
+    const screen = document.getElementById('tpmTeamsScreen');
+    if (!screen) return;
+    if (screen.querySelector('.tpm-hub-hero')) return;
+    screen.innerHTML = `
+      <section class="tpm-hub-hero">
+        <div class="tpm-hub-hero-copy">
+          <div class="tpm-hub-breadcrumb"><span>TPM</span><i class="bx bx-chevron-left"></i><b>TEAM OS</b></div>
+          <span class="tpm-hub-eyebrow"><i class="bx bx-radar"></i> TPM MISSION CONTROL</span>
+          <h1>مركز فرق المصنع</h1>
+          <p>ستة مسارات تشغيلية، مساحة عمل واحدة. اختر الفريق وانتقل مباشرةً إلى أدواته وسجلاته ومؤشراته.</p>
+          <div class="tpm-hub-hero-meta"><span><i class="bx bx-grid-alt"></i> 06 Workspaces</span><span><i class="bx bx-link"></i> Live-linked</span><span><i class="bx bx-shape-polygon"></i> Factory OS</span></div>
+        </div>
+        <div class="tpm-hub-command-visual" aria-hidden="true">
+          <div class="tpm-hub-core"><span>TPM</span><b>OS</b><i class="bx bx-command"></i></div>
+          <span class="tpm-orbit orbit-1">JH</span><span class="tpm-orbit orbit-2">E&amp;T</span><span class="tpm-orbit orbit-3">5S</span><span class="tpm-orbit orbit-4">KK</span><span class="tpm-orbit orbit-5">PM</span><span class="tpm-orbit orbit-6">HSE</span>
+        </div>
+      </section>
+      <section class="tpm-hub-directory">
+        <div class="tpm-teams-directory-head"><div><span class="eyebrow"><i class="bx bx-network-chart"></i> OPERATING NETWORK</span><h3>مساحات الفرق</h3><p>كل بطاقة هي بوابة مباشرة إلى مساحة الفريق. اضغط في أي مكان داخلها للفتح.</p></div></div>
+        <div id="tpmTeamsGrid" class="tpm-team-grid"></div>
+      </section>`;
+};
+
 window.renderTPMTeams = function() {
     const grid = document.getElementById('tpmTeamsGrid');
     const ribbon = document.getElementById('tpmTeamKpis');
-    if (!grid) return;
+    window.ensureTPMTeamsGateway?.();
+    const liveGrid = document.getElementById('tpmTeamsGrid');
+    if (!liveGrid) return;
 
     const teams = Array.isArray(window.TPM_TEAM_HUB) ? window.TPM_TEAM_HUB : [];
     const tasks = Array.isArray(window.tasksData) ? window.tasksData : [];
@@ -65,7 +91,7 @@ window.renderTPMTeams = function() {
         ).join('');
     }
 
-    grid.innerHTML = teams.map(team => {
+    liveGrid.innerHTML = teams.map(team => {
         const ts = taskStats[team.id] || { total:0, active:0, done:0, overdue:0 };
         const zs = tagStats[team.id] || { open:0, closed:0 };
         const progress = ts.total ? Math.round((ts.done / ts.total) * 100) : 0;

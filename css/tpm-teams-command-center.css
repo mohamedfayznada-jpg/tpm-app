@@ -475,3 +475,210 @@
   #tpmTeamsScreen .tpm-team-card-v4{grid-template-columns:64px minmax(0,1fr)!important}
   #tpmTeamsScreen .tpm-team-icon{width:50px!important;height:50px!important;font-size:23px!important}
 }
+
+
+/* =========================================================
+   TEAM TILES — compact information-dense treatment
+   ========================================================= */
+#tpmTeamsScreen .tpm-team-grid{
+  align-items:start!important;
+  grid-auto-rows:max-content!important;
+  gap:11px!important;
+}
+#tpmTeamsScreen .tpm-team-card-v4{
+  align-self:start!important;
+  height:205px!important;
+  min-height:0!important;
+  max-height:205px!important;
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:78px minmax(0,1fr)!important;
+  grid-template-rows:auto auto 1fr auto!important;
+  column-gap:13px!important;
+  padding:12px!important;
+  overflow:hidden!important;
+  border-radius:13px!important;
+}
+#tpmTeamsScreen .tpm-team-card-v4:after{
+  content:""!important;
+  position:absolute!important;
+  top:-38px!important;
+  left:-38px!important;
+  width:110px!important;
+  height:110px!important;
+  border-radius:50%!important;
+  background:color-mix(in srgb,var(--team-color,#2583e8) 6%,transparent)!important;
+  pointer-events:none!important;
+}
+#tpmTeamsScreen .tpm-team-card-head{
+  grid-column:1!important;
+  grid-row:1 / 5!important;
+  align-self:stretch!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:center!important;
+  gap:9px!important;
+  padding:0 11px 0 0!important;
+  border-left:1px solid #edf1f4!important;
+}
+#tpmTeamsScreen .tpm-team-icon{
+  position:relative!important;
+  width:62px!important;
+  height:62px!important;
+  flex:0 0 62px!important;
+  border-radius:18px!important;
+  border:1px solid color-mix(in srgb,var(--team-color,#2583e8) 28%,#fff)!important;
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--team-color,#2583e8) 12%,#fff),
+    color-mix(in srgb,var(--team-color,#2583e8) 4%,#fff))!important;
+  color:var(--team-color,#2583e8)!important;
+  font-size:28px!important;
+  box-shadow:0 9px 20px color-mix(in srgb,var(--team-color,#2583e8) 10%,transparent)!important;
+}
+#tpmTeamsScreen .tpm-team-icon:after{
+  content:""!important;
+  position:absolute!important;
+  inset:5px!important;
+  border:1px dashed color-mix(in srgb,var(--team-color,#2583e8) 25%,transparent)!important;
+  border-radius:13px!important;
+  pointer-events:none!important;
+}
+#tpmTeamsScreen .tpm-team-card-head-copy{
+  align-items:center!important;
+}
+#tpmTeamsScreen .tpm-team-code{
+  min-width:35px!important;
+  text-align:center!important;
+  padding:4px 7px!important;
+  border:1px solid #e1e9ee!important;
+  border-radius:6px!important;
+  background:#fff!important;
+  color:#48657a!important;
+  font-size:8px!important;
+}
+#tpmTeamsScreen .tpm-team-status{
+  white-space:nowrap!important;
+  font-size:6px!important;
+}
+#tpmTeamsScreen .tpm-team-card-copy{
+  grid-column:2!important;
+  grid-row:1!important;
+  align-self:start!important;
+  padding:1px 0 0!important;
+}
+#tpmTeamsScreen .tpm-team-card-copy h3{
+  margin:0!important;
+  color:#12344e!important;
+  font-size:17px!important;
+  line-height:1.25!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .tpm-team-card-copy p{
+  max-width:100%!important;
+  min-height:0!important;
+  margin:4px 0 0!important;
+  color:#7a8995!important;
+  font-size:7px!important;
+  line-height:1.65!important;
+  display:-webkit-box!important;
+  -webkit-line-clamp:2!important;
+  -webkit-box-orient:vertical!important;
+  overflow:hidden!important;
+}
+#tpmTeamsScreen .tpm-team-mission{
+  grid-column:2!important;
+  grid-row:2!important;
+  align-self:start!important;
+  margin:6px 0 0!important;
+  padding:6px 8px!important;
+  border:1px solid #e8eef2!important;
+  border-right:3px solid var(--team-color,#2583e8)!important;
+  border-radius:7px!important;
+  background:#f8fafb!important;
+}
+#tpmTeamsScreen .tpm-team-mission span{
+  display:inline!important;
+  margin:0 4px 0 0!important;
+  color:#96a2aa!important;
+  font-size:5.5px!important;
+}
+#tpmTeamsScreen .tpm-team-mission b{
+  display:inline!important;
+  color:#426177!important;
+  font-size:6.5px!important;
+  line-height:1.3!important;
+}
+#tpmTeamsScreen .tpm-team-data-row{
+  grid-column:2!important;
+  grid-row:3!important;
+  align-self:end!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,1fr)!important;
+  gap:5px!important;
+  padding:0!important;
+}
+#tpmTeamsScreen .tpm-team-data-row>div{
+  padding:6px 4px!important;
+  border:1px solid #e7edf1!important;
+  border-radius:7px!important;
+  background:#fbfcfd!important;
+  text-align:center!important;
+}
+#tpmTeamsScreen .tpm-team-data-row span{
+  display:block!important;
+  color:#8b98a1!important;
+  font-size:5.5px!important;
+}
+#tpmTeamsScreen .tpm-team-data-row b{
+  display:block!important;
+  margin-top:3px!important;
+  color:#17364f!important;
+  font:900 12px/1 Arial,sans-serif!important;
+}
+#tpmTeamsScreen .tpm-team-progress{
+  display:none!important;
+}
+#tpmTeamsScreen .tpm-team-card-footer{
+  grid-column:2!important;
+  grid-row:4!important;
+  align-self:end!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:6px!important;
+  margin:5px 0 0!important;
+  padding:0!important;
+}
+#tpmTeamsScreen .tpm-team-health{
+  color:#2c8a65!important;
+  font-size:6px!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .tpm-team-health.alert{color:#c65252!important}
+#tpmTeamsScreen .tpm-team-open-btn{
+  padding:6px 9px!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:var(--team-color,#2583e8)!important;
+  color:#fff!important;
+  box-shadow:0 4px 10px color-mix(in srgb,var(--team-color,#2583e8) 20%,transparent)!important;
+  font-size:6.5px!important;
+}
+#tpmTeamsScreen .tpm-team-open-btn:hover{
+  filter:brightness(.94)!important;
+  background:var(--team-color,#2583e8)!important;
+  color:#fff!important;
+}
+@media(max-width:1100px){
+  #tpmTeamsScreen .tpm-team-card-v4{
+    height:205px!important;
+    max-height:205px!important;
+  }
+}
+@media(max-width:800px){
+  #tpmTeamsScreen .tpm-team-card-v4{
+    height:205px!important;
+    max-height:205px!important;
+  }
+}

@@ -30,7 +30,7 @@
     <link rel="stylesheet" href="styles.css?v=20260927-teams-motion1">
     <link rel="stylesheet" href="css/index-shell.css?v=1">
     <link rel="stylesheet" href="css/legacy-inline-extracted-v2.css?v=1">\n    <link rel="stylesheet" href="css/factory-os-v34-reference.css?v=21">
-    <link rel="stylesheet" href="css/jh-command-center.css?v=7">
+    <link rel="stylesheet" href="css/jh-command-center.css?v=8">
     <link rel="stylesheet" href="css/tpm-teams-premium.css?v=2">
 </head>
 <body>
@@ -789,7 +789,41 @@
         </div>
     </div>
 
-    <div class="modal-overlay jh-import-modal-overlay" id="jhSemanticImportModal">\n        <div class="modal-content jh-import-modal">\n            <div class="jh-import-head">\n                <div><span class="jh-import-kicker">AI DATA INGESTION</span><h3 id="jhImportTitle"><i class="bx bx-brain"></i> الاستيراد الذكي</h3><p>ارفع أي Excel/CSV. الذكاء الاصطناعي يراجع الشيتات والمحتوى ويحدد البيانات المطلوبة ثم يستوردها تلقائيًا — بدون Mapping أو اختيار صفوف وأعمدة.</p></div>\n                <button type="button" class="jh-import-close" onclick="closeJHImportModal()"><i class="bx bx-x"></i></button>\n            </div>\n            <div class="jh-import-upload">\n                <label class="jh-import-drop"><i class="bx bx-cloud-upload"></i><b>اختار ملف Excel / CSV</b><span>XLSX · XLS · CSV · XLSM · ODS · بدون قالب ثابت</span><input type="file" id="jhImportFile" accept=".xlsx,.xls,.csv,.xlsm,.ods"></label>\n                <div id="jhImportStatus" class="jh-import-status"></div>\n            </div>\n            <div id="jhImportSummary" class="jh-import-summary">\n                <div class="jh-ai-state idle"><i class="bx bx-brain"></i><div><b>جاهز للتحليل الذكي</b><span>ارفع الملف وسيتم فهمه تلقائيًا ثم استيراد البيانات الصحيحة.</span></div></div>\n            </div>\n            <div class="jh-import-foot"><button type="button" class="btn btn-outline" onclick="closeJHImportModal()">إغلاق</button></div>\n        </div>\n    </div>\n\n    <div class="modal-overlay jh-import-modal-overlay" id="jhManualRecordModal">
+    <div class="modal-overlay jh-import-modal-overlay" id="jhSemanticImportModal">
+        <div class="modal-content jh-import-modal">
+            <div class="jh-import-head">
+                <div>
+                    <span class="jh-import-kicker">AI DATA INGESTION</span>
+                    <h3 id="jhImportTitle"><i class="bx bx-brain"></i> الاستيراد الذكي</h3>
+                    <p>ارفع أي Excel/CSV. الذكاء الاصطناعي يراجع الشيتات والمحتوى ويحدد البيانات المطلوبة ثم يستوردها تلقائيًا — بدون Mapping أو اختيار صفوف وأعمدة.</p>
+                </div>
+                <button type="button" class="jh-import-close" onclick="closeJHImportModal()"><i class="bx bx-x"></i></button>
+            </div>
+            <div class="jh-import-upload">
+                <label class="jh-import-drop">
+                    <i class="bx bx-cloud-upload"></i>
+                    <b>اختار ملف Excel / CSV</b>
+                    <span>XLSX · XLS · CSV · XLSM · ODS · بدون قالب ثابت</span>
+                    <input type="file" id="jhImportFile" accept=".xlsx,.xls,.csv,.xlsm,.ods">
+                </label>
+                <div id="jhImportStatus" class="jh-import-status"></div>
+            </div>
+            <div id="jhImportSummary" class="jh-import-summary">
+                <div class="jh-ai-state idle">
+                    <i class="bx bx-brain"></i>
+                    <div>
+                        <b>جاهز للتحليل الذكي</b>
+                        <span>ارفع الملف وسيتم فهمه تلقائيًا ثم استيراد البيانات الصحيحة.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="jh-import-foot">
+                <button type="button" class="btn btn-outline" onclick="closeJHImportModal()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    id="jhManualRecordModal">
         <div class="modal-content jh-import-modal jh-manual-modal">
             <div class="jh-import-head">
                 <div><span class="jh-import-kicker">MANUAL ENTRY</span><h3 id="jhManualRecordTitle"><i class="bx bx-plus-circle"></i> إضافة نقطة</h3><p>إضافة نقطة واحدة بنفس نموذج الخريطة، بدون الحاجة لفتح شاشة أخرى.</p></div>
@@ -1445,7 +1479,7 @@
 <script src="js/modules/kk-engine.js?v=1" defer></script>
 <script src="js/modules/jh-kpi-engine.js?v=1" defer></script>
 <script src="js/modules/clit-engine.js?v=20260928-clit-import-v4" defer></script>
-<script src="js/modules/jh-semantic-importer.js?v=20260928-ai-import-v2" defer></script>
+<script src="js/modules/jh-semantic-importer.js?v=20260928-ai-import-v3" defer></script>
 <script src="js/modules/five-s-engine.js?v=1" defer></script>
 <script src="js/modules/jh-main-team.js?v=1" defer></script>
 <script src="js/modules/tag-command-center.js?v=1" defer></script>

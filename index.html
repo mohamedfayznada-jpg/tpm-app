@@ -18,6 +18,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- PDF rendering dependencies: preserve the already-rendered RTL report visually -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -560,7 +561,7 @@
                     <h3>خريطة نقاط الفحص</h3>
                     <p>اختر المنطقة أو نوع العملية لعرض نقاطها مباشرة.</p>
                 </div>
-                <div class="clit-map-head-actions"><button type="button" class="clit-map-reset" onclick="resetCLITMapFilters()"><i class='bx bx-reset'></i> إعادة الضبط</button><button type="button" class="clit-map-time" onclick="openCLITTimeAnalytics()"><i class='bx bx-stopwatch'></i> تحليل الأزمنة</button><button type="button" class="clit-map-execute" onclick="startCLITChecklist()"><i class='bx bx-play'></i> بدء التنفيذ</button></div>
+                <div class="clit-map-head-actions"><button type="button" class="clit-map-add" onclick="openJHManualAdd('CLIT')"><i class='bx bx-plus'></i> إضافة نقطة</button><button type="button" class="clit-map-import" onclick="openJHImportModal('CLIT')"><i class='bx bx-spreadsheet'></i> استيراد Excel</button><button type="button" class="clit-map-reset" onclick="resetCLITMapFilters()"><i class='bx bx-reset'></i> إعادة الضبط</button><button type="button" class="clit-map-time" onclick="openCLITTimeAnalytics()"><i class='bx bx-stopwatch'></i> تحليل الأزمنة</button><button type="button" class="clit-map-execute" onclick="startCLITChecklist()"><i class='bx bx-play'></i> بدء التنفيذ</button></div>
             </div>
             <div class="clit-map-stats" id="clitMapStats"></div>
             <div class="clit-map-controls">
@@ -785,6 +786,33 @@
         <div class="card legacy-inline-138">
             <h3 class="card-title"><i class='bx bx-shield-check'></i> مساحة HSE</h3>
             <p class="legacy-inline-108">هذه المساحة مخصصة لفريق الصحة والسلامة والبيئة. سيتم بناء أدواتها وسجلاتها بشكل مستقل عند اعتماد نطاق العمل الخاص بها.</p>
+        </div>
+    </div>
+
+    <div class="modal-overlay jh-import-modal-overlay" id="jhSemanticImportModal">
+        <div class="modal-content jh-import-modal">
+            <div class="jh-import-head">
+                <div><span class="jh-import-kicker">SMART DATA INGESTION</span><h3 id="jhImportTitle"><i class="bx bx-spreadsheet"></i> استيراد وتحليل البيانات</h3><p>ارفع أي Excel/CSV؛ النظام يحلل العناوين والقيم ويقترح خريطة الحقول قبل الحفظ.</p></div>
+                <button type="button" class="jh-import-close" onclick="closeJHImportModal()"><i class="bx bx-x"></i></button>
+            </div>
+            <div class="jh-import-upload">
+                <label class="jh-import-drop"><i class="bx bx-cloud-upload"></i><b>اختار ملف Excel / CSV</b><span>XLSX · XLS · CSV · بدون قالب ثابت</span><input type="file" id="jhImportFile" accept=".xlsx,.xls,.csv,.xlsm,.ods"></label>
+                <div id="jhImportStatus" class="jh-import-status"></div>
+            </div>
+            <div id="jhImportMapping" class="jh-import-mapping"></div>
+            <div id="jhImportPreview" class="jh-import-preview"><div class="jh-import-empty"><i class="bx bx-upload"></i><b>في انتظار الملف</b><span>لن يتم الحفظ قبل مراجعة التحليل.</span></div></div>
+            <div class="jh-import-foot"><button type="button" class="btn btn-outline" onclick="closeJHImportModal()">إلغاء</button><button type="button" class="btn btn-primary" id="jhImportSave" onclick="commitJHSpreadsheetImport()" disabled><i class="bx bx-cloud-upload"></i> استيراد البيانات</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay jh-import-modal-overlay" id="jhManualRecordModal">
+        <div class="modal-content jh-import-modal jh-manual-modal">
+            <div class="jh-import-head">
+                <div><span class="jh-import-kicker">MANUAL ENTRY</span><h3 id="jhManualRecordTitle"><i class="bx bx-plus-circle"></i> إضافة نقطة</h3><p>إضافة نقطة واحدة بنفس نموذج الخريطة، بدون الحاجة لفتح شاشة أخرى.</p></div>
+                <button type="button" class="jh-import-close" onclick="closeJHManualAdd()"><i class="bx bx-x"></i></button>
+            </div>
+            <div id="jhManualRecordFields" class="jh-manual-grid"></div>
+            <div class="jh-import-foot"><button type="button" class="btn btn-outline" onclick="closeJHManualAdd()">إلغاء</button><button type="button" class="btn btn-primary" onclick="saveJHManualRecord()"><i class="bx bx-save"></i> حفظ النقطة</button></div>
         </div>
     </div>
 
@@ -1433,6 +1461,7 @@
 <script src="js/modules/kk-engine.js?v=1" defer></script>
 <script src="js/modules/jh-kpi-engine.js?v=1" defer></script>
 <script src="js/modules/clit-engine.js?v=20260927-clit-time-v2" defer></script>
+<script src="js/modules/jh-semantic-importer.js?v=20260928-semantic-import1" defer></script>
 <script src="js/modules/five-s-engine.js?v=1" defer></script>
 <script src="js/modules/jh-main-team.js?v=1" defer></script>
 <script src="js/modules/tag-command-center.js?v=1" defer></script>

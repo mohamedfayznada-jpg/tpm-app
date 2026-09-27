@@ -88,6 +88,7 @@ window.loadJHMainTeam = function() {
     if (jhMainTeamListeners.jhMainTeam) db.ref('tpm_system/jh_main_team').off('value', jhMainTeamListeners.jhMainTeam);
     jhMainTeamListeners.jhMainTeam = db.ref('tpm_system/jh_main_team').on('value', snap => {
         jhMainTeam = { ...jhTeamDefaultData(), ...(snap.val() || {}) };
+        jhMainTeam.schemaVersion = Number(jhMainTeam.schemaVersion || 1);
         window.renderJHMainTeam();
     });
 };
@@ -221,8 +222,12 @@ window.saveJHMainTeam = async function() {
             saved.members.push({ id: member.id || `member_${Date.now()}`, name: jhTeamSafeName(member.name), photo });
         }
 
+        const authUser = firebase.auth().currentUser;
         saved.updatedAt = Date.now();
         saved.updatedBy = currentUser?.name || '';
+        saved.updatedByUid = authUser?.uid || '';
+        saved.version = Number(existing.version || 0) + 1;
+        saved.schemaVersion = 2;
         await db.ref('tpm_system/jh_main_team').set(saved);
         showToast('تم حفظ هيكل فريق الصيانة الذاتية بنجاح ✅');
         window.closeJHMainTeamEditor();

@@ -1,0 +1,148 @@
+/* JH Command Center — Re-architecture V1
+ * Layout/interaction layer only. Existing feature IDs remain intact.
+ */
+#jhPortalScreen.jh-rearchitected{
+  --jh-blue:#1769aa;
+  --jh-blue-2:#2583e8;
+  --jh-ink:#17364f;
+  --jh-muted:#718492;
+  --jh-line:#dce7ee;
+  --jh-soft:#f5f9fc;
+  --jh-green:#18a86b;
+  --jh-red:#e45757;
+  scroll-behavior:smooth;
+}
+#jhPortalScreen .jh-rearch-shell{display:flex;flex-direction:column;gap:14px;min-width:0}
+#jhPortalScreen .jh-rearch-nav{
+  position:sticky;top:8px;z-index:40;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;
+  padding:8px 10px;border:1px solid rgba(207,224,236,.95);border-radius:14px;
+  background:rgba(250,253,255,.92);backdrop-filter:blur(14px);
+  box-shadow:0 10px 28px rgba(20,55,80,.08);
+}
+#jhPortalScreen .jh-rearch-nav-brand{display:flex;align-items:center;gap:8px;min-width:180px}
+#jhPortalScreen .jh-rearch-nav-mark{
+  width:34px;height:34px;display:grid;place-items:center;border-radius:10px;
+  background:linear-gradient(135deg,#1769aa,#2583e8);color:#fff;box-shadow:0 6px 14px rgba(37,131,232,.22)
+}
+#jhPortalScreen .jh-rearch-nav-brand b{display:block;color:var(--jh-ink);font-size:9px;font-weight:950;letter-spacing:.7px}
+#jhPortalScreen .jh-rearch-nav-brand small{display:block;margin-top:2px;color:#8a9aa6;font-size:6px}
+#jhPortalScreen .jh-rearch-nav-links{display:flex;justify-content:center;gap:4px;min-width:0}
+#jhPortalScreen .jh-rearch-nav-links button{
+  display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border:1px solid transparent;border-radius:9px;
+  background:transparent;color:#718391;font-size:8px;font-weight:850;cursor:pointer;transition:.18s ease
+}
+#jhPortalScreen .jh-rearch-nav-links button:hover{background:#f1f7fb;color:var(--jh-ink);transform:translateY(-1px)}
+#jhPortalScreen .jh-rearch-nav-links button.is-active{background:#edf6ff;border-color:#cfe2f0;color:var(--jh-blue);box-shadow:0 5px 12px rgba(23,105,170,.08)}
+#jhPortalScreen .jh-rearch-nav-links i{font-size:15px}
+#jhPortalScreen .jh-rearch-nav-current{min-width:125px;padding:6px 9px;border:1px solid #e2eaf0;border-radius:9px;background:#fff;text-align:right}
+#jhPortalScreen .jh-rearch-nav-current span{display:block;color:#9aa8b2;font-size:6px}
+#jhPortalScreen .jh-rearch-nav-current strong{display:block;margin-top:2px;color:var(--jh-ink);font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#jhPortalScreen .jh-rearch-section{scroll-margin-top:78px}
+#jhPortalScreen .jh-rearch-overview{display:flex;flex-direction:column;gap:12px}
+#jhPortalScreen .jh-rearch-overview .jh-portal-hero{margin:0}
+#jhPortalScreen .jh-rearch-overview-band,.jh-rearch-lifecycle{
+  padding:13px;border:1px solid var(--jh-line);border-radius:14px;background:#fff;box-shadow:0 7px 20px rgba(20,45,65,.045)
+}
+#jhPortalScreen .jh-rearch-section-label{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:9px}
+#jhPortalScreen .jh-rearch-section-label span,#jhPortalScreen .jh-rearch-section-head>div>span{
+  color:var(--jh-blue-2);font-size:7px;font-weight:950;letter-spacing:.65px
+}
+#jhPortalScreen .jh-rearch-section-label h3,#jhPortalScreen .jh-rearch-section-head h3{margin:2px 0 0;color:var(--jh-ink);font-size:14px;font-weight:950}
+#jhPortalScreen .jh-rearch-section-label small,#jhPortalScreen .jh-rearch-section-head small{color:#8a99a4;font-size:7px;line-height:1.7}
+#jhPortalScreen .jh-rearch-pulse-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#jhPortalScreen .jh-rearch-pulse-grid article{
+  min-height:64px;padding:10px;border:1px solid #e4ebf0;border-radius:10px;background:linear-gradient(145deg,#fbfdfe,#f6f9fb)
+}
+#jhPortalScreen .jh-rearch-pulse-grid span{display:block;color:#84939f;font-size:7px}
+#jhPortalScreen .jh-rearch-pulse-grid strong{display:block;margin-top:4px;color:var(--jh-ink);font-size:20px;font-weight:950;line-height:1}
+#jhPortalScreen .jh-rearch-pulse-grid small{display:block;margin-top:4px;color:#9aa7b1;font-size:6px}
+#jhPortalScreen .jh-rearch-lifecycle{display:flex;flex-direction:column}
+#jhPortalScreen .jh-rearch-lifecycle-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+#jhPortalScreen .jh-rearch-lifecycle-grid article{
+  position:relative;min-height:92px;padding:10px;border:1px solid #e2eaf0;border-radius:10px;background:#f9fbfd;overflow:hidden
+}
+#jhPortalScreen .jh-rearch-lifecycle-grid article:after{
+  content:"";position:absolute;left:-22px;bottom:-22px;width:70px;height:70px;border-radius:50%;background:rgba(37,131,232,.055)
+}
+#jhPortalScreen .jh-rearch-lifecycle-grid b{position:absolute;top:8px;left:9px;color:#a0adb6;font-size:7px}
+#jhPortalScreen .jh-rearch-lifecycle-grid i{display:grid;width:28px;height:28px;place-items:center;margin-top:4px;border-radius:8px;background:#edf6ff;color:var(--jh-blue);font-size:15px}
+#jhPortalScreen .jh-rearch-lifecycle-grid strong{display:block;margin-top:8px;color:var(--jh-ink);font-size:9px}
+#jhPortalScreen .jh-rearch-lifecycle-grid span{display:block;margin-top:3px;color:#8b9aa5;font-size:6px;line-height:1.6}
+#jhPortalScreen .jh-rearch-departments{padding:14px;border:1px solid var(--jh-line);border-radius:14px;background:#fff;box-shadow:0 7px 20px rgba(20,45,65,.045)}
+#jhPortalScreen .jh-rearch-departments .jh-dept-command-head{margin:0 0 9px}
+#jhPortalScreen .jh-rearch-departments #jhDeptGrid{margin-bottom:0}
+#jhPortalScreen .jh-rearch-standards-anchor{scroll-margin-top:78px}
+#jhPortalScreen .jh-rearch-quick-actions{
+  display:grid;grid-template-columns:1.7fr repeat(6,minmax(0,1fr));gap:7px;padding:8px;
+  border:1px solid var(--jh-line);border-radius:12px;background:#f7fafc
+}
+#jhPortalScreen .jh-rearch-quick-actions button{
+  min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 8px;
+  border:1px solid #dce6ed;border-radius:9px;background:#fff;color:#5d7382;font-size:8px;font-weight:850;cursor:pointer;transition:.18s ease
+}
+#jhPortalScreen .jh-rearch-quick-actions button:hover{transform:translateY(-1px);border-color:#bdd6e7;box-shadow:0 6px 14px rgba(20,55,80,.07);color:var(--jh-blue)}
+#jhPortalScreen .jh-rearch-quick-actions button i{font-size:16px}
+#jhPortalScreen .jh-rearch-quick-actions .jh-rearch-quick-primary{
+  justify-content:space-between;padding:7px 11px;background:linear-gradient(135deg,#1769aa,#2583e8);border-color:#1769aa;color:#fff;box-shadow:0 7px 16px rgba(23,105,170,.18)
+}
+#jhPortalScreen .jh-rearch-quick-primary span{display:flex;flex-direction:column;align-items:flex-start}
+#jhPortalScreen .jh-rearch-quick-primary small{font-size:6px;letter-spacing:.6px;opacity:.75}
+#jhPortalScreen .jh-rearch-cockpit{display:flex;flex-direction:column;gap:9px}
+#jhPortalScreen .jh-rearch-section-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--jh-line);border-radius:12px;background:#fff
+}
+#jhPortalScreen .jh-rearch-context{
+  display:flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid #e0e9ef;border-radius:8px;background:#f8fafc;color:#8b99a4;font-size:7px
+}
+#jhPortalScreen .jh-rearch-context.is-ready{border-color:#cce6da;background:#f2fbf7;color:#188a5c}
+#jhPortalScreen .jh-rearch-cockpit #jhToolbox{margin:0}
+#jhPortalScreen .jh-rearch-governance #jhMainTeamSection{margin:0}
+#jhPortalScreen .jh-rearch-internal-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;padding:11px 13px;
+  border:1px solid #dce7ee;border-radius:12px;background:linear-gradient(135deg,#f7fbfe,#fff);box-shadow:0 7px 18px rgba(20,45,65,.05)
+}
+#jhPortalScreen .jh-rearch-internal-bar span,.container.screen:not(#jhPortalScreen) .jh-rearch-internal-bar span{display:block;color:#2583e8;font-size:7px;font-weight:950;letter-spacing:.6px}
+.container.screen:not(#jhPortalScreen) .jh-rearch-internal-bar strong{display:block;margin-top:2px;color:#17364f;font-size:13px;font-weight:950}
+.container.screen:not(#jhPortalScreen) .jh-rearch-internal-bar small{display:block;margin-top:2px;color:#8b99a4;font-size:7px}
+.container.screen:not(#jhPortalScreen) .jh-rearch-internal-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:11px 13px;
+  border:1px solid #dce7ee;border-radius:12px;background:linear-gradient(135deg,#f7fbfe,#fff);box-shadow:0 7px 18px rgba(20,45,65,.05)
+}
+#jhPortalScreen .jh-rearch-internal-actions,.container.screen:not(#jhPortalScreen) .jh-rearch-internal-actions{display:flex;gap:6px}
+.container.screen:not(#jhPortalScreen) .jh-rearch-internal-actions button{
+  min-height:31px;padding:0 9px;border:1px solid #d6e3eb;border-radius:8px;background:#fff;color:#627887;font-size:7px;font-weight:850;cursor:pointer
+}
+.container.screen:not(#jhPortalScreen) .jh-rearch-internal-actions button:hover{border-color:#b9d4e5;color:#1769aa}
+@media(max-width:1100px){
+  #jhPortalScreen .jh-rearch-nav{grid-template-columns:1fr auto}
+  #jhPortalScreen .jh-rearch-nav-links{grid-column:1/-1;grid-row:2;justify-content:stretch;overflow:auto}
+  #jhPortalScreen .jh-rearch-nav-links button{flex:1;justify-content:center;min-width:105px}
+  #jhPortalScreen .jh-rearch-nav-current{justify-self:end}
+  #jhPortalScreen .jh-rearch-pulse-grid{grid-template-columns:repeat(2,1fr)}
+  #jhPortalScreen .jh-rearch-lifecycle-grid{grid-template-columns:repeat(3,1fr)}
+  #jhPortalScreen .jh-rearch-quick-actions{grid-template-columns:repeat(4,1fr)}
+  #jhPortalScreen .jh-rearch-quick-primary{grid-column:1/-1}
+}
+@media(max-width:720px){
+  #jhPortalScreen .jh-rearch-nav{position:relative;top:auto;grid-template-columns:1fr}
+  #jhPortalScreen .jh-rearch-nav-current{justify-self:stretch}
+  #jhPortalScreen .jh-rearch-nav-links{grid-column:auto;grid-row:auto;overflow-x:auto}
+  #jhPortalScreen .jh-rearch-nav-links button{min-width:112px;flex:0 0 112px}
+  #jhPortalScreen .jh-rearch-pulse-grid{grid-template-columns:1fr 1fr}
+  #jhPortalScreen .jh-rearch-lifecycle-grid{grid-template-columns:1fr 1fr}
+  #jhPortalScreen .jh-rearch-lifecycle-grid article{min-height:82px}
+  #jhPortalScreen .jh-rearch-section-label{align-items:flex-start;flex-direction:column;gap:3px}
+  #jhPortalScreen .jh-rearch-quick-actions{grid-template-columns:1fr 1fr}
+  #jhPortalScreen .jh-rearch-quick-primary{grid-column:1/-1}
+  .container.screen:not(#jhPortalScreen) .jh-rearch-internal-bar{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:460px){
+  #jhPortalScreen .jh-rearch-pulse-grid{grid-template-columns:1fr}
+  #jhPortalScreen .jh-rearch-lifecycle-grid{grid-template-columns:1fr}
+  #jhPortalScreen .jh-rearch-quick-actions{grid-template-columns:1fr}
+  #jhPortalScreen .jh-rearch-nav-brand{min-width:0}
+}
+@media(prefers-reduced-motion:reduce){
+  #jhPortalScreen .jh-rearch-nav-links button,#jhPortalScreen .jh-rearch-quick-actions button{transition:none!important}
+}

@@ -1,4 +1,8 @@
 // 🧹 CLIT Checklists & Mapping Engine (Restored fully)
+function jhRecordEscape(value) {
+    return window.escapeTPM ? window.escapeTPM(String(value ?? '')) : String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
 // ==========================================
 let clitSelectedZone = 'الكل'; let clitSelectedOp = 'الكل'; let clitSelectedFreq = 'الكل'; let currentDocType = ''; let activeChecklistTasks = [];
 
@@ -69,25 +73,175 @@ window.renderJHDocForm = function(type) {
 };
 
 window.saveJHRecord = async function(type) {
-    let data = { id: window.uniqueNumericId().toString(), date: new Date().toLocaleDateString('ar-EG'), user: currentUser.name };
-    if(type === 'CLIT') { data.operation = document.getElementById('clitType').value; data.frequency = document.getElementById('clitFreq').value; data.region = document.getElementById('clitRegion').value || 'عام'; data.part = document.getElementById('clitPart').value; data.action = document.getElementById('clitAction').value; data.optimalState = document.getElementById('clitStandard').value; data.degradation = document.getElementById('clitDegradation').value; data.tools = document.getElementById('clitTools').value; data.machineState = document.getElementById('clitMachineState').value; data.timeBefore = document.getElementById('clitTimeBefore').value; data.timeAfter = document.getElementById('clitTimeAfter').value; if(!data.action) return showToast('الإجراء مطلوب'); } else if(type === 'Contamination') { data.location = document.getElementById('contLocation').value; data.typeDesc = document.getElementById('contType').value; if(!data.location) return; } else if(type === 'SOC') { data.location = document.getElementById('socLocation').value; data.reason = document.getElementById('socReason').value; if(!data.location) return; } else if(type === 'Safety') { data.hazard = document.getElementById('safeHazard').value; data.level = document.getElementById('safeLevel').value; if(!data.hazard) return; } else { data.name = document.getElementById('partName').value; data.desc = document.getElementById('partDesc').value; if(!data.name) return; }
-    await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data); showToast('تم الحفظ ✅'); window.openJHDocument(type); 
+    if (!currentJHDept) return showToast('⚠️ اختر قسم JH أولاً');
+    const now = Date.now();
+    const authUser = firebase.auth().currentUser;
+    const data = {
+        id: window.uniqueNumericId().toString(),
+        date: new Date().toLocaleDateString('ar-EG'),
+        user: currentUser?.name || '',
+        uid: authUser?.uid || '',
+        createdAt: now,
+        updatedAt: now,
+        createdByUid: authUser?.uid || '',
+        updatedByUid: authUser?.uid || '',
+        updatedByName: currentUser?.name || '',
+        schemaVersion: 2
+    };
+
+    if(type === 'CLIT') {
+        data.operation = document.getElementById('clitType')?.value || '';
+        data.frequency = document.getElementById('clitFreq')?.value || '';
+        data.region = document.getElementById('clitRegion')?.value || 'عام';
+        data.part = document.getElementById('clitPart')?.value || '';
+        data.action = document.getElementById('clitAction')?.value || '';
+        data.optimalState = document.getElementById('clitStandard')?.value || '';
+        data.degradation = document.getElementById('clitDegradation')?.value || '';
+        data.tools = document.getElementById('clitTools')?.value || '';
+        data.machineState = document.getElementById('clitMachineState')?.value || '';
+        data.timeBefore = document.getElementById('clitTimeBefore')?.value || '';
+        data.timeAfter = document.getElementById('clitTimeAfter')?.value || '';
+        if(!data.action) return showToast('⚠️ الإجراء مطلوب');
+    } else if(type === 'Contamination') {
+        data.location = document.getElementById('contLocation')?.value || '';
+        data.typeDesc = document.getElementById('contType')?.value || '';
+        if(!data.location) return showToast('⚠️ المكان مطلوب');
+    } else if(type === 'SOC') {
+        data.location = document.getElementById('socLocation')?.value || '';
+        data.reason = document.getElementById('socReason')?.value || '';
+        if(!data.location) return showToast('⚠️ المكان مطلوب');
+    } else if(type === 'Safety') {
+        data.hazard = document.getElementById('safeHazard')?.value || '';
+        data.level = document.getElementById('safeLevel')?.value || '';
+        if(!data.hazard) return showToast('⚠️ وصف الخطر مطلوب');
+    } else {
+        data.name = document.getElementById('partName')?.value || '';
+        data.desc = document.getElementById('partDesc')?.value || '';
+        if(!data.name) return showToast('⚠️ اسم الجزء مطلوب');
+    }
+
+    try {
+        await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${data.id}`).set(data);
+        showToast('تم الحفظ بنجاح ✅');
+        window.openJHDocument(type);
+    } catch (error) {
+        console.error('[JH records] save failed', error);
+        showToast('⚠️ تعذر حفظ السجل. حاول مرة أخرى.');
+    }
 };
 
 window.editJHRecord = async function(type, id) {
-    const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).once('value'); let r = snap.val(); if(!r) return showToast('خطأ: تعذر سحب البيانات');
-    document.getElementById('editJhId').value = id; document.getElementById('editJhType').value = type;
-    let fieldsHtml = ''; if(type === 'CLIT') { fieldsHtml = `<div class="row-flex"><div class="form-group flex-1"><label>العملية</label><input type="text" id="ed_clitOp" class="form-control" value="${r.operation||r.clitType||''}"></div><div class="form-group flex-1"><label>الدورية</label><input type="text" id="ed_clitFreq" class="form-control" value="${r.frequency||''}"></div></div><div class="row-flex"><div class="form-group flex-1"><label>المنطقة</label><input type="text" id="ed_clitRegion" class="form-control" value="${r.region||''}"></div><div class="form-group flex-1"><label>الجزء</label><input type="text" id="ed_clitPart" class="form-control" value="${r.part||''}"></div></div><div class="form-group"><label>الإجراء (Action)</label><textarea id="ed_clitAction" class="form-control" rows="2">${r.action||r.standard||''}</textarea></div><div class="row-flex"><div class="form-group flex-1"><label>الحالة المثلى</label><input type="text" id="ed_clitStandard" class="form-control" value="${r.optimalState||r.standard||''}"></div><div class="form-group flex-1"><label>التدهور</label><input type="text" id="ed_clitDegradation" class="form-control" value="${r.degradation||''}"></div></div><div class="row-flex"><div class="form-group flex-1"><label>الأدوات</label><input type="text" id="ed_clitTools" class="form-control" value="${r.tools||''}"></div><div class="form-group flex-1"><label>الماكينة</label><input type="text" id="ed_clitMachineState" class="form-control" value="${r.machineState||''}"></div></div>`; } 
-    document.getElementById('editJhFormFields').innerHTML = fieldsHtml; document.getElementById('editJHRecordModal').style.display = 'flex';
+    if (!currentJHDept) return showToast('⚠️ اختر قسم JH أولاً');
+    try {
+        const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).once('value');
+        const r = snap.val();
+        if(!r) return showToast('⚠️ تعذر سحب بيانات السجل');
+
+        const idEl=document.getElementById('editJhId'); const typeEl=document.getElementById('editJhType');
+        if(idEl) idEl.value=id; if(typeEl) typeEl.value=type;
+
+        const field=(label,id,value,type='text',placeholder='')=>`
+            <div class="form-group">
+                <label>${label}</label>
+                <input type="${type}" id="${id}" class="form-control" value="${jhRecordEscape(value)}" placeholder="${jhRecordEscape(placeholder)}">
+            </div>`;
+        let fieldsHtml='';
+
+        if(type === 'CLIT') {
+            fieldsHtml=`
+                <div class="row-flex">
+                    <div class="form-group flex-1"><label>العملية</label><input type="text" id="ed_clitOp" class="form-control" value="${jhRecordEscape(r.operation||r.clitType||'')}"></div>
+                    <div class="form-group flex-1"><label>الدورية</label><input type="text" id="ed_clitFreq" class="form-control" value="${jhRecordEscape(r.frequency||'')}"></div>
+                </div>
+                <div class="row-flex">
+                    <div class="form-group flex-1"><label>المنطقة</label><input type="text" id="ed_clitRegion" class="form-control" value="${jhRecordEscape(r.region||'')}"></div>
+                    <div class="form-group flex-1"><label>الجزء</label><input type="text" id="ed_clitPart" class="form-control" value="${jhRecordEscape(r.part||'')}"></div>
+                </div>
+                <div class="form-group"><label>الإجراء</label><textarea id="ed_clitAction" class="form-control" rows="2">${jhRecordEscape(r.action||r.standard||'')}</textarea></div>
+                <div class="row-flex">
+                    <div class="form-group flex-1"><label>الحالة المثلى</label><input type="text" id="ed_clitStandard" class="form-control" value="${jhRecordEscape(r.optimalState||r.standard||'')}"></div>
+                    <div class="form-group flex-1"><label>التدهور</label><input type="text" id="ed_clitDegradation" class="form-control" value="${jhRecordEscape(r.degradation||'')}"></div>
+                </div>
+                <div class="row-flex">
+                    <div class="form-group flex-1"><label>الأدوات</label><input type="text" id="ed_clitTools" class="form-control" value="${jhRecordEscape(r.tools||'')}"></div>
+                    <div class="form-group flex-1"><label>حالة الماكينة</label><input type="text" id="ed_clitMachineState" class="form-control" value="${jhRecordEscape(r.machineState||'')}"></div>
+                </div>`;
+        } else if(type === 'Contamination') {
+            fieldsHtml=field('المكان','ed_contLocation',r.location||'')+field('نوع/وصف التلوث','ed_contType',r.typeDesc||'');
+        } else if(type === 'SOC') {
+            fieldsHtml=field('المكان / النقطة','ed_socLocation',r.location||'')+field('سبب صعوبة الوصول','ed_socReason',r.reason||'');
+        } else if(type === 'Safety') {
+            fieldsHtml=field('وصف الخطر','ed_safeHazard',r.hazard||'')+`
+                <div class="form-group"><label>مستوى الخطر</label><select id="ed_safeLevel" class="form-control">
+                    <option value="high" ${r.level==='high'?'selected':''}>حرج</option>
+                    <option value="med" ${r.level==='med'?'selected':''}>متوسط</option>
+                </select></div>`;
+        } else {
+            fieldsHtml=field('اسم الجزء','ed_partName',r.name||'')+`
+                <div class="form-group"><label>الوصف / الفحص</label><textarea id="ed_partDesc" class="form-control" rows="3">${jhRecordEscape(r.desc||'')}</textarea></div>`;
+        }
+
+        const form=document.getElementById('editJhFormFields');
+        if(form) form.innerHTML=fieldsHtml;
+        const modal=document.getElementById('editJHRecordModal');
+        if(modal) modal.style.display='flex';
+    } catch(error) {
+        console.error('[JH records] edit load failed',error);
+        showToast('⚠️ تعذر فتح السجل للتعديل');
+    }
 };
 
 window.updateJHRecordData = async function() {
-    let id = document.getElementById('editJhId').value; let type = document.getElementById('editJhType').value; let updates = {};
-    if(type === 'CLIT') { updates = { operation: document.getElementById('ed_clitOp').value, frequency: document.getElementById('ed_clitFreq').value, region: document.getElementById('ed_clitRegion').value, part: document.getElementById('ed_clitPart').value, action: document.getElementById('ed_clitAction').value, optimalState: document.getElementById('ed_clitStandard').value, degradation: document.getElementById('ed_clitDegradation').value, tools: document.getElementById('ed_clitTools').value, machineState: document.getElementById('ed_clitMachineState').value }; }
-    await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).update(updates); showToast('تم التعديل ✅'); document.getElementById('editJHRecordModal').style.display = 'none'; window.openJHDocument(type); 
+    const id=document.getElementById('editJhId')?.value;
+    const type=document.getElementById('editJhType')?.value;
+    if(!id || !type || !currentJHDept) return showToast('⚠️ بيانات التعديل غير مكتملة');
+    const updates={ updatedAt:Date.now(), updatedByUid:firebase.auth().currentUser?.uid||'', updatedByName:currentUser?.name||'', schemaVersion:2 };
+
+    if(type === 'CLIT') {
+        Object.assign(updates,{
+            operation:document.getElementById('ed_clitOp')?.value||'',
+            frequency:document.getElementById('ed_clitFreq')?.value||'',
+            region:document.getElementById('ed_clitRegion')?.value||'',
+            part:document.getElementById('ed_clitPart')?.value||'',
+            action:document.getElementById('ed_clitAction')?.value||'',
+            optimalState:document.getElementById('ed_clitStandard')?.value||'',
+            degradation:document.getElementById('ed_clitDegradation')?.value||'',
+            tools:document.getElementById('ed_clitTools')?.value||'',
+            machineState:document.getElementById('ed_clitMachineState')?.value||''
+        });
+    } else if(type === 'Contamination') {
+        Object.assign(updates,{location:document.getElementById('ed_contLocation')?.value||'',typeDesc:document.getElementById('ed_contType')?.value||''});
+    } else if(type === 'SOC') {
+        Object.assign(updates,{location:document.getElementById('ed_socLocation')?.value||'',reason:document.getElementById('ed_socReason')?.value||''});
+    } else if(type === 'Safety') {
+        Object.assign(updates,{hazard:document.getElementById('ed_safeHazard')?.value||'',level:document.getElementById('ed_safeLevel')?.value||''});
+    } else {
+        Object.assign(updates,{name:document.getElementById('ed_partName')?.value||'',desc:document.getElementById('ed_partDesc')?.value||''});
+    }
+
+    try {
+        await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).update(updates);
+        showToast('تم التعديل بنجاح ✅');
+        const modal=document.getElementById('editJHRecordModal'); if(modal) modal.style.display='none';
+        window.openJHDocument(type);
+    } catch(error) {
+        console.error('[JH records] update failed',error);
+        showToast('⚠️ تعذر حفظ التعديل. حاول مرة أخرى.');
+    }
 };
 
-window.deleteJHRecord = async function(type, id) { if(confirm('هل أنت متأكد من الحذف نهائياً؟')) { await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).remove(); showToast('تم الحذف 🗑️'); window.openJHDocument(type); } };
+window.deleteJHRecord = async function(type, id) {
+    if(!currentJHDept) return showToast('⚠️ اختر قسم JH أولاً');
+    if(!confirm('هل أنت متأكد من الحذف نهائياً؟')) return;
+    try {
+        await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}/${id}`).remove();
+        showToast('تم الحذف 🗑️');
+        window.openJHDocument(type);
+    } catch(error) {
+        console.error('[JH records] delete failed',error);
+        showToast('⚠️ تعذر حذف السجل');
+    }
+};
 
 window.startCLITChecklist = function() {
     if (clitSelectedFreq === 'الكل') return showToast('⚠️ يرجى اختيار دورية محددة لبدء الفحص.');
@@ -124,9 +278,34 @@ window.submitCLITTag = async function() {
 };
 
 window.submitFinalChecklist = async function() {
-    let pending = activeChecklistTasks.filter(t => t.status === 'pending').length; if(pending > 0) { if(!confirm(`⚠️ يتبقى ${pending} مهام لم يتم فحصها! حفظ القائمة؟`)) return; }
-    showToast('جاري أرشفة القائمة في السجل الذكي... ⏳');
-    let executionObj = { id: window.uniqueNumericId().toString(), dept: currentJHDept, frequency: clitSelectedFreq, date: new Date().toLocaleDateString('ar-EG'), time: new Date().toLocaleTimeString('ar-EG'), user: currentUser.name, tasks: activeChecklistTasks };
-    await db.ref(`tpm_system/clit_executions/${currentJHDept}/${executionObj.id}`).set(executionObj); window.awardPoints(30, `تنفيذ قائمة فحص (${clitSelectedFreq})`); showToast('تم حفظ دورة الصيانة بنجاح ✅'); showScreen('jhDocumentScreen');
+    if(!currentJHDept) return showToast('⚠️ اختر قسم JH أولاً');
+    const pending=activeChecklistTasks.filter(t=>t.status==='pending').length;
+    if(pending>0 && !confirm(`⚠️ يتبقى ${pending} مهام لم يتم فحصها. سيتم حفظ الدورة كـ "جزئية". هل تريد الاستمرار؟`)) return;
+
+    const now=Date.now();
+    const tasks=Array.isArray(activeChecklistTasks)?activeChecklistTasks.map(t=>({...t})):[]; 
+    const total=tasks.length;
+    const done=tasks.filter(t=>['done','completed','complete','ok','pass','passed'].includes(String(t?.status||'').toLowerCase())).length;
+    const issues=tasks.filter(t=>String(t?.status||'').toLowerCase()==='issue').length;
+    const status=pending>0?'partial':(issues>0?'completed_with_issues':'completed');
+    const authUser=firebase.auth().currentUser;
+    const executionObj={
+        id:window.uniqueNumericId().toString(), dept:currentJHDept, frequency:clitSelectedFreq,
+        date:new Date().toLocaleDateString('ar-EG'), time:new Date().toLocaleTimeString('ar-EG'),
+        user:currentUser?.name||'', uid:authUser?.uid||'', createdAt:now,
+        completionStatus:status, totalTasks:total, completedTasks:done, issueTasks:issues, pendingTasks:pending,
+        tasks
+    };
+
+    try{
+        showToast('جاري أرشفة دورة الفحص… ⏳');
+        await db.ref(`tpm_system/clit_executions/${currentJHDept}/${executionObj.id}`).set(executionObj);
+        window.awardPoints?.(30, `تنفيذ قائمة فحص (${clitSelectedFreq})`);
+        showToast(status==='partial'?'تم الحفظ كدورة جزئية ⚠️':'تم حفظ دورة الصيانة بنجاح ✅');
+        showScreen('jhDocumentScreen');
+    }catch(error){
+        console.error('[JH CLIT] execution save failed',error);
+        showToast('⚠️ تعذر حفظ دورة الفحص. حاول مرة أخرى.');
+    }
 };
 // ==========================================

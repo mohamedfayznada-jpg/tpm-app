@@ -58,6 +58,8 @@ window.showScreen = function(screenId) {
             target.style.setProperty('position', 'relative', 'important');
             target.style.setProperty('z-index', '10', 'important');
             document.body.classList.add('tpm-teams-open');
+            // Self-heal the gateway if a stale/partial DOM was loaded.
+            window.ensureTPMTeamsGateway?.();
         } else {
             document.body.classList.remove('tpm-teams-open');
         }

@@ -89,6 +89,10 @@ window.openTPMTeamWorkspace = function(teamId) {
     if (!team) return window.showToast?.('⚠️ الفريق غير موجود');
     const target = document.getElementById(team.workspace);
     if (!target) return window.showToast?.('⚠️ مساحة الفريق غير متاحة حاليًا');
+    if (teamId === 'jh' && typeof window.showJHPortal === 'function') {
+        window.showJHPortal();
+        return;
+    }
     window.showScreen(team.workspace);
 };
 

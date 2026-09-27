@@ -548,7 +548,7 @@
     <!-- 2. JH Documents & KPIs & Checklists -->
     <div class="container screen" id="jhDocumentScreen">
         <div class="legacy-inline-47">
-            <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">⬅️ عودة</button>
+            <button class="btn btn-sm btn-outline" onclick="goBack()">⬅️ عودة</button>
             <h2 id="jhDocHeader" class="legacy-inline-75"><i class='bx bx-file-blank'></i> السجل</h2>
         </div>
         <div id="jhDocActionArea" class="card btn-role-auditor"></div>
@@ -589,7 +589,7 @@
     <div class="container screen" id="clitChecklistScreen">
         <div class="card legacy-inline-86">
             <div class="legacy-inline-39">
-                <button class="btn btn-sm btn-outline" onclick="showScreen('jhDocumentScreen')">إلغاء</button>
+                <button class="btn btn-sm btn-outline" onclick="goBack()">إلغاء</button>
                 <h3 class="legacy-inline-87"><i class='bx bx-list-check'></i> قائمة: <span id="activeChecklistFreq"></span></h3>
                 <span class="legacy-inline-88"><span id="checklistProgress">0</span> / <span id="checklistTotal">0</span></span>
             </div>
@@ -604,7 +604,7 @@
 
     <div class="container screen" id="jhKPIsScreen">
         <div class="legacy-inline-47">
-            <button class="btn btn-sm btn-outline" onclick="showScreen('jhPortalScreen')">🔙 عودة</button>
+            <button class="btn btn-sm btn-outline" onclick="goBack()">🔙 عودة</button>
             <h2 class="legacy-inline-75"><i class='bx bx-radar'></i> المركز الاستراتيجي للمؤشرات</h2>
             <button class="btn btn-sm btn-success" onclick="exportKPIsToExcel()"><i class='bx bx-download'></i> Excel</button>
         </div>

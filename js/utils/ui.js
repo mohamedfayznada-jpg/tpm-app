@@ -10,7 +10,28 @@ export const UI = {
 
         document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
         const target = document.getElementById(screenId);
-        if (target) { target.classList.add('active'); target.style.display = 'block'; }
+        if (target) {
+            target.classList.add('active');
+            target.style.display = 'block';
+
+            // TPM Teams is a first-class route. This module is the canonical
+            // showScreen implementation after the modular shell boots, so the
+            // route-specific visibility contract must live here (not only in
+            // the legacy app.js implementation).
+            if (screenId === 'tpmTeamsScreen') {
+                target.style.setProperty('display', 'block', 'important');
+                target.style.setProperty('visibility', 'visible', 'important');
+                target.style.setProperty('opacity', '1', 'important');
+                target.style.setProperty('transform', 'none', 'important');
+                target.style.setProperty('animation', 'none', 'important');
+                target.style.setProperty('position', 'relative', 'important');
+                target.style.setProperty('z-index', '10', 'important');
+                document.body.classList.add('tpm-teams-open');
+                if (typeof window.renderTPMTeams === 'function') window.renderTPMTeams();
+            } else {
+                document.body.classList.remove('tpm-teams-open');
+            }
+        }
 
         document.querySelectorAll('.side-item[data-screen]').forEach(item => {
             item.classList.toggle('active', item.dataset.screen === screenId);
@@ -24,7 +45,20 @@ export const UI = {
             const lastScreen = this.screenHistory[this.screenHistory.length - 1];
             document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
             const target = document.getElementById(lastScreen);
-            if (target) { target.classList.add('active'); target.style.display = 'block'; }
+            if (target) {
+                target.classList.add('active');
+                target.style.display = 'block';
+                if (lastScreen === 'tpmTeamsScreen') {
+                    target.style.setProperty('display', 'block', 'important');
+                    target.style.setProperty('visibility', 'visible', 'important');
+                    target.style.setProperty('opacity', '1', 'important');
+                    target.style.setProperty('transform', 'none', 'important');
+                    document.body.classList.add('tpm-teams-open');
+                    if (typeof window.renderTPMTeams === 'function') window.renderTPMTeams();
+                } else {
+                    document.body.classList.remove('tpm-teams-open');
+                }
+            }
             document.querySelectorAll('.side-item[data-screen]').forEach(item => {
                 item.classList.toggle('active', item.dataset.screen === lastScreen);
             });

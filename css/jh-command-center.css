@@ -1424,3 +1424,6 @@
   #jhDocumentScreen .clit-map-stats{grid-template-columns:repeat(2,1fr)}
   #jhDocumentScreen .clit-point-grid{grid-template-columns:1fr}
 }
+
+#jhDocumentScreen .clit-map-filter-stack{display:flex;flex-direction:column;gap:5px;min-width:0}
+#jhDocumentScreen .clit-map-filter-stack .clit-map-chips{min-height:28px}

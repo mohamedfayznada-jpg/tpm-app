@@ -427,62 +427,119 @@
             </div>
         </section>
 
-        <div id="jhToolbox" class="legacy-inline-52">
-            <div class="card legacy-inline-53">
-                <div class="legacy-inline-54">
-                    <h3 id="selectedJHDeptTitle" class="legacy-inline-49"></h3>
-                    <div id="deptGoalDisplay" class="legacy-inline-55"></div>
-                </div>
-
-                <div id="jhLiveExecutionSummary" class="jh-live-summary"></div>
-                <div class="dashboard-stats jh-dept-kpi-strip">
-                    <div class="stat-card"><div class="stat-icon success-text"><i class='bx bx-badge-check'></i></div><div class="stat-value success-text" id="deptAuditScore">0%</div><div class="stat-label">آخر نتيجة Audit</div></div>
-                    <div class="stat-card"><div class="stat-icon primary-text"><i class='bx bx-target-lock'></i></div><div class="stat-value primary-text" id="deptOEE">—</div><div class="stat-label">المستهدف المعتمد</div></div>
-                    <div class="stat-card"><div class="stat-icon danger-text"><i class='bx bx-purchase-tag-alt'></i></div><div class="stat-value danger-text" id="deptOpenTags">0</div><div class="stat-label">تاجات مفتوحة</div></div>
-                    <div class="stat-card"><div class="stat-icon warning-text"><i class='bx bx-bulb'></i></div><div class="stat-value warning-text" id="deptKaizens">0</div><div class="stat-label">كايزن مسجلة</div></div>
-                </div>
-
-                <div class="card legacy-inline-56">
-                    <div class="legacy-inline-57">
-                        <h4 class="legacy-inline-58"><i class='bx bx-calendar'></i> السجل الميداني</h4>
-                        <div class="legacy-inline-59">
-                            <button class="btn btn-sm btn-outline" onclick="changeCalendarMonth(-1)"><i class='bx bx-chevron-right'></i></button>
-                            <b id="currentCalendarMonth" class="legacy-inline-60">شهر</b>
-                            <button class="btn btn-sm btn-outline" onclick="changeCalendarMonth(1)"><i class='bx bx-chevron-left'></i></button>
+        <div id="jhToolbox" class="jh-dept-cockpit">
+        <section class="jh-cockpit-shell">
+            <header class="jh-cockpit-hero">
+                <div class="jh-cockpit-hero-main">
+                    <div class="jh-cockpit-breadcrumb"><span>JH / AUTONOMOUS MAINTENANCE</span><i class='bx bx-chevron-left'></i><b>لوحة القسم</b></div>
+                    <div class="jh-cockpit-title-row">
+                        <div class="jh-cockpit-dept-icon"><i class='bx bx-buildings'></i></div>
+                        <div>
+                            <span class="jh-cockpit-overline">DEPARTMENT CONTROL ROOM</span>
+                            <h3 id="selectedJHDeptTitle">القسم</h3>
+                            <p>غرفة تشغيل القسم — مراجعات، تنفيذ CLIT، تاجات، كايزن، وسجل ميداني في مسار واحد.</p>
                         </div>
                     </div>
-                    <div id="jhCalendarGrid" class="legacy-inline-61"></div>
                 </div>
-                
-                <section class="jh-analytics-board">
+                <div class="jh-cockpit-hero-side">
+                    <div class="jh-live-badge"><i class='bx bx-pulse'></i><span>LIVE</span><b>تشغيل ميداني</b></div>
+                    <div id="deptGoalDisplay" class="jh-cockpit-target"></div>
+                </div>
+            </header>
+
+            <div class="jh-action-rail">
+                <button type="button" class="jh-action-primary" onclick="startNewAuditFlowFromPortal()"><i class='bx bx-edit-alt'></i><span><small>EXECUTE</small>بدء مراجعة Audit</span><i class='bx bx-left-arrow-alt'></i></button>
+                <button type="button" class="jh-action-card" onclick="openJHDocument('CLIT')"><i class='bx bx-list-check'></i><span><small>STANDARD</small>معايير CLIT</span></button>
+                <button type="button" class="jh-action-card" onclick="openJHDocument('Contamination')"><i class='bx bx-water'></i><span><small>LOSS SOURCE</small>مصادر التلوث</span></button>
+                <button type="button" class="jh-action-card" onclick="openJHDocument('SOC')"><i class='bx bx-map-pin'></i><span><small>METHOD</small>خريطة SOC</span></button>
+                <button type="button" class="jh-action-card" onclick="openJHDocument('Anatomy')"><i class='bx bx-cog'></i><span><small>EQUIPMENT</small>تشريح المعدة</span></button>
+                <button type="button" class="jh-action-card" onclick="openJHDocument('Safety')"><i class='bx bx-shield-quarter'></i><span><small>SAFETY</small>خريطة الأمان</span></button>
+            </div>
+
+            <section class="jh-kpi-command">
+                <div class="jh-section-bar">
+                    <div><span>EXECUTION PULSE</span><h4>نبض أداء القسم</h4></div>
+                    <small>الأرقام مرتبطة بالسجلات الفعلية</small>
+                </div>
+                <div id="jhLiveExecutionSummary" class="jh-live-summary jh-live-summary-v5"></div>
+                <div class="jh-command-kpis">
+                    <article class="jh-kpi-card audit">
+                        <div class="jh-kpi-icon"><i class='bx bx-badge-check'></i></div>
+                        <div><span>آخر Audit</span><strong id="deptAuditScore">0%</strong><small>آخر نتيجة مراجعة مسجلة</small></div>
+                    </article>
+                    <article class="jh-kpi-card target">
+                        <div class="jh-kpi-icon"><i class='bx bx-target-lock'></i></div>
+                        <div><span>المستهدف</span><strong id="deptOEE">—</strong><small>الهدف المعتمد للقسم</small></div>
+                    </article>
+                    <article class="jh-kpi-card tags">
+                        <div class="jh-kpi-icon"><i class='bx bx-purchase-tag-alt'></i></div>
+                        <div><span>تاجات مفتوحة</span><strong id="deptOpenTags">0</strong><small>نقاط تحتاج إجراء</small></div>
+                    </article>
+                    <article class="jh-kpi-card kaizen">
+                        <div class="jh-kpi-icon"><i class='bx bx-bulb'></i></div>
+                        <div><span>كايزن مسجلة</span><strong id="deptKaizens">0</strong><small>تحسينات موثقة للقسم</small></div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="jh-field-grid">
+                <article class="jh-panel jh-calendar-panel">
+                    <div class="jh-panel-head">
+                        <div><span>FIELD LOG</span><h4><i class='bx bx-calendar-check'></i> السجل الميداني</h4><small>أيام التنفيذ وحالات المتابعة</small></div>
+                        <div class="jh-month-nav">
+                            <button type="button" onclick="changeCalendarMonth(-1)" aria-label="الشهر السابق"><i class='bx bx-chevron-right'></i></button>
+                            <b id="currentCalendarMonth">شهر</b>
+                            <button type="button" onclick="changeCalendarMonth(1)" aria-label="الشهر التالي"><i class='bx bx-chevron-left'></i></button>
+                        </div>
+                    </div>
+                    <div class="jh-calendar-legend"><span><i class="ok"></i> تنفيذ سليم</span><span><i class="warn"></i> يحتاج إجراء</span><span><i class="idle"></i> بدون سجل</span></div>
+                    <div id="jhCalendarGrid" class="jh-calendar-grid"></div>
+                </article>
+
+                <article class="jh-panel jh-operator-panel">
+                    <div class="jh-panel-head">
+                        <div><span>CONTROL LOOP</span><h4><i class='bx bx-radar'></i> دورة السيطرة</h4><small>من الملاحظة إلى الإجراء والتحقق</small></div>
+                    </div>
+                    <div class="jh-control-loop">
+                        <div class="loop-step"><b>01</b><i class='bx bx-search-alt'></i><span>Observe</span><small>اكتشف</small></div>
+                        <div class="loop-arrow"><i class='bx bx-left-arrow-alt'></i></div>
+                        <div class="loop-step"><b>02</b><i class='bx bx-edit'></i><span>Execute</span><small>نفّذ</small></div>
+                        <div class="loop-arrow"><i class='bx bx-left-arrow-alt'></i></div>
+                        <div class="loop-step"><b>03</b><i class='bx bx-check-shield'></i><span>Verify</span><small>تحقق</small></div>
+                    </div>
+                    <div class="jh-control-note"><i class='bx bx-info-circle'></i><span>استخدم التاجات لتصعيد النقاط المفتوحة، ثم ارجع للمراجعة للتحقق من الإغلاق.</span></div>
+                </article>
+            </section>
+
+            <section class="jh-analytics-section">
+                <div class="jh-section-bar">
+                    <div><span>ANALYTICS</span><h4>لوحة التحليل والتدفق</h4></div>
+                    <small>اتجاه الأداء • تنفيذ CLIT • حركة التاجات</small>
+                </div>
+                <div class="jh-analytics-board jh-analytics-v5">
                     <article class="jh-chart-card jh-chart-wide">
                         <div class="jh-chart-head"><div><span>PERFORMANCE TREND</span><h4>تطور نتائج المراجعات</h4><small>آخر 8 مراجعات مسجلة للقسم</small></div><i class='bx bx-line-chart'></i></div>
                         <div class="jh-chart-canvas"><canvas id="jhMiniTrendChart"></canvas></div>
                     </article>
                     <article class="jh-chart-card">
-                        <div class="jh-chart-head"><div><span>CLIT EXECUTION</span><h4>معدل تنفيذ الفحص</h4><small>نسبة البنود المكتملة من سجلات التنفيذ</small></div><i class='bx bx-list-check'></i></div>
+                        <div class="jh-chart-head"><div><span>CLIT EXECUTION</span><h4>معدل تنفيذ الفحص</h4><small>نسبة البنود المكتملة</small></div><i class='bx bx-list-check'></i></div>
                         <div class="jh-chart-canvas"><canvas id="jhTimeChart"></canvas></div>
                     </article>
                     <article class="jh-chart-card">
-                        <div class="jh-chart-head"><div><span>TAG FLOW</span><h4>حركة التاجات</h4><small>مفتوح مقابل مغلق حسب المصدر</small></div><i class='bx bx-purchase-tag-alt'></i></div>
+                        <div class="jh-chart-head"><div><span>TAG FLOW</span><h4>حركة التاجات</h4><small>مفتوح مقابل مغلق</small></div><i class='bx bx-purchase-tag-alt'></i></div>
                         <div class="jh-chart-canvas"><canvas id="jhTagMatrixChart"></canvas></div>
                     </article>
-                </section>
-
-                <h3 class="section-title legacy-inline-64"><i class='bx bx-briefcase-alt-2'></i> أدوات وسجلات الصيانة الذاتية</h3>
-                <div class="grid-layout legacy-inline-65">
-                    <div class="card text-center legacy-inline-66" onclick="startNewAuditFlowFromPortal()"><div class="legacy-inline-67"><i class='bx bx-edit'></i></div><div class="legacy-inline-68">مراجعة (Audit)</div></div>
-                    <div class="card text-center legacy-inline-69" onclick="openJHDocument('CLIT')"><div class="legacy-inline-67"><i class='bx bx-brush'></i></div><div class="legacy-inline-68">معايير (CLIT)</div></div>
-                    <div class="card text-center legacy-inline-70" onclick="openJHDocument('Contamination')"><div class="legacy-inline-67"><i class='bx bx-water'></i></div><div class="legacy-inline-68">مصادر التلوث</div></div>
-                    <div class="card text-center legacy-inline-71" onclick="openJHDocument('SOC')"><div class="legacy-inline-67"><i class='bx bx-map-pin'></i></div><div class="legacy-inline-68">خريطة (SOC)</div></div>
-                    <div class="card text-center legacy-inline-72" onclick="openJHDocument('Anatomy')"><div class="legacy-inline-67"><i class='bx bx-cogs'></i></div><div class="legacy-inline-68">تشريح المعدة</div></div>
-                    <div class="card text-center legacy-inline-73" onclick="openJHDocument('Safety')"><div class="legacy-inline-67"><i class='bx bx-error-alt'></i></div><div class="legacy-inline-68">خريطة الأمان</div></div>
                 </div>
-                
-                <h4 class="legacy-inline-74"><i class='bx bx-medal'></i> أبطال الجودة بالقسم</h4>
-                <div id="deptInternalLeaderboard" class="grid-layout"></div>
-            </div>
-        </div>
+            </section>
+
+            <section class="jh-leaderboard-panel">
+                <div class="jh-section-bar">
+                    <div><span>TEAM SIGNAL</span><h4>أبطال الجودة بالقسم</h4></div>
+                    <small>أعلى مساهمات الفريق المسجلة</small>
+                </div>
+                <div id="deptInternalLeaderboard" class="jh-leaderboard-grid"></div>
+            </section>
+        </section>
     </div>
 
     <!-- 2. JH Documents & KPIs & Checklists -->

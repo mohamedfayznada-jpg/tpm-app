@@ -897,3 +897,85 @@
   #tpmTeamsScreen .tpm-team-grid{grid-template-columns:1fr!important}
   #tpmTeamsScreen .tpm-team-card-v5{height:230px!important;min-height:230px!important;max-height:230px!important}
 }
+
+
+/* =========================================================
+   MOBILE HARDENING — TPM Teams must remain visible on phones
+   ========================================================= */
+@media (max-width: 800px){
+  #tpmTeamsScreen{
+    display:block;
+    width:100%;
+    min-height:100vh;
+    box-sizing:border-box;
+    padding:86px 10px 28px !important;
+    overflow-x:hidden !important;
+  }
+  #tpmTeamsScreen .tpm-hub-hero{
+    display:flex !important;
+    flex-direction:column !important;
+    width:100% !important;
+    min-height:0 !important;
+    margin-bottom:12px !important;
+  }
+  #tpmTeamsScreen .tpm-hub-hero-copy{
+    width:100% !important;
+    box-sizing:border-box !important;
+    padding:20px 16px !important;
+  }
+  #tpmTeamsScreen .tpm-hub-command-visual{
+    display:block !important;
+    width:100% !important;
+    min-height:145px !important;
+    height:145px !important;
+  }
+  #tpmTeamsScreen .tpm-hub-hero h1{
+    font-size:25px !important;
+  }
+  #tpmTeamsScreen .tpm-hub-hero p{
+    font-size:9px !important;
+  }
+  #tpmTeamsScreen .tpm-hub-directory{
+    display:block !important;
+    width:100% !important;
+    min-height:200px !important;
+  }
+  #tpmTeamsScreen .tpm-team-grid{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    width:100% !important;
+    min-height:200px !important;
+    gap:10px !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+  #tpmTeamsScreen .tpm-team-card-v5{
+    display:grid !important;
+    width:100% !important;
+    height:auto !important;
+    min-height:210px !important;
+    max-height:none !important;
+    box-sizing:border-box !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+}
+@media (max-width:480px){
+  #tpmTeamsScreen{
+    padding-left:8px !important;
+    padding-right:8px !important;
+  }
+  #tpmTeamsScreen .tpm-hub-hero-copy{
+    padding:18px 14px !important;
+  }
+  #tpmTeamsScreen .tpm-hub-hero h1{
+    font-size:22px !important;
+  }
+  #tpmTeamsScreen .tpm-v5-body h3{
+    font-size:17px !important;
+  }
+  #tpmTeamsScreen .tpm-v5-open{
+    min-width:96px !important;
+    padding:0 8px !important;
+  }
+}

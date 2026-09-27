@@ -329,6 +329,7 @@ window.renderCLITMap=function(records){
  const zones=[...new Set(rs.map(zoneOf))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ar')), ops=['تنظيف','تزييت','فحص','تربيط'].filter(o=>rs.some(r=>opOf(r)===o)), freqs=[...new Set(rs.map(freqOf))].filter(Boolean);
  const stat=document.getElementById('clitMapStats'); if(stat){const values=[['إجمالي النقاط',rs.length,'bx-map'],['المعروض',filtered.length,'bx-filter-alt'],['المناطق',zones.length,'bx-buildings'],['العمليات',new Set(rs.map(opOf)).size,'bx-cog'],['يومي',rs.filter(r=>freqOf(r).includes('يومي')).length,'bx-time']];stat.innerHTML=values.map(([l,v,i])=>`<article><i class="bx ${i}"></i><div><strong>${v}</strong><span>${l}</span></div></article>`).join('');}
  const chips=document.getElementById('clitMapZoneChips');if(chips)chips.innerHTML=['الكل',...ops].map(o=>`<button type="button" class="${st.operation===o?'is-active':''}" onclick="setCLITMapOperation('${jhRecordEscape(o)}')">${jhRecordEscape(o)}</button>`).join('');
+ const freqChips=document.getElementById('clitMapFrequencyChips');if(freqChips)freqChips.innerHTML=['الكل',...freqs].map(f=>`<button type="button" class="${st.frequency===f?'is-active':''}" onclick="setCLITMapFrequency('${jhRecordEscape(f)}')">${jhRecordEscape(f)}</button>`).join('');
  const zonesEl=document.getElementById('clitMapZones');if(zonesEl)zonesEl.innerHTML=[['الكل',rs.length],...zones.map(z=>[z,rs.filter(r=>zoneOf(r)===z).length])].map(([z,n])=>`<button type="button" class="${st.zone===z?'is-active':''}" onclick="setCLITMapZone('${jhRecordEscape(z)}')"><span>${jhRecordEscape(z)}</span><b>${n}</b></button>`).join('');
  const points=document.getElementById('clitMapPoints');if(!points)return;if(!filtered.length){points.innerHTML='<div class="clit-map-empty"><i class="bx bx-search-alt"></i><h4>لا توجد نقاط مطابقة</h4><p>غيّر المنطقة أو العملية أو كلمة البحث.</p></div>';return;}
  const grouped={};filtered.forEach(r=>{(grouped[zoneOf(r)]??=[]).push(r);});
@@ -337,3 +338,5 @@ window.renderCLITMap=function(records){
 window.setCLITMapZone=function(z){window.__clitMapState.zone=z;clitSelectedZone=z;window.renderCLITMap(window.currentLoadedRecords||[]);};
 window.setCLITMapOperation=function(o){window.__clitMapState.operation=o;clitSelectedOp=o;window.renderCLITMap(window.currentLoadedRecords||[]);};
 document.addEventListener('input',e=>{if(e.target?.id==='clitMapSearch'){window.__clitMapState.search=e.target.value||'';window.renderCLITMap(window.currentLoadedRecords||[]);}});
+
+window.setCLITMapFrequency=function(freq){window.__clitMapState.frequency=freq;clitSelectedFreq=freq;window.renderCLITMap(window.currentLoadedRecords||[]);};

@@ -1,0 +1,430 @@
+/* =========================================================
+   TPM TEAMS GATEWAY — ENTRY EXPERIENCE
+   Scoped strictly to #tpmTeamsScreen.
+   Does not alter .screen visibility or any other workspace.
+   ========================================================= */
+
+#tpmTeamsScreen{
+  --hub-navy:#102b45;
+  --hub-navy-2:#173f5d;
+  --hub-blue:#2583e8;
+  --hub-orange:#ff9f1c;
+  --hub-line:#dce6ed;
+  --hub-muted:#718291;
+  --hub-bg:#f3f6f8;
+  max-width:none!important;
+  background:var(--hub-bg)!important;
+  color:#17364f!important;
+}
+
+/* ---------- HERO ---------- */
+#tpmTeamsScreen .teams-command-header{
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 260px!important;
+  align-items:stretch!important;
+  gap:0!important;
+  min-height:176px!important;
+  margin:0 0 16px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:0!important;
+  border-radius:16px!important;
+  background:var(--hub-navy)!important;
+  box-shadow:0 12px 30px rgba(16,43,69,.14)!important;
+}
+#tpmTeamsScreen .teams-command-header:before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  width:auto!important;
+  height:auto!important;
+  border:0!important;
+  border-radius:0!important;
+  background:
+    radial-gradient(circle at 78% 50%,rgba(37,131,232,.30),transparent 28%),
+    linear-gradient(135deg,rgba(255,255,255,.03),transparent 55%)!important;
+  box-shadow:none!important;
+  pointer-events:none!important;
+}
+#tpmTeamsScreen .teams-command-header:after{
+  content:"TPM / TEAM OS"!important;
+  position:absolute!important;
+  left:24px!important;
+  bottom:18px!important;
+  width:auto!important;
+  height:auto!important;
+  color:rgba(255,255,255,.28)!important;
+  background:none!important;
+  font:900 8px/1 Arial,sans-serif!important;
+  letter-spacing:2px!important;
+}
+#tpmTeamsScreen .teams-command-header>div:first-child{
+  position:relative!important;
+  z-index:2!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  padding:27px 30px!important;
+}
+#tpmTeamsScreen .teams-command-header .eyebrow{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  width:max-content!important;
+  color:#ffb52d!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  letter-spacing:1px!important;
+}
+#tpmTeamsScreen .teams-command-header h2{
+  margin:8px 0 7px!important;
+  color:#fff!important;
+  font-size:32px!important;
+  line-height:1.1!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .teams-command-header p{
+  max-width:720px!important;
+  margin:0!important;
+  color:#d4e1ea!important;
+  font-size:11px!important;
+  line-height:1.9!important;
+}
+#tpmTeamsScreen .screen-command-actions{
+  position:relative!important;
+  z-index:3!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:20px!important;
+  background:rgba(7,25,42,.28)!important;
+  border-right:1px solid rgba(255,255,255,.09)!important;
+}
+#tpmTeamsScreen .screen-command-actions .btn{
+  min-width:118px!important;
+  min-height:42px!important;
+  border:1px solid rgba(255,255,255,.24)!important;
+  border-radius:10px!important;
+  background:rgba(255,255,255,.08)!important;
+  color:#fff!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  backdrop-filter:blur(5px)!important;
+}
+#tpmTeamsScreen .screen-command-actions .btn:hover{
+  background:#fff!important;
+  color:#17364f!important;
+}
+
+/* ---------- KPI RIBBON ---------- */
+#tpmTeamsScreen .tpm-kpi-ribbon{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:9px!important;
+  margin:0 0 18px!important;
+}
+#tpmTeamsScreen .tpm-kpi-chip{
+  min-height:68px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  padding:10px 13px!important;
+  border:1px solid var(--hub-line)!important;
+  border-radius:11px!important;
+  background:#fff!important;
+  box-shadow:0 5px 16px rgba(20,45,65,.045)!important;
+}
+#tpmTeamsScreen .tpm-kpi-icon{
+  width:34px!important;
+  height:34px!important;
+  flex:0 0 34px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:9px!important;
+  background:#edf6ff!important;
+  color:var(--hub-blue)!important;
+  font-size:17px!important;
+  box-shadow:none!important;
+}
+#tpmTeamsScreen .tpm-kpi-copy{
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+#tpmTeamsScreen .tpm-kpi-copy span{
+  color:#82919d!important;
+  font-size:7px!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .tpm-kpi-copy b{
+  margin:2px 0!important;
+  color:#17364f!important;
+  font:900 20px/1 Arial,sans-serif!important;
+}
+#tpmTeamsScreen .tpm-kpi-copy small{
+  overflow:hidden!important;
+  color:#9aa6af!important;
+  font-size:7px!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+/* ---------- DIRECTORY HEADER ---------- */
+#tpmTeamsScreen .tpm-teams-directory-head{
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  margin:0 1px 10px!important;
+  padding:0!important;
+}
+#tpmTeamsScreen .tpm-teams-directory-head .eyebrow{
+  color:var(--hub-blue)!important;
+  font-size:8px!important;
+  font-weight:900!important;
+  letter-spacing:1px!important;
+}
+#tpmTeamsScreen .tpm-teams-directory-head h3{
+  margin:4px 0 2px!important;
+  color:#17364f!important;
+  font-size:19px!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .tpm-teams-directory-head p{
+  margin:0!important;
+  color:#7a8a97!important;
+  font-size:8px!important;
+  line-height:1.7!important;
+}
+#tpmTeamsScreen .tpm-teams-directory-meta{
+  display:flex!important;
+  gap:6px!important;
+  flex-wrap:wrap!important;
+  justify-content:flex-end!important;
+}
+#tpmTeamsScreen .tpm-teams-directory-meta span{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:5px!important;
+  padding:7px 9px!important;
+  border:1px solid var(--hub-line)!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  color:#687b89!important;
+  font-size:7px!important;
+  font-weight:800!important;
+}
+
+/* ---------- TEAM GRID ---------- */
+#tpmTeamsScreen .tpm-team-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:11px!important;
+  margin:0!important;
+}
+#tpmTeamsScreen .tpm-team-card-v4{
+  position:relative!important;
+  display:flex!important;
+  flex-direction:column!important;
+  min-width:0!important;
+  min-height:288px!important;
+  overflow:hidden!important;
+  padding:0!important;
+  border:1px solid #d9e4eb!important;
+  border-radius:13px!important;
+  background:#fff!important;
+  box-shadow:0 5px 15px rgba(20,45,65,.045)!important;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important;
+}
+#tpmTeamsScreen .tpm-team-card-v4:hover{
+  transform:translateY(-3px)!important;
+  border-color:#b7cfdf!important;
+  box-shadow:0 13px 26px rgba(20,45,65,.10)!important;
+}
+#tpmTeamsScreen .tpm-team-card-v4:focus-visible{
+  outline:3px solid rgba(37,131,232,.25)!important;
+  outline-offset:2px!important;
+}
+#tpmTeamsScreen .tpm-team-accent{
+  height:4px!important;
+  flex:0 0 4px!important;
+  background:var(--team-color,#2583e8)!important;
+}
+#tpmTeamsScreen .tpm-team-card-head{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:14px 14px 7px!important;
+}
+#tpmTeamsScreen .tpm-team-icon{
+  width:42px!important;
+  height:42px!important;
+  display:grid!important;
+  place-items:center!important;
+  border:1px solid color-mix(in srgb,var(--team-color,#2583e8) 24%,#fff)!important;
+  border-radius:11px!important;
+  background:color-mix(in srgb,var(--team-color,#2583e8) 10%,#fff)!important;
+  color:var(--team-color,#2583e8)!important;
+  font-size:20px!important;
+  box-shadow:none!important;
+}
+#tpmTeamsScreen .tpm-team-card-head-copy{
+  display:flex!important;
+  align-items:flex-end!important;
+  flex-direction:column!important;
+  gap:4px!important;
+}
+#tpmTeamsScreen .tpm-team-code{
+  display:inline-flex!important;
+  padding:4px 7px!important;
+  border-radius:6px!important;
+  background:#f0f4f7!important;
+  color:#48657a!important;
+  font:900 9px/1 Arial,sans-serif!important;
+  letter-spacing:.5px!important;
+}
+#tpmTeamsScreen .tpm-team-status{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  font-size:7px!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .tpm-team-status.ready{color:#21865d!important}
+#tpmTeamsScreen .tpm-team-status.muted{color:#a07135!important}
+#tpmTeamsScreen .tpm-team-card-copy{
+  padding:2px 14px 0!important;
+}
+#tpmTeamsScreen .tpm-team-card-copy h3{
+  margin:0 0 5px!important;
+  color:#17364f!important;
+  font-size:16px!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .tpm-team-card-copy p{
+  min-height:48px!important;
+  margin:0!important;
+  color:#738391!important;
+  font-size:8px!important;
+  line-height:1.75!important;
+}
+#tpmTeamsScreen .tpm-team-mission{
+  margin:9px 14px 0!important;
+  padding:8px 9px!important;
+  border:1px solid #e5edf3!important;
+  border-right:3px solid var(--team-color,#2583e8)!important;
+  border-radius:8px!important;
+  background:#f7f9fb!important;
+}
+#tpmTeamsScreen .tpm-team-mission span{
+  display:block!important;
+  margin-bottom:2px!important;
+  color:#8b99a4!important;
+  font-size:6px!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .tpm-team-mission b{
+  display:block!important;
+  color:#355a72!important;
+  font-size:8px!important;
+  line-height:1.5!important;
+}
+#tpmTeamsScreen .tpm-team-data-row{
+  display:grid!important;
+  grid-template-columns:repeat(3,1fr)!important;
+  gap:5px!important;
+  padding:10px 14px 0!important;
+}
+#tpmTeamsScreen .tpm-team-data-row>div{
+  padding:6px 4px!important;
+  border:1px solid #e7edf1!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  text-align:center!important;
+}
+#tpmTeamsScreen .tpm-team-data-row span{
+  display:block!important;
+  color:#8c99a3!important;
+  font-size:6px!important;
+}
+#tpmTeamsScreen .tpm-team-data-row b{
+  display:block!important;
+  margin-top:3px!important;
+  color:#17364f!important;
+  font:900 12px/1 Arial,sans-serif!important;
+}
+#tpmTeamsScreen .tpm-team-progress{
+  height:4px!important;
+  margin:9px 14px 0!important;
+  overflow:hidden!important;
+  border-radius:99px!important;
+  background:#e9eef2!important;
+}
+#tpmTeamsScreen .tpm-team-progress span{
+  display:block!important;
+  height:100%!important;
+  border-radius:inherit!important;
+  background:var(--team-color,#2583e8)!important;
+}
+#tpmTeamsScreen .tpm-team-card-footer{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:7px!important;
+  margin-top:auto!important;
+  padding:10px 14px 12px!important;
+}
+#tpmTeamsScreen .tpm-team-health{
+  font-size:7px!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .tpm-team-health.good{color:#2b8965!important}
+#tpmTeamsScreen .tpm-team-health.alert{color:#c65252!important}
+#tpmTeamsScreen .tpm-team-open-btn{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  padding:7px 9px!important;
+  border:1px solid #d6e2ea!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#245d81!important;
+  font-size:7px!important;
+  font-weight:900!important;
+}
+#tpmTeamsScreen .tpm-team-open-btn:hover{
+  background:#edf5fa!important;
+  border-color:#b8d0df!important;
+}
+#tpmTeamsScreen .tpm-team-open-btn i{font-size:13px!important}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:1100px){
+  #tpmTeamsScreen .teams-command-header{grid-template-columns:1fr!important}
+  #tpmTeamsScreen .screen-command-actions{
+    justify-content:flex-start!important;
+    padding:0 30px 20px!important;
+    background:transparent!important;
+    border:0!important;
+  }
+  #tpmTeamsScreen .tpm-team-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:720px){
+  #tpmTeamsScreen .teams-command-header{
+    min-height:0!important;
+    grid-template-columns:1fr!important;
+  }
+  #tpmTeamsScreen .teams-command-header>div:first-child{padding:22px 19px!important}
+  #tpmTeamsScreen .teams-command-header h2{font-size:25px!important}
+  #tpmTeamsScreen .teams-command-header p{font-size:9px!important}
+  #tpmTeamsScreen .screen-command-actions{padding:0 19px 18px!important}
+  #tpmTeamsScreen .tpm-kpi-ribbon{grid-template-columns:1fr 1fr!important}
+  #tpmTeamsScreen .tpm-team-grid{grid-template-columns:1fr!important}
+  #tpmTeamsScreen .tpm-teams-directory-head{
+    align-items:flex-start!important;
+    flex-direction:column!important;
+  }
+  #tpmTeamsScreen .tpm-teams-directory-meta{justify-content:flex-start!important}
+}

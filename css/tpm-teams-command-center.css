@@ -1009,3 +1009,17 @@
     opacity:1 !important;
   }
 }
+
+
+/* Final route-level visibility contract */
+body.tpm-teams-open #tpmTeamsScreen{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  transform:none !important;
+  animation:none !important;
+}
+body.tpm-teams-open #tpmTeamsScreen > *{
+  visibility:visible !important;
+  opacity:1 !important;
+}

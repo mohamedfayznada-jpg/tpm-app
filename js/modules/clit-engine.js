@@ -322,21 +322,95 @@ window.submitFinalChecklist = async function() {
 /* ===== CLIT MAP V1 ===== */
 window.__clitMapState={zone:'الكل',operation:'الكل',frequency:'الكل',search:''};
 window.resetCLITMapFilters=function(){window.__clitMapState={zone:'الكل',operation:'الكل',frequency:'الكل',search:''};clitSelectedZone='الكل';clitSelectedOp='الكل';clitSelectedFreq='الكل';const i=document.getElementById('clitMapSearch');if(i)i.value='';window.renderCLITMap(window.currentLoadedRecords||[]);};
+/* ===== CLIT MAP V2 — time-aware analytics ===== */
+window.__clitMapState=window.__clitMapState||{zone:'الكل',operation:'الكل',frequency:'الكل',search:''};
+window.parseCLITMinutes=function(value){
+ const raw=String(value??'').trim().replace(/،/g,'.');
+ if(!raw||raw==='-'||raw==='—') return null;
+ const colon=raw.match(/^(\d+(?:\.\d+)?)\s*:\s*(\d{1,2})$/);
+ if(colon) return Number(colon[1])+(Number(colon[2])/60);
+ const m=raw.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(ms|milliseconds?|ث|ثانية|ثواني|sec|secs|second|seconds|s|min|mins|minute|minutes|د|دقيقة|دقائق|m|hr|hrs|hour|hours|س|ساعة|ساعات|h)?/);
+ if(!m) return null;
+ const n=Number(m[1]); if(!Number.isFinite(n)) return null;
+ const unit=m[2]||'min';
+ if(/ms|millisecond/.test(unit)) return n/60000;
+ if(/ث|sec|second|^s$/.test(unit)) return n/60;
+ if(/hr|hour|^س$|ساعة|ساعات|^h$/.test(unit)) return n*60;
+ return n;
+};
+window.formatCLITMinutes=function(minutes){
+ const n=Number(minutes); if(!Number.isFinite(n)) return '—';
+ if(n>=60){ const h=Math.floor(n/60), m=Math.round(n%60); return m?(h+'س '+m+'د'):(h+'س'); }
+ if(n<1) return Math.round(n*60)+'ث';
+ return String(Math.round(n*10)/10).replace('.0','')+'د';
+};
+window.getCLITTimeProfile=function(r){
+ const before=window.parseCLITMinutes(r?.timeBefore), after=window.parseCLITMinutes(r?.timeAfter);
+ const current=after??before;
+ const savings=(before!=null&&after!=null)?Math.max(0,before-after):null;
+ const reduction=(before>0&&after!=null)?Math.max(0,((before-after)/before)*100):null;
+ return {before,after,current,savings,reduction};
+};
+window.resetCLITMapFilters=function(){
+ window.__clitMapState={zone:'الكل',operation:'الكل',frequency:'الكل',search:''};
+ clitSelectedZone='الكل'; clitSelectedOp='الكل'; clitSelectedFreq='الكل';
+ const i=document.getElementById('clitMapSearch'); if(i)i.value='';
+ window.renderCLITMap(window.currentLoadedRecords||[]);
+};
 window.renderCLITMap=function(records){
- const rs=Array.isArray(records)?records:[], st=window.__clitMapState;
- const norm=v=>String(v??'').trim(), opOf=r=>{const o=norm(r.operation||r.clitType);if(o.includes('تنظيف')||o.includes('تنطيف'))return'تنظيف';if(o.includes('تزييت')||o.includes('تشحيم'))return'تزييت';if(o.includes('فحص'))return'فحص';if(o.includes('تربيط')||o.includes('ربط'))return'تربيط';return o||'غير محدد';}, zoneOf=r=>norm(r.region)||'غير محدد', freqOf=r=>norm(r.frequency)||'غير محدد';
- const q=norm(st.search).toLowerCase(), filtered=rs.filter(r=>{const hay=[r.region,r.part,r.action,r.standard,r.optimalState,r.degradation,r.tools,r.machineState,r.operation,r.clitType,r.frequency].map(norm).join(' ').toLowerCase();return(st.zone==='الكل'||zoneOf(r)===st.zone)&&(st.operation==='الكل'||opOf(r)===st.operation)&&(st.frequency==='الكل'||freqOf(r)===st.frequency)&&(!q||hay.includes(q));});
- const zones=[...new Set(rs.map(zoneOf))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ar')), ops=['تنظيف','تزييت','فحص','تربيط'].filter(o=>rs.some(r=>opOf(r)===o)), freqs=[...new Set(rs.map(freqOf))].filter(Boolean);
- const stat=document.getElementById('clitMapStats'); if(stat){const values=[['إجمالي النقاط',rs.length,'bx-map'],['المعروض',filtered.length,'bx-filter-alt'],['المناطق',zones.length,'bx-buildings'],['العمليات',new Set(rs.map(opOf)).size,'bx-cog'],['يومي',rs.filter(r=>freqOf(r).includes('يومي')).length,'bx-time']];stat.innerHTML=values.map(([l,v,i])=>`<article><i class="bx ${i}"></i><div><strong>${v}</strong><span>${l}</span></div></article>`).join('');}
- const chips=document.getElementById('clitMapZoneChips');if(chips)chips.innerHTML=['الكل',...ops].map(o=>`<button type="button" class="${st.operation===o?'is-active':''}" onclick="setCLITMapOperation('${jhRecordEscape(o)}')">${jhRecordEscape(o)}</button>`).join('');
- const freqChips=document.getElementById('clitMapFrequencyChips');if(freqChips)freqChips.innerHTML=['الكل',...freqs].map(f=>`<button type="button" class="${st.frequency===f?'is-active':''}" onclick="setCLITMapFrequency('${jhRecordEscape(f)}')">${jhRecordEscape(f)}</button>`).join('');
- const zonesEl=document.getElementById('clitMapZones');if(zonesEl)zonesEl.innerHTML=[['الكل',rs.length],...zones.map(z=>[z,rs.filter(r=>zoneOf(r)===z).length])].map(([z,n])=>`<button type="button" class="${st.zone===z?'is-active':''}" onclick="setCLITMapZone('${jhRecordEscape(z)}')"><span>${jhRecordEscape(z)}</span><b>${n}</b></button>`).join('');
- const points=document.getElementById('clitMapPoints');if(!points)return;if(!filtered.length){points.innerHTML='<div class="clit-map-empty"><i class="bx bx-search-alt"></i><h4>لا توجد نقاط مطابقة</h4><p>غيّر المنطقة أو العملية أو كلمة البحث.</p></div>';return;}
- const grouped={};filtered.forEach(r=>{(grouped[zoneOf(r)]??=[]).push(r);});
- points.innerHTML=Object.entries(grouped).map(([z,items])=>`<section class="clit-zone-block"><header><div><span>ZONE</span><h4>${jhRecordEscape(z)}</h4></div><b>${items.length} نقطة</b></header><div class="clit-point-grid">${items.map(r=>{const o=opOf(r),tone={تنظيف:'clean',تزييت:'lube',فحص:'inspect',تربيط:'tight'}[o]||'other',id=jhRecordEscape(r.id||'');return`<article class="clit-point-card ${tone}"><div class="clit-point-top"><span class="clit-op-badge">${jhRecordEscape(o)}</span><span>${jhRecordEscape(freqOf(r))}</span></div><h5>${jhRecordEscape(r.part||'نقطة عامة')}</h5><p>${jhRecordEscape(r.action||r.standard||r.optimalState||'بدون وصف إجراء')}</p><div class="clit-point-meta"><span><i class="bx bx-target-lock"></i>${jhRecordEscape(r.optimalState||r.standard||'المعيار غير محدد')}</span></div><div class="clit-point-actions"><button type="button" onclick="editJHRecord('CLIT','${id}')"><i class="bx bx-edit"></i> تعديل</button><button type="button" onclick="deleteJHRecord('CLIT','${id}')"><i class="bx bx-trash"></i></button></div></article>`}).join('')}</div></section>`).join('');
+ const rs=Array.isArray(records)?records:[], st=window.__clitMapState||{};
+ const norm=v=>String(v??'').trim();
+ const opOf=r=>{const o=norm(r.operation||r.clitType);if(o.includes('تنظيف')||o.includes('تنطيف'))return'تنظيف';if(o.includes('تزييت')||o.includes('تشحيم'))return'تزييت';if(o.includes('فحص'))return'فحص';if(o.includes('تربيط')||o.includes('ربط'))return'تربيط';return o||'غير محدد';};
+ const zoneOf=r=>norm(r.region)||'غير محدد', freqOf=r=>norm(r.frequency)||'غير محدد';
+ const q=norm(st.search).toLowerCase();
+ const filtered=rs.filter(r=>{const hay=[r.region,r.part,r.action,r.standard,r.optimalState,r.degradation,r.tools,r.machineState,r.operation,r.clitType,r.frequency].map(norm).join(' ').toLowerCase();return(st.zone==='الكل'||zoneOf(r)===st.zone)&&(st.operation==='الكل'||opOf(r)===st.operation)&&(st.frequency==='الكل'||freqOf(r)===st.frequency)&&(!q||hay.includes(q));});
+ const zones=[...new Set(rs.map(zoneOf))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ar'));
+ const ops=['تنظيف','تزييت','فحص','تربيط'].filter(o=>rs.some(r=>opOf(r)===o));
+ const freqs=[...new Set(rs.map(freqOf))].filter(Boolean);
+ const profiles=rs.map(r=>({r,p:window.getCLITTimeProfile(r)})), validCurrent=profiles.filter(x=>x.p.current!=null);
+ const totalCurrent=validCurrent.reduce((s,x)=>s+x.p.current,0), totalBefore=profiles.filter(x=>x.p.before!=null).reduce((s,x)=>s+x.p.before,0), potentialSavings=profiles.filter(x=>x.p.savings!=null).reduce((s,x)=>s+x.p.savings,0);
+ const max=validCurrent.reduce((a,x)=>!a||x.p.current>a.p.current?x:a,null);
+ const stat=document.getElementById('clitMapStats');
+ if(stat){const values=[['إجمالي النقاط',rs.length,'bx-map'],['الزمن القياسي',window.formatCLITMinutes(totalCurrent),'bx-stopwatch'],['زمن قبل التحسين',window.formatCLITMinutes(totalBefore),'bx-history'],['وفر مسجل',window.formatCLITMinutes(potentialSavings),'bx-trending-down'],['متوسط النقطة',window.formatCLITMinutes(validCurrent.length?totalCurrent/validCurrent.length:0),'bx-time'],['أكبر عملية',max?window.formatCLITMinutes(max.p.current):'—','bx-alarm-exclamation']];stat.innerHTML=values.map(v=>'<article><i class="bx '+v[2]+'"></i><div><strong>'+v[1]+'</strong><span>'+v[0]+'</span></div></article>').join('');}
+ const chips=document.getElementById('clitMapZoneChips'); if(chips)chips.innerHTML=['الكل',...ops].map(o=>'<button type="button" class="'+(st.operation===o?'is-active':'')+'" onclick="setCLITMapOperation(\''+jhRecordEscape(o)+'\')">'+jhRecordEscape(o)+'</button>').join('');
+ const freqChips=document.getElementById('clitMapFrequencyChips'); if(freqChips)freqChips.innerHTML=['الكل',...freqs].map(f=>'<button type="button" class="'+(st.frequency===f?'is-active':'')+'" onclick="setCLITMapFrequency(\''+jhRecordEscape(f)+'\')">'+jhRecordEscape(f)+'</button>').join('');
+ const zonesEl=document.getElementById('clitMapZones'); if(zonesEl)zonesEl.innerHTML=[['الكل',rs.length],...zones.map(z=>[z,rs.filter(r=>zoneOf(r)===z).length])].map(x=>'<button type="button" class="'+(st.zone===x[0]?'is-active':'')+'" onclick="setCLITMapZone(\''+jhRecordEscape(x[0])+'\')"><span>'+jhRecordEscape(x[0])+'</span><b>'+x[1]+'</b></button>').join('');
+ const points=document.getElementById('clitMapPoints'); if(!points)return;
+ if(!filtered.length){points.innerHTML='<div class="clit-map-empty"><i class="bx bx-search-alt"></i><h4>لا توجد نقاط مطابقة</h4><p>غيّر المنطقة أو العملية أو كلمة البحث.</p></div>';return;}
+ const grouped={}; filtered.forEach(r=>(grouped[zoneOf(r)]??=[]).push(r));
+ points.innerHTML=Object.entries(grouped).map(([z,items])=>'<section class="clit-zone-block"><header><div><span>ZONE</span><h4>'+jhRecordEscape(z)+'</h4></div><b>'+items.length+' نقطة</b></header><div class="clit-point-grid">'+items.map(r=>{const o=opOf(r),tone={تنظيف:'clean',تزييت:'lube',فحص:'inspect',تربيط:'tight'}[o]||'other',id=jhRecordEscape(r.id||''),tp=window.getCLITTimeProfile(r);return '<article class="clit-point-card '+tone+'"><div class="clit-point-top"><span class="clit-op-badge">'+jhRecordEscape(o)+'</span><span>'+jhRecordEscape(freqOf(r))+'</span></div><h5>'+jhRecordEscape(r.part||'نقطة عامة')+'</h5><p>'+jhRecordEscape(r.action||r.standard||r.optimalState||'بدون وصف إجراء')+'</p><div class="clit-point-meta"><span><i class="bx bx-target-lock"></i>'+jhRecordEscape(r.optimalState||r.standard||'المعيار غير محدد')+'</span><span class="clit-point-time"><i class="bx bx-stopwatch"></i>'+(tp.current!=null?window.formatCLITMinutes(tp.current):'زمن غير محدد')+(tp.savings>0?' · وفر '+window.formatCLITMinutes(tp.savings):'')+'</span></div><div class="clit-point-actions"><button type="button" onclick="editJHRecord(\'CLIT\',\''+id+'\')"><i class="bx bx-edit"></i> تعديل</button><button type="button" onclick="deleteJHRecord(\'CLIT\',\''+id+'\')"><i class="bx bx-trash"></i></button></div></article>';}).join('')+'</div></section>').join('');
 };
 window.setCLITMapZone=function(z){window.__clitMapState.zone=z;clitSelectedZone=z;window.renderCLITMap(window.currentLoadedRecords||[]);};
 window.setCLITMapOperation=function(o){window.__clitMapState.operation=o;clitSelectedOp=o;window.renderCLITMap(window.currentLoadedRecords||[]);};
 document.addEventListener('input',e=>{if(e.target?.id==='clitMapSearch'){window.__clitMapState.search=e.target.value||'';window.renderCLITMap(window.currentLoadedRecords||[]);}});
-
 window.setCLITMapFrequency=function(freq){window.__clitMapState.frequency=freq;clitSelectedFreq=freq;window.renderCLITMap(window.currentLoadedRecords||[]);};
+
+/* ===== CLIT TIME ANALYTICS — dedicated workspace ===== */
+window.openCLITTimeAnalytics=async function(){
+ const screen=document.getElementById('clitTimeAnalyticsScreen'); if(!screen)return;
+ let records=Array.isArray(window.currentLoadedRecords)?window.currentLoadedRecords:[];
+ if(!records.length && typeof db!=='undefined' && currentJHDept){try{const snap=await db.ref('tpm_system/jh_records/'+currentJHDept+'/CLIT').once('value');records=snap.val()?Object.values(snap.val()):[];window.currentLoadedRecords=records;}catch(error){console.error('[JH CLIT] time analytics load failed',error);showToast('⚠️ تعذر تحميل بيانات الأزمنة.');return;}}
+ window.renderCLITTimeAnalytics(records); showScreen('clitTimeAnalyticsScreen');
+};
+window.renderCLITTimeAnalytics=function(records){
+ const rs=Array.isArray(records)?records:[], rows=rs.map(r=>({r,p:window.getCLITTimeProfile(r)})).filter(x=>x.p.current!=null);
+ const totalCurrent=rows.reduce((s,x)=>s+x.p.current,0), totalBefore=rows.reduce((s,x)=>s+(x.p.before??0),0), savings=rows.reduce((s,x)=>s+(x.p.savings??0),0), avg=rows.length?totalCurrent/rows.length:0;
+ const max=rows.reduce((a,x)=>!a||x.p.current>a.p.current?x:a,null), savedRows=rows.filter(x=>x.p.savings>0).sort((a,b)=>b.p.savings-a.p.savings), reduction=totalBefore>0?Math.max(0,(savings/totalBefore)*100):0;
+ const stats=document.getElementById('clitTimeStats');
+ if(stats){const data=[['إجمالي الزمن القياسي',window.formatCLITMinutes(totalCurrent),'bx-stopwatch','الزمن الحالي المسجل'],['زمن قبل التحسين',window.formatCLITMinutes(totalBefore),'bx-history','Baseline المتاح'],['وفر زمني مسجل',window.formatCLITMinutes(savings),'bx-trending-down','من فرق Before / After'],['نسبة الخفض',Math.round(reduction)+'%','bx-line-chart','على البنود ذات Before / After'],['متوسط زمن النقطة',window.formatCLITMinutes(avg),'bx-time','لكل نقطة لها زمن مقروء'],['أكبر عملية',max?window.formatCLITMinutes(max.p.current):'—','bx-alarm-exclamation',max?(jhRecordEscape(max.r.part||'نقطة عامة')+' — '+jhRecordEscape(max.r.region||'')):'لا توجد بيانات']];stats.innerHTML=data.map(v=>'<article><i class="bx '+v[2]+'"></i><div><span>'+v[0]+'</span><strong>'+v[1]+'</strong><small>'+v[3]+'</small></div></article>').join('');}
+ const bottleneck=document.getElementById('clitTimeBottleneck');
+ if(bottleneck){bottleneck.innerHTML=max?'<div class="clit-time-bottleneck-card"><div class="clit-time-bottleneck-value">'+window.formatCLITMinutes(max.p.current)+'</div><div class="clit-time-bottleneck-copy"><b>'+jhRecordEscape(max.r.part||'نقطة عامة')+'</b><span>'+jhRecordEscape(max.r.region||'غير محدد')+' · '+jhRecordEscape(max.r.operation||max.r.clitType||'غير محدد')+'</span><small>التكرار: '+jhRecordEscape(max.r.frequency||'غير محدد')+'</small></div></div>':'<div class="clit-time-empty">لا توجد أزمنة رقمية كافية للتحليل.</div>';}
+ const savingsEl=document.getElementById('clitTimeSavings');
+ if(savingsEl){const top=savedRows.slice(0,4);savingsEl.innerHTML=top.length?top.map(x=>'<div class="clit-time-saving-row"><div><b>'+jhRecordEscape(x.r.part||'نقطة عامة')+'</b><span>'+jhRecordEscape(x.r.region||'غير محدد')+'</span></div><strong>-'+window.formatCLITMinutes(x.p.savings)+'</strong><small>'+Math.round(x.p.reduction||0)+'% خفض</small></div>').join(''):'<div class="clit-time-empty">لا يوجد وفر مسجل في البيانات الحالية.</div>';}
+ const opMap={}; rows.forEach(x=>{const key=String(x.r.operation||x.r.clitType||'غير محدد');if(!opMap[key])opMap[key]={minutes:0,count:0,savings:0};opMap[key].minutes+=x.p.current;opMap[key].count++;opMap[key].savings+=x.p.savings||0;});
+ window.renderCLITTimeBars(document.getElementById('clitTimeOperationBars'),Object.entries(opMap).sort((a,b)=>b[1].minutes-a[1].minutes).map(x=>({label:x[0],value:x[1].minutes,sub:x[1].count+' نقطة · وفر '+window.formatCLITMinutes(x[1].savings)})));
+ const freqMap={}; rows.forEach(x=>{const key=String(x.r.frequency||'غير محدد');if(!freqMap[key])freqMap[key]={minutes:0,count:0};freqMap[key].minutes+=x.p.current;freqMap[key].count++;});
+ window.renderCLITTimeBars(document.getElementById('clitTimeFrequencyBars'),Object.entries(freqMap).sort((a,b)=>b[1].minutes-a[1].minutes).map(x=>({label:x[0],value:x[1].minutes,sub:x[1].count+' نقطة'})));
+ const list=document.getElementById('clitTimeImprovementList');
+ if(list){const opportunities=savedRows.slice(0,12);list.innerHTML=opportunities.length?opportunities.map((x,i)=>'<article class="clit-improvement-row"><div class="clit-improvement-rank">'+(i+1)+'</div><div class="clit-improvement-main"><b>'+jhRecordEscape(x.r.part||'نقطة عامة')+'</b><span>'+jhRecordEscape(x.r.region||'غير محدد')+' · '+jhRecordEscape(x.r.operation||x.r.clitType||'غير محدد')+'</span><p>'+jhRecordEscape(x.r.action||x.r.standard||'تحسين طريقة التنفيذ أو الأداة')+'</p></div><div class="clit-improvement-numbers"><strong>'+window.formatCLITMinutes(x.p.savings)+'</strong><small>وفر مسجل</small><em>'+Math.round(x.p.reduction||0)+'% خفض</em></div></article>').join(''):'<div class="clit-time-empty">لا توجد فرص خفض زمن مسجلة. أضف Before / After للنقاط حتى تظهر الأولويات.</div>';}
+};
+window.renderCLITTimeBars=function(container,items){
+ if(!container)return; if(!items.length){container.innerHTML='<div class="clit-time-empty">لا توجد بيانات زمنية.</div>';return;}
+ const max=Math.max(...items.map(x=>x.value),1);
+ container.innerHTML=items.map(x=>'<div class="clit-time-bar-row"><div class="clit-time-bar-label"><b>'+jhRecordEscape(x.label)+'</b><span>'+window.formatCLITMinutes(x.value)+'</span></div><div class="clit-time-bar-track"><i style="width:'+Math.max(3,(x.value/max)*100)+'%"></i></div><small>'+jhRecordEscape(x.sub||'')+'</small></div>').join('');
+};

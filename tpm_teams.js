@@ -94,6 +94,12 @@ window.openTPMTeamWorkspace = function(teamId) {
 
 window.getTPMActivity = () => null;
 
+/* Render the gateway once the deferred script has a live DOM target.
+   Team definitions are static, so the gallery must not depend on KPI/data hydration. */
+document.addEventListener('DOMContentLoaded', () => {
+    window.renderTPMTeams?.();
+});
+
 // Bridge the new domain layer into the legacy application without removing existing screens.
 (function bootstrapTPMDomainAfterAuth() {
   const start = () => {

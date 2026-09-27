@@ -144,7 +144,7 @@ window.escapeTPMHub = function(value) {
 window.getTPMHubTeam = function(teamId) {
     return (window.TPM_TEAM_HUB || []).find(team => team.id === teamId) || null;
 };
-if (!window.renderTPMTeams?.isV3) {
+if (!window.renderTPMTeams?.isV3 && !window.renderTPMTeams?.isV4) {
 window.renderTPMTeams = function() {
     const teams = window.TPM_TEAM_HUB || [];
     const grid = document.getElementById('tpmTeamsGrid');
@@ -159,6 +159,7 @@ window.renderTPMTeams = function() {
 
 }
 window.showTPMTeam = function(teamId) {
+    if (typeof window.openTPMTeamWorkspace === 'function') return window.openTPMTeamWorkspace(teamId);
     return window.openTPMExistingWorkspace(teamId);
 };
 window.openTPMExistingWorkspace = function(teamId) {

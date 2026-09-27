@@ -8,28 +8,37 @@ let clitSelectedZone = 'الكل'; let clitSelectedOp = 'الكل'; let clitSele
 
 window.openJHDocument = async function(type) {
     currentDocType = type;
-    const headerMap = { 'CLIT': '🧹 خرائط (CLIT)', 'Contamination': '🛢️ مصادر التلوث', 'SOC': '🧗‍♂️ أماكن صعبة الوصول', 'Safety': '⚠️ خريطة الأمان', 'Anatomy': '⚙️ تشريح الماكينة' };
-    document.getElementById('jhDocHeader').innerText = headerMap[type] || 'السجل';
-    
-    ['clitStatsSummary', 'clitZoneFilters', 'clitOpFilters', 'clitFrequencyFilters', 'startChecklistBtnContainer'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = (type === 'CLIT' && currentJHDept === 'حقن الكابينة') ? (id==='clitOpFilters'?'grid':(id==='startChecklistBtnContainer'?'block':'flex')) : 'none'; });
-    
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') { clitSelectedZone = 'الكل'; clitSelectedOp = 'الكل'; clitSelectedFreq = 'الكل'; window.resetFilterButtonsUI(); }
-    
-    window.renderJHDocForm(type); showToast('جاري تحميل السجلات... ⏳');
-    const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value'); let records = snap.val() ? Object.values(snap.val()) : [];
-    
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة' && records.length === 0 && window.factoryCLITData) {
-        showToast('جاري تهيئة الخرائط القياسية... ⏳'); let updates = {}; window.factoryCLITData.forEach(item => { updates[item.id] = item; });
-        await db.ref(`tpm_system/jh_records/حقن الكابينة/CLIT`).set(updates); records = window.factoryCLITData; showToast('تمت التهيئة ✅');
-    }
-    
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') {
-        if(document.getElementById('statTotalPoints')) document.getElementById('statTotalPoints').innerText = records.length;
-        ['الجيكات', 'الهيد', 'الفرن', 'مدخل', 'عربة', 'تجهيزة'].forEach(z => { let count = records.filter(item => item.region && item.region.includes(z)).length; let badge = document.getElementById(`badge-count-${z}`); if(badge) badge.innerText = count; });
-    }
-    window.currentLoadedRecords = records; window.renderJHDocList(type, records); showScreen('jhDocumentScreen');
+    const headerMap = {'CLIT':'🧹 خرائط CLIT','Contamination':'🛢️ مصادر التلوث','SOC':'🧗‍♂️ أماكن صعبة الوصول','Safety':'⚠️ خريطة الأمان','Anatomy':'⚙️ تشريح الماكينة'};
+    const header=document.getElementById('jhDocHeader'); if(header) header.innerText=headerMap[type]||'السجل';
+    const clitWorkspace=document.getElementById('clitMapWorkspace');
+    const legacy=['clitStatsSummary','clitZoneFilters','clitOpFilters','clitFrequencyFilters','startChecklistBtnContainer','jhDocActionArea','jhDocListContainer'];
+    const isCLIT=type==='CLIT';
+    legacy.forEach(id=>{
+        const el=document.getElementById(id); if(!el) return;
+        const filterUI=['clitStatsSummary','clitZoneFilters','clitOpFilters','clitFrequencyFilters','startChecklistBtnContainer'].includes(id);
+        if(isCLIT && filterUI) el.style.display='none';
+        else if(id==='jhDocActionArea') el.style.display=isCLIT?'none':'';
+        else if(id==='jhDocListContainer') el.style.display=isCLIT?'none':'';
+        else if(!isCLIT && filterUI) el.style.display='none';
+    });
+    if(clitWorkspace) clitWorkspace.hidden=!isCLIT;
+    window.renderJHDocForm(type);
+    showToast('جاري تحميل السجلات... ⏳');
+    try{
+        const snap=await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value');
+        let records=snap.val()?Object.values(snap.val()):[];
+        if(type==='CLIT' && currentJHDept==='حقن الكابينة' && records.length===0 && window.factoryCLITData){
+            showToast('جاري تهيئة الخرائط القياسية... ⏳');
+            const updates={}; window.factoryCLITData.forEach(item=>{updates[item.id]=item;});
+            await db.ref(`tpm_system/jh_records/حقن الكابينة/CLIT`).set(updates);
+            records=window.factoryCLITData; showToast('تمت التهيئة ✅');
+        }
+        window.currentLoadedRecords=records;
+        if(isCLIT){ window.__clitMapState={zone:'الكل',operation:'الكل',frequency:'الكل',search:''}; window.renderCLITMap(records); }
+        else window.renderJHDocList(type,records);
+        showScreen('jhDocumentScreen');
+    }catch(error){ console.error('[JH] document load failed',error); showToast('⚠️ تعذر تحميل سجلات القسم. حاول مرة أخرى.'); }
 };
-
 window.resetFilterButtonsUI = function() {
     document.querySelectorAll('.clit-zone-btn, .clit-op-btn, .clit-freq-btn').forEach(btn => { btn.classList.remove('active', 'btn-primary', 'btn-success'); btn.classList.add('btn-outline'); });
     const zbs = document.querySelectorAll('.clit-zone-btn'); if(zbs.length>0) zbs[0].classList.add('active');
@@ -309,3 +318,22 @@ window.submitFinalChecklist = async function() {
     }
 };
 // ==========================================
+
+/* ===== CLIT MAP V1 ===== */
+window.__clitMapState={zone:'الكل',operation:'الكل',frequency:'الكل',search:''};
+window.resetCLITMapFilters=function(){window.__clitMapState={zone:'الكل',operation:'الكل',frequency:'الكل',search:''};const i=document.getElementById('clitMapSearch');if(i)i.value='';window.renderCLITMap(window.currentLoadedRecords||[]);};
+window.renderCLITMap=function(records){
+ const rs=Array.isArray(records)?records:[], st=window.__clitMapState;
+ const norm=v=>String(v??'').trim(), opOf=r=>{const o=norm(r.operation||r.clitType);if(o.includes('تنظيف')||o.includes('تنطيف'))return'تنظيف';if(o.includes('تزييت')||o.includes('تشحيم'))return'تزييت';if(o.includes('فحص'))return'فحص';if(o.includes('تربيط')||o.includes('ربط'))return'تربيط';return o||'غير محدد';}, zoneOf=r=>norm(r.region)||'غير محدد', freqOf=r=>norm(r.frequency)||'غير محدد';
+ const q=norm(st.search).toLowerCase(), filtered=rs.filter(r=>{const hay=[r.region,r.part,r.action,r.standard,r.optimalState,r.degradation,r.tools,r.machineState,r.operation,r.clitType,r.frequency].map(norm).join(' ').toLowerCase();return(st.zone==='الكل'||zoneOf(r)===st.zone)&&(st.operation==='الكل'||opOf(r)===st.operation)&&(st.frequency==='الكل'||freqOf(r)===st.frequency)&&(!q||hay.includes(q));});
+ const zones=[...new Set(rs.map(zoneOf))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ar')), ops=['تنظيف','تزييت','فحص','تربيط'].filter(o=>rs.some(r=>opOf(r)===o));
+ const stat=document.getElementById('clitMapStats'); if(stat){const values=[['إجمالي النقاط',rs.length,'bx-map'],['المعروض',filtered.length,'bx-filter-alt'],['المناطق',zones.length,'bx-buildings'],['العمليات',new Set(rs.map(opOf)).size,'bx-cog'],['يومي',rs.filter(r=>freqOf(r).includes('يومي')).length,'bx-time']];stat.innerHTML=values.map(([l,v,i])=>`<article><i class="bx ${i}"></i><div><strong>${v}</strong><span>${l}</span></div></article>`).join('');}
+ const chips=document.getElementById('clitMapZoneChips');if(chips)chips.innerHTML=['الكل',...ops].map(o=>`<button type="button" class="${st.operation===o?'is-active':''}" onclick="setCLITMapOperation('${jhRecordEscape(o)}')">${jhRecordEscape(o)}</button>`).join('');
+ const zonesEl=document.getElementById('clitMapZones');if(zonesEl)zonesEl.innerHTML=[['الكل',rs.length],...zones.map(z=>[z,rs.filter(r=>zoneOf(r)===z).length])].map(([z,n])=>`<button type="button" class="${st.zone===z?'is-active':''}" onclick="setCLITMapZone('${jhRecordEscape(z)}')"><span>${jhRecordEscape(z)}</span><b>${n}</b></button>`).join('');
+ const points=document.getElementById('clitMapPoints');if(!points)return;if(!filtered.length){points.innerHTML='<div class="clit-map-empty"><i class="bx bx-search-alt"></i><h4>لا توجد نقاط مطابقة</h4><p>غيّر المنطقة أو العملية أو كلمة البحث.</p></div>';return;}
+ const grouped={};filtered.forEach(r=>{(grouped[zoneOf(r)]??=[]).push(r);});
+ points.innerHTML=Object.entries(grouped).map(([z,items])=>`<section class="clit-zone-block"><header><div><span>ZONE</span><h4>${jhRecordEscape(z)}</h4></div><b>${items.length} نقطة</b></header><div class="clit-point-grid">${items.map(r=>{const o=opOf(r),tone={تنظيف:'clean',تزييت:'lube',فحص:'inspect',تربيط:'tight'}[o]||'other',id=jhRecordEscape(r.id||'');return`<article class="clit-point-card ${tone}"><div class="clit-point-top"><span class="clit-op-badge">${jhRecordEscape(o)}</span><span>${jhRecordEscape(freqOf(r))}</span></div><h5>${jhRecordEscape(r.part||'نقطة عامة')}</h5><p>${jhRecordEscape(r.action||r.standard||r.optimalState||'بدون وصف إجراء')}</p><div class="clit-point-meta"><span><i class="bx bx-target-lock"></i>${jhRecordEscape(r.optimalState||r.standard||'المعيار غير محدد')}</span></div><div class="clit-point-actions"><button type="button" onclick="editJHRecord('CLIT','${id}')"><i class="bx bx-edit"></i> تعديل</button><button type="button" onclick="deleteJHRecord('CLIT','${id}')"><i class="bx bx-trash"></i></button></div></article>`}).join('')}</div></section>`).join('');
+};
+window.setCLITMapZone=function(z){window.__clitMapState.zone=z;window.renderCLITMap(window.currentLoadedRecords||[]);};
+window.setCLITMapOperation=function(o){window.__clitMapState.operation=o;window.renderCLITMap(window.currentLoadedRecords||[]);};
+document.addEventListener('input',e=>{if(e.target?.id==='clitMapSearch'){window.__clitMapState.search=e.target.value||'';window.renderCLITMap(window.currentLoadedRecords||[]);}});

@@ -23,6 +23,8 @@ window.openJHDocumentCLITMap = async function(type) {
     });
     if(clitWorkspace) clitWorkspace.hidden=!isCLIT;
     window.renderJHDocForm(type);
+    window.__jhActiveDocType = type;
+    window.mountJHDataTools?.(type);
     showToast('جاري تحميل السجلات... ⏳');
     try{
         const snap=await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value');

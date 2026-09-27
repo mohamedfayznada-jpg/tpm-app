@@ -979,3 +979,33 @@
     padding:0 8px !important;
   }
 }
+
+
+/* FINAL VISIBILITY GUARD — active state only, so other screens remain untouched */
+.screen.active#tpmTeamsScreen{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  width:100% !important;
+  min-height:100vh !important;
+  box-sizing:border-box !important;
+}
+.screen:not(.active)#tpmTeamsScreen{
+  visibility:hidden !important;
+}
+@media(max-width:800px){
+  .screen.active#tpmTeamsScreen{
+    padding:86px 10px 30px !important;
+    overflow-x:hidden !important;
+  }
+  .screen.active#tpmTeamsScreen .tpm-team-grid{
+    display:grid !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+  .screen.active#tpmTeamsScreen .tpm-team-card-v5{
+    display:grid !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+}

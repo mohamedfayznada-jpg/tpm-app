@@ -583,6 +583,25 @@
             <button class="btn btn-sm btn-outline clit-freq-btn" onclick="filterCLITFreq('أسبوعي', this)">أسبوعي</button>
             <button class="btn btn-sm btn-outline clit-freq-btn" onclick="filterCLITFreq('شهري', this)">شهري</button>
         </div>
+        <section id="clitMapWorkspace" class="clit-map-workspace" hidden>
+            <div class="clit-map-head">
+                <div>
+                    <span class="clit-map-kicker">CLIT MAP</span>
+                    <h3>خريطة نقاط الفحص</h3>
+                    <p>اختر المنطقة أو نوع العملية لعرض نقاطها مباشرة.</p>
+                </div>
+                <button type="button" class="clit-map-reset" onclick="resetCLITMapFilters()"><i class='bx bx-reset'></i> إعادة الضبط</button>
+            </div>
+            <div class="clit-map-stats" id="clitMapStats"></div>
+            <div class="clit-map-controls">
+                <label class="clit-map-search"><i class='bx bx-search'></i><input id="clitMapSearch" type="search" placeholder="ابحث في المنطقة أو الجزء أو الإجراء"></label>
+                <div id="clitMapZoneChips" class="clit-map-chips"></div>
+            </div>
+            <div class="clit-map-body">
+                <aside id="clitMapZones" class="clit-map-zones" aria-label="مناطق CLIT"></aside>
+                <div id="clitMapPoints" class="clit-map-points" aria-live="polite"></div>
+            </div>
+        </section>
         <div id="jhDocListContainer"></div>
     </div>
 

@@ -43,6 +43,13 @@ window.renderTPMTeams = function() {
     if (!liveGrid) return;
 
     const teams = Array.isArray(window.TPM_TEAM_HUB) ? window.TPM_TEAM_HUB : [];
+    // The gateway must be self-contained: it cannot fail just because another
+    // legacy module has not exposed a helper yet.
+    const esc = typeof window.escapeTPM === 'function'
+        ? window.escapeTPM
+        : value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+        }[ch]));
     const tasks = Array.isArray(window.tasksData) ? window.tasksData : [];
     const tags = Array.isArray(window.tagsData) ? window.tagsData : [];
     const taskStats = Object.create(null);
@@ -91,22 +98,28 @@ window.renderTPMTeams = function() {
         ).join('');
     }
 
+    try {
     liveGrid.innerHTML = teams.map(team => {
         const ts = taskStats[team.id] || { total:0, active:0, done:0, overdue:0 };
         const zs = tagStats[team.id] || { open:0, closed:0 };
         const progress = ts.total ? Math.round((ts.done / ts.total) * 100) : 0;
         const ready = !!document.getElementById(team.workspace);
         const dataState = ts.overdue ? 'alert' : (ts.active ? 'active' : 'quiet');
-        return '<article class="tpm-team-card tpm-team-card-v5" style="--team-color:' + team.color + '" data-state="' + dataState + '" data-team-id="' + team.id + '" tabindex="0" role="button" aria-label="فتح فريق ' + window.escapeTPM(team.name) + '" onclick="openTPMTeamWorkspace(\'' + team.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openTPMTeamWorkspace(\'' + team.id + '\')}">' +
-          '<div class="tpm-v5-topline"><span class="tpm-v5-code">' + window.escapeTPM(team.code) + '</span><span class="tpm-v5-status ' + (ready ? 'ready' : 'muted') + '"><i class="bx ' + (ready ? 'bx-check-circle' : 'bx-error-circle') + '"></i>' + (ready ? 'جاهز للعمل' : 'غير مهيأ') + '</span></div>' +
+        return '<article class="tpm-team-card tpm-team-card-v5" style="--team-color:' + team.color + '" data-state="' + dataState + '" data-team-id="' + team.id + '" tabindex="0" role="button" aria-label="فتح فريق ' + esc(team.name) + '" onclick="openTPMTeamWorkspace(\'' + team.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openTPMTeamWorkspace(\'' + team.id + '\')}">' +
+          '<div class="tpm-v5-topline"><span class="tpm-v5-code">' + esc(team.code) + '</span><span class="tpm-v5-status ' + (ready ? 'ready' : 'muted') + '"><i class="bx ' + (ready ? 'bx-check-circle' : 'bx-error-circle') + '"></i>' + (ready ? 'جاهز للعمل' : 'غير مهيأ') + '</span></div>' +
           '<div class="tpm-v5-icon"><i class="bx ' + team.icon + '"></i></div>' +
-          '<div class="tpm-v5-body"><h3>' + window.escapeTPM(team.name) + '</h3><p>' + window.escapeTPM(team.description || 'مساحة تشغيل لفريق TPM.') + '</p></div>' +
+          '<div class="tpm-v5-body"><h3>' + window.escapeTPM(team.name) + '</h3><p>' + esc(team.description || 'مساحة تشغيل لفريق TPM.') + '</p></div>' +
           '<div class="tpm-v5-bottom">' +
             '<div class="tpm-v5-metrics"><span><b>' + ts.active + '</b><small>مهام</small></span><span><b>' + zs.open + '</b><small>تاجات</small></span><span><b>' + progress + '%</b><small>إغلاق</small></span></div>' +
             '<button type="button" class="tpm-v5-open" onclick="event.stopPropagation();openTPMTeamWorkspace(\'' + team.id + '\')"><span>دخول مساحة الفريق</span><i class="bx bx-left-arrow-alt"></i></button>' +
           '</div>' +
         '</article>';
     }).join('') || '<div class="teams-empty-state"><i class="bx bx-group"></i><h3>لا توجد فرق TPM</h3><p>لم يتم تحميل هيكل الفرق بعد.</p></div>';
+    } catch (error) {
+        console.error('[TPM Teams] render failed:', error);
+        // Never leave the gateway blank. Preserve a useful recovery state.
+        liveGrid.innerHTML = '<div class="teams-empty-state tpm-render-error"><i class="bx bx-error-circle"></i><h3>تعذر تحميل بطاقات الفرق</h3><p>حدث خطأ أثناء تجهيز بيانات البوابة.</p><button type="button" class="btn btn-primary" onclick="renderTPMTeams()">إعادة المحاولة</button></div>';
+    }
 };
 window.renderTPMTeams.isV4 = true;
 

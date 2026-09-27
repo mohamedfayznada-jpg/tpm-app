@@ -108,7 +108,7 @@ window.renderTPMTeams = function() {
         return '<article class="tpm-team-card tpm-team-card-v5" style="--team-color:' + team.color + '" data-state="' + dataState + '" data-team-id="' + team.id + '" tabindex="0" role="button" aria-label="فتح فريق ' + esc(team.name) + '" onclick="openTPMTeamWorkspace(\'' + team.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openTPMTeamWorkspace(\'' + team.id + '\')}">' +
           '<div class="tpm-v5-topline"><span class="tpm-v5-code">' + esc(team.code) + '</span><span class="tpm-v5-status ' + (ready ? 'ready' : 'muted') + '"><i class="bx ' + (ready ? 'bx-check-circle' : 'bx-error-circle') + '"></i>' + (ready ? 'جاهز للعمل' : 'غير مهيأ') + '</span></div>' +
           '<div class="tpm-v5-icon"><i class="bx ' + team.icon + '"></i></div>' +
-          '<div class="tpm-v5-body"><h3>' + window.escapeTPM(team.name) + '</h3><p>' + esc(team.description || 'مساحة تشغيل لفريق TPM.') + '</p></div>' +
+          '<div class="tpm-v5-body"><h3>' + esc(team.name) + '</h3><p>' + esc(team.description || 'مساحة تشغيل لفريق TPM.') + '</p></div>' +
           '<div class="tpm-v5-bottom">' +
             '<div class="tpm-v5-metrics"><span><b>' + ts.active + '</b><small>مهام</small></span><span><b>' + zs.open + '</b><small>تاجات</small></span><span><b>' + progress + '%</b><small>إغلاق</small></span></div>' +
             '<button type="button" class="tpm-v5-open" onclick="event.stopPropagation();openTPMTeamWorkspace(\'' + team.id + '\')"><span>دخول مساحة الفريق</span><i class="bx bx-left-arrow-alt"></i></button>' +

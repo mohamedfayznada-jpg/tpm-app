@@ -9,50 +9,84 @@ window.startNewAuditFlowFromPortal = function() {
     window.startNewAuditFlow();
 };
 
-window.saveAuditDraft = function() { 
-    if(currentAudit) localStorage.setItem('tpm_audit_draft', JSON.stringify(currentAudit)); 
+window.getAuditDraftKey = function(dept) {
+    const uid = firebase.auth().currentUser?.uid || 'anonymous';
+    const safeDept = encodeURIComponent(String(dept || currentViewedDept || currentAudit?.dept || 'unknown'));
+    return `tpm_audit_draft:${uid}:${safeDept}`;
 };
 
-window.loadAuditDraft = function() { 
-    const draft = localStorage.getItem('tpm_audit_draft'); 
-    if(draft) { 
-        currentAudit = JSON.parse(draft); 
-        window.renderCurrentAuditStep(); 
-    } 
-};
-
-window.clearAuditDraft = function() { 
-    localStorage.removeItem('tpm_audit_draft'); 
-};
-
-window.startNewAuditFlow = function() { 
-    if(currentViewedDept) { 
-        const sd = document.getElementById('selectDept'); 
-        if(sd) sd.value = currentViewedDept; 
+window.saveAuditDraft = function() {
+    if(!currentAudit) return;
+    try {
+        currentAudit.updatedAt = Date.now();
+        const key = window.getAuditDraftKey(currentAudit.dept);
+        localStorage.setItem(key, JSON.stringify(currentAudit));
+    } catch(error) {
+        console.warn('[JH Audit] draft save failed', error);
     }
-    const draft = localStorage.getItem('tpm_audit_draft');
-    if(draft) { 
-        let dObj = JSON.parse(draft); 
-        if(confirm(`يوجد تقييم غير مكتمل لقسم (${dObj.dept}). هل تريد استكماله؟`)) { 
-            window.loadAuditDraft(); 
-            return; 
-        } else { 
-            window.clearAuditDraft(); 
-        } 
+};
+
+window.loadAuditDraft = function(dept) {
+    const key = window.getAuditDraftKey(dept);
+    let draft = localStorage.getItem(key);
+    if(!draft) draft = localStorage.getItem('tpm_audit_draft'); // one-time backward compatibility
+    if(!draft) return false;
+    try {
+        currentAudit = JSON.parse(draft);
+        if(!currentAudit || !currentAudit.dept) throw new Error('invalid draft');
+        window.saveAuditDraft();
+        window.renderCurrentAuditStep();
+        return true;
+    } catch(error) {
+        console.warn('[JH Audit] invalid draft discarded', error);
+        localStorage.removeItem(key);
+        return false;
     }
-    showScreen('setupScreen'); 
+};
+
+window.clearAuditDraft = function(dept) {
+    localStorage.removeItem(window.getAuditDraftKey(dept || currentAudit?.dept));
+    localStorage.removeItem('tpm_audit_draft');
+};
+
+window.startNewAuditFlow = function() {
+    if(currentViewedDept) {
+        const sd = document.getElementById('selectDept');
+        if(sd) sd.value = currentViewedDept;
+    }
+    const dept = document.getElementById('selectDept')?.value || currentViewedDept || '';
+    const key = window.getAuditDraftKey(dept);
+    const draft = localStorage.getItem(key) || localStorage.getItem('tpm_audit_draft');
+    if(draft) {
+        try {
+            const dObj = JSON.parse(draft);
+            if(dObj?.dept === dept && confirm(`يوجد تقييم غير مكتمل لقسم (${dObj.dept}). هل تريد استكماله؟`)) {
+                window.loadAuditDraft(dept);
+                return;
+            }
+        } catch (_) {}
+        window.clearAuditDraft(dept);
+    }
+    showScreen('setupScreen');
 };
 
 window.initAuditSequential = function() {
-    currentAudit = { 
-        id: window.uniqueNumericId().toString(), 
-        dept: document.getElementById('selectDept').value, 
-        machine: document.getElementById('setupMachine').value || 'عام', 
-        auditor: currentUser.name, 
-        date: new Date().toLocaleDateString('ar-EG'), 
-        stepsOrder: ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'], 
-        currentStepIndex: 0, 
-        results: {} 
+    const authUser = firebase.auth().currentUser;
+    const now = Date.now();
+    currentAudit = {
+        id: window.uniqueNumericId().toString(),
+        dept: document.getElementById('selectDept').value,
+        machine: document.getElementById('setupMachine').value || 'عام',
+        auditor: currentUser.name,
+        auditorUid: authUser?.uid || '',
+        createdAt: now,
+        updatedAt: now,
+        date: new Date().toLocaleDateString('ar-EG'),
+        templateVersion: 'JH-0..6-v1',
+        schemaVersion: 2,
+        stepsOrder: ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'],
+        currentStepIndex: 0,
+        results: {}
     };
     window.renderCurrentAuditStep();
 };
@@ -184,7 +218,7 @@ window.skipCurrentStep = function() {
     const step = currentAudit.stepsOrder[currentAudit.currentStepIndex];
     const reason = window.sanitizeInput(prompt('سبب تخطي المرحلة؟ يجب توثيق السبب في سجل التدقيق:') || '');
     if (!reason || reason.length < 5) return showToast('⚠️ لا يمكن تخطي المرحلة بدون سبب موثق لا يقل عن 5 أحرف.');
-    currentAudit.results[step] = { skipped:true, skipReason:reason, score:0, max:0, improvements:[], selections:{}, images:{}, skippedBy:currentUser.name, skippedAt:Date.now() };
+    currentAudit.results[step] = { skipped:true, skipReason:reason, score:0, max:0, improvements:[], selections:{}, images:{}, skippedBy:currentUser.name, skippedByUid:firebase.auth().currentUser?.uid || '', skippedAt:Date.now() };
     window.saveAuditDraft();
     window.goToNextStep();
 };
@@ -220,35 +254,52 @@ window.generateFinalReport = function() {
 };
 
 window.saveFinalAudit = async function() {
-    if(!window.hasRole('auditor', 'admin')) { return showToast('⚠️ غير مصرح لك باعتماد وحفظ المراجعات النهائية'); }
+    if(!window.hasRole('auditor', 'admin')) return showToast('⚠️ غير مصرح لك باعتماد وحفظ المراجعات النهائية');
+    if(!currentAudit) return showToast('⚠️ لا توجد مراجعة مفتوحة');
     if(!confirm("هل أنت متأكد من اعتماد وحفظ هذه المراجعة؟ سيتم إنشاء قائمة مهام تلقائية بالفجوات المكتشفة.")) return;
-    
-    showToast('جاري تشفير البيانات وحفظ التقرير... ⏳');
-    if(sigCanvas) currentAudit.signature = sigCanvas.toDataURL('image/jpeg', 0.8);
-    
-    // إنشاء المهام التلقائية (Auto-Task Generation)
-    let allImprovements = [];
-    currentAudit.stepsOrder.forEach(step => { 
-        if(currentAudit.results[step] && currentAudit.results[step].improvements) { 
-            allImprovements.push(...currentAudit.results[step].improvements); 
-        } 
-    });
-    
-    if(allImprovements.length > 0) {
-        let fId = window.uniqueNumericId().toString();
-        let folderTask = { 
-            id: fId, isFolder: true, dept: currentAudit.dept, date: currentAudit.date, machine: currentAudit.machine || 'عام', 
-            task: `تحسينات تدقيق (${currentAudit.date})`, subTasks: allImprovements.map(imp => ({ text: imp, status: 'pending' })), status: 'pending' 
-        };
-        await db.ref('tpm_system/tasks/' + fId).set(folderTask);
+
+    try {
+        showToast('جاري حفظ تقرير المراجعة وإنشاء الإجراءات… ⏳');
+        if(sigCanvas) currentAudit.signature = sigCanvas.toDataURL('image/jpeg', 0.8);
+
+        const now=Date.now();
+        const authUser=firebase.auth().currentUser;
+        currentAudit.updatedAt=now;
+        currentAudit.completedAt=now;
+        currentAudit.updatedByUid=authUser?.uid || '';
+        currentAudit.updatedByName=currentUser?.name || '';
+        currentAudit.status='approved';
+        currentAudit.schemaVersion=2;
+
+        const updates={};
+        let allImprovements=[];
+        currentAudit.stepsOrder.forEach(step=>{
+            const result=currentAudit.results?.[step];
+            if(Array.isArray(result?.improvements)) allImprovements.push(...result.improvements);
+        });
+
+        if(allImprovements.length>0){
+            const fId=window.uniqueNumericId().toString();
+            updates['tpm_system/tasks/'+fId]={
+                id:fId,isFolder:true,dept:currentAudit.dept,date:currentAudit.date,machine:currentAudit.machine||'عام',
+                task:`تحسينات تدقيق (${currentAudit.date})`,
+                subTasks:allImprovements.map((imp,index)=>({id:`${fId}_${index+1}`,text:imp,status:'pending',createdAt:now})),
+                status:'pending',createdAt:now,createdByUid:authUser?.uid||'',createdByName:currentUser?.name||'',
+                sourceType:'jh_audit',sourceAuditId:currentAudit.id,schemaVersion:2
+            };
+        }
+
+        updates['tpm_system/history/'+currentAudit.id]=currentAudit;
+        await db.ref().update(updates);
+
+        if(typeof window.awardPoints==='function') window.awardPoints(50,'إتمام مراجعة رسمية (Audit)');
+        window.clearAuditDraft(currentAudit.dept);
+        showToast('✅ تم اعتماد المراجعة وحفظها وتوليد الإجراءات بنجاح');
+        setTimeout(()=>showScreen('historyScreen'),1000);
+    } catch(error) {
+        console.error('[JH Audit] final save failed',error);
+        showToast('⚠️ فشل حفظ المراجعة. لم يتم حذف المسودة؛ أعد المحاولة.');
     }
-    
-    await db.ref('tpm_system/history/' + currentAudit.id).set(currentAudit); 
-    if (typeof window.awardPoints === 'function') { window.awardPoints(50, 'إتمام مراجعة رسمية (Audit)'); } 
-    window.clearAuditDraft(); 
-    showToast('✅ تم حفظ التقرير بنجاح وتوليد المهام! جاري تحويلك...');
-    
-    setTimeout(() => { showScreen('historyScreen'); }, 1500);
 };
 
 // ==========================================

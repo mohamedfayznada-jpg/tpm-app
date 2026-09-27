@@ -695,29 +695,48 @@
          ========================================== -->
     <!-- TPM Teams Gateway: direct access to the six team workspaces -->
     <div class="container screen" id="tpmTeamsScreen">
-        <div class="screen-command-header teams-command-header">
-            <div>
-                <span class="eyebrow"><i class='bx bx-group'></i> هيكل فرق المصنع</span>
-                <h2>فرق TPM</h2>
-                <p>اختر الفريق للانتقال مباشرةً إلى مساحة عمله. تظل صفحات JH وE&amp;T و5S وKK وPM بمحتواها الأصلي كما أنشأته.</p>
+        <section class="tpm-hub-hero">
+            <div class="tpm-hub-hero-copy">
+                <div class="tpm-hub-breadcrumb"><span>TPM</span><i class='bx bx-chevron-left'></i><b>TEAM OS</b></div>
+                <span class="tpm-hub-eyebrow"><i class='bx bx-radar'></i> TPM MISSION CONTROL</span>
+                <h1>مركز فرق المصنع</h1>
+                <p>ستة مسارات تشغيلية، مساحة عمل واحدة. اختر الفريق وانتقل مباشرةً إلى أدواته وسجلاته ومؤشراته.</p>
+                <div class="tpm-hub-hero-meta">
+                    <span><i class='bx bx-grid-alt'></i> 06 Workspaces</span>
+                    <span><i class='bx bx-link'></i> Live-linked</span>
+                    <span><i class='bx bx-shape-polygon'></i> Factory OS</span>
+                </div>
             </div>
-            <div class="screen-command-actions">
-                <button class="btn btn-outline btn-sm" onclick="showScreen('homeScreen')">⬅️ عودة</button>
-            </div>
-        </div>
-        <div id="tpmTeamKpis" class="tpm-kpi-ribbon"></div>
-        <section class="tpm-teams-directory-head">
-            <div>
-                <span class="eyebrow"><i class='bx bx-network-chart'></i> TPM OPERATING NETWORK</span>
-                <h3>شبكة فرق المصنع</h3>
-                <p>كل فريق له دور محدد ومساحة تشغيل مرتبطة به. افتح الفريق للانتقال مباشرة إلى أدواته وسجلاته.</p>
-            </div>
-            <div class="tpm-teams-directory-meta">
-                <span><i class='bx bx-layer'></i> 6 فرق تخصصية</span>
-                <span><i class='bx bx-link-alt'></i> مرتبطة بالمهام والتاجات</span>
+            <div class="tpm-hub-command-visual" aria-hidden="true">
+                <div class="tpm-hub-core"><span>TPM</span><b>OS</b><i class='bx bx-command'></i></div>
+                <span class="tpm-orbit orbit-1">JH</span>
+                <span class="tpm-orbit orbit-2">E&amp;T</span>
+                <span class="tpm-orbit orbit-3">5S</span>
+                <span class="tpm-orbit orbit-4">KK</span>
+                <span class="tpm-orbit orbit-5">PM</span>
+                <span class="tpm-orbit orbit-6">HSE</span>
             </div>
         </section>
-        <div id="tpmTeamsGrid" class="tpm-team-grid"></div>
+
+        <section class="tpm-hub-kpis">
+            <div class="tpm-hub-kpis-head"><span>LIVE OPERATING SNAPSHOT</span><i class='bx bx-pulse'></i></div>
+            <div id="tpmTeamKpis" class="tpm-kpi-ribbon"></div>
+        </section>
+
+        <section class="tpm-hub-directory">
+            <div class="tpm-teams-directory-head">
+                <div>
+                    <span class="eyebrow"><i class='bx bx-network-chart'></i> OPERATING NETWORK</span>
+                    <h3>مساحات الفرق</h3>
+                    <p>كل بطاقة هي بوابة مباشرة إلى مساحة الفريق. اضغط في أي مكان داخلها للفتح.</p>
+                </div>
+                <div class="tpm-teams-directory-meta">
+                    <span><i class='bx bx-bolt-circle'></i> تشغيل مباشر</span>
+                    <span><i class='bx bx-layer'></i> 6 مساحات</span>
+                </div>
+            </div>
+            <div id="tpmTeamsGrid" class="tpm-team-grid"></div>
+        </section>
     </div>
 
     <!-- Tags Screen -->

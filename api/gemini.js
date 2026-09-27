@@ -32,7 +32,9 @@ export default async function handler(req) {
   try {
     const body = await req.json();
     const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : '';
+    if (prompt.length > 30000) return json({ code: 'AI_PROMPT_TOO_LARGE', error: 'ملف التحليل أكبر من الحد المسموح للتحليل الذكي.' }, 413);
     const imageBase64 = typeof body?.imageBase64 === 'string' ? body.imageBase64 : '';
+    const jsonMode = body?.jsonMode === true;
 
     if (!prompt && imageBase64.length <= 20) {
       return json({
@@ -84,7 +86,7 @@ export default async function handler(req) {
             'HTTP-Referer': `https://${process.env.VERCEL_URL || 'tpm-app.vercel.app'}`,
             'X-Title': 'Factory OS TPM',
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, ...(jsonMode ? { response_format: { type: 'json_object' } } : {}) }),
           signal: controller.signal,
         });
       } catch (providerError) {

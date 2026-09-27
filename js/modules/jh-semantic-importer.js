@@ -62,224 +62,211 @@
     }
   };
 
-  let state={type:'CLIT',fileName:'',sheet:'',rows:[],headers:[],headerRow:0,mapping:{},confidence:0,normalized:[]};
 
+  let state={type:'CLIT',fileName:'',workbook:null,analysis:null,normalized:[],stats:null};
   function toast(msg){window.showToast?.(msg);}
-
   function getModal(){return document.getElementById('jhSemanticImportModal');}
   function setStatus(html){const el=document.getElementById('jhImportStatus');if(el)el.innerHTML=html||'';}
-
+  function setImportSummary(html){const el=document.getElementById('jhImportSummary');if(el)el.innerHTML=html||'';}
   function openModal(type){
-    state={type:type||window.__jhActiveDocType||'CLIT',fileName:'',sheet:'',rows:[],headers:[],headerRow:0,mapping:{},confidence:0,normalized:[]};
-    const modal=getModal(); if(!modal)return;
+    state={type:type||window.__jhActiveDocType||'CLIT',fileName:'',workbook:null,analysis:null,normalized:[],stats:null};
+    const modal=getModal();if(!modal)return;
     const title=document.getElementById('jhImportTitle');
-    if(title) title.innerHTML='<i class="bx bx-spreadsheet"></i> استيراد وتحليل '+esc(SCHEMAS[state.type]?.label||state.type);
-    const input=document.getElementById('jhImportFile'); if(input)input.value='';
-    const preview=document.getElementById('jhImportPreview'); if(preview)preview.innerHTML='<div class="jh-import-empty"><i class="bx bx-upload"></i><b>ارفع Excel أو CSV</b><span>التحليل لا يحتاج قالبًا ثابتًا.</span></div>';
-    const mapping=document.getElementById('jhImportMapping'); if(mapping)mapping.innerHTML='';
-    const save=document.getElementById('jhImportSave'); if(save)save.disabled=true;
+    if(title)title.innerHTML='<i class="bx bx-brain"></i> الاستيراد الذكي — '+esc(SCHEMAS[state.type]?.label||state.type);
+    const input=document.getElementById('jhImportFile');if(input)input.value='';
     setStatus('');
+    renderAIResult(null);
     modal.style.display='flex';
   }
-
   function closeModal(){const modal=getModal();if(modal)modal.style.display='none';}
 
-  function fieldScore(header,aliases){
-    const h=norm(header); if(!h)return 0;
-    let best=0;
-    aliases.forEach(a=>{
-      const x=norm(a); if(!x)return;
-      if(h===x)best=Math.max(best,100);
-      else if(h.includes(x)||x.includes(h))best=Math.max(best,78);
-      else{
-        const hs=new Set(h.split(' ')), xs=x.split(' ');
-        const overlap=[...xs].filter(t=>t&&hs.has(t)).length;
-        if(overlap)best=Math.max(best,Math.min(70,20+overlap*18));
-      }
-    });
-    return best;
-  }
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-  function semanticValueScore(field,value){
-    const s=norm(value); if(!s)return 0;
-    if(field==='operation')return /تنظيف|تنطيف|تزييت|تشحيم|فحص|تربيط|ربط|clean|lube|lubric|inspect|tighten|c|l|i|t/.test(s)?72:0;
-    if(field==='frequency')return /يوم|اسبوع|أسبوع|شهر|سن|daily|week|month|year|hour|shift|يومى/.test(s)?70:0;
-    if(/^time/.test(field))return /(?:\d+(?:[\.,]\d+)?\s*(?:ms|sec|s|ث|ثانية|min|m|د|minute|hr|h|س|ساعة))|^\d+(?:[\.,]\d+)?\s*:\s*\d{1,2}$/i.test(String(value))?75:0;
-    if(field==='level')return /high|medium|low|حرج|عالي|متوسط|منخفض|critical/.test(s)?60:0;
-    return 0;
+  function colToIndex(value){
+    if(typeof value==='number'&&Number.isFinite(value))return Math.max(0,Math.floor(value));
+    const s=String(value??'').trim().toUpperCase();
+    if(!s)return -1;
+    if(/^\d+$/.test(s))return Math.max(0,Number(s)-1);
+    if(!/^[A-Z]+$/.test(s))return -1;
+    let n=0;for(const ch of s)n=n*26+(ch.charCodeAt(0)-64);return n-1;
   }
+  function safeText(value,max=160){return String(value??'').replace(/\s+/g,' ').trim().slice(0,max);}
+  function rowHasData(row){return Array.isArray(row)&&row.some(v=>String(v??'').trim()!=='');}
+  function cellPreview(value){const s=safeText(value,120);return s?'"'+s.replace(/"/g,'\\"')+'"':'""';}
 
-  function findHeaderRow(matrix, schema){
-    let best={row:0,score:0};
-    const limit=Math.min(matrix.length,20);
-    for(let i=0;i<limit;i++){
-      const row=matrix[i]||[];
-      let score=0, matched=0;
-      Object.values(schema.fields).forEach(f=>{
-        const local=Math.max(...row.map(v=>fieldScore(v,f.aliases)),0);
-        if(local>=55){matched++;score+=local;}
+  function buildWorkbookDigest(wb){
+    const sheets=(wb?.SheetNames||[]).map(name=>{
+      const ws=wb.Sheets[name];
+      const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false,raw:false});
+      const nonEmpty=matrix.map((row,index)=>({index,row})).filter(x=>rowHasData(x.row));
+      const sampleIndexes=[...new Set([
+        ...nonEmpty.slice(0,18).map(x=>x.index),
+        ...nonEmpty.slice(Math.max(0,Math.floor(nonEmpty.length/2)-4),Math.floor(nonEmpty.length/2)+4).map(x=>x.index),
+        ...nonEmpty.slice(-12).map(x=>x.index)
+      ])].sort((a,b)=>a-b);
+      const rows=sampleIndexes.map(index=>{
+        const row=matrix[index]||[],cells=[];
+        row.forEach((v,c)=>{if(String(v??'').trim()!=='')cells.push(XLSX.utils.encode_col(c)+'='+cellPreview(v));});
+        return 'R'+(index+1)+': '+cells.join(' | ');
       });
-      score+=Math.min(row.filter(v=>String(v??'').trim()).length,12)*2;
-      if(matched>=1 && score>best.score)best={row:i,score,matched};
+      const merges=(ws['!merges']||[]).slice(0,30).map(m=>XLSX.utils.encode_range(m));
+      return {name,ref:ws['!ref']||'',rows:matrix.length,columns:matrix.reduce((m,r)=>Math.max(m,r?.length||0),0),nonEmptyRows:nonEmpty.length,merges,sample:rows.join('\n')};
+    });
+    let digest=JSON.stringify({workbookSheets:sheets.length,sheets});
+    if(digest.length>24000)digest=digest.slice(0,24000)+'\n[TRUNCATED DIGEST]';
+    return digest;
+  }
+
+  function schemaPrompt(type){
+    const schema=SCHEMAS[type];
+    return Object.entries(schema.fields).map(([key,meta])=>key+': '+meta.label+' | '+(meta.required?'REQUIRED':'optional')+' | aliases: '+meta.aliases.join(', ')).join('\n');
+  }
+
+  function buildAIImportPrompt(type,digest,fileName){
+    return 'You are the Factory OS TPM spreadsheet ingestion engine.\n'+
+      'Inspect a messy real-world Excel/CSV workbook and identify the actual data records for the target TPM map. The workbook may contain titles, blank rows, merged headers, multi-row headers, repeated headers, notes, totals, multiple tables, multiple sheets, Arabic/English/mixed language, inconsistent column names, and unrelated sections.\n\n'+
+      'TARGET DOCUMENT: '+type+' ('+(SCHEMAS[type]?.label||type)+')\nFILE: '+fileName+'\n\n'+
+      'TARGET FIELDS:\n'+schemaPrompt(type)+'\n\n'+
+      'CRITICAL RULES:\n'+
+      '1. Do not ask the user to map columns, choose rows, or confirm anything.\n'+
+      '2. Inspect ALL sheets and all evidence in the digest. Prefer tables that actually contain operational map records.\n'+
+      '3. You may return multiple blocks from the same sheet if it contains separate tables.\n'+
+      '4. Identify the true header row(s) and data range for every block.\n'+
+      '5. Map fields by meaning, not position. Arabic, English, abbreviations, synonyms and TPM/JH terminology are valid clues.\n'+
+      '6. Never invent cell values. Every imported value must come from an existing workbook cell.\n'+
+      '7. Required fields MUST have a defensible source column. If a required field cannot be found, reject that block.\n'+
+      '8. Ignore titles, decorative rows, instructions, signatures, totals/subtotals, page numbers, and repeated headers.\n'+
+      '9. Merged cells may carry machine/area context; the importer will preserve merged-cell context.\n'+
+      '10. Do not rewrite factual text. The application may only normalize controlled values after extraction.\n'+
+      '11. Confidence must reflect evidence quality.\n'+
+      '12. Return ONLY valid JSON. No markdown or prose outside JSON.\n\n'+
+      'JSON SHAPE:\n'+
+      '{"decision":"import|reject","confidence":0-100,"reason":"short explanation","sheets":[{"sheet":"exact name","blocks":[{"headerRows":[1,2],"dataStartRow":3,"dataEndRow":120,"repeatHeaderRows":[55],"skipRows":[121],"mapping":{"fieldName":{"column":"A","confidence":95}},"confidence":0-100}]}]}\n'+
+      'TARGET FIELD NAMES MUST BE EXACTLY the names listed above. Do not return unknown fields. Do not return a block with no usable required-field mapping. Row numbers are 1-based and inclusive.\n\nWORKBOOK DIGEST:\n'+digest;
+  }
+
+  function extractJson(text){
+    const fence=String.fromCharCode(96).repeat(3);
+    const raw=String(text||'').trim().replace(new RegExp('^'+fence+'(?:json)?','i'),'').replace(new RegExp(fence+'$'),'').trim();
+    try{return JSON.parse(raw);}catch(_){}
+    const first=raw.indexOf('{'),last=raw.lastIndexOf('}');
+    if(first>=0&&last>first){try{return JSON.parse(raw.slice(first,last+1));}catch(_){}}
+    throw new Error('AI returned invalid JSON.');
+  }
+
+  function validateAIPlan(plan,type,wb){
+    const schema=SCHEMAS[type],allowed=new Set(Object.keys(schema.fields)),out=[];
+    if(!plan||!Array.isArray(plan.sheets))throw new Error('لم يتم الحصول على خريطة بيانات صالحة من الذكاء الاصطناعي.');
+    for(const sheetPlan of plan.sheets){
+      const name=String(sheetPlan?.sheet||'');
+      if(!name||!wb.Sheets[name]||!Array.isArray(sheetPlan.blocks))continue;
+      const matrix=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:'',blankrows:false,raw:false});
+      for(const block of sheetPlan.blocks){
+        if(!block||!block.mapping)continue;
+        const start=Math.max(1,Number(block.dataStartRow)||0),end=Math.min(matrix.length,Number(block.dataEndRow)||0);
+        if(!start||!end||end<start)continue;
+        const mapping={};
+        for(const [field,meta] of Object.entries(block.mapping)){
+          if(!allowed.has(field))continue;
+          const column=colToIndex(meta?.column),confidence=Math.max(0,Math.min(100,Number(meta?.confidence)||0));
+          if(column>=0&&column<80&&confidence>=45)mapping[field]={column,confidence};
+        }
+        const missing=Object.entries(schema.fields).filter(([f,m])=>m.required&&!mapping[f]).map(([f])=>f);
+        if(missing.length)continue;
+        out.push({sheet:name,matrix,headerRows:Array.isArray(block.headerRows)?block.headerRows.map(Number).filter(Boolean):[],dataStartRow:start,dataEndRow:end,repeatHeaderRows:Array.isArray(block.repeatHeaderRows)?block.repeatHeaderRows.map(Number):[],skipRows:Array.isArray(block.skipRows)?block.skipRows.map(Number):[],mapping,confidence:Math.max(0,Math.min(100,Number(block.confidence)||Number(plan.confidence)||0))});
+      }
     }
-    return best.matched?best.row:0;
+    if(!out.length)throw new Error('لم يجد الذكاء الاصطناعي جدولًا صالحًا يحتوي على الحقول المطلوبة.');
+    const strong=out.filter(b=>b.confidence>=70);
+    if(!strong.length)throw new Error('تم العثور على بيانات، لكن درجة الثقة منخفضة لحفظها بأمان.');
+    return {confidence:Math.max(...out.map(b=>b.confidence)),blocks:out};
   }
 
-  function inferMapping(headers,rows,schema){
-    const mapping={}; const used=new Set();
-    Object.entries(schema.fields).forEach(([field,meta])=>{
-      let best={idx:-1,score:0};
-      headers.forEach((h,idx)=>{
-        if(used.has(idx))return;
-        const headerScore=fieldScore(h,meta.aliases);
-        const sample=rows.slice(0,Math.min(rows.length,35)).map(r=>r?.[idx]).filter(v=>String(v??'').trim());
-        const valueScore=sample.length?Math.max(...sample.map(v=>semanticValueScore(field,v))):0;
-        const score=Math.min(100,headerScore*0.78+valueScore*0.22);
-        if(score>best.score)best={idx,score};
-      });
-      if(best.idx>=0 && best.score>=32){mapping[field]={idx:best.idx,score:Math.round(best.score)};used.add(best.idx);}
-    });
-    // No-header fallback: assign likely columns by value semantics, then positional text columns.
-    const missing=Object.keys(schema.fields).filter(f=>!mapping[f]);
-    const available=headers.map((_,i)=>i).filter(i=>!used.has(i));
-    missing.forEach(field=>{
-      let best={idx:-1,score:0};
-      available.forEach(idx=>{
-        const sample=rows.slice(0,50).map(r=>r?.[idx]).filter(v=>String(v??'').trim());
-        const valueScore=sample.length?Math.max(...sample.map(v=>semanticValueScore(field,v))):0;
-        if(valueScore>best.score)best={idx,score:valueScore};
-      });
-      if(best.idx>=0 && best.score>=55){mapping[field]={idx:best.idx,score:Math.round(best.score)};used.add(best.idx);available.splice(available.indexOf(best.idx),1);}
-    });
-    // For required text fields with no semantic signal, use remaining text-heavy columns.
-    Object.keys(schema.fields).filter(f=>schema.fields[f].required&&!mapping[f]).forEach(field=>{
-      const candidate=available.find(idx=>rows.slice(0,30).filter(r=>typeof r?.[idx]==='string'&&norm(r[idx])).length>=Math.max(1,Math.floor(rows.length*.15)));
-      if(candidate!==undefined){mapping[field]={idx:candidate,score:38};used.add(candidate);available.splice(available.indexOf(candidate),1);}
-    });
-    return mapping;
-  }
-
-  function value(row,m){return m&&m.idx!=null?String(row?.[m.idx]??'').trim():'';}
-
-  function normalizeOperation(v){
-    const s=norm(v);
-    if(/تنظيف|تنطيف|clean/.test(s))return 'تنظيف';
-    if(/تزييت|تشحيم|lube|lubric/.test(s))return 'تزييت';
-    if(/فحص|inspect|inspection/.test(s))return 'فحص';
-    if(/تربيط|ربط|tight/.test(s))return 'تربيط';
-    return String(v??'').trim();
-  }
-  function normalizeFrequency(v){
-    const s=norm(v);
-    if(/يومي|daily|day/.test(s))return 'يومي';
-    if(/اسبوع|أسبوع|weekly|week/.test(s))return 'أسبوعي';
-    if(/شهر|monthly|month/.test(s))return 'شهري';
-    if(/سن|yearly|annual|year/.test(s))return 'سنوي';
-    return String(v??'').trim();
-  }
-  function normalizeLevel(v){
-    const s=norm(v);
-    if(/حرج|critical|high|عالي/.test(s))return 'high';
-    if(/متوسط|medium|med/.test(s))return 'med';
-    if(/منخفض|low/.test(s))return 'low';
-    return String(v??'').trim();
-  }
-
-  function buildRecords(){
-    const schema=SCHEMAS[state.type], rows=state.rows;
-    state.normalized=rows.map((row,rowIndex)=>{
-      const raw={};
-      Object.keys(state.mapping).forEach(f=>raw[f]=value(row,state.mapping[f]));
-      const base={
-        id:window.uniqueNumericId().toString(),
-        date:new Date().toLocaleDateString('ar-EG'),
-        user:window.currentUser?.name||'',
-        uid:firebase.auth().currentUser?.uid||'',
-        createdAt:Date.now(),
-        updatedAt:Date.now(),
-        createdByUid:firebase.auth().currentUser?.uid||'',
-        updatedByUid:firebase.auth().currentUser?.uid||'',
-        updatedByName:window.currentUser?.name||'',
-        schemaVersion:3,
-        imported:true,
-        importSource:state.fileName,
-        importSheet:state.sheet,
-        importRow:rowIndex+state.headerRow+2,
-        importConfidence:Math.round(Object.values(state.mapping).reduce((s,m)=>s+m.score,0)/Math.max(1,Object.keys(state.mapping).length))
-      };
-      if(state.type==='CLIT'){
-        Object.assign(base,{region:raw.region||'عام',part:raw.part||'',operation:normalizeOperation(raw.operation),frequency:normalizeFrequency(raw.frequency),action:raw.action||'',optimalState:raw.optimalState||'',degradation:raw.degradation||'',tools:raw.tools||'',machineState:raw.machineState||'',timeBefore:raw.timeBefore||'',timeAfter:raw.timeAfter||''});
-      }else if(state.type==='Contamination'){
-        Object.assign(base,{location:raw.location||'',typeDesc:raw.typeDesc||'',severity:raw.severity||'',action:raw.action||''});
-      }else if(state.type==='SOC'){
-        Object.assign(base,{location:raw.location||'',reason:raw.reason||'',barrier:raw.barrier||'',action:raw.action||''});
-      }else if(state.type==='Safety'){
-        Object.assign(base,{hazard:raw.hazard||'',location:raw.location||'',level:normalizeLevel(raw.level),control:raw.control||''});
-      }else{
-        Object.assign(base,{name:raw.name||'',desc:raw.desc||'',location:raw.location||'',machine:raw.machine||''});
+  function materializeMergedContext(matrix,ws){
+    const rows=matrix.map(r=>Array.isArray(r)?r.slice():[]),merges=ws?.['!merges']||[];
+    merges.forEach(m=>{
+      if(m.s.r===m.e.r)return;
+      const source=rows[m.s.r]?.[m.s.c];
+      if(String(source??'').trim()==='')return;
+      for(let r=m.s.r;r<=m.e.r;r++){
+        rows[r]=rows[r]||[];
+        for(let c=m.s.c;c<=m.e.c;c++)if(String(rows[r][c]??'').trim()==='')rows[r][c]=source;
       }
-      return base;
-    }).filter(r=>state.type==='CLIT'?r.action||r.part||r.region:(r.location||r.hazard||r.name));
+    });
+    return rows;
   }
 
-  function renderMapping(){
-    const el=document.getElementById('jhImportMapping'); if(!el)return;
-    const schema=SCHEMAS[state.type];
-    const rows=Object.entries(schema.fields).map(([field,meta])=>{
-      const m=state.mapping[field];
-      return '<div class="jh-import-map-row"><div><b>'+esc(meta.label)+'</b><small>'+ (meta.required?'مطلوب':'اختياري') +'</small></div><select data-import-field="'+esc(field)+'"><option value="-1">— لم يتم التعرف —</option>'+state.headers.map((h,i)=>'<option value="'+i+'" '+(m?.idx===i?'selected':'')+'>'+esc(String.fromCharCode(65+i))+' · '+esc(h||('عمود '+(i+1)))+'</option>').join('')+'</select><span class="'+(m&&m.score>=70?'good':m&&m.score>=50?'mid':'low')+'">'+(m?m.score+'%':'—')+'</span></div>';
-    }).join('');
-    el.innerHTML='<div class="jh-import-map-head"><b>فهم الأعمدة</b><span>يمكنك تصحيح أي تخمين قبل الحفظ.</span></div>'+rows;
-    el.querySelectorAll('[data-import-field]').forEach(sel=>sel.addEventListener('change',e=>{const field=e.target.dataset.importField;const idx=Number(e.target.value);if(idx<0)delete state.mapping[field];else state.mapping[field]={idx,score:100};state.normalized=buildRecords();renderPreview();}));
+  function normalizeControlled(type,field,value){
+    if(type==='CLIT'&&field==='operation')return normalizeOperation(value);
+    if(type==='CLIT'&&field==='frequency')return normalizeFrequency(value);
+    if(type==='Safety'&&field==='level')return normalizeLevel(value);
+    return String(value??'').trim();
   }
 
-  function renderPreview(){
-    const el=document.getElementById('jhImportPreview');if(!el)return;
-    state.normalized=buildRecords();
-    const schema=SCHEMAS[state.type];
-    const missing=Object.entries(schema.fields).filter(([f,m])=>m.required&&!state.mapping[f]).map(([,m])=>m.label);
-    const rows=state.normalized.slice(0,8);
-    const cols=state.type==='CLIT'?['region','part','operation','frequency','action','timeBefore','timeAfter']:Object.keys(schema.fields);
-    let html='<div class="jh-import-preview-head"><b>'+state.normalized.length+' سجل قابل للاستيراد</b><span>العينة: '+Math.min(8,state.normalized.length)+' صف</span></div>';
-    if(missing.length)html+='<div class="jh-import-warning"><i class="bx bx-error"></i> حقول مطلوبة لم تُفهم: '+esc(missing.join('، '))+'</div>';
-    html+='<div class="jh-import-table-wrap"><table><thead><tr>'+cols.map(c=>'<th>'+esc(schema.fields[c]?.label||c)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+cols.map(c=>'<td>'+esc(r[c]||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
-    el.innerHTML=html;
-    const save=document.getElementById('jhImportSave');if(save)save.disabled=!state.normalized.length||missing.length>0;
-    setStatus(state.normalized.length?'<span class="ok">✓ تم تحليل الملف واكتشاف بنية البيانات</span>':'<span class="bad">لم يتم العثور على سجلات قابلة للاستيراد.</span>');
+  function buildAIRecords(plan,type,fileName){
+    const schema=SCHEMAS[type],records=[],seen=new Set(),user=window.currentUser?.name||'',uid=firebase.auth().currentUser?.uid||'';
+    for(const block of plan.blocks){
+      const ws=block.matrix,materialized=materializeMergedContext(ws,window.__jhImportWorkbook?.Sheets?.[block.sheet]);
+      const repeats=new Set(block.repeatHeaderRows||[]),skips=new Set(block.skipRows||[]);
+      for(let rowNo=block.dataStartRow;rowNo<=block.dataEndRow;rowNo++){
+        if(repeats.has(rowNo)||skips.has(rowNo))continue;
+        const row=materialized[rowNo-1]||[];if(!rowHasData(row))continue;
+        const raw={};for(const [field,map] of Object.entries(block.mapping))raw[field]=row[map.column]??'';
+        if(Object.entries(schema.fields).some(([field,meta])=>meta.required&&!String(raw[field]??'').trim()))continue;
+        const sourceKey=block.sheet+':'+rowNo+':'+type;if(seen.has(sourceKey))continue;seen.add(sourceKey);
+        const base={id:window.uniqueNumericId().toString(),date:new Date().toLocaleDateString('ar-EG'),user,uid,createdAt:Date.now(),updatedAt:Date.now(),createdByUid:uid,updatedByUid:uid,updatedByName:user,schemaVersion:4,imported:true,importMethod:'ai-semantic',importSource:fileName,importSheet:block.sheet,importRow:rowNo,importConfidence:Math.round(block.confidence),importMapping:Object.fromEntries(Object.entries(block.mapping).map(([f,m])=>[f,{column:XLSX.utils.encode_col(m.column),confidence:m.confidence}]))};
+        for(const field of Object.keys(schema.fields))base[field]=normalizeControlled(type,field,raw[field]);
+        records.push(base);
+      }
+    }
+    return records;
+  }
+
+  function renderAIResult(stats){
+    const el=document.getElementById('jhImportSummary');if(!el)return;
+    if(!stats){el.innerHTML='<div class="jh-ai-state idle"><i class="bx bx-brain"></i><div><b>جاهز للتحليل الذكي</b><span>ارفع الملف وسيتم فهمه تلقائيًا ثم استيراد البيانات الصحيحة.</span></div></div>';return;}
+    if(stats.error){el.innerHTML='<div class="jh-ai-state error"><i class="bx bx-error-circle"></i><div><b>لم يتم الاستيراد</b><span>'+esc(stats.error)+'</span></div></div>';return;}
+    el.innerHTML='<div class="jh-ai-state success"><i class="bx bx-check-shield"></i><div><b>تم الفهم والاستيراد تلقائيًا</b><span>'+stats.records+' سجل · '+stats.sheets+' ورقة · '+stats.blocks+' نطاق بيانات · ثقة '+stats.confidence+'%</span></div></div>';
   }
 
   async function analyzeFile(file){
     if(!file)return;
     if(!window.XLSX){setStatus('<span class="bad">مكتبة قراءة Excel غير متاحة. أعد تحميل الصفحة.</span>');return;}
-    const status=document.getElementById('jhImportStatus'); if(status)status.innerHTML='<span class="loading"><i class="bx bx-loader-alt bx-spin"></i> جاري قراءة وتحليل الملف...</span>';
+    if(!currentJHDept){setStatus('<span class="bad">اختر قسم JH أولًا.</span>');return;}
+    const modal=getModal();if(modal)modal.style.display='flex';
+    state={type:state.type||window.__jhActiveDocType||'CLIT',fileName:file.name,workbook:null,analysis:null,normalized:[],stats:null};
+    setImportSummary('<div class="jh-ai-state loading"><i class="bx bx-loader-alt bx-spin"></i><div><b>AI بيفحص الملف...</b><span>بيقرأ الشيتات، يحدد الجداول الحقيقية، ويفهم الأعمدة من المعنى — مش من ترتيبها.</span></div></div>');
+    setStatus('<span class="loading"><i class="bx bx-brain"></i> قراءة الملف وتحضير البيانات للتحليل...</span>');
+    const started=Date.now();
     try{
-      const buffer=await file.arrayBuffer();
-      const wb=XLSX.read(buffer,{type:'array',cellDates:true,raw:false});
-      const sheetName=wb.SheetNames[0]; const ws=wb.Sheets[sheetName];
-      const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false});
-      if(!matrix.length)throw new Error('empty');
-      const schema=SCHEMAS[state.type];
-      const headerRow=findHeaderRow(matrix,schema);
-      const headers=(matrix[headerRow]||[]).map((v,i)=>String(v??'').trim()||('عمود '+(i+1)));
-      const data=matrix.slice(headerRow+1).filter(row=>row.some(v=>String(v??'').trim()));
-      state.fileName=file.name;state.sheet=sheetName;state.headerRow=headerRow;state.headers=headers;state.rows=data;state.mapping=inferMapping(headers,data,schema);state.confidence=Math.round(Object.values(state.mapping).reduce((s,m)=>s+m.score,0)/Math.max(1,Object.keys(state.mapping).length));
-      renderMapping();renderPreview();
-      setStatus('<span class="ok">✓ '+esc(file.name)+' — تم اكتشاف صف العناوين '+(headerRow+1)+' بثقة تقريبية '+state.confidence+'%</span>');
-    }catch(error){console.error('[JH importer]',error);setStatus('<span class="bad">⚠️ تعذر تحليل الملف. تأكد أنه Excel/CSV صالح.</span>');}
+      const buffer=await file.arrayBuffer(),wb=XLSX.read(buffer,{type:'array',cellDates:true,raw:false});
+      window.__jhImportWorkbook=wb;
+      const digest=buildWorkbookDigest(wb);
+      setStatus('<span class="loading"><i class="bx bx-brain bx-tada"></i> AI بيحلل بنية الملف ومحتواه...</span>');
+      const response=await window.fetchGeminiAPI(buildAIImportPrompt(state.type,digest,file.name),null,{jsonMode:true});
+      const plan=extractJson(response),validated=validateAIPlan(plan,state.type,wb),normalized=buildAIRecords(validated,state.type,file.name);
+      if(!normalized.length)throw new Error('لم يتم العثور على سجلات مكتملة يمكن إدخالها بأمان.');
+      const confidence=Math.round(Math.min(100,Math.max(0,validated.confidence)));
+      if(confidence<70)throw new Error('الثقة في فهم الملف منخفضة ('+confidence+'%). تم إيقاف الاستيراد لحماية البيانات.');
+      state.analysis=validated;state.normalized=normalized;state.stats={records:normalized.length,sheets:new Set(validated.blocks.map(b=>b.sheet)).size,blocks:validated.blocks.length,confidence};
+      setStatus('<span class="ok">✓ تم فهم الملف. جاري حفظ البيانات تلقائيًا...</span>');renderAIResult(state.stats);
+      await commit();
+      const elapsed=((Date.now()-started)/1000).toFixed(1);
+      setStatus('<span class="ok">✓ اكتمل الاستيراد تلقائيًا خلال '+elapsed+' ثانية.</span>');
+      await sleep(650);closeModal();
+    }catch(error){
+      console.error('[JH AI importer]',error);state.stats={error:error?.message||'تعذر تحليل الملف.'};renderAIResult(state.stats);
+      setStatus('<span class="bad">⚠️ '+esc(error?.message||'تعذر تحليل الملف. لم يتم حفظ أي بيانات.')+'</span>');
+    }finally{window.__jhImportWorkbook=null;}
   }
 
   async function commit(){
-    if(!state.normalized.length||!currentJHDept)return toast('⚠️ لا توجد بيانات جاهزة أو لم يتم اختيار قسم JH');
-    const btn=document.getElementById('jhImportSave');if(btn)btn.disabled=true;
-    try{
-      const updates={};
-      state.normalized.forEach(r=>{updates[r.id]=r;});
-      await db.ref('tpm_system/jh_records/'+currentJHDept+'/'+state.type).update(updates);
-      window.currentLoadedRecords=[...(window.currentLoadedRecords||[]),...state.normalized];
-      toast('تم استيراد '+state.normalized.length+' نقطة بنجاح ✅');
-      closeModal();
-      window.openJHDocument?.(state.type);
-    }catch(error){console.error('[JH importer] save failed',error);toast('⚠️ تعذر حفظ البيانات المستوردة.');if(btn)btn.disabled=false;}
+    if(!state.normalized.length||!currentJHDept)throw new Error('لا توجد بيانات جاهزة أو لم يتم اختيار قسم JH.');
+    const updates={};state.normalized.forEach(r=>{updates[r.id]=r;});
+    await db.ref('tpm_system/jh_records/'+currentJHDept+'/'+state.type).update(updates);
+    window.currentLoadedRecords=[...(window.currentLoadedRecords||[]),...state.normalized];
+    toast('تم استيراد '+state.normalized.length+' سجل تلقائيًا بواسطة AI ✅');
+    window.openJHDocument?.(state.type);
   }
 
   function manualOpen(type){

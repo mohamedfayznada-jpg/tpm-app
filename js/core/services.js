@@ -125,13 +125,13 @@ export const Services = {
         reader.readAsDataURL(file);
     },
 
-    async fetchGeminiAPI(promptText, pdfBase64 = null) {
+    async fetchGeminiAPI(promptText, pdfBase64 = null, options = {}) {
         let b64 = null;
         if (pdfBase64) b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
         const response = await fetch('/api/gemini', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: String(promptText || '').slice(0, 12000), imageBase64: b64 })
+            body: JSON.stringify({ prompt: String(promptText || '').slice(0, 30000), imageBase64: b64, jsonMode: options?.jsonMode === true })
         });
         const j = await response.json().catch(() => ({}));
         if (!response.ok || j.error) {

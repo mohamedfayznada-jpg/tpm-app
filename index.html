@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="styles.css?v=20260927-teams-motion1">
     <link rel="stylesheet" href="css/index-shell.css?v=1">
     <link rel="stylesheet" href="css/legacy-inline-extracted-v2.css?v=1">\n    <link rel="stylesheet" href="css/factory-os-v34-reference.css?v=21">
-    <link rel="stylesheet" href="css/jh-command-center.css?v=4">
+    <link rel="stylesheet" href="css/jh-command-center.css?v=5">
     <link rel="stylesheet" href="css/tpm-teams-premium.css?v=2">
 </head>
 <body>
@@ -552,37 +552,7 @@
             <h2 id="jhDocHeader" class="legacy-inline-75"><i class='bx bx-file-blank'></i> السجل</h2>
         </div>
         <div id="jhDocActionArea" class="card btn-role-auditor"></div>
-        <div id="startChecklistBtnContainer" class="legacy-inline-76">
-            <button class="btn btn-success full-width" onclick="startCLITChecklist()"><i class='bx bx-list-check'></i> بدء تنفيذ قائمة الفحص</button>
-        </div>
-        <div id="clitStatsSummary" class="card legacy-inline-77">
-            <div class="legacy-inline-78">
-                <div><div id="statTotalPoints" class="legacy-inline-79">0</div><div class="legacy-inline-80">نقاط</div></div>
-                <div><div id="statActiveFiltered" class="legacy-inline-81">0</div><div class="legacy-inline-80">مفلترة</div></div>
-                <div><div id="statEstimatedTime" class="legacy-inline-82">0m</div><div class="legacy-inline-80">وقت</div></div>
-            </div>
-        </div>
-        <div id="clitZoneFilters" class="legacy-inline-83">
-            <button class="btn btn-sm btn-primary clit-zone-btn" onclick="filterCLITZone('الكل', this)">الكل</button>
-            <button class="btn btn-sm btn-outline clit-zone-btn" onclick="filterCLITZone('الجيكات', this)">الجيكات <span id="badge-count-الجيكات"></span></button>
-            <button class="btn btn-sm btn-outline clit-zone-btn" onclick="filterCLITZone('الهيد', this)">الهيد <span id="badge-count-الهيد"></span></button>
-            <button class="btn btn-sm btn-outline clit-zone-btn" onclick="filterCLITZone('الفرن', this)">الفرن <span id="badge-count-الفرن"></span></button>
-            <button class="btn btn-sm btn-outline clit-zone-btn" onclick="filterCLITZone('مدخل', this)">المدخل <span id="badge-count-مدخل"></span></button>
-            <button class="btn btn-sm btn-outline clit-zone-btn" onclick="filterCLITZone('عربة', this)">عربة <span id="badge-count-عربة"></span></button>
-            <button class="btn btn-sm btn-outline clit-zone-btn" onclick="filterCLITZone('تجهيزة', this)">تجهيزة <span id="badge-count-تجهيزة"></span></button>
-        </div>
-        <div id="clitOpFilters" class="legacy-inline-84">
-            <button class="btn btn-sm btn-primary clit-op-btn" onclick="filterCLITOp('الكل', this)">الكل</button>
-            <button class="btn btn-sm btn-outline clit-op-btn" onclick="filterCLITOp('تنظيف', this)">تنظيف</button>
-            <button class="btn btn-sm btn-outline clit-op-btn" onclick="filterCLITOp('تزييت', this)">تزييت</button>
-            <button class="btn btn-sm btn-outline clit-op-btn" onclick="filterCLITOp('فحص', this)">فحص</button>
-        </div>
-        <div id="clitFrequencyFilters" class="legacy-inline-85">
-            <button class="btn btn-sm btn-primary clit-freq-btn" onclick="filterCLITFreq('الكل', this)">الكل</button>
-            <button class="btn btn-sm btn-outline clit-freq-btn" onclick="filterCLITFreq('يومي', this)">يومي</button>
-            <button class="btn btn-sm btn-outline clit-freq-btn" onclick="filterCLITFreq('أسبوعي', this)">أسبوعي</button>
-            <button class="btn btn-sm btn-outline clit-freq-btn" onclick="filterCLITFreq('شهري', this)">شهري</button>
-        </div>
+
         <section id="clitMapWorkspace" class="clit-map-workspace" hidden>
             <div class="clit-map-head">
                 <div>
@@ -590,7 +560,7 @@
                     <h3>خريطة نقاط الفحص</h3>
                     <p>اختر المنطقة أو نوع العملية لعرض نقاطها مباشرة.</p>
                 </div>
-                <div class="clit-map-head-actions"><button type="button" class="clit-map-reset" onclick="resetCLITMapFilters()"><i class='bx bx-reset'></i> إعادة الضبط</button><button type="button" class="clit-map-execute" onclick="startCLITChecklist()"><i class='bx bx-play'></i> بدء التنفيذ</button></div>
+                <div class="clit-map-head-actions"><button type="button" class="clit-map-reset" onclick="resetCLITMapFilters()"><i class='bx bx-reset'></i> إعادة الضبط</button><button type="button" class="clit-map-time" onclick="openCLITTimeAnalytics()"><i class='bx bx-stopwatch'></i> تحليل الأزمنة</button><button type="button" class="clit-map-execute" onclick="startCLITChecklist()"><i class='bx bx-play'></i> بدء التنفيذ</button></div>
             </div>
             <div class="clit-map-stats" id="clitMapStats"></div>
             <div class="clit-map-controls">
@@ -603,6 +573,55 @@
             </div>
         </section>
         <div id="jhDocListContainer"></div>
+    </div>
+
+    
+    <div class="container screen" id="clitTimeAnalyticsScreen">
+        <div class="clit-time-page-head">
+            <div>
+                <span class="clit-time-kicker">TIME LOSS & IMPROVEMENT</span>
+                <h2><i class='bx bx-stopwatch'></i> تحليل أزمنة CLIT والتحسينات</h2>
+                <p>لوحة مستقلة لقراءة الزمن القياسي، أكبر العمليات استهلاكًا للوقت، وفرص خفض الزمن.</p>
+            </div>
+            <div class="clit-time-page-actions">
+                <button class="btn btn-sm btn-outline" onclick="goBack()"><i class='bx bx-arrow-back'></i> رجوع</button>
+                <button class="btn btn-sm btn-primary" onclick="openCLITTimeAnalytics()"><i class='bx bx-refresh'></i> تحديث</button>
+            </div>
+        </div>
+        <section id="clitTimeStats" class="clit-time-stats" aria-live="polite"></section>
+        <section class="clit-time-focus">
+            <div class="clit-time-bottleneck">
+                <div class="clit-time-section-head">
+                    <div><span>BOTTLENECK</span><h3>أكبر زمن عملية</h3></div>
+                    <i class='bx bx-alarm-exclamation'></i>
+                </div>
+                <div id="clitTimeBottleneck"></div>
+            </div>
+            <div class="clit-time-savings">
+                <div class="clit-time-section-head">
+                    <div><span>SAVINGS</span><h3>إمكانات خفض الزمن</h3></div>
+                    <i class='bx bx-trending-down'></i>
+                </div>
+                <div id="clitTimeSavings"></div>
+            </div>
+        </section>
+        <section class="clit-time-analysis-grid">
+            <div class="clit-time-panel">
+                <div class="clit-time-section-head"><div><span>BY OPERATION</span><h3>الزمن حسب نوع العملية</h3></div><i class='bx bx-bar-chart-alt-2'></i></div>
+                <div id="clitTimeOperationBars" class="clit-time-bars"></div>
+            </div>
+            <div class="clit-time-panel">
+                <div class="clit-time-section-head"><div><span>BY FREQUENCY</span><h3>توزيع الزمن حسب التكرار</h3></div><i class='bx bx-calendar'></i></div>
+                <div id="clitTimeFrequencyBars" class="clit-time-bars"></div>
+            </div>
+        </section>
+        <section class="clit-time-panel clit-time-improvement-panel">
+            <div class="clit-time-section-head">
+                <div><span>IMPROVEMENT PIPELINE</span><h3>فرص التحسين في الأزمنة</h3><small>مرتبة من أكبر وفر زمني متاح إلى الأقل</small></div>
+                <i class='bx bx-bulb'></i>
+            </div>
+            <div id="clitTimeImprovementList"></div>
+        </section>
     </div>
 
     <div class="container screen" id="clitChecklistScreen">
@@ -1413,7 +1432,7 @@
 <script src="js/modules/knowledge-base.js?v=1" defer></script>
 <script src="js/modules/kk-engine.js?v=1" defer></script>
 <script src="js/modules/jh-kpi-engine.js?v=1" defer></script>
-<script src="js/modules/clit-engine.js?v=1" defer></script>
+<script src="js/modules/clit-engine.js?v=20260927-clit-time-v2" defer></script>
 <script src="js/modules/five-s-engine.js?v=1" defer></script>
 <script src="js/modules/jh-main-team.js?v=1" defer></script>
 <script src="js/modules/tag-command-center.js?v=1" defer></script>

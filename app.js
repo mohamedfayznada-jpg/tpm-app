@@ -1134,6 +1134,12 @@ window.showJHPortal = function() {
     const safe = v => window.escapeTPM ? window.escapeTPM(String(v || '')) : String(v || '');
     const fmt = value => Number.isFinite(Number(value)) ? Math.round(Number(value)) + '%' : '—';
 
+    const deptIcon = {
+        'حقن الكابينة': 'bx-cube',
+        'حقن الباب': 'bx-door-open',
+        'الفاكيوم': 'bx-wind',
+        'المواسير': 'bx-git-branch'
+    };
     const deptCards = departments.map((d,index) => {
         const audits = historyData
             .filter(h => h && h.dept === d && Array.isArray(h.stepsOrder) && !h.stepsOrder.includes('ManualKaizen'))
@@ -1145,15 +1151,30 @@ window.showJHPortal = function() {
         const goal = Number(deptGoalsData[d]);
         const score = last ? Number(last.totalPct) : null;
         const state = openTags > 0 ? 'attention' : (last ? 'stable' : 'empty');
+        const icon = deptIcon[d] || 'bx-buildings';
+        const selected = currentJHDept === d;
         return `
-          <article class="jh-dept-card-v4 ${state}" tabindex="0" onclick="selectJHDept('${safe(d)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectJHDept('${safe(d)}')}">
+          <article class="jh-dept-card-v4 ${state} ${selected ? 'is-selected' : ''}" tabindex="0" onclick="selectJHDept('${safe(d)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectJHDept('${safe(d)}')}">
+            <div class="jh-dept-glow" aria-hidden="true"></div>
             <div class="jh-dept-topline"><span class="jh-dept-index">0${index+1}</span><span class="jh-dept-state"><i class="bx ${state==='attention'?'bx-error-circle':state==='stable'?'bx-check-circle':'bx-minus-circle'}"></i>${state==='attention'?'يحتاج متابعة':state==='stable'?'بيانات متاحة':'لا توجد مراجعات'}</span></div>
-            <div class="jh-dept-title"><i class='bx bx-buildings'></i><div><h4>${safe(d)}</h4><span>قسم تشغيل ضمن JH</span></div></div>
+            <div class="jh-dept-title"><i class='bx ${icon}'></i><div><h4>${safe(d)}</h4><span>JH · Autonomous Maintenance</span></div></div>
             <div class="jh-dept-score-row"><div><small>آخر Audit</small><strong>${last ? fmt(score) : '—'}</strong></div><div><small>الهدف</small><strong>${Number.isFinite(goal) ? fmt(goal) : '—'}</strong></div></div>
-            <div class="jh-dept-bottom"><span><i class="bx bx-purchase-tag-alt"></i>${openTags} تاج مفتوح</span><span><i class="bx bx-bulb"></i>${kaizen} كايزن</span><button type="button">عرض التفاصيل <i class="bx bx-left-arrow-alt"></i></button></div>
+            <div class="jh-dept-bottom"><span><i class="bx bx-purchase-tag-alt"></i>${openTags} تاج مفتوح</span><span><i class="bx bx-bulb"></i>${kaizen} كايزن</span><button type="button">فتح اللوحة <i class="bx bx-left-arrow-alt"></i></button></div>
           </article>`;
     }).join('');
 
+    const deptTabs = departments.map((d,index) => {
+        const selected = currentJHDept === d;
+        const icon = deptIcon[d] || 'bx-buildings';
+        return `<button type="button" class="jh-dept-tab ${selected ? 'is-active' : ''}" aria-selected="${selected}" onclick="selectJHDept('${safe(d)}')">
+            <span class="jh-dept-tab-icon"><i class="bx ${icon}"></i></span>
+            <span><b>0${index+1}</b><strong>${safe(d)}</strong><small>JH</small></span>
+            <i class="bx bx-chevron-left jh-dept-tab-arrow"></i>
+        </button>`;
+    }).join('');
+
+    const tabsMount = document.getElementById('jhDeptTabs');
+    if (tabsMount) tabsMount.innerHTML = deptTabs;
     gridEl.innerHTML = deptCards || '<div class="jh-dept-empty">لا توجد أقسام معرفة في النظام.</div>';
     const portal = document.getElementById('jhPortalScreen');
     if (portal) portal.classList.add('jh-v4-ready');
@@ -1162,6 +1183,15 @@ window.showJHPortal = function() {
 
 window.selectJHDept = function(dept) {
     currentJHDept = dept;
+    document.querySelectorAll('#jhPortalScreen .jh-dept-tab').forEach(tab => {
+        const isActive = tab.textContent.includes(dept);
+        tab.classList.toggle('is-active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    document.querySelectorAll('#jhPortalScreen .jh-dept-card-v4').forEach(card => {
+        const isActive = card.querySelector('h4')?.textContent?.trim() === dept;
+        card.classList.toggle('is-selected', isActive);
+    });
     const titleEl = document.getElementById('selectedJHDeptTitle');
     if (titleEl) titleEl.innerHTML = `<i class='bx bx-buildings'></i> ${window.escapeTPM ? window.escapeTPM(dept) : dept}`;
 

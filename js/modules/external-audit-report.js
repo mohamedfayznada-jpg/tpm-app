@@ -122,7 +122,7 @@ function buildExternalAuditFromXlsx(wb){
  const teams=summary.filter(r=>String(r.Department||'')==='TPM Teams').map(r=>{
    const code=normEA(String(r.Activity||'').replace(/^Create\s+/i,'').replace(/\s+Team$/i,''));
    const n=noteMap.get(Number(r.Record));
-   return {id:code,name:({5S:'فريق 5S',JH:'فريق الصيانة الذاتية',SHE:'فريق السلامة والصحة والبيئة','E&T':'فريق التعليم والتدريب',KK:'فريق التحسين المستمر',PM:'فريق الصيانة المخططة'})[code]||code,planned:Number(r['Planned Total']||0),actual:Number(r['Actual Total']||0),gap:Number(r.Gap||0),percent:Number(r['Score %']||0)*100,comments:n?.creation||[]};
+   return {id:code,name:({'5S':'فريق 5S',JH:'فريق الصيانة الذاتية',SHE:'فريق السلامة والصحة والبيئة','E&T':'فريق التعليم والتدريب',KK:'فريق التحسين المستمر',PM:'فريق الصيانة المخططة'})[code]||code,planned:Number(r['Planned Total']||0),actual:Number(r['Actual Total']||0),gap:Number(r.Gap||0),percent:Number(r['Score %']||0)*100,comments:n?.creation||[]};
  });
  const recs=summary.filter(r=>String(r.Department||'')!=='TPM Teams').map(r=>{
    const id=Number(r.Record),rawRow=rawMap.get(id)||{},activity=normEA(r.Activity),dept=deptFromText(rawRow.score,activity)||String(r.Department||''),planned=Number(r['Planned Total']||0),actual=Number(r['Actual Total']||0),n=noteMap.get(id)||{improvements:[],creation:[]};

@@ -78,6 +78,7 @@ window.showScreen = function(screenId, options = {}) {
     }
     if(screenId === 'tpmTeamsScreen' && typeof window.renderTPMTeams === 'function') window.renderTPMTeams();
     if(screenId === 'settingsScreen' && typeof window.renderSettingsControlLists === 'function') window.renderSettingsControlLists();
+    if(screenId === 'skillMatrixScreen') { window.dispatchEvent(new Event('tpm:skill-matrix-open')); window.renderSkillMatrix?.(); }
     document.querySelectorAll('#mainSidebar .side-item').forEach(item => item.classList.remove('active')); const activeItem = [...document.querySelectorAll('#mainSidebar .side-item')].find(item => (item.getAttribute('onclick') || '').includes("'" + screenId + "'")); if(activeItem) activeItem.classList.add('active');
     window.scrollTo({top: 0, behavior: 'smooth'});
 };
@@ -246,6 +247,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
         const uSnap = await db.ref('tpm_system/users').once('value');
         usersData = uSnap.val() || {};
+        window.usersData = usersData;
         // Secrets are server-managed; the browser never reads tpm_system/api_keys.
         globalApiKeys = { imgbb: "", gemini: "" };
         window.globalApiKeys = globalApiKeys;
@@ -285,6 +287,8 @@ firebase.auth().onAuthStateChanged(async user => {
             
             dbListeners.users = db.ref('tpm_system/users').on('value', snap => {
                 usersData = snap.val() || {};
+                window.usersData = usersData;
+                window.dispatchEvent(new Event('tpm:skill-matrix-data')); 
                 let pendingLive = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
                 let notifLive = document.getElementById('adminNotification');
                 if(notifLive) notifLive.style.display = pendingLive ? 'block' : 'none';
@@ -408,7 +412,7 @@ window.deleteUser = async function(uid) { if(confirm('⚠️ تأكيد حذف �
 window.openPermissionsModal = function(uid) {
     const u = usersData[uid]; if (!u || !u.permissions) return showToast('⚠️ لا توجد أذونات قابلة للتعديل لهذا المستخدم');
     window.editingUserUid = uid; const perms = u.permissions; const container = document.getElementById('permissionsContainer');
-    const pages = { homeScreen: 'الرئيسية (Dashboard)', tasksScreen: 'إدارة المهام', historyScreen: 'أرشيف التقارير', kaizenScreen: 'مجتمع كايزن', tagsScreen: 'التاجات والأعطال', knowledgeScreen: 'عقل المصنع' };
+    const pages = { homeScreen: 'الرئيسية (Dashboard)', tasksScreen: 'إدارة المهام', historyScreen: 'أرشيف التقارير', kaizenScreen: 'مجتمع كايزن', tagsScreen: 'التاجات والأعطال', knowledgeScreen: 'عقل المصنع', skillMatrixScreen: 'Skill Matrix' };
     let html = `<div style="margin-bottom:15px; color:var(--glow-gold); font-weight:bold; font-size:15px;"><i class='bx bx-user-circle'></i> المستخدم: ${u.name}</div>`;
     for (let screen in pages) {
         let currentPerm = perms[screen] || 'none';
@@ -423,7 +427,7 @@ window.openPermissionsModal = function(uid) {
 };
 
 window.saveUserPermissions = async function() {
-    if (!window.editingUserUid) return; const pages = ['homeScreen', 'tasksScreen', 'historyScreen', 'kaizenScreen', 'tagsScreen', 'knowledgeScreen'];
+    if (!window.editingUserUid) return; const pages = ['homeScreen', 'tasksScreen', 'historyScreen', 'kaizenScreen', 'tagsScreen', 'knowledgeScreen', 'skillMatrixScreen'];
     let newPerms = {}; pages.forEach(p => { let sel = document.getElementById('perm_' + p); if (sel) newPerms[p] = sel.value; });
     await db.ref(`tpm_system/users/${window.editingUserUid}/permissions`).set(newPerms); showToast('✅ تم التحديث'); document.getElementById('permissionsModal').style.display = 'none';
 };

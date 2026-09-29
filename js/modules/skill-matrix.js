@@ -197,6 +197,7 @@
   window.renderSkillMatrix=render;
   window.openJHDepartmentSkillMatrix=function(){
     if(!currentDept()) return window.showToast?.('⚠️ اختر قسم JH أولًا.');
+    activeDomain='tpm'; search=''; matrixData={};
     window.showScreen?.('jhSkillMatrixScreen');
     load();
   };

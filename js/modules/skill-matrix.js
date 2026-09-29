@@ -1,4 +1,4 @@
-/* FACTORY OS — Skill Matrix V2: department people + editable skill catalog */
+// FACTORY OS — Skill Matrix V8 — syntax-verified runtime build\n/* FACTORY OS — Skill Matrix V2: department people + editable skill catalog */
 (() => {
   'use strict';
 
@@ -33,6 +33,7 @@
   let managementEditorOpen = false;
   let dataAccessDenied = false;
   let loadInFlight = false;
+  let lastLoadDept = '';
 
   const esc = v => window.escapeTPM ? window.escapeTPM(v) : String(v ?? '').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
   const currentDept = () => {
@@ -184,15 +185,17 @@
     mount.innerHTML='<div class="skill-plan-head"><div><span class="eyebrow">TRAINING NEEDS ANALYSIS</span><h3>خطة التدريب المبنية على الفجوات</h3><p>الأولوية = حجم الفجوة × وزن المهارة. وتشمل TPM والمهارات الفنية للقسم.</p></div><button class="btn btn-outline" onclick="window.exportSkillTrainingPlan()"><i class="bx bx-export"></i> تصدير الخطة</button></div>'+rows;
   }
 
-  async function load() {
+  async function load(force=false) {
     if(loadInFlight)return;
     const dept=currentDept();
+    if(!force && dataAccessDenied && lastLoadDept===dept) return;
     const uid=currentUserUid();
     if(!uid || !dept){
       setDataState('loading','جاري تجهيز صلاحيات Skill Matrix…','سيتم تحميل البيانات فور اكتمال تسجيل الدخول واختيار القسم.');
       return;
     }
     loadInFlight=true;
+    lastLoadDept=dept;
     dataAccessDenied=false;
     setDataState('loading','جاري تحميل بيانات Skill Matrix…');
     try{
@@ -467,7 +470,7 @@
   window.editSkillDefinition=editSkill;
   window.removeSkillDefinition=removeSkill;
   window.clearSkillDefinitionForm=clearSkillForm;
-  window.retrySkillMatrixLoad=load;
+  window.retrySkillMatrixLoad=()=>load(true);
 
   window.exportSkillTrainingPlan=function(){
     const rows=[['العامل','القسم','المجال','المهارة','المستوى الحالي','المستوى المستهدف','الفجوة','الأولوية']];

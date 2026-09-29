@@ -30,6 +30,7 @@
   let search = '';
   let managementTab = 'people';
   let managementSearch = '';
+  let managementEditorOpen = false;
 
   const esc = v => window.escapeTPM ? window.escapeTPM(v) : String(v ?? '').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
   const currentDept = () => {
@@ -197,6 +198,28 @@
     const status=document.getElementById('skillPersonStatus');if(status)status.value='active';
   }
 
+  function openManagementEditor(open=true){
+    managementEditorOpen=!!open;
+    const form=document.getElementById(managementTab==='people'?'skillPeopleForm':'skillDefinitionForm');
+    const editor=form?.querySelector('.skill-person-editor');
+    if(editor) editor.classList.toggle('is-collapsed',!managementEditorOpen);
+    if(managementEditorOpen){
+      requestAnimationFrame(()=>editor?.scrollIntoView({behavior:'smooth',block:'nearest'}));
+    }
+  }
+
+  function openSkillPersonEditor(){
+    managementTab='people';
+    clearPersonForm();
+    openManagementEditor(true);
+  }
+
+  function openSkillDefinitionEditor(){
+    managementTab='skills';
+    clearSkillForm();
+    openManagementEditor(true);
+  }
+
   function editPerson(id){
     const p=peopleData[id]; if(!p)return;
     managementTab='people';
@@ -209,6 +232,7 @@
     document.getElementById('skillPersonStatus').value=p.active===false?'inactive':'active';
     const label=document.getElementById('skillPersonSaveLabel');if(label)label.textContent='حفظ بيانات العامل';
     const title=document.getElementById('skillPersonFormTitle');if(title)title.textContent='تعديل بيانات العامل';
+    openManagementEditor(true);
     document.getElementById('skillPersonName')?.focus();
   }
 
@@ -294,6 +318,8 @@
     document.getElementById('skillDefWeight').value=s.weight||1;
     document.getElementById('skillDefDomain').value=domain;
     document.getElementById('skillDefSaveLabel').textContent='حفظ التعديل';
+    managementTab='skills';
+    openManagementEditor(true);
     document.getElementById('skillDefName')?.focus();
   }
 
@@ -324,11 +350,11 @@
         }
         return '<article class="skill-person-admin-card '+(status?'':'is-inactive')+'" data-person-id="'+esc(p.id)+'"><div class="skill-person-admin-main"><span class="skill-person-admin-avatar"><i class="bx '+(isSystem?'bx-id-card':'bx-user')+'"></i></span><div><strong>'+esc(p.name)+'</strong><div class="skill-person-admin-meta"><span>'+esc(p.job||'عامل')+'</span><span>'+esc(p.employeeNo||'بدون رقم')+'</span><span>'+esc(p.shift||'بدون وردية')+'</span></div></div><span class="skill-person-status '+(status?'is-active':'is-off')+'">'+(status?'نشط':'معطل')+'</span></div><div class="skill-person-admin-actions">'+actions+'</div></article>';
       }).join('');
-      mount.innerHTML='<div class="skill-manage-list-head skill-manage-list-head-pro"><div><b>دليل العاملين</b><span>'+people.length+' ظاهر · '+manualCount+' يدوي · '+systemCount+' مستخدم نظام</span></div><label class="skill-manage-search"><i class="bx bx-search"></i><input id="skillPeopleSearch" value="'+esc(managementSearch)+'" placeholder="ابحث بالاسم أو الرقم"></label></div>'+
+      mount.innerHTML='<div class="skill-manage-list-head skill-manage-list-head-pro"><div><b>دليل العاملين</b><span>'+people.length+' ظاهر · '+manualCount+' يدوي · '+systemCount+' مستخدم نظام</span></div><div class="skill-manage-list-actions"><label class="skill-manage-search"><i class="bx bx-search"></i><input id="skillPeopleSearch" value="'+esc(managementSearch)+'" placeholder="ابحث بالاسم أو الرقم"></label><button type="button" class="skill-mini-cta skill-mini-cta-primary" onclick="window.openSkillPersonEditor()"><i class="bx bx-user-plus"></i> إضافة عامل</button></div></div>'+
         '<div class="skill-person-admin-list">'+(rows||'<div class="skill-manage-empty">لا توجد نتائج. أضف عاملًا جديدًا أو غيّر البحث.</div>')+'</div>';
     }else{
       const domain=activeDomain,list=skillsData[domain]||[];
-      mount.innerHTML='<div class="skill-manage-list-head skill-manage-list-head-pro"><div><b>كتالوج '+(domain==='tpm'?'مهارات TPM':'المهارات الفنية')+'</b><span>'+list.length+' مهارة فعالة · الوزن يؤثر على أولوية الفجوة</span></div><button type="button" class="skill-mini-cta" onclick="window.clearSkillDefinitionForm();document.getElementById(\'skillDefName\')?.focus()"><i class="bx bx-plus"></i> مهارة جديدة</button></div>'+
+      mount.innerHTML='<div class="skill-manage-list-head skill-manage-list-head-pro"><div><b>كتالوج '+(domain==='tpm'?'مهارات TPM':'المهارات الفنية')+'</b><span>'+list.length+' مهارة فعالة · الوزن يؤثر على أولوية الفجوة</span></div><div class="skill-manage-list-actions"><div class="skill-admin-domain-switch"><button type="button" class="'+(domain==='tpm'?'active':'')+'" onclick="window.setSkillMatrixDomain(\'tpm\');window.openSkillManagement(\'skills\')">TPM</button><button type="button" class="'+(domain==='technical'?'active':'')+'" onclick="window.setSkillMatrixDomain(\'technical\');window.openSkillManagement(\'skills\')">فني</button></div><button type="button" class="skill-mini-cta skill-mini-cta-primary" onclick="window.openSkillDefinitionEditor()"><i class="bx bx-plus"></i> مهارة جديدة</button></div></div>'+
         (list.length?'<div class="skill-skill-admin-list">'+list.map(s=>'<article class="skill-skill-admin-card"><div class="skill-skill-admin-icon"><i class="bx '+(domain==='tpm'?'bx-brain':'bx-wrench')+'"></i></div><div class="skill-skill-admin-copy"><strong>'+esc(s.name)+'</strong><span>'+esc(domain==='tpm'?'TPM':'فني')+' · وزن '+Number(s.weight||1).toFixed(1)+'</span></div><div class="skill-row-actions"><button class="skill-icon-btn" title="تعديل" onclick="window.editSkillDefinition(\''+domain+'\',\''+esc(s.id)+'\')"><i class="bx bx-edit-alt"></i></button><button class="skill-icon-danger" title="حذف نهائي" onclick="window.removeSkillDefinition(\''+domain+'\',\''+esc(s.id)+'\')"><i class="bx bx-trash"></i></button></div></article>').join('')+'</div>':
         '<div class="skill-manage-empty">لا توجد مهارات في هذا المجال.</div>');
     }
@@ -337,15 +363,16 @@
   function openManageModal(tab='people') {
     const modal=document.getElementById('skillManagementModal');if(!modal)return;
     if(!canEdit()){notify('⚠️ لا تملك صلاحية الإدارة.');return;}
-    managementTab=tab;managementSearch='';modal.style.display='flex'; const deptEl=document.getElementById('skillManageDeptName'); if(deptEl)deptEl.textContent=currentDept()||'القسم';
+    managementTab=tab;managementSearch='';managementEditorOpen=false;modal.style.display='flex';document.body.classList.add('skill-management-open'); const deptEl=document.getElementById('skillManageDeptName'); if(deptEl)deptEl.textContent=currentDept()||'القسم';
     document.querySelectorAll('[data-skill-manage-tab]').forEach(b=>b.classList.toggle('active',b.dataset.skillManageTab===tab));
     document.getElementById('skillPeopleForm').style.display=tab==='people'?'grid':'none';
     document.getElementById('skillDefinitionForm').style.display=tab==='skills'?'grid':'none';
     if(tab==='skills')clearSkillForm(); else clearPersonForm();
+    openManagementEditor(false);
     renderManagement();
   }
 
-  function closeManageModal(){const modal=document.getElementById('skillManagementModal');if(modal)modal.style.display='none';}
+  function closeManageModal(){const modal=document.getElementById('skillManagementModal');if(modal)modal.style.display='none';managementEditorOpen=false;document.body.classList.remove('skill-management-open');}
   function render(){renderKPIs();renderMatrix();renderTrainingPlan();}
 
   window.renderSkillMatrix=render;
@@ -365,6 +392,9 @@
   window.editSkillPerson=editPerson;
   window.toggleSkillPersonStatus=togglePersonActive;
   window.clearSkillPersonForm=clearPersonForm;
+  window.openSkillPersonEditor=openSkillPersonEditor;
+  window.openSkillDefinitionEditor=openSkillDefinitionEditor;
+  window.closeSkillManagement=closeManageModal;
   window.removeSkillPerson=removePerson;
   window.saveSkillDefinition=saveSkillDefinition;
   window.editSkillDefinition=editSkill;
@@ -381,6 +411,7 @@
 
   document.addEventListener('input',e=>{if(e.target?.id==='skillMatrixSearch'){search=e.target.value||'';renderMatrix();} if(e.target?.id==='skillPeopleSearch'){managementSearch=e.target.value||'';renderManagement();}});
   document.addEventListener('click',e=>{
+    if(e.target?.id==='skillManagementModal') closeManageModal();
     const b=e.target.closest?.('[data-skill-domain]');if(b)window.setSkillMatrixDomain(b.dataset.skillDomain);
     const m=e.target.closest?.('[data-skill-manage-tab]');if(m)openManageModal(m.dataset.skillManageTab);
      const action=e.target.closest?.('[data-skill-person-action]');
@@ -390,6 +421,12 @@
        else if(action.dataset.skillPersonAction==='toggle')window.toggleSkillPersonStatus(id);
        else if(action.dataset.skillPersonAction==='delete')window.removeSkillPerson(id);
      }
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape' && document.getElementById('skillManagementModal')?.style.display==='flex'){
+      if(managementEditorOpen){openManagementEditor(false);return;}
+      closeManageModal();
+    }
   });
   document.addEventListener('DOMContentLoaded',()=>{if(document.getElementById('jhSkillMatrixScreen')&&currentDept())load();});
   window.addEventListener('tpm:jh-skill-matrix-open',()=>{if(currentDept()){const title=document.getElementById('jhSkillDeptName');if(title)title.textContent=currentDept();load();}});

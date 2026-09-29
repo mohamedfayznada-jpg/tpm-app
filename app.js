@@ -303,6 +303,7 @@ firebase.auth().onAuthStateChanged(async user => {
             role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
             currentUser = { uid: user.uid, name: savedName, username: finalUsername, role: role, status: status };
             window.currentUser = currentUser;
+            window.dispatchEvent(new CustomEvent('tpm:auth-ready'));
         }
 
         document.querySelectorAll('.btn-role-admin').forEach(el => el.style.display = currentUser.role === 'admin' ? 'block' : 'none');

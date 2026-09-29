@@ -1,4 +1,4 @@
-const CACHE_NAME = 'factory-os-cache-v12';
+const CACHE_NAME = 'factory-os-cache-v13';
 const APP_SHELL = [
   '/',
   '/index.html',

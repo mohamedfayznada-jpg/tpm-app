@@ -1666,3 +1666,76 @@ body.skill-management-open{overflow:hidden!important}
     transition:none!important;
   }
 }
+
+
+/* Skill Matrix V6 — runtime state + unmistakable mobile controls */
+#jhSkillMatrixScreen .skill-matrix-data-state{
+  margin:10px 16px 0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border:1px solid #d9e6eb;
+  border-radius:12px;
+  background:#f7fbfc;
+  color:#49616d;
+  font-size:10px;
+}
+#jhSkillMatrixScreen .skill-matrix-data-state[hidden]{display:none!important}
+#jhSkillMatrixScreen .skill-matrix-data-state>i{font-size:18px;color:#1977a7;flex:0 0 auto}
+#jhSkillMatrixScreen .skill-matrix-data-state>div{min-width:0;flex:1}
+#jhSkillMatrixScreen .skill-matrix-data-state strong{display:block;font-size:10px;color:#263b46}
+#jhSkillMatrixScreen .skill-matrix-data-state small{display:block;margin-top:2px;color:#71838d;font-size:8px;line-height:1.5}
+#jhSkillMatrixScreen .skill-matrix-data-state.error{border-color:#f0cfd2;background:#fff7f7}
+#jhSkillMatrixScreen .skill-matrix-data-state.error>i{color:#c43d48}
+#jhSkillMatrixScreen .skill-matrix-data-state.error button{flex:0 0 auto;min-height:32px;padding:0 9px;font-size:8px}
+#jhSkillMatrixScreen .skill-matrix-data-state.loading>i{animation:skillMatrixSpin 1s linear infinite}
+#skillManagementModal .skill-manage-close{
+  min-width:92px;
+  padding:0 10px;
+  gap:6px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+  font-family:inherit;
+  font-weight:900;
+}
+#skillManagementModal .skill-manage-close span{font-size:9px}
+@keyframes skillMatrixSpin{to{transform:rotate(360deg)}}
+
+@media(max-width:760px){
+  #jhSkillMatrixScreen .skill-matrix-data-state{
+    margin:7px 8px 0;
+    padding:8px 9px;
+    border-radius:10px;
+    font-size:8px;
+  }
+  #jhSkillMatrixScreen .skill-matrix-data-state strong{font-size:8px}
+  #jhSkillMatrixScreen .skill-matrix-data-state small{font-size:7px}
+  #jhSkillMatrixScreen .skill-matrix-data-state button{
+    min-height:34px!important;
+    padding-inline:8px!important;
+    border-radius:8px!important;
+    white-space:nowrap;
+  }
+  #skillManagementModal .skill-manage-head{
+    position:sticky!important;
+    top:0!important;
+    z-index:50!important;
+  }
+  #skillManagementModal .skill-manage-close{
+    position:sticky!important;
+    top:0!important;
+    z-index:60!important;
+    min-width:86px;
+    min-height:36px;
+    border-radius:10px;
+    background:#fff;
+  }
+  #skillManagementModal .skill-manage-close span{display:inline!important;font-size:8px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  #jhSkillMatrixScreen .skill-matrix-data-state.loading>i{animation:none}
+}

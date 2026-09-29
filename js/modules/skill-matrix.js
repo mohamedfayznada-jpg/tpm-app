@@ -383,6 +383,13 @@
   document.addEventListener('click',e=>{
     const b=e.target.closest?.('[data-skill-domain]');if(b)window.setSkillMatrixDomain(b.dataset.skillDomain);
     const m=e.target.closest?.('[data-skill-manage-tab]');if(m)openManageModal(m.dataset.skillManageTab);
+     const action=e.target.closest?.('[data-skill-person-action]');
+     if(action){
+       const id=action.dataset.personId;
+       if(action.dataset.skillPersonAction==='edit')window.editSkillPerson(id);
+       else if(action.dataset.skillPersonAction==='toggle')window.toggleSkillPersonStatus(id);
+       else if(action.dataset.skillPersonAction==='delete')window.removeSkillPerson(id);
+     }
   });
   document.addEventListener('DOMContentLoaded',()=>{if(document.getElementById('jhSkillMatrixScreen')&&currentDept())load();});
   window.addEventListener('tpm:jh-skill-matrix-open',()=>{if(currentDept()){const title=document.getElementById('jhSkillDeptName');if(title)title.textContent=currentDept();load();}});

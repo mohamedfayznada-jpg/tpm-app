@@ -252,14 +252,14 @@
         const data={...existing,name,job,employeeNo,phone,shift,active,updatedAt:Date.now(),updatedByUid:window.currentUser?.uid||'',updatedByName:window.currentUser?.name||''};
         await firebase.database().ref(metaPath()+'/people/'+id).update(data);
         peopleData[id]=data;
-        clearPersonForm();render();renderManagement();
+        clearPersonForm();openManagementEditor(false);render();renderManagement();
         notify('✅ تم تحديث بيانات العامل.');
       }else{
         const newId='person_'+Date.now()+'_'+Math.floor(Math.random()*1000);
         const data={id:newId,name,job,employeeNo,phone,shift,active:true,createdAt:Date.now(),createdByUid:window.currentUser?.uid||'',createdByName:window.currentUser?.name||''};
         await firebase.database().ref(metaPath()+'/people/'+newId).set(data);
         peopleData[newId]=data;
-        clearPersonForm();render();renderManagement();
+        clearPersonForm();openManagementEditor(false);render();renderManagement();
         notify('✅ تم إضافة العامل إلى قسم '+currentDept());
       }
     }catch(error){console.error('[Skill Matrix] save person failed',error);notify('⚠️ تعذر حفظ بيانات العامل.');}
@@ -299,7 +299,7 @@
     await firebase.database().ref(metaPath()+'/skills/'+domain+'/'+skillId).set(skill);
     skillsData[domain]=[...skillsData[domain].filter(s=>s.id!==skillId),skill];
     activeDomain=domain;
-    clearSkillForm();render();openManageModal('skills');notify(id?'✅ تم تعديل المهارة.':'✅ تمت إضافة المهارة.');
+    clearSkillForm();openManagementEditor(false);render();openManageModal('skills');notify(id?'✅ تم تعديل المهارة.':'✅ تمت إضافة المهارة.');
   }
 
   async function removeSkill(domain,id) {
@@ -388,6 +388,7 @@
   window.saveSkillScore=saveSkillScore;
   window.openSkillManagement=openManageModal;
   window.closeSkillManagement=closeManageModal;
+  window.closeSkillManagementEditor=()=>openManagementEditor(false);
   window.addSkillPerson=addPerson;
   window.editSkillPerson=editPerson;
   window.toggleSkillPersonStatus=togglePersonActive;

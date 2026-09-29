@@ -33,7 +33,7 @@
     <link rel="stylesheet" href="css/jh-command-center.css?v=8">
     <link rel="stylesheet" href="css/tpm-teams-premium.css?v=2">
     <link rel="stylesheet" href="css/skill-matrix.css?v=20260929-skill-v1">\n    <link rel="stylesheet" href="css/skill-matrix-v3.css?v=20260929-skill-v6">
-</head>
+<link rel="stylesheet" href="css/external-audit-control-center.css?v=1">\n</head>
 <body>
     
     <!-- ==========================================
@@ -69,6 +69,8 @@
             <div class="side-item" data-screen="tagsScreen" onclick="showScreen('tagsScreen'); renderTags(); toggleSidebar();"><div class="side-icon"><i class='bx bx-purchase-tag-alt'></i></div>التاجات والأعطال</div>
             <div class="side-item" data-screen="tpmTeamsScreen" onclick="showScreen('tpmTeamsScreen'); renderTPMTeams(); toggleSidebar();"><div class="side-icon"><i class='bx bx-group'></i></div>فرق TPM</div>
             <div class="side-item" data-screen="historyScreen" onclick="showScreen('historyScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bar-chart-alt-2'></i></div>تقارير المراجعات</div>
+            <div class="side-item" data-screen="externalAuditScreen" onclick="showScreen('externalAuditScreen'); window.renderExternalAudit?.(); toggleSidebar();"><div class="side-icon"><i class='bx bx-shield-quarter'></i></div>المراجعة الخارجية</div>
+            
             <div class="side-item" data-screen="kaizenScreen" onclick="showScreen('kaizenScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-bulb'></i></div>مجتمع كايزن</div>
             <div class="side-item btn-role-admin" onclick="showScreen('knowledgeScreen'); toggleSidebar();"><div class="side-icon"><i class='bx bx-brain'></i></div>عقل المصنع</div>
             <div class="side-item" data-screen="settingsScreen" onclick="showScreen('settingsScreen'); renderProfileAndSettings(); toggleSidebar();"><div class="side-icon"><i class='bx bx-user-circle'></i></div>حسابي والإعدادات</div>
@@ -1581,10 +1583,17 @@
         <div id="myActivityTimeline" class="grid-layout"></div>
     </div>
 
+
+    <section id="externalAuditScreen" class="screen" style="display:none;">
+      <div id="externalAuditRoot"></div>
+    </section>
+
     <!-- Scripts Integration -->
     <script type="module" src="js/main.js?v=20260927-tpm-route-fix1"></script>
     <script src="tpm_data.js" defer></script>
     <script src="tpm_teams.js?v=20260927-teams-stable" defer></script>
+    <script src="js/modules/external-audit-seed.js?v=20260929-audit-seed1" defer></script>
+    <script src="js/modules/external-audit-report.js?v=20260929-audit-ui1" defer></script>
     <script src="js/modules/tpm-operating-model.js?v=3" defer></script>
 <script src="js/modules/audit-engine.js?v=1" defer></script>
 <script src="js/modules/tasks-core.js?v=1" defer></script>

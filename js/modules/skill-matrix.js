@@ -31,6 +31,8 @@
   let managementTab = 'people';
   let managementSearch = '';
   let managementEditorOpen = false;
+  let dataAccessDenied = false;
+  let loadInFlight = false;
 
   const esc = v => window.escapeTPM ? window.escapeTPM(v) : String(v ?? '').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
   const currentDept = () => {
@@ -39,10 +41,29 @@
   };
   const dbPath = () => currentDept() ? DB_ROOT + '/' + currentDept() : DB_ROOT;
   const metaPath = () => dbPath() + '/_meta';
-  const canEdit = () => ['admin','engineer','auditor'].includes(window.currentUser?.role);
+  const canEdit = () => !dataAccessDenied && ['admin','engineer','auditor'].includes(window.currentUser?.role);
   const skillList = () => skillsData[activeDomain] || [];
 
   function notify(msg){ window.showToast?.(msg); }
+
+  function setDataState(kind, message, detail=''){
+    const mount=document.getElementById('skillMatrixDataState');
+    if(!mount)return;
+    mount.className='skill-matrix-data-state '+(kind||'');
+    if(!message){mount.hidden=true;mount.innerHTML='';return;}
+    mount.hidden=false;
+    const icon=kind==='error'?'bx-error-circle':kind==='warning'?'bx-lock-alt':kind==='loading'?'bx-loader-alt':'bx-check-circle';
+    mount.innerHTML='<i class="bx '+icon+'"></i><div><strong>'+esc(message)+'</strong>'+(detail?'<small>'+esc(detail)+'</small>':'')+'</div>'+(kind==='error'?'<button type="button" class="btn btn-outline" onclick="window.retrySkillMatrixLoad?.()">إعادة المحاولة</button>':'');
+  }
+
+  function authUser(){
+    try{return window.firebase?.auth?.()?.currentUser || null;}catch(_){return null;}
+  }
+
+  function currentUserUid(){
+    return authUser()?.uid || window.currentUser?.uid || '';
+  }
+
 
   function seedDefaults(raw) {
     const result = raw && typeof raw === 'object' ? raw : {};
@@ -164,7 +185,16 @@
   }
 
   async function load() {
-    if(!window.firebase?.database || !window.currentUser?.uid || !currentDept())return;
+    if(loadInFlight)return;
+    const dept=currentDept();
+    const uid=currentUserUid();
+    if(!uid || !dept){
+      setDataState('loading','جاري تجهيز صلاحيات Skill Matrix…','سيتم تحميل البيانات فور اكتمال تسجيل الدخول واختيار القسم.');
+      return;
+    }
+    loadInFlight=true;
+    dataAccessDenied=false;
+    setDataState('loading','جاري تحميل بيانات Skill Matrix…');
     try{
       const snap=await firebase.database().ref(dbPath()).once('value');
       const raw=snap.val()||{};
@@ -173,12 +203,38 @@
       skillsData={tpm:[],technical:[]};
       const seeded=seedDefaults(raw._meta?.skills);
       ['tpm','technical'].forEach(domain=>skillsData[domain]=Object.values(seeded[domain]||{}).filter(s=>s&&s.active!==false));
-      // Keep the catalog persistent so edits are department-specific and survive reloads.
+
       if(canEdit() && (!raw._meta?.skills || !raw._meta.skills.tpm || !raw._meta.skills.technical)){
-        await firebase.database().ref(metaPath()+'/skills').set(seeded);
+        try{
+          await firebase.database().ref(metaPath()+'/skills').set(seeded);
+        }catch(seedError){
+          console.warn('[Skill Matrix] default catalog write skipped:',seedError);
+        }
       }
-      window.renderSkillMatrix?.();
-    }catch(error){console.error('[Skill Matrix] load failed',error);notify('⚠️ تعذر تحميل مصفوفة المهارات.');}
+
+      setDataState('ready');
+      render();
+    }catch(error){
+      const denied=String(error?.code||'').toLowerCase().includes('permission') || String(error?.message||'').toLowerCase().includes('permission_denied');
+      dataAccessDenied=denied;
+      matrixData={};
+      peopleData={};
+      skillsData={
+        tpm:DEFAULT_SKILLS.tpm.map(s=>({...s,active:true})),
+        technical:DEFAULT_SKILLS.technical.map(s=>({...s,active:true}))
+      };
+      render();
+      if(denied){
+        setDataState('error','قاعدة البيانات رفضت قراءة Skill Matrix.','ملف الواجهة سليم، لكن قواعد Firebase المنشورة لا تمنح الوصول لهذا المسار بعد. بعد نشر firebase.rules.json أعد المحاولة.');
+        notify('⚠️ Skill Matrix يحتاج نشر قواعد Firebase الخاصة بالـ skill_matrix.');
+      }else{
+        setDataState('error','تعذر تحميل Skill Matrix.','تحقق من الاتصال ثم أعد المحاولة.');
+        notify('⚠️ تعذر تحميل مصفوفة المهارات.');
+      }
+      console.warn('[Skill Matrix] load failed',error);
+    }finally{
+      loadInFlight=false;
+    }
   }
 
   async function saveSkillScore(personId,domain,skillId,value) {
@@ -249,14 +305,14 @@
     try{
       if(id){
         const existing=peopleData[id]; if(!existing)return notify('⚠️ العامل المطلوب غير موجود.');
-        const data={...existing,name,job,employeeNo,phone,shift,active,updatedAt:Date.now(),updatedByUid:window.currentUser?.uid||'',updatedByName:window.currentUser?.name||''};
+        const data={...existing,name,job,employeeNo,phone,shift,active,updatedAt:Date.now(),updatedByUid:currentUserUid(),updatedByName:window.currentUser?.name||''};
         await firebase.database().ref(metaPath()+'/people/'+id).update(data);
         peopleData[id]=data;
         clearPersonForm();openManagementEditor(false);render();renderManagement();
         notify('✅ تم تحديث بيانات العامل.');
       }else{
         const newId='person_'+Date.now()+'_'+Math.floor(Math.random()*1000);
-        const data={id:newId,name,job,employeeNo,phone,shift,active:true,createdAt:Date.now(),createdByUid:window.currentUser?.uid||'',createdByName:window.currentUser?.name||''};
+        const data={id:newId,name,job,employeeNo,phone,shift,active:true,createdAt:Date.now(),createdByUid:currentUserUid(),createdByName:window.currentUser?.name||''};
         await firebase.database().ref(metaPath()+'/people/'+newId).set(data);
         peopleData[newId]=data;
         clearPersonForm();openManagementEditor(false);render();renderManagement();
@@ -270,7 +326,7 @@
     const p=peopleData[id]; if(!p)return;
     const active=p.active===false;
     try{
-      await firebase.database().ref(metaPath()+'/people/'+id).update({active,updatedAt:Date.now(),updatedByUid:window.currentUser?.uid||'',updatedByName:window.currentUser?.name||''});
+      await firebase.database().ref(metaPath()+'/people/'+id).update({active,updatedAt:Date.now(),updatedByUid:currentUserUid(),updatedByName:window.currentUser?.name||''});
       peopleData[id]={...p,active};
       render();renderManagement();
       notify(active?'✅ تم تفعيل العامل.':'⏸️ تم تعطيل العامل. درجاته محفوظة.');
@@ -295,20 +351,30 @@
     const domain=document.getElementById('skillDefDomain')?.value||activeDomain;
     if(name.length<2)return notify('⚠️ اكتب اسم المهارة.');
     const skillId=id || (domain==='tpm'?'tpm-':'tech-')+Date.now();
-    const skill={id:skillId,name,weight:Number.isFinite(weight)&&weight>0?Math.min(5,weight):1,active:true,updatedAt:Date.now(),updatedByUid:window.currentUser?.uid||'',updatedByName:window.currentUser?.name||''};
-    await firebase.database().ref(metaPath()+'/skills/'+domain+'/'+skillId).set(skill);
-    skillsData[domain]=[...skillsData[domain].filter(s=>s.id!==skillId),skill];
-    activeDomain=domain;
-    clearSkillForm();openManagementEditor(false);render();openManageModal('skills');notify(id?'✅ تم تعديل المهارة.':'✅ تمت إضافة المهارة.');
+    const skill={id:skillId,name,weight:Number.isFinite(weight)&&weight>0?Math.min(5,weight):1,active:true,updatedAt:Date.now(),updatedByUid:currentUserUid(),updatedByName:window.currentUser?.name||''};
+    try{
+      await firebase.database().ref(metaPath()+'/skills/'+domain+'/'+skillId).set(skill);
+      skillsData[domain]=[...skillsData[domain].filter(s=>s.id!==skillId),skill];
+      activeDomain=domain;
+      clearSkillForm();openManagementEditor(false);render();openManageModal('skills');notify(id?'✅ تم تعديل المهارة.':'✅ تمت إضافة المهارة.');
+    }catch(error){
+      console.warn('[Skill Matrix] save skill failed',error);
+      notify('⚠️ تعذر حفظ المهارة. راجع صلاحيات Firebase ثم أعد المحاولة.');
+    }
   }
 
   async function removeSkill(domain,id) {
     if(!canEdit())return;
     const s=(skillsData[domain]||[]).find(x=>x.id===id);if(!s)return;
-    if(!confirm('حذف مهارة «'+s.name+'» من كتالوج هذا القسم؟\nلن يتم حذف درجاتها القديمة تلقائيًا.'))return;
-    await firebase.database().ref(metaPath()+'/skills/'+domain+'/'+id).remove();
-    skillsData[domain]=skillsData[domain].filter(x=>x.id!==id);
-    render();openManageModal('skills');notify('🗑️ تم حذف المهارة.');
+    if(!confirm('حذف مهارة «'+s.name+'» من كتالوج هذا القسم؟\\nلن يتم حذف درجاتها القديمة تلقائيًا.'))return;
+    try{
+      await firebase.database().ref(metaPath()+'/skills/'+domain+'/'+id).remove();
+      skillsData[domain]=skillsData[domain].filter(x=>x.id!==id);
+      render();openManageModal('skills');notify('🗑️ تم حذف المهارة.');
+    }catch(error){
+      console.warn('[Skill Matrix] delete skill failed',error);
+      notify('⚠️ تعذر حذف المهارة. راجع صلاحيات Firebase ثم أعد المحاولة.');
+    }
   }
 
   function editSkill(domain,id) {
@@ -401,6 +467,7 @@
   window.editSkillDefinition=editSkill;
   window.removeSkillDefinition=removeSkill;
   window.clearSkillDefinitionForm=clearSkillForm;
+  window.retrySkillMatrixLoad=load;
 
   window.exportSkillTrainingPlan=function(){
     const rows=[['العامل','القسم','المجال','المهارة','المستوى الحالي','المستوى المستهدف','الفجوة','الأولوية']];
@@ -430,5 +497,6 @@
     }
   });
   document.addEventListener('DOMContentLoaded',()=>{if(document.getElementById('jhSkillMatrixScreen')&&currentDept())load();});
+  window.addEventListener('tpm:auth-ready',()=>{if(document.getElementById('jhSkillMatrixScreen')?.classList.contains('active'))load();});
   window.addEventListener('tpm:jh-skill-matrix-open',()=>{if(currentDept()){const title=document.getElementById('jhSkillDeptName');if(title)title.textContent=currentDept();load();}});
 })();

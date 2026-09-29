@@ -25,3 +25,25 @@
 @media(max-width:520px){.ea-team-grid{grid-template-columns:1fr}.ea-kpis{grid-template-columns:1fr 1fr}.ea-hero h1{font-size:28px}.ea-search{min-width:100%}.ea-select{flex:1}.ea-tabs{width:100%;overflow:auto}}
 @media(prefers-reduced-motion:reduce){.ea-orbit{animation:none}.ea-opportunity,.ea-team-card{transition:none}}
 @media print{#externalAuditScreen{padding:0!important;background:#fff}.ea-toolbar,.ea-hero-actions,.ea-plan-btn{display:none!important}.ea-section,.ea-hero{box-shadow:none;border:1px solid #ddd}.ea-opportunity{break-inside:avoid}}
+
+/* Runtime resilience: the page remains navigable when a bundled report seed is unavailable. */
+.ea-seed-warning{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:18px 0 0;
+  padding:14px 16px;
+  border:1px solid rgba(245,158,11,.28);
+  border-radius:16px;
+  background:rgba(255,251,235,.94);
+  color:#7c4a03;
+  box-shadow:0 8px 24px rgba(15,23,42,.06);
+}
+.ea-seed-warning i{font-size:24px;flex:0 0 auto}
+.ea-seed-warning div{display:grid;gap:3px}
+.ea-seed-warning b{font-size:13px}
+.ea-seed-warning span{font-size:12px;line-height:1.65}
+@media(max-width:640px){
+  .ea-seed-warning{align-items:flex-start;border-radius:14px;padding:12px}
+  .ea-seed-warning span{font-size:11px}
+}

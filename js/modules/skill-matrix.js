@@ -314,7 +314,15 @@
       const rows=people.map(p=>{
         const isSystem=!!p.systemUid;
         const status=p.active!==false;
-        return '<article class="skill-person-admin-card '+(status?'':'is-inactive')+'"><div class="skill-person-admin-main"><span class="skill-person-admin-avatar"><i class="bx '+(isSystem?'bx-id-card':'bx-user')+'"></i></span><div><strong>'+esc(p.name)+'</strong><div class="skill-person-admin-meta"><span>'+esc(p.job||'عامل')+'</span><span>'+esc(p.employeeNo||'بدون رقم')+'</span><span>'+esc(p.shift||'بدون وردية')+'</span></div></div><span class="skill-person-status '+(status?'is-active':'is-off')+'">'+(status?'نشط':'معطل')+'</span></div><div class="skill-person-admin-actions">'+(isSystem?'<span class="skill-system-note"><i class="bx bx-lock-alt"></i> من مستخدمي النظام</span>':'<button type="button" class="skill-icon-btn" title="تعديل البيانات" onclick="window.editSkillPerson(\''+esc(p.id)+'\')"><i class="bx bx-edit-alt"></i></button><button type="button" class="skill-icon-btn '+(status?'is-pause':'is-play')+'" title="'+(status?'تعطيل':'تفعيل')+'" onclick="window.toggleSkillPersonStatus(\''+esc(p.id)+'\')"><i class="bx '+(status?'bx-pause':'bx-play')+'"></i></button>')}</div></article>';
+        let actions='';
+        if(isSystem){
+          actions='<span class="skill-system-note"><i class="bx bx-lock-alt"></i> من مستخدمي النظام</span>';
+        }else{
+          actions='<button type="button" class="skill-icon-btn" title="تعديل البيانات" data-skill-person-action="edit" data-person-id="'+esc(p.id)+'"><i class="bx bx-edit-alt"></i></button>'+
+            '<button type="button" class="skill-icon-btn '+(status?'is-pause':'is-play')+'" title="'+(status?'تعطيل':'تفعيل')+'" data-skill-person-action="toggle" data-person-id="'+esc(p.id)+'"><i class="bx '+(status?'bx-pause':'bx-play')+'"></i></button>'+
+            '<button type="button" class="skill-icon-danger" title="حذف العامل" data-skill-person-action="delete" data-person-id="'+esc(p.id)+'"><i class="bx bx-trash"></i></button>';
+        }
+        return '<article class="skill-person-admin-card '+(status?'':'is-inactive')+'" data-person-id="'+esc(p.id)+'"><div class="skill-person-admin-main"><span class="skill-person-admin-avatar"><i class="bx '+(isSystem?'bx-id-card':'bx-user')+'"></i></span><div><strong>'+esc(p.name)+'</strong><div class="skill-person-admin-meta"><span>'+esc(p.job||'عامل')+'</span><span>'+esc(p.employeeNo||'بدون رقم')+'</span><span>'+esc(p.shift||'بدون وردية')+'</span></div></div><span class="skill-person-status '+(status?'is-active':'is-off')+'">'+(status?'نشط':'معطل')+'</span></div><div class="skill-person-admin-actions">'+actions+'</div></article>';
       }).join('');
       mount.innerHTML='<div class="skill-manage-list-head skill-manage-list-head-pro"><div><b>دليل العاملين</b><span>'+people.length+' ظاهر · '+manualCount+' يدوي · '+systemCount+' مستخدم نظام</span></div><label class="skill-manage-search"><i class="bx bx-search"></i><input id="skillPeopleSearch" value="'+esc(managementSearch)+'" placeholder="ابحث بالاسم أو الرقم"></label></div>'+
         '<div class="skill-person-admin-list">'+(rows||'<div class="skill-manage-empty">لا توجد نتائج. أضف عاملًا جديدًا أو غيّر البحث.</div>')+'</div>';

@@ -970,3 +970,353 @@
   #skillManagementModal .skill-management-modal,
   #jhSkillMatrixScreen .skill-mobile-chevron{transition:none;animation:none}
 }
+
+
+/* Skill Matrix V4 — mobile command surface + cleaner administration */
+#jhSkillMatrixScreen .skill-mobile-person{
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+#jhSkillMatrixScreen .skill-mobile-person[open]{
+  border-color:#bfd8e3;
+  box-shadow:0 10px 24px rgba(23,61,89,.08);
+}
+#jhSkillMatrixScreen .skill-mobile-person summary:focus-visible,
+#skillManagementModal button:focus-visible,
+#skillManagementModal input:focus-visible,
+#skillManagementModal select:focus-visible{
+  outline:3px solid rgba(30,136,229,.22);
+  outline-offset:2px;
+}
+
+@media(min-width:761px){
+  #skillManagementModal #skillPeopleForm,
+  #skillManagementModal #skillDefinitionForm{
+    display:grid;
+    grid-template-columns:minmax(330px,.78fr) minmax(0,1.22fr);
+    gap:0 16px;
+    align-content:start;
+  }
+  #skillManagementModal .skill-manage-section-intro{
+    grid-column:1/-1;
+  }
+  #skillManagementModal .skill-person-editor{
+    grid-column:1;
+    grid-row:auto;
+    margin-bottom:0;
+  }
+  #skillManagementModal #skillPeopleList,
+  #skillManagementModal #skillSkillsList{
+    grid-column:2;
+    min-width:0;
+  }
+  #skillManagementModal .skill-manage-form{
+    padding:16px 18px 20px;
+  }
+  #skillManagementModal .skill-person-admin-card,
+  #skillManagementModal .skill-skill-admin-card{
+    min-height:58px;
+  }
+}
+
+@media(max-width:760px){
+  #jhSkillMatrixScreen{
+    padding:76px 8px calc(22px + env(safe-area-inset-bottom));
+    background:
+      radial-gradient(circle at 92% 0,rgba(37,137,205,.08),transparent 30%),
+      linear-gradient(180deg,#f8fbfc 0%,#eef4f6 100%);
+  }
+  #jhSkillMatrixScreen .jh-skill-page-hero{
+    margin-bottom:9px;
+    padding:15px 13px;
+    border-radius:16px;
+    box-shadow:0 10px 26px rgba(20,35,45,.06);
+  }
+  #jhSkillMatrixScreen .jh-skill-kicker{font-size:8px}
+  #jhSkillMatrixScreen .jh-skill-hero-copy h2{
+    margin-top:6px;
+    font-size:20px;
+    letter-spacing:-.35px;
+  }
+  #jhSkillMatrixScreen .jh-skill-hero-copy p{
+    max-width:none;
+    font-size:9px;
+    line-height:1.7;
+  }
+  #jhSkillMatrixScreen .jh-skill-page-actions{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+  }
+  #jhSkillMatrixScreen .jh-skill-page-actions .btn{
+    min-height:40px;
+    border-radius:11px;
+    font-size:9px;
+    box-shadow:none;
+  }
+  #jhSkillMatrixScreen .skill-matrix-kpis{
+    margin-bottom:9px;
+    gap:6px;
+  }
+  #jhSkillMatrixScreen .skill-kpi{
+    min-height:58px;
+    padding:8px 9px;
+    border-radius:12px;
+    box-shadow:0 7px 16px rgba(20,35,45,.045);
+  }
+  #jhSkillMatrixScreen .skill-kpi>i{
+    width:29px;height:29px;flex-basis:29px;
+    border-radius:8px;
+    font-size:14px;
+  }
+  #jhSkillMatrixScreen .skill-kpi strong{font-size:14px}
+  #jhSkillMatrixScreen .skill-kpi span{font-size:7.5px}
+  #jhSkillMatrixScreen .jh-skill-page-card{
+    border-radius:15px;
+    box-shadow:0 10px 25px rgba(20,35,45,.055);
+  }
+  #jhSkillMatrixScreen .skill-matrix-toolbar{
+    gap:7px;
+    padding:8px;
+  }
+  #jhSkillMatrixScreen .skill-domain-tabs button{
+    min-height:37px;
+    border-radius:10px;
+    font-size:9px;
+  }
+  #jhSkillMatrixScreen .skill-matrix-tools{gap:6px}
+  #jhSkillMatrixScreen .skill-search{
+    min-height:38px;
+    border-radius:10px;
+  }
+  #jhSkillMatrixScreen .skill-search input{font-size:10px}
+  #jhSkillMatrixScreen .skill-scale{
+    padding:0 2px;
+    font-size:7.5px;
+  }
+  #jhSkillMatrixScreen .skill-matrix-context{
+    gap:7px;
+    padding:9px 10px;
+  }
+  #jhSkillMatrixScreen .skill-matrix-context h3{font-size:13px}
+  #jhSkillMatrixScreen .skill-target-chip{
+    padding:6px 8px;
+    font-size:8px;
+  }
+  #jhSkillMatrixScreen .skill-matrix-mobile{padding:7px}
+  #jhSkillMatrixScreen .skill-mobile-hint{
+    margin-bottom:7px;
+    padding:7px 9px;
+    border-radius:9px;
+    font-size:8px;
+  }
+  #jhSkillMatrixScreen .skill-mobile-person{
+    margin-bottom:6px;
+    border-radius:12px;
+  }
+  #jhSkillMatrixScreen .skill-mobile-person summary{
+    grid-template-columns:34px minmax(0,1fr) 40px 40px 18px;
+    min-height:58px;
+    gap:5px;
+    padding:7px 8px;
+  }
+  #jhSkillMatrixScreen .skill-mobile-avatar{
+    width:32px;height:32px;
+    border-radius:9px;
+    font-size:15px;
+  }
+  #jhSkillMatrixScreen .skill-mobile-identity strong{font-size:10px}
+  #jhSkillMatrixScreen .skill-mobile-identity small{font-size:7px}
+  #jhSkillMatrixScreen .skill-mobile-summary{
+    min-height:31px;
+    padding:4px 2px;
+  }
+  #jhSkillMatrixScreen .skill-mobile-summary b{font-size:10px}
+  #jhSkillMatrixScreen .skill-mobile-summary small{font-size:6.5px}
+  #jhSkillMatrixScreen .skill-mobile-body{padding:0 8px 8px}
+  #jhSkillMatrixScreen .skill-mobile-meta{padding:7px 0;gap:4px}
+  #jhSkillMatrixScreen .skill-mobile-meta span{
+    padding:4px 6px;
+    font-size:7px;
+  }
+  #jhSkillMatrixScreen .skill-mobile-list{gap:5px}
+  #jhSkillMatrixScreen .skill-mobile-skill{
+    grid-template-columns:minmax(0,1fr) 112px;
+    min-height:38px;
+    gap:6px;
+    padding:5px 7px;
+    border-radius:8px;
+  }
+  #jhSkillMatrixScreen .skill-mobile-skill span{font-size:8px}
+  #jhSkillMatrixScreen .skill-mobile-skill select{
+    min-height:30px;
+    border-radius:7px;
+    font-size:8px;
+  }
+
+  /* Administration becomes a true mobile bottom-sheet workspace. */
+  #skillManagementModal{
+    padding:0;
+    align-items:flex-end;
+    overflow:hidden;
+  }
+  #skillManagementModal .skill-management-modal{
+    width:100%;
+    max-width:none;
+    height:min(94dvh,820px);
+    max-height:94dvh;
+    border-radius:20px 20px 0 0;
+    box-shadow:0 -20px 70px rgba(7,24,34,.22);
+  }
+  #skillManagementModal .skill-manage-head{
+    flex:0 0 auto;
+    padding:15px 12px 10px;
+  }
+  #skillManagementModal .skill-manage-head h3{
+    margin-top:8px;
+    font-size:17px;
+  }
+  #skillManagementModal .skill-manage-head p{font-size:8px}
+  #skillManagementModal .skill-manage-tabs{
+    flex:0 0 auto;
+    gap:5px;
+    padding:7px 8px;
+  }
+  #skillManagementModal .skill-manage-tabs button{
+    min-height:38px;
+    padding:0 8px;
+    border-radius:9px;
+    font-size:8px;
+  }
+  #skillManagementModal .skill-manage-form{
+    height:100%;
+    min-height:0;
+    padding:9px 8px calc(12px + env(safe-area-inset-bottom));
+  }
+  #skillManagementModal .skill-manage-section-intro{
+    margin-bottom:8px;
+    gap:5px;
+  }
+  #skillManagementModal .skill-manage-section-intro h4{font-size:14px}
+  #skillManagementModal .skill-manage-section-intro p{font-size:8px}
+  #skillManagementModal .skill-admin-scope{
+    padding:5px 7px;
+    font-size:7px;
+  }
+  #skillManagementModal .skill-person-editor{
+    margin-bottom:9px;
+    padding:9px;
+    border-radius:12px;
+    box-shadow:0 5px 15px rgba(20,35,45,.035);
+  }
+  #skillManagementModal .skill-editor-title{
+    gap:7px;
+    margin-bottom:8px;
+  }
+  #skillManagementModal .skill-editor-icon{
+    width:32px;height:32px;flex-basis:32px;
+    border-radius:9px;
+    font-size:16px;
+  }
+  #skillManagementModal .skill-editor-title strong{font-size:10px}
+  #skillManagementModal .skill-editor-title small{font-size:7px}
+  #skillManagementModal .skill-form-grid{gap:6px}
+  #skillManagementModal .skill-form-grid label{font-size:8px;gap:4px}
+  #skillManagementModal .skill-form-grid .form-control{
+    min-height:37px;
+    border-radius:8px;
+    font-size:9px;
+  }
+  #skillManagementModal .skill-editor-actions{
+    gap:5px;
+    margin-top:7px;
+    position:sticky;
+    bottom:0;
+    z-index:3;
+    padding:7px 0 calc(7px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.97) 30%);
+  }
+  #skillManagementModal .skill-editor-actions .btn{
+    min-height:38px;
+    border-radius:9px;
+    font-size:8px;
+  }
+  #skillManagementModal .skill-manage-list-head-pro{
+    margin:8px 0 6px;
+    padding:7px 8px;
+    border-radius:10px;
+    gap:6px;
+  }
+  #skillManagementModal .skill-manage-list-head-pro b{font-size:9px}
+  #skillManagementModal .skill-manage-list-head-pro span{font-size:7px}
+  #skillManagementModal .skill-manage-search{
+    width:100%;
+    min-height:34px;
+    border-radius:8px;
+  }
+  #skillManagementModal .skill-manage-search input{font-size:9px}
+  #skillManagementModal .skill-mini-cta{
+    width:100%;
+    min-height:34px;
+    border-radius:8px;
+    font-size:8px;
+    justify-content:center;
+  }
+  #skillManagementModal .skill-person-admin-list,
+  #skillManagementModal .skill-skill-admin-list{gap:5px}
+  #skillManagementModal .skill-person-admin-card,
+  #skillManagementModal .skill-skill-admin-card{
+    padding:8px;
+    border-radius:10px;
+    gap:7px;
+  }
+  #skillManagementModal .skill-person-admin-main{
+    gap:7px;
+    align-items:flex-start;
+  }
+  #skillManagementModal .skill-person-admin-avatar,
+  #skillManagementModal .skill-skill-admin-icon{
+    width:31px;height:31px;flex-basis:31px;
+    border-radius:8px;
+    font-size:14px;
+  }
+  #skillManagementModal .skill-person-admin-main strong,
+  #skillManagementModal .skill-skill-admin-copy strong{font-size:9px}
+  #skillManagementModal .skill-person-admin-meta{gap:3px 7px;font-size:7px}
+  #skillManagementModal .skill-person-status{
+    padding:4px 6px;
+    font-size:7px;
+  }
+  #skillManagementModal .skill-person-admin-actions,
+  #skillManagementModal .skill-row-actions{gap:4px}
+  #skillManagementModal .skill-icon-btn,
+  #skillManagementModal .skill-icon-danger{
+    width:31px;height:31px;
+    border-radius:8px;
+    font-size:14px;
+  }
+  #skillManagementModal .skill-system-note{font-size:7px}
+}
+
+@media(max-width:390px){
+  #jhSkillMatrixScreen .jh-skill-page-actions .btn{
+    min-height:38px;
+    font-size:8px;
+  }
+  #jhSkillMatrixScreen .skill-mobile-person summary{
+    grid-template-columns:32px minmax(0,1fr) 37px 37px 16px;
+    padding-inline:7px;
+  }
+  #jhSkillMatrixScreen .skill-mobile-skill{
+    grid-template-columns:1fr 104px;
+  }
+  #skillManagementModal .skill-manage-head h3{font-size:16px}
+  #skillManagementModal .skill-form-grid .form-control{min-height:35px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  #jhSkillMatrixScreen .skill-mobile-person,
+  #jhSkillMatrixScreen .skill-mobile-chevron,
+  #skillManagementModal .skill-management-modal{
+    transition:none!important;
+    animation:none!important;
+  }
+}

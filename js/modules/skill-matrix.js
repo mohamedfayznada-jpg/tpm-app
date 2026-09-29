@@ -70,7 +70,7 @@
       const name=String(u.name||u.username||'').trim();
       const userDept=String(u.dept||u.department||'').trim();
       if (!name || u.status==='pending' || !dept || userDept!==dept) return null;
-      return {id:'user_'+uid,name,job:String(u.role||'').trim(),active:true,systemUid:uid};
+      return {id:uid,name,job:String(u.role||'').trim(),active:true,systemUid:uid};
     }).filter(Boolean);
   }
 
@@ -160,7 +160,7 @@
     try{
       const snap=await firebase.database().ref(dbPath()).once('value');
       const raw=snap.val()||{};
-      matrixData=raw.scores&&typeof raw.scores==='object'?raw.scores:{};
+      matrixData=raw.scores&&typeof raw.scores==='object' ? raw.scores : Object.fromEntries(Object.entries(raw).filter(([key])=>key!=='_meta'));
       peopleData=normalizePeople(raw._meta?.people);
       skillsData={tpm:[],technical:[]};
       const seeded=seedDefaults(raw._meta?.skills);

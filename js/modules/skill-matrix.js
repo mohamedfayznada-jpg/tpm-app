@@ -356,6 +356,7 @@
   window.addSkillPerson=addPerson;
   window.editSkillPerson=editPerson;
   window.toggleSkillPersonStatus=togglePersonActive;
+  window.clearSkillPersonForm=clearPersonForm;
   window.removeSkillPerson=removePerson;
   window.saveSkillDefinition=saveSkillDefinition;
   window.editSkillDefinition=editSkill;

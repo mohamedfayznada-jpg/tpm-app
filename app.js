@@ -1298,6 +1298,7 @@ window.showJHPortal = function() {
 
 window.selectJHDept = function(dept) {
     currentJHDept = dept;
+    window.currentJHDept = dept;
     document.querySelectorAll('#jhPortalScreen .jh-dept-tab').forEach(tab => {
         const isActive = tab.textContent.includes(dept);
         tab.classList.toggle('is-active', isActive);

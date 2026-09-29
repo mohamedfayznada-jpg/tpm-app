@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="css/legacy-inline-extracted-v2.css?v=1">\n    <link rel="stylesheet" href="css/factory-os-v34-reference.css?v=21">
     <link rel="stylesheet" href="css/jh-command-center.css?v=8">
     <link rel="stylesheet" href="css/tpm-teams-premium.css?v=2">
-    <link rel="stylesheet" href="css/skill-matrix.css?v=20260929-skill-v1">
+    <link rel="stylesheet" href="css/skill-matrix.css?v=20260929-skill-v2">
 </head>
 <body>
     
@@ -1428,6 +1428,7 @@
                 <span class="skill-target-chip"><i class='bx bx-target-lock'></i> المستوى المستهدف: 4</span>
             </div>
             <div id="skillMatrixTable"></div>
+            <div id="skillMatrixMobile" class="skill-matrix-mobile" aria-label="مصفوفة المهارات على الهاتف"></div>
         </section>
         <section class="skill-training-panel" id="skillTrainingPanel" hidden>
             <div id="skillTrainingPlan"></div>
@@ -1445,11 +1446,16 @@
                 <button type="button" data-skill-manage-tab="skills"><i class='bx bx-wrench'></i> المهارات</button>
             </div>
             <div id="skillPeopleForm" class="skill-manage-form">
+                <div class="skill-form-section-head"><div><span class="eyebrow">PERSON PROFILE</span><h4>بيانات العامل</h4><p>أضف أو عدّل بيانات العامل اليدوي. بيانات حسابات النظام تظل مرتبطة بمصدرها الأساسي.</p></div><span class="skill-form-status"><i class='bx bx-lock-alt'></i> القسم: <b id="skillManageDeptNameInline">القسم</b></span></div>
+                <input type="hidden" id="skillPersonId">
                 <div class="skill-form-grid">
-                    <label><span>اسم العامل *</span><input id="skillPersonName" class="form-control" placeholder="مثال: أحمد محمد"></label>
-                    <label><span>الوظيفة / المسمى</span><input id="skillPersonJob" class="form-control" placeholder="مثال: مشغل ماكينة"></label>
+                    <label><span>اسم العامل *</span><input id="skillPersonName" class="form-control" autocomplete="off" placeholder="مثال: أحمد محمد"></label>
+                    <label><span>الوظيفة / المسمى</span><input id="skillPersonJob" class="form-control" autocomplete="off" placeholder="مثال: مشغل ماكينة"></label>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="addSkillPerson()"><i class='bx bx-user-plus'></i> إضافة العامل للقسم</button>
+                <div class="skill-definition-actions">
+                    <button type="button" class="btn btn-primary" onclick="addSkillPerson()"><i class='bx bx-user-plus'></i> <span id="skillPersonSaveLabel">إضافة العامل</span></button>
+                    <button type="button" class="btn btn-outline" onclick="clearSkillPersonForm()"><i class='bx bx-refresh'></i> جديد</button>
+                </div>
                 <div id="skillPeopleList"></div>
             </div>
             <div id="skillDefinitionForm" class="skill-manage-form" style="display:none">

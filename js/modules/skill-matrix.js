@@ -333,7 +333,7 @@
     document.querySelectorAll('[data-skill-manage-tab]').forEach(b=>b.classList.toggle('active',b.dataset.skillManageTab===tab));
     document.getElementById('skillPeopleForm').style.display=tab==='people'?'grid':'none';
     document.getElementById('skillDefinitionForm').style.display=tab==='skills'?'grid':'none';
-    if(tab==='skills')clearSkillForm();
+    if(tab==='skills')clearSkillForm(); else clearPersonForm();
     renderManagement();
   }
 

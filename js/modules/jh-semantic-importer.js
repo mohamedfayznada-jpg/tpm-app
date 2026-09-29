@@ -191,6 +191,8 @@
         const missing=Object.entries(schema.fields)
           .filter(([f,m])=>m.required&&!mapping[f]&&!context[f]).map(([f])=>f);
         if(missing.length)continue;
+        const contextValues=Object.values(context);
+        if(contextValues.some(ctx=>!ctx.sourceCell||!ws[ctx.sourceCell]))continue;
         out.push({
           sheet:name,matrix,headerRows:Array.isArray(block.headerRows)?block.headerRows.map(Number).filter(Boolean):[],
           dataStartRow:start,dataEndRow:end,

@@ -1394,6 +1394,44 @@
          ⚙️ SETTINGS & PROFILE
          ========================================== -->
 
+    <!-- ==========================================
+         🎯 JH DEPARTMENT SKILL MATRIX
+         ========================================== -->
+    <div class="container screen" id="jhSkillMatrixScreen">
+        <section class="jh-skill-page-hero">
+            <div>
+                <span class="jh-skill-kicker"><i class='bx bx-brain'></i> JH / PEOPLE CAPABILITY</span>
+                <h2>Skill Matrix — <span id="jhSkillDeptName">القسم</span></h2>
+                <p>مصفوفة مهارات خاصة بهذا القسم فقط. نفس أسماء العاملين تُقاس على محورين: مهارات TPM ومهارات فنية مرتبطة بالعملية.</p>
+            </div>
+            <div class="jh-skill-page-actions">
+                <button class="btn btn-outline" onclick="goBack()"><i class='bx bx-arrow-back'></i> رجوع</button>
+                <button class="btn btn-primary" onclick="showSkillTrainingPlan()"><i class='bx bx-book-open'></i> استخراج خطة التدريب</button>
+            </div>
+        </section>
+        <section class="skill-matrix-kpis" id="skillMatrixKpis"></section>
+        <section class="jh-skill-page-card">
+            <div class="skill-matrix-toolbar">
+                <div class="skill-domain-tabs" role="tablist" aria-label="مجالات المهارات">
+                    <button class="active" data-skill-domain="tpm" type="button"><i class='bx bx-cog'></i> مهارات خاصة بالـ TPM</button>
+                    <button data-skill-domain="technical" type="button"><i class='bx bx-wrench'></i> مهارات فنية خاصة بالعمليات</button>
+                </div>
+                <div class="skill-matrix-tools">
+                    <label class="skill-search"><i class='bx bx-search'></i><input id="skillMatrixSearch" type="search" placeholder="ابحث باسم العامل"></label>
+                    <span class="skill-scale"><b>0</b> غير مقيم · <b>1</b> مبتدئ · <b>2</b> أساسي · <b>3</b> متمكن · <b>4</b> متقدم</span>
+                </div>
+            </div>
+            <div class="skill-matrix-context">
+                <div><span class="eyebrow">CURRENT DEPARTMENT</span><h3 id="skillMatrixDomainTitle">مهارات خاصة بالـ TPM</h3></div>
+                <span class="skill-target-chip"><i class='bx bx-target-lock'></i> المستوى المستهدف: 4</span>
+            </div>
+            <div id="skillMatrixTable"></div>
+        </section>
+        <section class="skill-training-panel" id="skillTrainingPanel" hidden>
+            <div id="skillTrainingPlan"></div>
+        </section>
+    </div>
+
     <div class="container screen" id="settingsScreen">
         <section class="settings-command-deck">
             <div class="settings-command-copy"><span class="eyebrow"><i class='bx bx-slider-alt'></i> إدارة Factory OS</span><h2>مركز التحكم</h2><p>نظّم تشغيل المصنع من مكان واحد: الأقسام، الإسناد، التاجات، صلاحيات المستخدمين، والبيانات.</p></div>
@@ -1496,42 +1534,4 @@ window.addEventListener('DOMContentLoaded',function(){
 });
 </script>
 </body>
-</html    <!-- ==========================================
-         🎯 JH DEPARTMENT SKILL MATRIX
-         ========================================== -->
-    <div class="container screen" id="jhSkillMatrixScreen">
-        <section class="jh-skill-page-hero">
-            <div>
-                <span class="jh-skill-kicker"><i class='bx bx-brain'></i> JH / PEOPLE CAPABILITY</span>
-                <h2>Skill Matrix — <span id="jhSkillDeptName">القسم</span></h2>
-                <p>مصفوفة مهارات خاصة بهذا القسم فقط. نفس أسماء العاملين تُقاس على محورين: مهارات TPM ومهارات فنية مرتبطة بالعملية.</p>
-            </div>
-            <div class="jh-skill-page-actions">
-                <button class="btn btn-outline" onclick="goBack()"><i class='bx bx-arrow-back'></i> رجوع</button>
-                <button class="btn btn-primary" onclick="showSkillTrainingPlan()"><i class='bx bx-book-open'></i> استخراج خطة التدريب</button>
-            </div>
-        </section>
-        <section class="skill-matrix-kpis" id="skillMatrixKpis"></section>
-        <section class="jh-skill-page-card">
-            <div class="skill-matrix-toolbar">
-                <div class="skill-domain-tabs" role="tablist" aria-label="مجالات المهارات">
-                    <button class="active" data-skill-domain="tpm" type="button"><i class='bx bx-cog'></i> مهارات خاصة بالـ TPM</button>
-                    <button data-skill-domain="technical" type="button"><i class='bx bx-wrench'></i> مهارات فنية خاصة بالعمليات</button>
-                </div>
-                <div class="skill-matrix-tools">
-                    <label class="skill-search"><i class='bx bx-search'></i><input id="skillMatrixSearch" type="search" placeholder="ابحث باسم العامل"></label>
-                    <span class="skill-scale"><b>0</b> غير مقيم · <b>1</b> مبتدئ · <b>2</b> أساسي · <b>3</b> متمكن · <b>4</b> متقدم</span>
-                </div>
-            </div>
-            <div class="skill-matrix-context">
-                <div><span class="eyebrow">CURRENT DEPARTMENT</span><h3 id="skillMatrixDomainTitle">مهارات خاصة بالـ TPM</h3></div>
-                <span class="skill-target-chip"><i class='bx bx-target-lock'></i> المستوى المستهدف: 4</span>
-            </div>
-            <div id="skillMatrixTable"></div>
-        </section>
-        <section class="skill-training-panel" id="skillTrainingPanel" hidden>
-            <div id="skillTrainingPlan"></div>
-        </section>
-    </div>
-
->
+</html>

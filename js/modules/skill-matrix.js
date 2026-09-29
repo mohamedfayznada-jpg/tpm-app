@@ -245,7 +245,7 @@
   }
 
   function renderManagement() {
-    const mount=document.getElementById('skillManagementBody');if(!mount)return;
+    const mount=document.getElementById(managementTab==='people'?'skillPeopleList':'skillSkillsList');if(!mount)return;
     if(managementTab==='people'){
       const people=Object.values(peopleData);
       mount.innerHTML='<div class="skill-manage-list-head"><div><b>عاملون مضافون يدويًا</b><span>'+people.length+' اسم محفوظ لهذا القسم</span></div></div>'+
@@ -262,7 +262,7 @@
   function openManageModal(tab='people') {
     const modal=document.getElementById('skillManagementModal');if(!modal)return;
     if(!canEdit()){notify('⚠️ لا تملك صلاحية الإدارة.');return;}
-    managementTab=tab;modal.style.display='flex';
+    managementTab=tab;modal.style.display='flex'; const deptEl=document.getElementById('skillManageDeptName'); if(deptEl)deptEl.textContent=currentDept()||'القسم';
     document.querySelectorAll('[data-skill-manage-tab]').forEach(b=>b.classList.toggle('active',b.dataset.skillManageTab===tab));
     document.getElementById('skillPeopleForm').style.display=tab==='people'?'grid':'none';
     document.getElementById('skillDefinitionForm').style.display=tab==='skills'?'grid':'none';

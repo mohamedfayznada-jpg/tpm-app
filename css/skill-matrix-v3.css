@@ -339,6 +339,7 @@
 #jhSkillMatrixScreen .skill-plan-action small{font-size:9px;color:#84929a}
 
 #skillManagementModal{
+  --sm-line:#e4ecef;
   z-index:9999;
   align-items:center;
   justify-content:center;

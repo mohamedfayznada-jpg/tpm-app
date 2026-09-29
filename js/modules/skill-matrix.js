@@ -2,7 +2,7 @@
 (() => {
   'use strict';
 
-  const DB_PATH = 'tpm_system/skill_matrix';
+  const DB_ROOT = 'tpm_system/skill_matrix';
   const TARGET = 4;
 
   const SKILLS = {
@@ -39,6 +39,8 @@
 
   const esc = v => window.escapeTPM ? window.escapeTPM(v) : String(v ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
   const skills = () => SKILLS[activeDomain] || [];
+  const currentDept = () => String(window.currentJHDept || '').trim();
+  const dbPath = () => currentDept() ? DB_ROOT + '/' + currentDept() : DB_ROOT;
   const canEdit = () => ['admin','engineer','auditor'].includes(window.currentUser?.role);
 
   function getPeople() {
@@ -50,7 +52,9 @@
     if (window.currentUser?.uid && !rows.some(u => u.uid === window.currentUser.uid) && window.currentUser?.name) {
       rows.push({uid:window.currentUser.uid,name:window.currentUser.name,dept:'',role:window.currentUser.role,status:'active'});
     }
-    return rows.sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+    const dept=currentDept();
+    const scoped=dept ? rows.filter(u => String(u.dept || '').trim()===dept || String(u.department || '').trim()===dept) : rows;
+    return scoped.sort((a,b)=>a.name.localeCompare(b.name,'ar'));
   }
 
   function score(uid, domain, skillId) {
@@ -141,9 +145,9 @@
   }
 
   async function load() {
-    if (!window.firebase?.database || !window.currentUser?.uid) return;
+    if (!window.firebase?.database || !window.currentUser?.uid || !currentDept()) return;
     try {
-      const snap=await firebase.database().ref(DB_PATH).once('value');
+      const snap=await firebase.database().ref(dbPath()).once('value');
       matrixData=snap.val() || {};
       window.renderSkillMatrix?.();
     } catch(error) {
@@ -156,7 +160,7 @@
     if(!canEdit()) return window.showToast?.('⚠️ لا تملك صلاحية تعديل مصفوفة المهارات.');
     const v=Math.max(0,Math.min(TARGET,Number(value)||0));
     try {
-      await firebase.database().ref(DB_PATH+'/'+uid+'/'+domain+'/'+skillId).set({
+      await firebase.database().ref(dbPath()+'/'+uid+'/'+domain+'/'+skillId).set({
         score:v, updatedAt:Date.now(), updatedByUid:window.currentUser.uid, updatedByName:window.currentUser.name||''
       });
       matrixData[uid]=matrixData[uid]||{};
@@ -191,6 +195,11 @@
   }
 
   window.renderSkillMatrix=render;
+  window.openJHDepartmentSkillMatrix=function(){
+    if(!currentDept()) return window.showToast?.('⚠️ اختر قسم JH أولًا.');
+    window.showScreen?.('jhSkillMatrixScreen');
+    load();
+  };
   window.setSkillMatrixDomain=setDomain;
   window.showSkillTrainingPlan=renderTraining;
   window.saveSkillScore=saveSkillScore;
@@ -207,6 +216,6 @@
     const b=e.target.closest?.('[data-skill-domain]');
     if(b)setDomain(b.dataset.skillDomain);
   });
-  document.addEventListener('DOMContentLoaded',()=>{ load(); });
-  window.addEventListener('tpm:skill-matrix-open',()=>{load();});
+  document.addEventListener('DOMContentLoaded',()=>{ if(document.getElementById('jhSkillMatrixScreen')) load(); });
+  window.addEventListener('tpm:jh-skill-matrix-open',()=>{load();});
 })();

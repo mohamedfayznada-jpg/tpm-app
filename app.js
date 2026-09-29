@@ -1240,6 +1240,7 @@ window.deptTrendInstance = null;
 
 window.showJHPortal = function() {
     currentJHDept = null;
+    window.currentJHDept = null;
     const toolbox = document.getElementById('jhToolbox');
     if (toolbox) toolbox.style.display = 'none';
 

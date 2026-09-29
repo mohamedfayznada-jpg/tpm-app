@@ -1240,6 +1240,7 @@ window.deptTrendInstance = null;
 
 window.showJHPortal = function() {
     currentJHDept = null;
+    window.currentJHDept = null;
     const toolbox = document.getElementById('jhToolbox');
     if (toolbox) toolbox.style.display = 'none';
 
@@ -1298,6 +1299,7 @@ window.showJHPortal = function() {
 
 window.selectJHDept = function(dept) {
     currentJHDept = dept;
+    window.currentJHDept = dept;
     document.querySelectorAll('#jhPortalScreen .jh-dept-tab').forEach(tab => {
         const isActive = tab.textContent.includes(dept);
         tab.classList.toggle('is-active', isActive);

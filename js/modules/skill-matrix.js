@@ -39,7 +39,7 @@
 
   const esc = v => window.escapeTPM ? window.escapeTPM(v) : String(v ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
   const skills = () => SKILLS[activeDomain] || [];
-  const currentDept = () => String(window.currentJHDept || '').trim();
+  const currentDept = () => { try { if (typeof currentJHDept !== 'undefined' && currentJHDept) return String(currentJHDept).trim(); } catch (_) {} return String(window.currentJHDept || '').trim(); };
   const dbPath = () => currentDept() ? DB_ROOT + '/' + currentDept() : DB_ROOT;
   const canEdit = () => ['admin','engineer','auditor'].includes(window.currentUser?.role);
 
@@ -58,7 +58,7 @@
   }
 
   function score(uid, domain, skillId) {
-    return Number(matrixData?.[uid]?.[domain]?.[skillId] ?? 0);
+    const raw = matrixData?.[uid]?.[domain]?.[skillId]; return Number(raw && typeof raw === 'object' ? raw.score : raw ?? 0) || 0;
   }
 
   function personStats(uid, domain) {
@@ -196,9 +196,12 @@
 
   window.renderSkillMatrix=render;
   window.openJHDepartmentSkillMatrix=function(){
-    if(!currentDept()) return window.showToast?.('⚠️ اختر قسم JH أولًا.');
+    const dept=currentDept();
+    if(!dept) return window.showToast?.('⚠️ اختر قسم JH أولًا.');
+    window.currentJHDept=dept;
     activeDomain='tpm'; search=''; matrixData={};
     window.showScreen?.('jhSkillMatrixScreen');
+    const title=document.getElementById('jhSkillDeptName'); if(title) title.textContent=dept;
     load();
   };
   window.setSkillMatrixDomain=setDomain;
@@ -218,5 +221,5 @@
     if(b)setDomain(b.dataset.skillDomain);
   });
   document.addEventListener('DOMContentLoaded',()=>{ if(document.getElementById('jhSkillMatrixScreen')) load(); });
-  window.addEventListener('tpm:jh-skill-matrix-open',()=>{load();});
+  window.addEventListener('tpm:jh-skill-matrix-open',()=>{ const dept=currentDept(); if(dept){ const title=document.getElementById('jhSkillDeptName'); if(title) title.textContent=dept; load(); } });
 })();

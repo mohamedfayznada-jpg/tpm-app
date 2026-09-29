@@ -1972,3 +1972,57 @@
 @media(prefers-reduced-motion:reduce){
   .jh-ai-state.loading>i{animation:none}
 }
+
+
+/* JH Dedicated Document Workspaces v1 */
+#jhDocumentScreen[data-doc-type] .jh-doc-context-bar{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:14px;
+  margin:14px 0;
+  padding:14px 16px;
+  border:1px solid color-mix(in srgb, var(--jh-doc-color,#1686a5) 16%, #dce6ec);
+  border-radius:18px;
+  background:linear-gradient(135deg,#ffffff,#f7fafc);
+  box-shadow:0 8px 24px rgba(23,54,79,.05);
+}
+#jhDocumentScreen .jh-doc-context-icon{
+  width:46px;height:46px;display:grid;place-items:center;border-radius:14px;
+  background:color-mix(in srgb,var(--jh-doc-color,#1686a5) 10%,#fff);
+  color:var(--jh-doc-color,#1686a5);font-size:22px;
+}
+#jhDocumentScreen .jh-doc-context-copy{min-width:0}
+#jhDocumentScreen .jh-doc-context-copy>span{
+  display:block;font-size:9px;font-weight:900;letter-spacing:.8px;
+  color:var(--jh-doc-color,#1686a5);margin-bottom:2px;
+}
+#jhDocumentScreen .jh-doc-context-copy h3{margin:0;color:#17364f;font-size:17px;font-weight:900}
+#jhDocumentScreen .jh-doc-context-copy p{margin:3px 0 0;color:#748794;font-size:11px;line-height:1.6}
+#jhDocumentScreen .jh-doc-context-meta{
+  min-width:92px;text-align:center;padding:8px 12px;border-right:1px solid #e7eef2;
+}
+#jhDocumentScreen .jh-doc-context-meta b{display:block;font-size:20px;color:#17364f;line-height:1.1}
+#jhDocumentScreen .jh-doc-context-meta span{font-size:9px;color:#82919b}
+#jhDocumentScreen #clitMapWorkspace[hidden]{display:none!important}
+#jhDocumentScreen #clitMapWorkspace{display:block}
+#jhDocumentScreen #clitMapWorkspace[hidden]{display:none!important}
+#jhDocumentScreen .jh-doc-empty{
+  display:grid;place-items:center;gap:6px;min-height:220px;padding:30px;
+  border:1px dashed #d5e1e8;border-radius:18px;background:#fbfdfe;color:#788b97;text-align:center;
+}
+#jhDocumentScreen .jh-doc-empty i{font-size:34px;color:var(--jh-doc-color,#1686a5)}
+#jhDocumentScreen .jh-doc-empty b{color:#385263;font-size:14px}
+#jhDocumentScreen .jh-doc-empty span{font-size:11px}
+#jhDocumentScreen[data-doc-type="Contamination"] .jh-data-tools{border-color:rgba(121,85,72,.18)}
+#jhDocumentScreen[data-doc-type="SOC"] .jh-data-tools{border-color:rgba(245,158,11,.18)}
+#jhDocumentScreen[data-doc-type="Safety"] .jh-data-tools{border-color:rgba(239,68,68,.18)}
+#jhDocumentScreen[data-doc-type="Anatomy"] .jh-data-tools{border-color:rgba(212,160,23,.18)}
+@media(max-width:700px){
+  #jhDocumentScreen .jh-doc-context-bar{grid-template-columns:auto 1fr;gap:10px}
+  #jhDocumentScreen .jh-doc-context-meta{grid-column:1 / -1;border-right:0;border-top:1px solid #e7eef2;padding-top:8px}
+}
+@media(prefers-reduced-motion:no-preference){
+  #jhDocumentScreen[data-doc-type] .jh-doc-context-bar{animation:jhDocContextIn .34s cubic-bezier(.22,.8,.24,1)}
+}
+@keyframes jhDocContextIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}

@@ -602,58 +602,114 @@ window.openJHDocument = async function(type) {
     if (type === 'CLIT' && typeof window.openJHDocumentCLITMap === 'function') {
         return window.openJHDocumentCLITMap(type);
     }
+
     currentDocType = type;
-    const headerMap = { 
-        'CLIT': '🧹 معايير التنظيف والتزييت (CLIT)', 
-        'Contamination': '🛢️ حصر مصادر التلوث', 
-        'SOC': '🧗‍♂️ حصر الأماكن صعبة الوصول (SOC)', 
-        'Safety': '⚠️ خريطة الأمان وتقييم المخاطر', 
-        'Anatomy': '⚙️ تشريح أجزاء الماكينة' 
+    const configs = {
+        'Contamination': {
+            kicker:'LOSS SOURCE',
+            title:'خريطة مصادر التلوث',
+            description:'حصر مصادر التلوث ومواقعها وأسبابها وإجراءات السيطرة عليها.',
+            icon:'bx-water',
+            color:'#795548',
+            empty:'لا توجد مصادر تلوث مسجلة لهذا القسم.'
+        },
+        'SOC': {
+            kicker:'ACCESS / METHOD',
+            title:'خريطة الأماكن صعبة الوصول',
+            description:'تحديد نقاط الوصول الصعبة وأسباب الصعوبة والإجراءات اللازمة لتحسين الوصول.',
+            icon:'bx-map-pin',
+            color:'#f59e0b',
+            empty:'لا توجد نقاط وصول صعبة مسجلة لهذا القسم.'
+        },
+        'Safety': {
+            kicker:'SAFETY',
+            title:'خريطة مخاطر الأمان',
+            description:'حصر المخاطر، تقييم مستوى الخطورة، وربط كل خطر بموقعه وإجراء التحكم.',
+            icon:'bx-shield-quarter',
+            color:'#ef4444',
+            empty:'لا توجد مخاطر أمان مسجلة لهذا القسم.'
+        },
+        'Anatomy': {
+            kicker:'EQUIPMENT',
+            title:'تشريح أجزاء الماكينة',
+            description:'قاعدة معرفة فنية لأجزاء المعدة ووظائفها ونقاط الفحص والحالة القياسية.',
+            icon:'bx-cog',
+            color:'#d4a017',
+            empty:'لا توجد أجزاء ماكينة مسجلة لهذا القسم.'
+        }
     };
-    
+    const cfg = configs[type] || {
+        kicker:'JH WORKSPACE',
+        title:'سجل القسم',
+        description:'سجلات تشغيلية خاصة بالقسم الحالي.',
+        icon:'bx-file',
+        color:'#1686a5',
+        empty:'لا توجد سجلات لهذا القسم.'
+    };
+
+    const screen = document.getElementById('jhDocumentScreen');
+    if (screen) {
+        screen.dataset.docType = type;
+        screen.style.setProperty('--jh-doc-color', cfg.color);
+    }
+
     const headEl = document.getElementById('jhDocHeader');
-    if(headEl) headEl.innerHTML = `<i class='bx bx-file'></i> ${headerMap[type] || 'السجل'}`;
-    
-    // التحكم في الفلاتر (تظهر للـ CLIT فقط)
-    ['clitStatsSummary', 'clitZoneFilters', 'clitOpFilters', 'clitFrequencyFilters', 'startChecklistBtnContainer'].forEach(id => { 
-        const el = document.getElementById(id); 
-        if(el) el.style.display = (type === 'CLIT' && currentJHDept === 'حقن الكابينة') ? (id==='clitOpFilters'?'grid':(id==='startChecklistBtnContainer'?'block':'flex')) : 'none'; 
+    if (headEl) headEl.innerHTML = "<i class='bx " + cfg.icon + "'></i> " + cfg.title;
+
+    const contextBar = document.getElementById('jhDocContextBar');
+    if (contextBar) {
+        contextBar.innerHTML =
+            "<div class='jh-doc-context-icon' style='--jh-doc-color:" + cfg.color + "'><i class='bx " + cfg.icon + "'></i></div>" +
+            "<div class='jh-doc-context-copy'><span>" + cfg.kicker + "</span><h3>" + cfg.title + "</h3><p>" + cfg.description + "</p></div>" +
+            "<div class='jh-doc-context-meta'><b id='jhDocRecordCount'>0</b><span>سجلات القسم</span></div>";
+        contextBar.style.display = 'grid';
+    }
+
+    const clitWorkspace = document.getElementById('clitMapWorkspace');
+    if (clitWorkspace) {
+        clitWorkspace.hidden = true;
+        clitWorkspace.style.display = 'none';
+    }
+
+    const actionArea = document.getElementById('jhDocActionArea');
+    const listContainer = document.getElementById('jhDocListContainer');
+    if (actionArea) {
+        actionArea.style.display = '';
+        actionArea.innerHTML = '';
+    }
+    if (listContainer) {
+        listContainer.style.display = '';
+        listContainer.innerHTML = '';
+    }
+
+    ['clitStatsSummary', 'clitZoneFilters', 'clitOpFilters', 'clitFrequencyFilters', 'startChecklistBtnContainer'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
     });
-    
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') { 
-        clitSelectedZone = 'الكل'; clitSelectedOp = 'الكل'; clitSelectedFreq = 'الكل'; 
-        if(window.resetFilterButtonsUI) window.resetFilterButtonsUI(); 
+
+    window.__jhActiveDocType = type;
+    window.renderJHDocForm(type);
+    window.mountJHDataTools?.(type);
+
+    showToast('جاري تحميل سجلات " + cfg.title + "... ⏳');
+
+    try {
+        const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value');
+        const records = snap.val() ? Object.values(snap.val()) : [];
+
+        window.currentLoadedRecords = records;
+        const countEl = document.getElementById('jhDocRecordCount');
+        if (countEl) countEl.innerText = records.length;
+
+        window.renderJHDocList(type, records);
+        showScreen('jhDocumentScreen');
+    } catch (error) {
+        console.error('[JH] document load failed', error);
+        if (listContainer) {
+            listContainer.innerHTML = "<div class='jh-doc-empty'><i class='bx bx-error-circle'></i><b>تعذر تحميل سجلات هذا القسم</b><span>تحقق من الاتصال وحاول مرة أخرى.</span></div>";
+        }
+        showToast('⚠️ تعذر تحميل سجلات القسم. حاول مرة أخرى.');
     }
-    
-    // رسم فورم الإدخال المخصص لكل شاشة
-    window.renderJHDocForm(type); 
-    showToast('جاري تحميل السجلات من السحابة... ⏳');
-    
-    const snap = await db.ref(`tpm_system/jh_records/${currentJHDept}/${type}`).once('value'); 
-    let records = snap.val() ? Object.values(snap.val()) : [];
-    
-    // حقن الخرائط القياسية لأول مرة إذا كانت فارغة
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة' && records.length === 0 && window.factoryCLITData) {
-        showToast('جاري تهيئة الخرائط القياسية لأول مرة... ⏳'); 
-        let updates = {}; 
-        window.factoryCLITData.forEach(item => { updates[item.id] = item; });
-        await db.ref(`tpm_system/jh_records/حقن الكابينة/CLIT`).set(updates); 
-        records = window.factoryCLITData; 
-        showToast('تمت التهيئة بنجاح ✅');
-    }
-    
-    if(type === 'CLIT' && currentJHDept === 'حقن الكابينة') {
-        if(document.getElementById('statTotalPoints')) document.getElementById('statTotalPoints').innerText = records.length;
-        ['الجيكات', 'الهيد', 'الفرن', 'مدخل', 'عربة', 'تجهيزة'].forEach(z => { 
-            let count = records.filter(item => item.region && item.region.includes(z)).length; 
-            let badge = document.getElementById(`badge-count-${z}`); 
-            if(badge) badge.innerText = count; 
-        });
-    }
-    
-    window.currentLoadedRecords = records; 
-    window.renderJHDocList(type, records); 
-    showScreen('jhDocumentScreen');
 };
 
 window.renderJHDocForm = function(type) {

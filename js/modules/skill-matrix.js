@@ -117,11 +117,11 @@
     const list=skillList();
     if(!people.length){
       mount.innerHTML='<div class="skill-empty"><i class="bx bx-user-plus"></i><h3>لا يوجد عاملون بالقسم</h3><p>استخدم «إضافة عامل» لإضافة الأسماء الخاصة بهذا القسم.</p></div>';
-      renderKPIs(); return;
+      renderKPIs(); renderMobileMatrix(); return;
     }
     if(!list.length){
       mount.innerHTML='<div class="skill-empty"><i class="bx bx-wrench"></i><h3>لا توجد مهارات</h3><p>أضف مهارة من «إدارة المهارات» للبدء.</p></div>';
-      renderKPIs(); return;
+      renderKPIs(); renderMobileMatrix(); return;
     }
     mount.innerHTML='<div class="skill-matrix-scroll"><table><thead><tr><th class="skill-person-col">العامل</th>'+
       list.map(s=>'<th title="'+esc(s.name)+'">'+esc(s.name)+'</th>').join('')+
@@ -134,6 +134,24 @@
           '<td><b class="skill-gap-count">'+st.gaps+'</b></td></tr>';
       }).join('')+'</tbody></table></div>';
     renderKPIs();
+    renderMobileMatrix();
+  }
+
+  function renderMobileMatrix() {
+    const mount=document.getElementById('skillMatrixMobile'); if(!mount)return;
+    const q=search.toLowerCase();
+    const people=getPeople().filter(p=>!q || (p.name+' '+p.job).toLowerCase().includes(q));
+    const list=skillList();
+    if(!people.length || !list.length){
+      mount.innerHTML='<div class="skill-mobile-empty"><i class="bx bx-grid-alt"></i><strong>'+(!people.length?'لا يوجد عاملون مطابقون للبحث.':'لا توجد مهارات في هذا المجال.')+'</strong></div>';
+      return;
+    }
+    mount.innerHTML=people.map(p=>{
+      const st=personStats(p.id,activeDomain);
+      const tone=st.avg<2?'critical':st.avg<3?'watch':'good';
+      const rows=list.map(s=>'<div class="skill-mobile-skill"><div><strong>'+esc(s.name)+'</strong><small>الوزن '+Number(s.weight||1).toFixed(1)+'</small></div><select '+(canEdit()?'':'disabled')+' aria-label="'+esc(p.name)+' — '+esc(s.name)+'" onchange="window.saveSkillScore(\\''+esc(p.id)+'\\',\\''+activeDomain+'\\',\\''+esc(s.id)+'\\',this.value)">'+scoreOptions(score(p.id,activeDomain,s.id))+'</select></div>').join('');
+      return '<article class="skill-mobile-person-card"><header><div class="skill-mobile-avatar"><i class="bx bx-user"></i></div><div class="skill-mobile-person-copy"><strong>'+esc(p.name)+'</strong><small>'+esc(p.job||'عامل')+'</small></div><div class="skill-mobile-person-score '+tone+'"><b>'+st.avg.toFixed(1)+'</b><small>متوسط</small></div></header><div class="skill-mobile-meta"><span><i class="bx bx-error-circle"></i> '+st.gaps+' فجوات</span><span><i class="bx bx-target-lock"></i> الهدف '+TARGET+'</span><span>'+st.pct+'%</span></div><div class="skill-mobile-skills">'+rows+'</div></article>';
+    }).join('');
   }
 
   function renderTrainingPlan() {
@@ -183,26 +201,53 @@
     }catch(error){console.error('[Skill Matrix] save score failed',error);notify('⚠️ تعذر حفظ مستوى المهارة.');}
   }
 
-  async function addPerson() {
+  async function savePerson() {
     if(!canEdit())return notify('⚠️ لا تملك صلاحية إدارة العاملين.');
     const name=(document.getElementById('skillPersonName')?.value||'').trim();
     const job=(document.getElementById('skillPersonJob')?.value||'').trim();
+    const editId=(document.getElementById('skillPersonId')?.value||'').trim();
     if(name.length<2)return notify('⚠️ اكتب اسم العامل بالكامل.');
-    const id='person_'+Date.now()+'_'+Math.floor(Math.random()*1000);
-    const data={id,name,job,active:true,createdAt:Date.now(),createdByUid:window.currentUser?.uid||'',createdByName:window.currentUser?.name||''};
+    const duplicate=Object.values(peopleData).some(p=>p.id!==editId && p.active!==false && String(p.name||'').trim().toLowerCase()===name.toLowerCase());
+    if(duplicate)return notify('⚠️ هذا الاسم موجود بالفعل في قائمة العاملين اليدويين.');
+    const now=Date.now();
+    if(editId && peopleData[editId]){
+      const data={...peopleData[editId],name,job,updatedAt:now,updatedByUid:window.currentUser?.uid||'',updatedByName:window.currentUser?.name||''};
+      await firebase.database().ref(metaPath()+'/people/'+editId).set(data);
+      peopleData[editId]=data;
+      clearPersonForm();render();openManageModal('people');notify('✅ تم تحديث بيانات العامل.');
+      return;
+    }
+    const id='person_'+now+'_'+Math.floor(Math.random()*1000);
+    const data={id,name,job,active:true,createdAt:now,createdByUid:window.currentUser?.uid||'',createdByName:window.currentUser?.name||''};
     await firebase.database().ref(metaPath()+'/people/'+id).set(data);
     peopleData[id]=data;
-    closeManageModal();render();
+    clearPersonForm();render();openManageModal('people');
     notify('✅ تم إضافة العامل إلى قسم '+currentDept());
   }
 
-  async function removePerson(id) {
-    if(!canEdit())return;
+  function editPerson(id){
     const p=peopleData[id]; if(!p)return;
-    if(!confirm('حذف «'+p.name+'» من قائمة العاملين لهذا القسم؟\nدرجاته المحفوظة لن تُحذف تلقائيًا.'))return;
-    await firebase.database().ref(metaPath()+'/people/'+id).remove();
-    delete peopleData[id];render();openManageModal('people');notify('🗑️ تم حذف العامل من القائمة.');
+    const idEl=document.getElementById('skillPersonId');if(idEl)idEl.value=p.id;
+    const nameEl=document.getElementById('skillPersonName');if(nameEl)nameEl.value=p.name||'';
+    const jobEl=document.getElementById('skillPersonJob');if(jobEl)jobEl.value=p.job||'';
+    const label=document.getElementById('skillPersonSaveLabel');if(label)label.textContent='حفظ التعديل';
+    document.getElementById('skillPersonName')?.focus();
   }
+
+  function clearPersonForm(){
+    ['skillPersonId','skillPersonName','skillPersonJob'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    const label=document.getElementById('skillPersonSaveLabel');if(label)label.textContent='إضافة العامل';
+  }
+
+  async function togglePersonActive(id){
+    if(!canEdit())return;
+    const p=peopleData[id];if(!p)return;
+    const next=p.active===false;
+    const data={...p,active:next,updatedAt:Date.now(),updatedByUid:window.currentUser?.uid||'',updatedByName:window.currentUser?.name||''};
+    await firebase.database().ref(metaPath()+'/people/'+id).set(data);
+    peopleData[id]=data;render();openManageModal('people');notify(next?'✅ تم إعادة تفعيل العامل.':'⏸️ تم إيقاف العامل مع الحفاظ على بياناته ودرجاته.');
+  }
+
 
   async function saveSkillDefinition() {
     if(!canEdit())return notify('⚠️ لا تملك صلاحية إدارة المهارات.');
@@ -247,10 +292,13 @@
   function renderManagement() {
     const mount=document.getElementById(managementTab==='people'?'skillPeopleList':'skillSkillsList');if(!mount)return;
     if(managementTab==='people'){
-      const people=Object.values(peopleData);
-      mount.innerHTML='<div class="skill-manage-list-head"><div><b>عاملون مضافون يدويًا</b><span>'+people.length+' اسم محفوظ لهذا القسم</span></div></div>'+
-        (people.length?people.map(p=>'<div class="skill-manage-row"><div><strong>'+esc(p.name)+'</strong><small>'+esc(p.job||'عامل')+'</small></div><button class="skill-icon-danger" title="حذف" onclick="window.removeSkillPerson(\''+esc(p.id)+'\')"><i class="bx bx-trash"></i></button></div>').join(''):
-        '<div class="skill-manage-empty">لا توجد أسماء مضافة يدويًا بعد. مستخدمو النظام المسندون لهذا القسم يظهرون تلقائيًا أيضًا.</div>');
+      const people=Object.values(peopleData).sort((a,b)=>Number(b.active!==false)-Number(a.active!==false) || String(a.name||'').localeCompare(String(b.name||''),'ar'));
+      const systemPeople=getSystemPeopleForDept();
+      mount.innerHTML='<div class="skill-manage-summary"><div><strong>'+people.filter(p=>p.active!==false).length+'</strong><span>عامل يدوي نشط</span></div><div><strong>'+people.filter(p=>p.active===false).length+'</strong><span>مؤرشف</span></div><div><strong>'+systemPeople.length+'</strong><span>حساب نظام</span></div></div>'+
+        '<div class="skill-manage-list-head"><div><b>دليل العاملين للقسم</b><span>الحسابات النظامية تظهر تلقائيًا ولا يتم تعديل بياناتها من هنا.</span></div><button type="button" class="skill-mini-action" onclick="window.clearSkillPersonForm()"><i class="bx bx-plus"></i> جديد</button></div>'+
+        (people.length?people.map(p=>'<article class="skill-person-manage-card '+(p.active===false?'is-inactive':'')+'"><div class="skill-person-manage-main"><div class="skill-person-avatar"><i class="bx bx-user"></i></div><div><strong>'+esc(p.name)+'</strong><small>'+esc(p.job||'عامل')+'</small><span>'+ (p.active===false?'مؤرشف':'نشط') +'</span></div></div><div class="skill-person-manage-actions"><button class="skill-icon-btn" title="تعديل البيانات" onclick="window.editSkillPerson(\\''+esc(p.id)+'\\')"><i class="bx bx-edit-alt"></i></button><button class="skill-icon-danger" title="'+(p.active===false?'إعادة تفعيل':'إيقاف')+'" onclick="window.toggleSkillPerson(\\''+esc(p.id)+'\\')"><i class="bx '+(p.active===false?'bx-check-circle':'bx-archive-in')+'"></i></button></div></article>').join(''):
+        '<div class="skill-manage-empty">لا توجد أسماء مضافة يدويًا بعد. أضف أول عامل لهذا القسم من النموذج أعلاه.</div>');
+      if(systemPeople.length)mount.innerHTML += '<div class="skill-system-people"><div class="skill-system-head"><i class="bx bx-shield-quarter"></i><div><b>أعضاء النظام المرتبطون بالقسم</b><span>مصدرهم Users / صلاحيات النظام</span></div></div>'+systemPeople.map(p=>'<div class="skill-system-person"><div><strong>'+esc(p.name)+'</strong><small>'+esc(p.job||'عضو نظام')+'</small></div><span><i class="bx bx-link"></i> مرتبط</span></div>').join('')+'</div>';
     }else{
       const domain=activeDomain,list=skillsData[domain]||[];
       mount.innerHTML='<div class="skill-manage-list-head"><div><b>كتالوج '+(domain==='tpm'?'مهارات TPM':'المهارات الفنية')+'</b><span>'+list.length+' مهارة</span></div></div>'+
@@ -286,8 +334,10 @@
   window.saveSkillScore=saveSkillScore;
   window.openSkillManagement=openManageModal;
   window.closeSkillManagement=closeManageModal;
-  window.addSkillPerson=addPerson;
-  window.removeSkillPerson=removePerson;
+  window.addSkillPerson=savePerson;
+  window.editSkillPerson=editPerson;
+  window.clearSkillPersonForm=clearPersonForm;
+  window.toggleSkillPerson=togglePersonActive;
   window.saveSkillDefinition=saveSkillDefinition;
   window.editSkillDefinition=editSkill;
   window.removeSkillDefinition=removeSkill;

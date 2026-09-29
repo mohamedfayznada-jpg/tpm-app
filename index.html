@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="css/legacy-inline-extracted-v2.css?v=1">\n    <link rel="stylesheet" href="css/factory-os-v34-reference.css?v=21">
     <link rel="stylesheet" href="css/jh-command-center.css?v=8">
     <link rel="stylesheet" href="css/tpm-teams-premium.css?v=2">
-    <link rel="stylesheet" href="css/skill-matrix.css?v=20260929-skill-v1">
+    <link rel="stylesheet" href="css/skill-matrix.css?v=20260929-skill-v1">\n    <link rel="stylesheet" href="css/skill-matrix-v3.css?v=20260929-skill-v3-1">
 </head>
 <body>
     
@@ -1399,67 +1399,106 @@
          ========================================== -->
     <div class="container screen" id="jhSkillMatrixScreen">
         <section class="jh-skill-page-hero">
-            <div>
+            <div class="jh-skill-hero-copy">
                 <span class="jh-skill-kicker"><i class='bx bx-brain'></i> JH / PEOPLE CAPABILITY</span>
                 <h2>Skill Matrix — <span id="jhSkillDeptName">القسم</span></h2>
-                <p>مصفوفة مهارات خاصة بهذا القسم فقط. نفس أسماء العاملين تُقاس على محورين: مهارات TPM ومهارات فنية مرتبطة بالعملية.</p>
+                <p>مصفوفة قدرات خاصة بالقسم. قِس مهارات TPM والمهارات الفنية، ثم حوّل الفجوات إلى خطة تدريب واضحة.</p>
             </div>
             <div class="jh-skill-page-actions">
-                <button class="btn btn-outline" onclick="goBack()"><i class='bx bx-arrow-back'></i> رجوع</button>
-                <button class="btn btn-outline" onclick="openSkillManagement('people')"><i class='bx bx-user-plus'></i> إضافة عامل</button>
-                <button class="btn btn-outline" onclick="openSkillManagement('skills')"><i class='bx bx-edit-alt'></i> إدارة المهارات</button>
-                <button class="btn btn-primary" onclick="showSkillTrainingPlan()"><i class='bx bx-book-open'></i> استخراج خطة التدريب</button>
+                <button class="btn btn-outline" onclick="goBack()"><i class='bx bx-arrow-back'></i><span>رجوع</span></button>
+                <button class="btn btn-outline" onclick="openSkillManagement('people')"><i class='bx bx-group'></i><span>العاملون</span></button>
+                <button class="btn btn-outline" onclick="openSkillManagement('skills')"><i class='bx bx-wrench'></i><span>المهارات</span></button>
+                <button class="btn btn-primary" onclick="showSkillTrainingPlan()"><i class='bx bx-book-open'></i><span>خطة التدريب</span></button>
             </div>
         </section>
+
         <section class="skill-matrix-kpis" id="skillMatrixKpis"></section>
+
         <section class="jh-skill-page-card">
             <div class="skill-matrix-toolbar">
                 <div class="skill-domain-tabs" role="tablist" aria-label="مجالات المهارات">
-                    <button class="active" data-skill-domain="tpm" type="button"><i class='bx bx-cog'></i> مهارات خاصة بالـ TPM</button>
-                    <button data-skill-domain="technical" type="button"><i class='bx bx-wrench'></i> مهارات فنية خاصة بالعمليات</button>
+                    <button class="active" data-skill-domain="tpm" type="button"><i class='bx bx-cog'></i><span>TPM</span></button>
+                    <button data-skill-domain="technical" type="button"><i class='bx bx-wrench'></i><span>فني</span></button>
                 </div>
                 <div class="skill-matrix-tools">
-                    <label class="skill-search"><i class='bx bx-search'></i><input id="skillMatrixSearch" type="search" placeholder="ابحث باسم العامل"></label>
+                    <label class="skill-search"><i class='bx bx-search'></i><input id="skillMatrixSearch" type="search" placeholder="ابحث عن عامل"></label>
                     <span class="skill-scale"><b>0</b> غير مقيم · <b>1</b> مبتدئ · <b>2</b> أساسي · <b>3</b> متمكن · <b>4</b> متقدم</span>
                 </div>
             </div>
             <div class="skill-matrix-context">
                 <div><span class="eyebrow">CURRENT DEPARTMENT</span><h3 id="skillMatrixDomainTitle">مهارات خاصة بالـ TPM</h3></div>
-                <span class="skill-target-chip"><i class='bx bx-target-lock'></i> المستوى المستهدف: 4</span>
+                <span class="skill-target-chip"><i class='bx bx-target-lock'></i> الهدف 4 / 4</span>
             </div>
             <div id="skillMatrixTable"></div>
         </section>
+
         <section class="skill-training-panel" id="skillTrainingPanel" hidden>
             <div id="skillTrainingPlan"></div>
         </section>
     </div>
 
     <div class="modal-overlay" id="skillManagementModal">
-        <div class="modal-content skill-management-modal">
+        <div class="modal-content skill-management-modal" role="dialog" aria-modal="true" aria-labelledby="skillManagementTitle">
             <div class="skill-manage-head">
-                <div><span class="jh-skill-kicker">DEPARTMENT CAPABILITY</span><h3><i class='bx bx-grid-alt'></i> إدارة Skill Matrix</h3><p>الإدارة هنا خاصة بقسم <strong id="skillManageDeptName">القسم</strong>. أسماء العاملين وكتالوج المهارات لا ينتقلان إلى الأقسام الأخرى.</p></div>
-                <button class="skill-manage-close" type="button" onclick="closeSkillManagement()"><i class='bx bx-x'></i></button>
-            </div>
-            <div class="skill-manage-tabs">
-                <button type="button" data-skill-manage-tab="people" class="active"><i class='bx bx-group'></i> العاملون</button>
-                <button type="button" data-skill-manage-tab="skills"><i class='bx bx-wrench'></i> المهارات</button>
-            </div>
-            <div id="skillPeopleForm" class="skill-manage-form">
-                <div class="skill-form-grid">
-                    <label><span>اسم العامل *</span><input id="skillPersonName" class="form-control" placeholder="مثال: أحمد محمد"></label>
-                    <label><span>الوظيفة / المسمى</span><input id="skillPersonJob" class="form-control" placeholder="مثال: مشغل ماكينة"></label>
+                <div class="skill-manage-head-copy">
+                    <span class="jh-skill-kicker">DEPARTMENT CAPABILITY</span>
+                    <h3 id="skillManagementTitle"><i class='bx bx-grid-alt'></i> مركز إدارة Skill Matrix</h3>
+                    <p>كل تعديل هنا يخص قسم <strong id="skillManageDeptName">القسم</strong> فقط.</p>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="addSkillPerson()"><i class='bx bx-user-plus'></i> إضافة العامل للقسم</button>
+                <button class="skill-manage-close" type="button" onclick="closeSkillManagement()" aria-label="إغلاق"><i class='bx bx-x'></i></button>
+            </div>
+
+            <div class="skill-manage-tabs" role="tablist">
+                <button type="button" data-skill-manage-tab="people" class="active"><i class='bx bx-group'></i><span>العاملون</span></button>
+                <button type="button" data-skill-manage-tab="skills"><i class='bx bx-wrench'></i><span>كتالوج المهارات</span></button>
+            </div>
+
+            <div id="skillPeopleForm" class="skill-manage-form">
+                <div class="skill-manage-section-intro">
+                    <div><span class="eyebrow">PEOPLE DIRECTORY</span><h4>بيانات العاملين</h4><p>أضف عاملًا يدويًا أو راجع مستخدمي النظام المرتبطين بالقسم.</p></div>
+                    <span class="skill-admin-scope"><i class='bx bx-shield-quarter'></i> صلاحيات الإدارة</span>
+                </div>
+
+                <div class="skill-person-editor">
+                    <div class="skill-editor-title"><span class="skill-editor-icon"><i class='bx bx-user-plus'></i></span><div><strong id="skillPersonFormTitle">إضافة عامل جديد</strong><small>الحقول الأساسية فقط — الدرجات تُدار من المصفوفة.</small></div></div>
+                    <div class="skill-form-grid skill-person-form-grid">
+                        <label><span>اسم العامل *</span><input id="skillPersonName" class="form-control" autocomplete="name" placeholder="مثال: أحمد محمد"></label>
+                        <label><span>الوظيفة / المسمى</span><input id="skillPersonJob" class="form-control" placeholder="مثال: مشغل ماكينة"></label>
+                        <label><span>الرقم الوظيفي</span><input id="skillPersonEmployeeNo" class="form-control" placeholder="مثال: OP-1042"></label>
+                        <label><span>الوردية</span><input id="skillPersonShift" class="form-control" placeholder="مثال: A / صباحي"></label>
+                        <label><span>رقم الهاتف</span><input id="skillPersonPhone" class="form-control" inputmode="tel" placeholder="اختياري"></label>
+                        <label><span>الحالة</span><select id="skillPersonStatus" class="form-control"><option value="active">نشط</option><option value="inactive">معطل</option></select></label>
+                    </div>
+                    <input type="hidden" id="skillPersonId">
+                    <div class="skill-editor-actions">
+                        <button type="button" class="btn btn-primary" onclick="addSkillPerson()"><i class='bx bx-save'></i><span id="skillPersonSaveLabel">إضافة العامل</span></button>
+                        <button type="button" class="btn btn-outline" onclick="clearSkillPersonForm()"><i class='bx bx-refresh'></i> جديد</button>
+                    </div>
+                </div>
+
                 <div id="skillPeopleList"></div>
             </div>
+
             <div id="skillDefinitionForm" class="skill-manage-form" style="display:none">
-                <div class="skill-form-grid">
-                    <label><span>المجال</span><select id="skillDefDomain" class="form-control"><option value="tpm">مهارات خاصة بالـ TPM</option><option value="technical">مهارات فنية خاصة بالعمليات</option></select></label>
-                    <label><span>وزن المهارة</span><input id="skillDefWeight" class="form-control" type="number" min="0.1" max="5" step="0.1" value="1"></label>
-                    <label class="skill-form-wide"><span>اسم المهارة *</span><input id="skillDefName" class="form-control" placeholder="مثال: قراءة مخطط الحقن"></label>
+                <div class="skill-manage-section-intro">
+                    <div><span class="eyebrow">SKILL CATALOG</span><h4>كتالوج المهارات</h4><p>أنشئ المهارة مرة واحدة للقسم، واضبط وزنها لتحديد أولوية الفجوة التدريبية.</p></div>
+                    <span class="skill-admin-scope"><i class='bx bx-layer'></i> خاص بالقسم</span>
                 </div>
-                <input type="hidden" id="skillDefId">
-                <div class="skill-definition-actions"><button type="button" class="btn btn-primary" onclick="saveSkillDefinition()"><i class='bx bx-save'></i> <span id="skillDefSaveLabel">إضافة المهارة</span></button><button type="button" class="btn btn-outline" onclick="clearSkillDefinitionForm()"><i class='bx bx-refresh'></i> جديد</button></div>
+
+                <div class="skill-person-editor skill-skill-editor">
+                    <div class="skill-editor-title"><span class="skill-editor-icon"><i class='bx bx-wrench'></i></span><div><strong>مصمم مهارة</strong><small>الاسم والمجال والوزن فقط — بدون تعقيد.</small></div></div>
+                    <div class="skill-form-grid">
+                        <label><span>المجال</span><select id="skillDefDomain" class="form-control"><option value="tpm">مهارات TPM</option><option value="technical">مهارات فنية</option></select></label>
+                        <label><span>وزن المهارة</span><input id="skillDefWeight" class="form-control" type="number" min="0.1" max="5" step="0.1" value="1"></label>
+                        <label class="skill-form-wide"><span>اسم المهارة *</span><input id="skillDefName" class="form-control" placeholder="مثال: قراءة مخطط الحقن"></label>
+                    </div>
+                    <input type="hidden" id="skillDefId">
+                    <div class="skill-editor-actions">
+                        <button type="button" class="btn btn-primary" onclick="saveSkillDefinition()"><i class='bx bx-save'></i><span id="skillDefSaveLabel">إضافة المهارة</span></button>
+                        <button type="button" class="btn btn-outline" onclick="clearSkillDefinitionForm()"><i class='bx bx-refresh'></i> جديد</button>
+                    </div>
+                </div>
+
                 <div id="skillSkillsList"></div>
             </div>
         </div>

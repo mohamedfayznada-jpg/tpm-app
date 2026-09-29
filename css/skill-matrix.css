@@ -49,3 +49,36 @@
 @media(max-width:700px){#skillMatrixScreen{padding:88px 12px 24px}.skill-matrix-hero{padding:22px 18px}.skill-matrix-hero-copy h2{font-size:26px}.skill-matrix-kpis{grid-template-columns:1fr 1fr}.skill-kpi{padding:13px}.skill-matrix-toolbar{padding:14px}.skill-search{min-width:100%}.skill-scale{white-space:normal;line-height:1.6}.skill-matrix-context{align-items:flex-start;gap:10px;flex-direction:column}.skill-plan-head{align-items:flex-start;flex-direction:column}.skill-plan-row{grid-template-columns:30px 1fr 55px;padding:12px}.skill-plan-skill{grid-column:2/-1}.skill-plan-action{grid-column:2/-1}}
 @media(max-width:430px){.skill-matrix-kpis{grid-template-columns:1fr}.skill-domain-tabs{width:100%}.skill-domain-tabs button{flex:1}.skill-matrix-hero-actions,.skill-matrix-hero-actions button{width:100%}}
 @media(prefers-reduced-motion:reduce){.skill-domain-tabs button{transition:none}}
+
+
+/* V2 — department people & skill catalog management */
+.jh-skill-page-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.skill-management-modal{width:min(760px,calc(100vw - 28px));max-width:760px;padding:0;overflow:hidden}
+.skill-manage-head{display:flex;justify-content:space-between;gap:20px;padding:24px 26px 18px;border-bottom:1px solid #edf1f3;background:linear-gradient(135deg,#fbfdfe,#eef7fb)}
+.skill-manage-head h3{margin:6px 0;font-size:22px;font-weight:900;color:#173d59}
+.skill-manage-head p{margin:0;color:#71808a;font-size:12px;line-height:1.8}
+.skill-manage-close{border:1px solid #dce6eb;background:#fff;width:38px;height:38px;border-radius:12px;cursor:pointer;font-size:21px}
+.skill-manage-tabs{display:flex;gap:8px;padding:14px 20px;border-bottom:1px solid #edf1f3;background:#fff}
+.skill-manage-tabs button{border:1px solid #dce6eb;background:#f7fafb;color:#657680;border-radius:11px;padding:9px 14px;font:inherit;font-size:12px;font-weight:900;cursor:pointer}
+.skill-manage-tabs button.active{background:#173d59;color:#fff;border-color:#173d59}
+.skill-manage-form{padding:18px 20px}
+.skill-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.skill-form-grid label{display:grid;gap:6px;font-size:11px;font-weight:900;color:#43545e}
+.skill-form-grid .skill-form-wide{grid-column:1/-1}
+.skill-form-grid input,.skill-form-grid select{margin:0}
+.skill-manage-list-head{display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding:12px 14px;background:#f6fafc;border:1px solid #e5edf1;border-radius:12px}
+.skill-manage-list-head div{display:grid;gap:3px}.skill-manage-list-head b{font-size:12px;color:#253741}.skill-manage-list-head span{font-size:10px;color:#81909a}
+.skill-manage-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 8px;border-bottom:1px solid #edf1f3}
+.skill-manage-row>div:first-child{display:grid;gap:3px}.skill-manage-row strong{font-size:12px;color:#263943}.skill-manage-row small{font-size:10px;color:#84929a}
+.skill-row-actions{display:flex;gap:6px}
+.skill-icon-btn,.skill-icon-danger{width:34px;height:34px;border-radius:10px;border:1px solid #dce6eb;background:#fff;cursor:pointer;display:grid;place-items:center;font-size:17px}
+.skill-icon-btn{color:#1677d2}.skill-icon-danger{color:#c53c3c}
+.skill-definition-actions{display:flex;gap:8px;margin-top:4px}
+.skill-manage-empty{padding:24px;text-align:center;color:#7b8992;font-size:11px;border:1px dashed #d8e2e7;border-radius:12px;margin-top:12px}
+@media(max-width:700px){
+  .jh-skill-page-actions{width:100%;justify-content:stretch}.jh-skill-page-actions button{flex:1}
+  .skill-management-modal{width:calc(100vw - 18px)}
+  .skill-manage-head{padding:18px}.skill-manage-form{padding:14px}.skill-form-grid{grid-template-columns:1fr}
+  .skill-form-grid .skill-form-wide{grid-column:auto}
+}
+@media(prefers-reduced-motion:reduce){.skill-manage-tabs button,.skill-icon-btn,.skill-icon-danger{transition:none}}

@@ -1406,6 +1406,8 @@
             </div>
             <div class="jh-skill-page-actions">
                 <button class="btn btn-outline" onclick="goBack()"><i class='bx bx-arrow-back'></i> رجوع</button>
+                <button class="btn btn-outline" onclick="openSkillManagement('people')"><i class='bx bx-user-plus'></i> إضافة عامل</button>
+                <button class="btn btn-outline" onclick="openSkillManagement('skills')"><i class='bx bx-edit-alt'></i> إدارة المهارات</button>
                 <button class="btn btn-primary" onclick="showSkillTrainingPlan()"><i class='bx bx-book-open'></i> استخراج خطة التدريب</button>
             </div>
         </section>
@@ -1430,6 +1432,37 @@
         <section class="skill-training-panel" id="skillTrainingPanel" hidden>
             <div id="skillTrainingPlan"></div>
         </section>
+    </div>
+
+    <div class="modal-overlay" id="skillManagementModal">
+        <div class="modal-content skill-management-modal">
+            <div class="skill-manage-head">
+                <div><span class="jh-skill-kicker">DEPARTMENT CAPABILITY</span><h3><i class='bx bx-grid-alt'></i> إدارة Skill Matrix</h3><p>الإدارة هنا خاصة بقسم <strong id="skillManageDeptName">القسم</strong>. أسماء العاملين وكتالوج المهارات لا ينتقلان إلى الأقسام الأخرى.</p></div>
+                <button class="skill-manage-close" type="button" onclick="closeSkillManagement()"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="skill-manage-tabs">
+                <button type="button" data-skill-manage-tab="people" class="active"><i class='bx bx-group'></i> العاملون</button>
+                <button type="button" data-skill-manage-tab="skills"><i class='bx bx-wrench'></i> المهارات</button>
+            </div>
+            <div id="skillPeopleForm" class="skill-manage-form">
+                <div class="skill-form-grid">
+                    <label><span>اسم العامل *</span><input id="skillPersonName" class="form-control" placeholder="مثال: أحمد محمد"></label>
+                    <label><span>الوظيفة / المسمى</span><input id="skillPersonJob" class="form-control" placeholder="مثال: مشغل ماكينة"></label>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="addSkillPerson()"><i class='bx bx-user-plus'></i> إضافة العامل للقسم</button>
+                <div id="skillPeopleList"></div>
+            </div>
+            <div id="skillDefinitionForm" class="skill-manage-form" style="display:none">
+                <div class="skill-form-grid">
+                    <label><span>المجال</span><select id="skillDefDomain" class="form-control"><option value="tpm">مهارات خاصة بالـ TPM</option><option value="technical">مهارات فنية خاصة بالعمليات</option></select></label>
+                    <label><span>وزن المهارة</span><input id="skillDefWeight" class="form-control" type="number" min="0.1" max="5" step="0.1" value="1"></label>
+                    <label class="skill-form-wide"><span>اسم المهارة *</span><input id="skillDefName" class="form-control" placeholder="مثال: قراءة مخطط الحقن"></label>
+                </div>
+                <input type="hidden" id="skillDefId">
+                <div class="skill-definition-actions"><button type="button" class="btn btn-primary" onclick="saveSkillDefinition()"><i class='bx bx-save'></i> <span id="skillDefSaveLabel">إضافة المهارة</span></button><button type="button" class="btn btn-outline" onclick="clearSkillDefinitionForm()"><i class='bx bx-refresh'></i> جديد</button></div>
+                <div id="skillSkillsList"></div>
+            </div>
+        </div>
     </div>
 
     <div class="container screen" id="settingsScreen">

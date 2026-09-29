@@ -65,5 +65,67 @@ window.closeEAM=()=>{const m=document.getElementById('eaModal');if(m)m.hidden=tr
 window.saveEAP=async id=>{if(!uid())return showToast('⚠️ سجّل الدخول أولاً');try{const r=imps().find(x=>x.id===id),old=plan(id),f=document.getElementById('eaf')?.files?.[0];let url=old.evidenceUrl||'',name=old.evidenceName||'';if(f){url=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=()=>res(rd.result);rd.onerror=rej;rd.readAsDataURL(f)});name=f.name}const d={id:id,reportId:R,department:r.department,activity:r.activity,status:document.getElementById('eas').value,owner:document.getElementById('eao').value.trim(),dueDate:document.getElementById('ead').value,plan:document.getElementById('eap').value.trim(),responseNote:document.getElementById('ean').value.trim(),evidenceUrl:url,evidenceName:name,updatedAt:new Date().toISOString(),updatedByUid:uid()};await firebase.database().ref('tpm_system/external_audit_action_plans/'+R+'/'+id).set(d);S.plans[id]=d;closeEAM();renderExternalAudit();showToast('✅ تم حفظ خطة الاستجابة ودليلها')}catch(e){console.error(e);showToast('❌ تعذر حفظ خطة الاستجابة')}};
 window.viewEAE=id=>{const p=plan(id),m=document.getElementById('eaModal');if(!p.evidenceUrl||!m)return;m.hidden=false;m.innerHTML='<div class="ea-modal-backdrop" onclick="closeEAM()"></div><div class="ea-image-viewer"><button onclick="closeEAM()">×</button><img src="'+esc(p.evidenceUrl)+'"><b>'+esc(p.evidenceName||'دليل الاستجابة')+'</b></div>'};
 window.importExternalAuditPdf=async e=>{const f=e.target.files?.[0];if(!f)return;try{if(!window.pdfjsLib)throw Error('PDF.js غير متاحة');showToast('⏳ جاري تحليل التقرير صفحة بصفحة...');const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise,pages=[];for(let n=1;n<=pdf.numPages;n++){const tc=await(await pdf.getPage(n)).getTextContent();pages.push(tc.items.map(x=>x.str).join(' '))}const d=parseExternalAuditPdf(pages);if(!d.departments.length)throw Error('لم أتعرف على بنية التقرير');S.data=d;S.dept='all';S.activity='all';S.q='';S.filter='all';S.team=null;await load();renderExternalAudit();showToast('✅ تم تحليل '+pages.length+' صفحة وتحميل النتائج الكاملة')}catch(err){console.error(err);showToast('❌ '+err.message)}e.target.value=''};
-function parseExternalAuditPdf(pages){const teams=[['5S','فريق 5S'],['JH','فريق الصيانة الذاتية'],['SHE','فريق السلامة والصحة والبيئة'],['E&T','فريق التعليم والتدريب'],['KK','فريق التحسين المستمر'],['PM','فريق الصيانة المخططة']].map((x,i)=>{const m=(pages[i*2]||'').match(/100\\s+(\\d+)\\s+Ref\\.A\\s+Create/i);return{id:x[0],name:x[1],score:Number(m?.[1]||0),percent:Number(m?.[1]||0)}});const ranges=[['الفاكيوم',14,51],['حقن الباب',52,89],['تشكيل المواسير',90,121],['حقن الكابينة',122,159]],departments=[];for(const [dept,start,end] of ranges){const arr=[];for(let p=start;p<=Math.min(end,pages.length);p+=2){const t=pages[p-1]||'',n=pages[p]||'',m=t.match(/Ref\\.A\\s+([A-Za-z0-9\\-]+(?:\\s+Activity)?)\\s+100\\s+0\\s+(.{1,50}?)\\s+(\\d+)\\s+Factory Name/i);if(!m)continue;const activity=m[1].replace(/\\s+Activity$/i,'').trim(),source=m[2].trim(),total=t.match(/(\\d+)\\s+(\\d+)\\s+Ref\\.A/i),planned=Number(total?.[1]||100),actual=Number(total?.[2]||m[3]);const im=n.match(/فرص التحسين([\\s\\S]*?)(?=نقاط القوة|REF\\. B|Ref\\.A)/i),cm=n.match(/Comment([\\s\\S]*)/i),split=x=>String(x||'').replace(/\\s+/g,' ').split(/(?=مطلوب |تم |توجد |يتم |عدم )/).map(v=>v.trim()).filter(v=>v.length>20);arr.push({activity,scorePage:p,findingsPage:p+1,department:dept,sourceDepartment:source,dataQualityFlags:source&&source!==dept?['القسم في خانة المصدر لا يطابق مجموعة الصفحات']:[],planned,actual,percent:planned?Math.round(actual/planned*1000)/10:0,improvements:split(im?.[1]),comments:split(cm?.[1])})}departments.push({department:dept,items:arr})}return{report:{title:'نتائج المراجعة الخارجية — النصف الثاني 2026',period:'النصف الثاني 2026',sourceFile:'PDF import',generatedFromPages:pages.length},teams,departments}}
+function parseExternalAuditPdf(pages){
+ const norm=v=>String(v??'').normalize('NFKC').replace(/[\u200e\u200f]/g,'').replace(/\s+/g,' ').trim();
+ const P=(pages||[]).map(norm);
+ const teamDefs=[['5S','فريق 5S'],['JH','فريق الصيانة الذاتية'],['SHE','فريق السلامة والصحة والبيئة'],['E&T','فريق التعليم والتدريب'],['KK','فريق التحسين المستمر'],['PM','فريق الصيانة المخططة']];
+ const teams=teamDefs.map(([id,name],i)=>{
+   const t=P[i*2+1]||'';
+   const m=t.match(/(\d+)\s+(\d+)\s+Ref\.\s*A\s+Create/i);
+   const score=Number(m?.[2]||0);
+   return {id,name,score,percent:score};
+ });
+ const scoreInfo=t=>{
+   const m=t.match(/Ref\.\s*A\s+((?:5\s*S)|(?:J\s*H\s*-\s*\d+)|(?:P\s*M\s*-\s*\d+)|(?:E\s*&\s*T)|(?:k\s*k)|(?:S\s*H\s*E))\s+/i);
+   if(!m)return null;
+   const activity=m[1].replace(/\s+/g,'').toUpperCase();
+   const before=t.slice(0,m.index);
+   const nums=before.match(/(?<!\d)\d+(?!\d)/g)||[];
+   if(nums.length<2)return null;
+   const planned=Number(nums[nums.length-2]),actual=Number(nums[nums.length-1]);
+   const footer=t.slice(m.index+m[0].length);
+   const sm=footer.match(new RegExp('(.+?)\\s+0\\s+1\\s+0\\s+0\\s+'+actual+'\\s+Factory Name','i'));
+   return {activity,planned,actual,sourceDepartment:norm(sm?.[1]||'')};
+ };
+ const splitFindings=t=>{
+   const imp=t.match(/فرص\s+التحسين([\s\S]*?)(?=نقاط\s+القوة|REF\.\s*B|$)/i);
+   const com=t.match(/نقاط\s+القوة([\s\S]*?)(?=REF\.\s*B|$)/i);
+   const split=x=>{
+     if(!x)return [];
+     const parts=String(x).split(/(?=(?:مطلوب|تم\s+|توجد|يوجد|يتم|يتضح))/).map(norm).filter(v=>v.length>=25);
+     return parts.length?parts:[norm(x)].filter(v=>v.length>=25);
+   };
+   return {improvements:split(imp?.[1]),comments:split(com?.[1])};
+ };
+ const canonicalSource=s=>{
+   const x=norm(s);
+   if(/الفاكيوم/.test(x))return 'الفاكيوم';
+   if(/الباب\s*حقن|حقن\s*الباب/.test(x))return 'حقن الباب';
+   if(/المواسير\s*تشكيل|تشكيل\s*المواسير/.test(x))return 'تشكيل المواسير';
+   if(/الكابينة\s*حقن|حقن\s*الكابينة/.test(x))return 'حقن الكابينة';
+   return x;
+ };
+ const ranges=[['الفاكيوم',14,51],['حقن الباب',52,89],['تشكيل المواسير',90,121],['حقن الكابينة',122,159]];
+ const departments=ranges.map(([dept,start,end])=>{
+   const items=[];
+   for(let p=start;p<=Math.min(end,P.length);p+=2){
+     const info=scoreInfo(P[p-1]||'');
+     if(!info)continue;
+     const findings=splitFindings(P[p]||'');
+     const source=canonicalSource(info.sourceDepartment);
+     items.push({
+       activity:info.activity,scorePage:p,findingsPage:p+1,department:dept,
+       sourceDepartment:source,dataQualityFlags:source&&source!==dept?['القسم في خانة المصدر لا يطابق مجموعة الصفحات']:[],
+       planned:info.planned,actual:info.actual,
+       percent:info.planned?Math.round(info.actual/info.planned*1000)/10:0,
+       improvements:findings.improvements,comments:findings.comments
+     });
+   }
+   return {department:dept,items};
+ });
+ return {
+   report:{title:'نتائج المراجعة الخارجية — النصف الثاني 2026',period:'النصف الثاني 2026',sourceFile:'PDF import',generatedFromPages:P.length},
+   teams,departments
+ };
+}
 })();

@@ -1739,3 +1739,175 @@ body.skill-management-open{overflow:hidden!important}
 @media(prefers-reduced-motion:reduce){
   #jhSkillMatrixScreen .skill-matrix-data-state.loading>i{animation:none}
 }
+
+
+/* V7 — mobile-safe management surface */
+#skillManagementModal{
+  box-sizing:border-box;
+  overflow:hidden!important;
+  overscroll-behavior:contain;
+}
+#skillManagementModal .skill-management-modal{
+  box-sizing:border-box;
+  width:min(940px,calc(100vw - 20px));
+  max-width:940px;
+  max-height:calc(100dvh - 20px);
+  min-width:0;
+}
+#skillManagementModal .skill-manage-form{
+  min-width:0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#skillManagementModal .skill-person-editor,
+#skillManagementModal .skill-manage-list-head-pro,
+#skillManagementModal .skill-person-admin-card,
+#skillManagementModal .skill-skill-admin-card{
+  min-width:0;
+}
+#skillManagementModal input,
+#skillManagementModal select,
+#skillManagementModal button{
+  max-width:100%;
+}
+#skillManagementModal .skill-manage-close{
+  flex:0 0 auto;
+}
+@media(max-width:760px){
+  #skillManagementModal{
+    align-items:flex-end!important;
+    padding:8px!important;
+  }
+  #skillManagementModal .skill-management-modal{
+    width:100%;
+    max-width:none;
+    max-height:calc(100dvh - 16px);
+    border-radius:18px;
+  }
+  #skillManagementModal .skill-manage-head{
+    position:relative!important;
+    padding:13px 12px 11px;
+    gap:10px;
+  }
+  #skillManagementModal .skill-manage-head h3{font-size:15px}
+  #skillManagementModal .skill-manage-head p{font-size:8px}
+  #skillManagementModal .skill-manage-close{
+    min-width:70px!important;
+    width:auto!important;
+    height:34px;
+    min-height:34px;
+    border-radius:9px;
+  }
+  #skillManagementModal .skill-manage-close span{display:inline!important;font-size:8px}
+  #skillManagementModal .skill-manage-tabs{
+    padding:8px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  #skillManagementModal .skill-manage-tabs button{
+    min-width:0;
+    min-height:36px;
+    padding-inline:6px;
+    font-size:9px;
+  }
+  #skillManagementModal .skill-manage-form{padding:10px}
+  #skillManagementModal .skill-manage-section-intro{
+    flex-direction:column;
+    gap:7px;
+    margin-bottom:9px;
+  }
+  #skillManagementModal .skill-manage-section-intro h4{font-size:14px}
+  #skillManagementModal .skill-manage-section-intro p{font-size:8px}
+  #skillManagementModal .skill-person-editor{
+    padding:10px;
+    border-radius:13px;
+  }
+  #skillManagementModal .skill-form-grid{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  #skillManagementModal .skill-form-grid .skill-form-wide{grid-column:auto}
+  #skillManagementModal .skill-form-grid label{font-size:9px}
+  #skillManagementModal .skill-form-grid .form-control{
+    min-height:40px;
+    font-size:10px;
+  }
+  #skillManagementModal .skill-editor-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  #skillManagementModal .skill-editor-actions .btn{
+    width:100%;
+    min-height:38px;
+  }
+  #skillManagementModal .skill-editor-actions .skill-editor-cancel{
+    grid-column:1/-1;
+  }
+  #skillManagementModal .skill-manage-list-head-pro{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+    margin-top:10px;
+  }
+  #skillManagementModal .skill-manage-list-actions{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:6px;
+  }
+  #skillManagementModal .skill-manage-search{
+    width:auto;
+    min-width:0;
+  }
+  #skillManagementModal .skill-mini-cta{
+    min-height:34px;
+    white-space:nowrap;
+  }
+  #skillManagementModal .skill-person-admin-card{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:8px;
+    padding:9px;
+  }
+  #skillManagementModal .skill-person-admin-main{
+    min-width:0;
+    align-items:flex-start;
+  }
+  #skillManagementModal .skill-person-admin-main>div{
+    min-width:0;
+    flex:1;
+  }
+  #skillManagementModal .skill-person-admin-main strong,
+  #skillManagementModal .skill-skill-admin-copy strong{
+    font-size:10px;
+    line-height:1.5;
+  }
+  #skillManagementModal .skill-person-admin-meta{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:2px 6px;
+    font-size:7px;
+  }
+  #skillManagementModal .skill-person-status{
+    position:absolute;
+    inset-inline-end:8px;
+    top:8px;
+    font-size:6.5px;
+    padding:4px 6px;
+  }
+  #skillManagementModal .skill-person-admin-card{position:relative;padding-inline-end:62px}
+  #skillManagementModal .skill-person-admin-actions,
+  #skillManagementModal .skill-row-actions{
+    width:100%;
+    justify-content:flex-end;
+    padding-top:6px;
+    border-top:1px solid #edf2f4;
+  }
+}
+@media(max-width:390px){
+  #skillManagementModal{padding:5px!important}
+  #skillManagementModal .skill-management-modal{max-height:calc(100dvh - 10px)}
+  #skillManagementModal .skill-manage-list-actions{grid-template-columns:1fr}
+  #skillManagementModal .skill-mini-cta{width:100%;justify-content:center}
+  #skillManagementModal .skill-person-admin-card{padding-inline-end:56px}
+}

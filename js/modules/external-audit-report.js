@@ -6,6 +6,7 @@ const uid=()=>firebase.auth&&firebase.auth().currentUser?firebase.auth().current
 const fmt=n=>new Intl.NumberFormat('ar-EG').format(Number(n||0));
 const pc=n=>(Number(n||0).toFixed(Number(n)%1?1:0))+'%';
 const avg=a=>a.length?a.reduce((x,y)=>x+Number(y||0),0)/a.length:0;
+const deptScore=d=>{const p=(d?.items||[]).reduce((s,x)=>s+Number(x.planned||0),0),a=(d?.items||[]).reduce((s,x)=>s+Number(x.actual||0),0);return p?a/p*100:0};
 const slug=s=>String(s||'').replace(/[^\w\u0600-\u06FF-]+/g,'-').replace(/^-|-$/g,'').slice(0,80);
 const emptyAuditData=()=>({report:{title:'نتائج المراجعة الخارجية',period:'غير محمل',sourceFile:'',generatedFromPages:0},teams:[],departments:[]});
 async function load(){
@@ -43,15 +44,15 @@ const imps=()=>items().flatMap(x=>(x.improvements||[]).map((t,i)=>({id:slug(x.de
 const plan=id=>S.plans[id]||{status:'not_started',owner:'',dueDate:'',plan:'',responseNote:'',evidenceUrl:'',evidenceName:''};
 const status=s=>({not_started:'لم يبدأ',in_progress:'جاري التنفيذ',blocked:'متوقف',done:'مكتمل'})[s]||'لم يبدأ';
 window.renderExternalAudit=async function(){
- try{await load();const root=document.getElementById('externalAuditRoot');if(!root)return;const all=items(),allI=imps(),sel=S.dept==='all'?null:S.dept;
+ try{await load();const root=document.getElementById('externalAuditRoot');if(!root)return;const all=items(),allI=imps(),sel=S.dept==='all'?null:S.dept,allN=all.flatMap(x=>(x.comments||[]));
  const vis=all.filter(x=>(!sel||x.department===sel)&&(S.activity==='all'||x.activity===S.activity)&&(!S.q||[x.department,x.activity].concat(x.improvements||[],x.comments||[]).join(' ').toLowerCase().includes(S.q.toLowerCase())));
- const shown=allI.filter(x=>(!sel||x.department===sel)&&(!S.q||x.text.toLowerCase().includes(S.q.toLowerCase()))&&(S.filter==='all'||(S.filter==='open'&&plan(x.id).status!=='done')||(S.filter==='done'&&plan(x.id).status==='done')));
- let h=(S.seedError?'<div class="ea-seed-warning" role="status"><i class="bx bx-error-circle"></i><div><b>التقرير الأساسي غير متاح حالياً</b><span>'+esc(S.seedError)+' — يمكنك استيراد ملف PDF من زر «استيراد التقرير الكامل» لإعادة بناء البيانات.</span></div></div>':'')+'<section class="ea-hero"><div class="ea-hero-copy"><span class="ea-eyebrow">EXTERNAL AUDIT • H2 2026</span><h1>مركز قيادة المراجعة الخارجية</h1><p>نتائج الفرق والأقسام، فرص التحسين، وخطط الاستجابة في مساحة تشغيلية واحدة.</p><div class="ea-hero-actions"><button class="btn btn-primary" onclick="document.getElementById(\'eaPdf\').click()">استيراد التقرير الكامل</button><button class="btn btn-outline" onclick="window.print()">طباعة</button><input id="eaPdf" type="file" accept=".pdf" hidden onchange="window.importExternalAuditPdf?.(event)"></div></div><div class="ea-orbit"><b>H2</b><span>2026</span><em>RESULTS</em><em>RESPONSE</em></div></section>';
+ const shown=allI.filter(x=>(!sel||x.department===sel)&&(!S.team||((S.team==='5S'&&x.activity==='5S')||(S.team==='JH'&&/^JH-\d+$/i.test(x.activity))||(S.team==='SHE'&&x.activity==='SHE')||(S.team==='E&T'&&x.activity==='E&T')||(S.team==='KK'&&x.activity==='KK')||(S.team==='PM'&&/^PM-\d+$/i.test(x.activity))))&&(!S.q||x.text.toLowerCase().includes(S.q.toLowerCase()))&&(S.filter==='all'||(S.filter==='open'&&plan(x.id).status!=='done')||(S.filter==='done'&&plan(x.id).status==='done')));
+ let h=((S.seedError||!allI.length||!allN.length)?'<div class="ea-seed-warning" role="status"><i class="bx bx-error-circle"></i><div><b>تفاصيل المراجعة غير مكتملة في النسخة الحالية</b><span>'+esc(S.seedError||'تم تحميل الدرجات، لكن فرص التحسين وملاحظات المراجعين غير موجودة في النسخة المضمنة. استخدم «استيراد Excel» من نفس تقرير المراجعة لتحميلها بالكامل.')+'</span></div></div>':'')+'<section class="ea-hero"><div class="ea-hero-copy"><span class="ea-eyebrow">EXTERNAL AUDIT • H2 2026</span><h1>مركز قيادة المراجعة الخارجية</h1><p>نتائج الفرق والأقسام، فرص التحسين، وخطط الاستجابة في مساحة تشغيلية واحدة.</p><div class="ea-hero-actions"><button class="btn btn-primary" onclick="document.getElementById(\'eaXlsx\').click()">استيراد Excel</button><button class="btn btn-outline" onclick="document.getElementById(\'eaPdf\').click()">استيراد PDF</button><button class="btn btn-outline" onclick="window.print()">طباعة</button><input id="eaXlsx" type="file" accept=".xlsx,.xls,.xlsm" hidden onchange="window.importExternalAuditXlsx?.(event)"><input id="eaPdf" type="file" accept=".pdf" hidden onchange="window.importExternalAuditPdf?.(event)"></div></div><div class="ea-orbit"><b>H2</b><span>2026</span><em>RESULTS</em><em>RESPONSE</em></div></section>';
  const open=allI.filter(x=>plan(x.id).status!=='done').length,done=allI.length-open,evi=allI.filter(x=>plan(x.id).evidenceUrl).length;
  h+='<section class="ea-kpis">'+[['الأقسام',S.data.departments.length,'bx-buildings'],['الأنشطة',all.length,'bx-check-shield'],['فرص التحسين',allI.length,'bx-bulb'],['خطط مفتوحة',open,'bx-task'],['مكتمل',done,'bx-check-double'],['أدلة استجابة',evi,'bx-image']].map(x=>'<article class="ea-kpi"><i class="bx '+x[2]+'"></i><span>'+x[0]+'</span><b>'+fmt(x[1])+'</b></article>').join('')+'</section>';
  h+='<section class="ea-toolbar"><div class="ea-tabs"><button class="'+(S.filter==='all'?'active':'')+'" onclick="setEAF(\'all\')">كل الفرص</button><button class="'+(S.filter==='open'?'active':'')+'" onclick="setEAF(\'open\')">تحتاج استجابة</button><button class="'+(S.filter==='done'?'active':'')+'" onclick="setEAF(\'done\')">مغلقة</button></div><input class="ea-search" placeholder="ابحث في النتائج والملاحظات..." value="'+esc(S.q)+'" oninput="setEAQ(this.value)"><select class="ea-select" onchange="setEAD(this.value)"><option value="all">كل الأقسام</option>'+S.data.departments.map(d=>'<option '+(S.dept===d.department?'selected':'')+' value="'+esc(d.department)+'">'+esc(d.department)+'</option>').join('')+'</select><select class="ea-select" onchange="setEAA(this.value)"><option value="all">كل الأنشطة</option>'+Array.from(new Set(all.map(x=>x.activity))).map(a=>'<option '+(S.activity===a?'selected':'')+' value="'+esc(a)+'">'+esc(a)+'</option>').join('')+'</select></section>';
  h+='<section class="ea-section"><div class="ea-section-head"><div><span class="ea-eyebrow">TPM TEAMS</span><h2>نتائج الفرق</h2></div><span>كل فريق مستقل</span></div><div class="ea-team-grid">'+S.data.teams.map(t=>'<button class="ea-team-card '+(S.team===t.id?'selected':'')+'" onclick="setEAT(\''+esc(t.id)+'\')"><i class="bx bx-shield"></i><span><small>'+esc(t.id)+'</small><b>'+esc(t.name)+'</b></span><strong>'+pc(t.percent)+'</strong></button>').join('')+'</div></section>';
- if(!S.team){h+='<section class="ea-section"><div class="ea-section-head"><div><span class="ea-eyebrow">OPERATIONAL DEPARTMENTS</span><h2>الأقسام التشغيلية</h2></div><span>كل قسم مستقل</span></div><div class="ea-dept-grid">'+S.data.departments.filter(d=>S.dept==='all'||d.department===S.dept).map(d=>{const q=vis.filter(x=>x.department===d.department);return '<article class="ea-dept-card"><div class="ea-dept-head"><div><span>DEPARTMENT</span><h3>'+esc(d.department)+'</h3></div><b class="ea-score">'+pc(avg(q.map(x=>x.percent)))+'</b></div><div class="ea-activity-list">'+q.map(x=>'<button class="ea-activity" onclick="openEA(\''+esc(x.department)+'\',\''+esc(x.activity)+'\')"><span><b>'+esc(x.activity)+'</b><small>'+fmt(x.improvements?.length||0)+' فرصة • '+fmt(x.comments?.length||0)+' ملاحظة</small></span><strong>'+pc(x.percent)+'</strong><i class="bx bx-chevron-left"></i></button>').join('')+'</div></article>'}).join('')+'</div></section>'}
+ if(!S.team){h+='<section class="ea-section"><div class="ea-section-head"><div><span class="ea-eyebrow">OPERATIONAL DEPARTMENTS</span><h2>الأقسام التشغيلية</h2></div><span>كل قسم مستقل</span></div><div class="ea-dept-grid">'+S.data.departments.filter(d=>S.dept==='all'||d.department===S.dept).map(d=>{const q=vis.filter(x=>x.department===d.department);return '<article class="ea-dept-card"><div class="ea-dept-head"><div><span>DEPARTMENT</span><h3>'+esc(d.department)+'</h3></div><b class="ea-score">'+pc(deptScore(d))+'</b></div><div class="ea-activity-list">'+q.map(x=>'<button class="ea-activity" onclick="openEA(\''+esc(x.department)+'\',\''+esc(x.activity)+'\')"><span><b>'+esc(x.activity)+'</b><small>'+fmt(x.improvements?.length||0)+' فرصة • '+fmt(x.comments?.length||0)+' ملاحظة</small></span><strong>'+pc(x.percent)+'</strong><i class="bx bx-chevron-left"></i></button>').join('')+'</div></article>'}).join('')+'</div></section>'}
  else {const t=S.data.teams.find(x=>x.id===S.team);h+='<section class="ea-section ea-team-detail"><div class="ea-section-head"><h2>'+esc(t?t.name:S.team)+'</h2><button class="ea-link" onclick="setEAT(\'\')">إغلاق</button></div><div class="ea-detail-hero"><div><span>النتيجة</span><b>'+pc(t?t.percent:0)+'</b></div><div><span>الفترة</span><b>H2 2026</b></div><div><span>المصدر</span><b>External Audit</b></div></div></section>'}
  h+='<section class="ea-section"><div class="ea-section-head"><div><span class="ea-eyebrow">EXECUTION BOARD</span><h2>فرص التحسين وخطط الاستجابة</h2></div><span>'+fmt(shown.length)+' بند</span></div><div class="ea-opportunity-list">'+shown.map(x=>{const p=plan(x.id);return '<article class="ea-opportunity '+(p.status==='done'?'is-done':'')+'"><div class="ea-opp-main"><div class="ea-opp-meta"><span>'+esc(x.department)+'</span><b>'+esc(x.activity)+'</b><em>صفحة '+fmt(x.page)+'</em></div><h3>'+esc(x.text)+'</h3><div class="ea-opp-actions"><span class="ea-status '+(p.status==='done'?'ea-done':p.status==='in_progress'?'ea-live':p.status==='blocked'?'ea-risk':'ea-muted')+'">'+status(p.status)+'</span>'+(p.owner?'<span>'+esc(p.owner)+'</span>':'')+(p.dueDate?'<span>'+esc(p.dueDate)+'</span>':'')+(p.evidenceUrl?'<button onclick="viewEAE(\''+esc(x.id)+'\')">دليل الاستجابة</button>':'')+'</div></div><button class="ea-plan-btn" onclick="openEAP(\''+esc(x.id)+'\')">'+(p.plan?'تعديل خطة العمل':'إضافة خطة عمل')+'</button></article>'}).join('')+'</div></section>';
  const notes=all.flatMap(x=>(x.comments||[]).map(t=>({d:x.department,a:x.activity,t:t,p:x.findingsPage}))).filter(x=>(!sel||x.d===sel)&&(!S.q||x.t.toLowerCase().includes(S.q.toLowerCase())));
@@ -59,11 +60,72 @@ window.renderExternalAudit=async function(){
  root.innerHTML=h;
  }catch(e){console.error(e);const r=document.getElementById('externalAuditRoot');if(r)r.innerHTML='<div class="ea-empty ea-error"><b>تعذر تحميل التقرير</b><span>'+esc(e.message)+'</span></div>'}
 };
-window.setEAD=v=>{S.dept=v;S.activity='all';renderExternalAudit()};window.setEAA=v=>{S.activity=v;renderExternalAudit()};window.setEAF=v=>{S.filter=v;renderExternalAudit()};window.setEAQ=v=>{S.q=v;renderExternalAudit()};window.setEAT=v=>{S.team=v||null;renderExternalAudit()};window.openEA=(d,a)=>{S.dept=d;S.activity=a;S.team=null;renderExternalAudit()};
+window.setEAD=v=>{S.dept=v;S.activity='all';renderExternalAudit()};window.setEAA=v=>{S.activity=v;renderExternalAudit()};window.setEAF=v=>{S.filter=v;renderExternalAudit()};window.setEAQ=v=>{S.q=v;renderExternalAudit()};window.setEAT=v=>{S.team=v||null;S.dept='all';S.activity='all';renderExternalAudit()};window.openEA=(d,a)=>{S.dept=d;S.activity=a;S.team=null;renderExternalAudit()};
 window.openEAP=id=>{const r=imps().find(x=>x.id===id),p=plan(id),m=document.getElementById('eaModal');if(!r||!m)return;m.hidden=false;m.innerHTML='<div class="ea-modal-backdrop" onclick="closeEAM()"></div><div class="ea-modal-card"><div class="ea-modal-head"><div><span class="ea-eyebrow">RESPONSE PLAN</span><h3>خطة الاستجابة — '+esc(r.department)+' / '+esc(r.activity)+'</h3></div><button onclick="closeEAM()">×</button></div><div class="ea-source-box"><b>فرصة التحسين</b><p>'+esc(r.text)+'</p><small>صفحة '+fmt(r.page)+'</small></div><div class="ea-form-grid"><label>الحالة<select id="eas"><option value="not_started">لم يبدأ</option><option value="in_progress">جاري التنفيذ</option><option value="blocked">متوقف</option><option value="done">مكتمل</option></select></label><label>المسؤول<input id="eao" value="'+esc(p.owner)+'"></label><label>تاريخ الاستحقاق<input id="ead" type="date" value="'+esc(p.dueDate)+'"></label><label class="full">خطة العمل<textarea id="eap" rows="5">'+esc(p.plan)+'</textarea></label><label class="full">ملاحظات الاستجابة<textarea id="ean" rows="3">'+esc(p.responseNote)+'</textarea></label><label class="full ea-upload-box">صورة دليل الاستجابة<input id="eaf" type="file" accept="image/*"></label></div><div class="ea-modal-actions"><button class="btn btn-outline" onclick="closeEAM()">إلغاء</button><button class="btn btn-primary" onclick="saveEAP(\''+esc(id)+'\')">حفظ خطة الاستجابة</button></div></div>';document.getElementById('eas').value=p.status||'not_started'};
 window.closeEAM=()=>{const m=document.getElementById('eaModal');if(m)m.hidden=true};
 window.saveEAP=async id=>{if(!uid())return showToast('⚠️ سجّل الدخول أولاً');try{const r=imps().find(x=>x.id===id),old=plan(id),f=document.getElementById('eaf')?.files?.[0];let url=old.evidenceUrl||'',name=old.evidenceName||'';if(f){url=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=()=>res(rd.result);rd.onerror=rej;rd.readAsDataURL(f)});name=f.name}const d={id:id,reportId:R,department:r.department,activity:r.activity,status:document.getElementById('eas').value,owner:document.getElementById('eao').value.trim(),dueDate:document.getElementById('ead').value,plan:document.getElementById('eap').value.trim(),responseNote:document.getElementById('ean').value.trim(),evidenceUrl:url,evidenceName:name,updatedAt:new Date().toISOString(),updatedByUid:uid()};await firebase.database().ref('tpm_system/external_audit_action_plans/'+R+'/'+id).set(d);S.plans[id]=d;closeEAM();renderExternalAudit();showToast('✅ تم حفظ خطة الاستجابة ودليلها')}catch(e){console.error(e);showToast('❌ تعذر حفظ خطة الاستجابة')}};
 window.viewEAE=id=>{const p=plan(id),m=document.getElementById('eaModal');if(!p.evidenceUrl||!m)return;m.hidden=false;m.innerHTML='<div class="ea-modal-backdrop" onclick="closeEAM()"></div><div class="ea-image-viewer"><button onclick="closeEAM()">×</button><img src="'+esc(p.evidenceUrl)+'"><b>'+esc(p.evidenceName||'دليل الاستجابة')+'</b></div>'};
+
+function buildExternalAuditFromXlsx(wb){
+ const toRows=name=>{const ws=wb.Sheets[name];return ws?XLSX.utils.sheet_to_json(ws,{defval:null,raw:false}):[]};
+ const toMatrix=name=>{const ws=wb.Sheets[name];return ws?XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false}):[]};
+ const summary=toRows('Audit Summary');
+ const notes=toRows('Notes – Full');
+ const raw=toMatrix('Raw PDF Text');
+ if(!summary.length)throw new Error('ورقة Audit Summary غير موجودة أو فارغة');
+ const rawMap=new Map();
+ raw.slice(1).forEach(r=>{if(r&&r[0]!=null)rawMap.set(Number(r[0]),{score:cleanEA(r[5]),narrative:cleanEA(r[6])})});
+ const noteMap=new Map();
+ notes.forEach(n=>{const id=Number(n.Record);if(!noteMap.has(id))noteMap.set(id,{improvements:[],creation:[]});const text=cleanEA(n['Full Note']);if(!text)return;if(n.Type==='فرصة تحسين')noteMap.get(id).improvements.push(text);if(n.Type==='Creation Comment')noteMap.get(id).creation.push(text)});
+ const deptFromText=(text,activity)=>{
+   const t=String(text||'').replace(/\s+/g,' ');
+   const pos=t.toLowerCase().indexOf(String(activity||'').toLowerCase());
+   if(pos<0)return '';
+   const tail=t.slice(pos+String(activity||'').length,pos+String(activity||'').length+140);
+   if(tail.includes('الفاكيوم'))return 'الفاكيوم';
+   if(tail.includes('حقن الباب'))return 'حقن الباب';
+   if(tail.includes('الباب حقن'))return 'حقن الباب';
+   if(tail.includes('تشكيل المواسير'))return 'تشكيل المواسير';
+   if(tail.includes('المواسير تشكيل'))return 'تشكيل المواسير';
+   if(tail.includes('حقن الكابينة'))return 'حقن الكابينة';
+   if(tail.includes('الكابينة حقن'))return 'حقن الكابينة';
+   return '';
+ };
+ const parseComments=text=>{
+   const t=cleanEA(text),m=t.match(/(?:5s|JH-\d+|PM-\d+|E&T|SHE|kk|KK)\s*Comment([\s\S]*?)(?=REF\.\s*B|$)/i);
+   if(!m)return [];
+   return tSplit(m[1]);
+ };
+ const teams=summary.filter(r=>String(r.Department||'')==='TPM Teams').map(r=>{
+   const code=normEA(String(r.Activity||'').replace(/^Create\s+/i,'').replace(/\s+Team$/i,''));
+   const n=noteMap.get(Number(r.Record));
+   return {id:code,name:({5S:'فريق 5S',JH:'فريق الصيانة الذاتية',SHE:'فريق السلامة والصحة والبيئة','E&T':'فريق التعليم والتدريب',KK:'فريق التحسين المستمر',PM:'فريق الصيانة المخططة'})[code]||code,planned:Number(r['Planned Total']||0),actual:Number(r['Actual Total']||0),gap:Number(r.Gap||0),percent:Number(r['Score %']||0)*100,comments:n?.creation||[]};
+ });
+ const recs=summary.filter(r=>String(r.Department||'')!=='TPM Teams').map(r=>{
+   const id=Number(r.Record),rawRow=rawMap.get(id)||{},activity=normEA(r.Activity),dept=deptFromText(rawRow.score,activity)||String(r.Department||''),planned=Number(r['Planned Total']||0),actual=Number(r['Actual Total']||0),n=noteMap.get(id)||{improvements:[],creation:[]};
+   return {department:dept,activity,planned,actual,percent:planned?actual/planned*100:0,scorePage:Number(r['Score Page']||0),findingsPage:Number(r['Narrative Page']||0),improvements:n.improvements,comments:parseComments(rawRow.narrative).concat(n.creation||[])};
+ });
+ const groups={};recs.forEach(x=>{(groups[x.department]||(groups[x.department]=[])).push(x)});
+ const departments=Object.entries(groups).map(([department,items])=>({department,items}));
+ return {report:{title:'نتائج المراجعة الخارجية — النصف الثاني 2026',period:'النصف الثاني 2026',sourceFile:'TPM_Detailed_Report_RefA_H2_2026_Detailed.xlsx',generatedFromPages:159},teams,departments};
+}
+const cleanEA=v=>String(v??'').replace(/[\u200e\u200f]/g,'').replace(/\uE115|\uE116/g,'').replace(/\r/g,'').replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').trim();
+const normEA=v=>String(v??'').replace(/\s+Activity$/i,'').trim().replace(/^kk$/i,'KK').replace(/^e&t$/i,'E&T').replace(/^she$/i,'SHE');
+const tSplit=v=>String(v??'').split(/\n+/).map(cleanEA).filter(x=>x.length>12);
+window.importExternalAuditXlsx=async e=>{
+ const f=e.target.files?.[0];if(!f)return;
+ try{
+   if(!window.XLSX)throw new Error('مكتبة Excel غير متاحة');
+   showToast('⏳ جاري تحليل Audit Summary و Notes – Full...');
+   const wb=XLSX.read(await f.arrayBuffer(),{dense:true});
+   const d=buildExternalAuditFromXlsx(wb);
+   S.data=d;S.seedError='';S.dept='all';S.activity='all';S.q='';S.filter='all';S.team=null;
+   await renderExternalAudit();
+   showToast('✅ تم تحميل '+fmt(d.departments.length)+' أقسام و'+fmt(imps().length)+' فرصة و'+fmt(allAuditNotes().length)+' ملاحظة');
+ }catch(err){console.error('[External Audit] XLSX import failed',err);showToast('❌ '+err.message)}
+ e.target.value='';
+};
+const allAuditNotes=()=>items().flatMap(x=>x.comments||[]);
 window.importExternalAuditPdf=async e=>{const f=e.target.files?.[0];if(!f)return;try{if(!window.pdfjsLib)throw Error('PDF.js غير متاحة');showToast('⏳ جاري تحليل التقرير صفحة بصفحة...');const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise,pages=[];for(let n=1;n<=pdf.numPages;n++){const tc=await(await pdf.getPage(n)).getTextContent();pages.push(tc.items.map(x=>x.str).join(' '))}const d=parseExternalAuditPdf(pages);if(!d.departments.length)throw Error('لم أتعرف على بنية التقرير');S.data=d;S.dept='all';S.activity='all';S.q='';S.filter='all';S.team=null;await load();renderExternalAudit();showToast('✅ تم تحليل '+pages.length+' صفحة وتحميل النتائج الكاملة')}catch(err){console.error(err);showToast('❌ '+err.message)}e.target.value=''};
 function parseExternalAuditPdf(pages){
  const norm=v=>String(v??'').normalize('NFKC').replace(/[\u200e\u200f]/g,'').replace(/\s+/g,' ').trim();

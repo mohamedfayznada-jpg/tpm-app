@@ -257,8 +257,15 @@
     const domain=document.getElementById('skillDefDomain')?.value||activeDomain;
     if(name.length<2)return notify('⚠️ اكتب اسم المهارة.');
     const skillId=id || (domain==='tpm'?'tpm-':'tech-')+Date.now();
+    const duplicate=(skillsData[domain]||[]).some(s=>s.id!==skillId && String(s.name||'').trim().toLowerCase()===name.toLowerCase());
+    if(duplicate)return notify('⚠️ توجد مهارة بنفس الاسم داخل هذا المجال بالفعل.');
+    const originalDomain=(document.getElementById('skillDefOriginalDomain')?.value||'').trim();
     const skill={id:skillId,name,weight:Number.isFinite(weight)&&weight>0?Math.min(5,weight):1,active:true,updatedAt:Date.now(),updatedByUid:window.currentUser?.uid||'',updatedByName:window.currentUser?.name||''};
     await firebase.database().ref(metaPath()+'/skills/'+domain+'/'+skillId).set(skill);
+    if(id && originalDomain && originalDomain!==domain){
+      await firebase.database().ref(metaPath()+'/skills/'+originalDomain+'/'+skillId).remove();
+      skillsData[originalDomain]=skillsData[originalDomain].filter(s=>s.id!==skillId);
+    }
     skillsData[domain]=[...skillsData[domain].filter(s=>s.id!==skillId),skill];
     activeDomain=domain;
     clearSkillForm();render();openManageModal('skills');notify(id?'✅ تم تعديل المهارة.':'✅ تمت إضافة المهارة.');
@@ -279,12 +286,13 @@
     document.getElementById('skillDefName').value=s.name;
     document.getElementById('skillDefWeight').value=s.weight||1;
     document.getElementById('skillDefDomain').value=domain;
+    const original=document.getElementById('skillDefOriginalDomain');if(original)original.value=domain;
     document.getElementById('skillDefSaveLabel').textContent='حفظ التعديل';
     document.getElementById('skillDefName')?.focus();
   }
 
   function clearSkillForm() {
-    ['skillDefId','skillDefName','skillDefWeight'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=id==='skillDefWeight'?'1':'';});
+    ['skillDefId','skillDefName','skillDefWeight','skillDefOriginalDomain'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=id==='skillDefWeight'?'1':id==='skillDefOriginalDomain'?'': '';});
     const d=document.getElementById('skillDefDomain');if(d)d.value=activeDomain;
     const l=document.getElementById('skillDefSaveLabel');if(l)l.textContent='إضافة المهارة';
   }
@@ -310,11 +318,12 @@
   function openManageModal(tab='people') {
     const modal=document.getElementById('skillManagementModal');if(!modal)return;
     if(!canEdit()){notify('⚠️ لا تملك صلاحية الإدارة.');return;}
-    managementTab=tab;modal.style.display='flex'; const deptEl=document.getElementById('skillManageDeptName'); if(deptEl)deptEl.textContent=currentDept()||'القسم';
+    managementTab=tab;modal.style.display='flex'; const deptEl=document.getElementById('skillManageDeptName'); if(deptEl)deptEl.textContent=currentDept()||'القسم'; const deptInline=document.getElementById('skillManageDeptNameInline');if(deptInline)deptInline.textContent=currentDept()||'القسم';
     document.querySelectorAll('[data-skill-manage-tab]').forEach(b=>b.classList.toggle('active',b.dataset.skillManageTab===tab));
     document.getElementById('skillPeopleForm').style.display=tab==='people'?'grid':'none';
     document.getElementById('skillDefinitionForm').style.display=tab==='skills'?'grid':'none';
     if(tab==='skills')clearSkillForm();
+    if(tab==='people')clearPersonForm();
     renderManagement();
   }
 

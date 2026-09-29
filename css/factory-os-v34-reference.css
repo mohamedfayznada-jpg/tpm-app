@@ -3386,3 +3386,31 @@ body:after{
 .sidebar-menu::-webkit-scrollbar-thumb:hover{background:#71808a!important}
 .sidebar-menu:after{margin:24px 0 0!important}
 @media(max-width:800px){.sidebar{height:100dvh!important;overflow:hidden!important}.sidebar-header{flex:0 0 126px!important}.sidebar-menu{height:calc(100dvh - 126px)!important;max-height:calc(100dvh - 126px)!important}}
+
+
+/* Navigation V24 — keep the full sidebar usable on short screens */
+.sidebar{
+  overflow:hidden!important;
+}
+.sidebar-menu{
+  max-height:calc(100vh - 92px)!important;
+  height:calc(100vh - 92px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(203,215,223,.35) transparent;
+}
+.sidebar-menu::-webkit-scrollbar{width:6px}
+.sidebar-menu::-webkit-scrollbar-track{background:transparent}
+.sidebar-menu::-webkit-scrollbar-thumb{
+  background:rgba(203,215,223,.30);
+  border-radius:999px;
+}
+@media(max-width:800px){
+  .sidebar-menu{
+    max-height:calc(100dvh - 92px)!important;
+    height:calc(100dvh - 92px)!important;
+  }
+}

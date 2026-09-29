@@ -6,7 +6,28 @@ const fmt=n=>new Intl.NumberFormat('ar-EG').format(Number(n||0));
 const pc=n=>(Number(n||0).toFixed(Number(n)%1?1:0))+'%';
 const avg=a=>a.length?a.reduce((x,y)=>x+Number(y||0),0)/a.length:0;
 const slug=s=>String(s||'').replace(/[^\w\u0600-\u06FF-]+/g,'-').replace(/^-|-$/g,'').slice(0,80);
-async function load(){if(S.data)return;const b=atob(window.EXTERNAL_AUDIT_SEED_B64),u=Uint8Array.from(b,c=>c.charCodeAt(0));const st=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'));S.data=JSON.parse(await new Response(st).text());if(firebase.database&&uid()){try{S.plans=(await firebase.database().ref('tpm_system/external_audit_action_plans/'+R).once('value')).val()||{}}catch(e){}}}
+const emptyAuditData=()=>({report:{title:'نتائج المراجعة الخارجية',period:'غير محمل',sourceFile:'',generatedFromPages:0},teams:[],departments:[]});
+async function load(){
+ if(S.data)return;
+ S.seedError='';
+ try{
+   const raw=String(window.EXTERNAL_AUDIT_SEED_B64||'').replace(/\s+/g,'');
+   if(!raw)throw new Error('بيانات التقرير الأساسية غير متاحة');
+   if(!/^[A-Za-z0-9+/]+={0,2}$/.test(raw)||raw.length%4!==0)throw new Error('بيانات التقرير الأساسية تالفة أو غير مكتملة');
+   const b=atob(raw),u=Uint8Array.from(b,c=>c.charCodeAt(0));
+   if(u[0]!==0x1f||u[1]!==0x8b)throw new Error('ملف التقرير الأساسي ليس GZIP صالحاً');
+   const st=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'));
+   S.data=JSON.parse(await new Response(st).text());
+ }catch(e){
+   console.warn('[External Audit] seed unavailable; page remains usable and PDF import is available.',e);
+   S.seedError=e?.message||'تعذر تحميل التقرير الأساسي';
+   S.data=emptyAuditData();
+ }
+ if(firebase.database&&uid()){
+   try{S.plans=(await firebase.database().ref('tpm_system/external_audit_action_plans/'+R).once('value')).val()||{}}
+   catch(e){console.warn('[External Audit] action plans unavailable',e)}
+ }
+}
 const items=()=>S.data.departments.flatMap(d=>d.items.map(x=>Object.assign({department:d.department},x)));
 const imps=()=>items().flatMap(x=>(x.improvements||[]).map((t,i)=>({id:slug(x.department)+'__'+slug(x.activity)+'__'+i,department:x.department,activity:x.activity,text:t,page:x.findingsPage})));
 const plan=id=>S.plans[id]||{status:'not_started',owner:'',dueDate:'',plan:'',responseNote:'',evidenceUrl:'',evidenceName:''};
@@ -15,7 +36,7 @@ window.renderExternalAudit=async function(){
  try{await load();const root=document.getElementById('externalAuditRoot');if(!root)return;const all=items(),allI=imps(),sel=S.dept==='all'?null:S.dept;
  const vis=all.filter(x=>(!sel||x.department===sel)&&(S.activity==='all'||x.activity===S.activity)&&(!S.q||[x.department,x.activity].concat(x.improvements||[],x.comments||[]).join(' ').toLowerCase().includes(S.q.toLowerCase())));
  const shown=allI.filter(x=>(!sel||x.department===sel)&&(!S.q||x.text.toLowerCase().includes(S.q.toLowerCase()))&&(S.filter==='all'||(S.filter==='open'&&plan(x.id).status!=='done')||(S.filter==='done'&&plan(x.id).status==='done')));
- let h='<section class="ea-hero"><div class="ea-hero-copy"><span class="ea-eyebrow">EXTERNAL AUDIT • H2 2026</span><h1>مركز قيادة المراجعة الخارجية</h1><p>نتائج الفرق والأقسام، فرص التحسين، وخطط الاستجابة في مساحة تشغيلية واحدة.</p><div class="ea-hero-actions"><button class="btn btn-primary" onclick="document.getElementById(\'eaPdf\').click()">استيراد التقرير الكامل</button><button class="btn btn-outline" onclick="window.print()">طباعة</button><input id="eaPdf" type="file" accept=".pdf" hidden onchange="window.importExternalAuditPdf?.(event)"></div></div><div class="ea-orbit"><b>H2</b><span>2026</span><em>RESULTS</em><em>RESPONSE</em></div></section>';
+ let h=(S.seedError?'<div class="ea-seed-warning" role="status"><i class="bx bx-error-circle"></i><div><b>التقرير الأساسي غير متاح حالياً</b><span>'+esc(S.seedError)+' — يمكنك استيراد ملف PDF من زر «استيراد التقرير الكامل» لإعادة بناء البيانات.</span></div></div>':'')+'<section class="ea-hero"><div class="ea-hero-copy"><span class="ea-eyebrow">EXTERNAL AUDIT • H2 2026</span><h1>مركز قيادة المراجعة الخارجية</h1><p>نتائج الفرق والأقسام، فرص التحسين، وخطط الاستجابة في مساحة تشغيلية واحدة.</p><div class="ea-hero-actions"><button class="btn btn-primary" onclick="document.getElementById(\'eaPdf\').click()">استيراد التقرير الكامل</button><button class="btn btn-outline" onclick="window.print()">طباعة</button><input id="eaPdf" type="file" accept=".pdf" hidden onchange="window.importExternalAuditPdf?.(event)"></div></div><div class="ea-orbit"><b>H2</b><span>2026</span><em>RESULTS</em><em>RESPONSE</em></div></section>';
  const open=allI.filter(x=>plan(x.id).status!=='done').length,done=allI.length-open,evi=allI.filter(x=>plan(x.id).evidenceUrl).length;
  h+='<section class="ea-kpis">'+[['الأقسام',S.data.departments.length,'bx-buildings'],['الأنشطة',all.length,'bx-check-shield'],['فرص التحسين',allI.length,'bx-bulb'],['خطط مفتوحة',open,'bx-task'],['مكتمل',done,'bx-check-double'],['أدلة استجابة',evi,'bx-image']].map(x=>'<article class="ea-kpi"><i class="bx '+x[2]+'"></i><span>'+x[0]+'</span><b>'+fmt(x[1])+'</b></article>').join('')+'</section>';
  h+='<section class="ea-toolbar"><div class="ea-tabs"><button class="'+(S.filter==='all'?'active':'')+'" onclick="setEAF(\'all\')">كل الفرص</button><button class="'+(S.filter==='open'?'active':'')+'" onclick="setEAF(\'open\')">تحتاج استجابة</button><button class="'+(S.filter==='done'?'active':'')+'" onclick="setEAF(\'done\')">مغلقة</button></div><input class="ea-search" placeholder="ابحث في النتائج والملاحظات..." value="'+esc(S.q)+'" oninput="setEAQ(this.value)"><select class="ea-select" onchange="setEAD(this.value)"><option value="all">كل الأقسام</option>'+S.data.departments.map(d=>'<option '+(S.dept===d.department?'selected':'')+' value="'+esc(d.department)+'">'+esc(d.department)+'</option>').join('')+'</select><select class="ea-select" onchange="setEAA(this.value)"><option value="all">كل الأنشطة</option>'+Array.from(new Set(all.map(x=>x.activity))).map(a=>'<option '+(S.activity===a?'selected':'')+' value="'+esc(a)+'">'+esc(a)+'</option>').join('')+'</select></section>';

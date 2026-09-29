@@ -1,5 +1,6 @@
 (()=> {
 const R='external-audit-h2-2026', S={data:null,plans:{},dept:'all',activity:'all',q:'',filter:'all',team:null};
+window.EXTERNAL_AUDIT_FALLBACK_DATA={report:{title:'نتائج المراجعة الخارجية — النصف الثاني 2026',period:'النصف الثاني 2026',sourceFile:'TPM Detailed Report - Ref A - H2 2026.pdf',generatedFromPages:159},teams:[['5S','فريق 5S',86],['JH','فريق الصيانة الذاتية',65],['SHE','فريق السلامة والصحة والبيئة',74],['E&T','فريق التعليم والتدريب',80],['KK','فريق التحسين المستمر',69],['PM','فريق الصيانة المخططة',65]],departments:[{department:"الفاكيوم",items:[['5S',100,79],['JH-0',100,75],['JH-1',100,76],['JH-2',100,68],['JH-3',100,61],['JH-4',100,63],['JH-5',100,49],['JH-6',100,47],['JH-7',100,28],['PM-1',100,67],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,60],['PM-6',100,52],['PM-7',100,32],['E&T',100,79],['KK',100,61],['SHE',100,70]]},{department:"حقن الباب",items:[['5S',100,79],['JH-0',100,77],['JH-1',100,78],['JH-2',100,70],['JH-3',100,78],['JH-4',100,69],['JH-5',100,61],['JH-6',100,60],['JH-7',100,28],['PM-1',100,77],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,58],['PM-6',100,52],['PM-7',100,32],['E&T',100,79],['KK',100,61],['SHE',100,70]]},{department:"تشكيل المواسير",items:[['5S',100,90],['JH-0',100,83],['JH-1',100,80],['JH-2',100,73],['JH-3',100,76],['JH-4',175,116],['JH-5',100,50],['PM-1',100,67],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,60],['PM-6',100,52],['E&T',100,79],['KK',100,64],['SHE',100,70]]},{department:"حقن الكابينة",items:[['5S',100,84],['JH-0',100,79],['JH-1',100,75],['JH-2',100,82],['JH-3',100,77],['JH-4',100,62],['JH-5',100,50],['JH-6',100,47],['JH-7',100,28],['PM-1',100,67],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,58],['PM-6',100,52],['PM-7',100,32],['E&T',100,79],['KK',100,62],['SHE',100,70]]}]};
 const esc=v=>window.escapeTPM?window.escapeTPM(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>firebase.auth&&firebase.auth().currentUser?firebase.auth().currentUser.uid:'';
 const fmt=n=>new Intl.NumberFormat('ar-EG').format(Number(n||0));
@@ -19,9 +20,18 @@ async function load(){
    const st=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'));
    S.data=JSON.parse(await new Response(st).text());
  }catch(e){
-   console.warn('[External Audit] seed unavailable; page remains usable and PDF import is available.',e);
-   S.seedError=e?.message||'تعذر تحميل التقرير الأساسي';
-   S.data=emptyAuditData();
+   console.warn('[External Audit] bundled seed unavailable; using verified score fallback.',e);
+   const fb=window.EXTERNAL_AUDIT_FALLBACK_DATA;
+   if(fb){
+     S.data={
+       report:fb.report,
+       teams:fb.teams.map(x=>({id:x[0],name:x[1],score:x[2],percent:x[2]})),
+       departments:fb.departments.map(d=>({department:d.department,items:d.items.map((x,i)=>({activity:x[0],planned:Number(x[1]||100),actual:Number(x[2]||0),percent:Number(x[1]||100)?Math.round(Number(x[2]||0)/Number(x[1]||100)*1000)/10:0,department:d.department,scorePage:0,findingsPage:0,sourceDepartment:d.department,dataQualityFlags:[],improvements:[],comments:[]}))}))
+     };
+   }else{
+     S.seedError=e?.message||'تعذر تحميل التقرير الأساسي';
+     S.data=emptyAuditData();
+   }
  }
  if(firebase.database&&uid()){
    try{S.plans=(await firebase.database().ref('tpm_system/external_audit_action_plans/'+R).once('value')).val()||{}}

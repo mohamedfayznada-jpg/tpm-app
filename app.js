@@ -78,7 +78,7 @@ window.showScreen = function(screenId, options = {}) {
     }
     if(screenId === 'tpmTeamsScreen' && typeof window.renderTPMTeams === 'function') window.renderTPMTeams();
     if(screenId === 'settingsScreen' && typeof window.renderSettingsControlLists === 'function') window.renderSettingsControlLists();
-    if(screenId === 'skillMatrixScreen') { window.dispatchEvent(new Event('tpm:skill-matrix-open')); window.renderSkillMatrix?.(); }
+    if(screenId === 'jhSkillMatrixScreen') { window.dispatchEvent(new Event('tpm:jh-skill-matrix-open')); window.renderSkillMatrix?.(); const title=document.getElementById('jhSkillDeptName'); if(title) title.textContent=window.currentJHDept||'القسم'; }
     document.querySelectorAll('#mainSidebar .side-item').forEach(item => item.classList.remove('active')); const activeItem = [...document.querySelectorAll('#mainSidebar .side-item')].find(item => (item.getAttribute('onclick') || '').includes("'" + screenId + "'")); if(activeItem) activeItem.classList.add('active');
     window.scrollTo({top: 0, behavior: 'smooth'});
 };

@@ -1266,3 +1266,58 @@ body:has(#tpmTeamsScreen.active) { background:radial-gradient(760px 560px at 88%
     transform:none!important;
   }
 }
+
+
+/* JH Department Skill Matrix */
+#jhSkillMatrixScreen{--jh-skill-blue:#1e88e5;--jh-skill-green:#10b981}
+#jhSkillMatrixScreen .jh-skill-page-hero{
+  display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:18px;
+  padding:28px 30px;border:1px solid rgba(112,145,210,.18);border-radius:26px;
+  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(237,246,255,.88));
+  box-shadow:0 20px 50px rgba(31,70,120,.12)
+}
+#jhSkillMatrixScreen .jh-skill-kicker{display:inline-flex;align-items:center;gap:7px;color:#1e88e5;font-size:11px;font-weight:900;letter-spacing:.12em}
+#jhSkillMatrixScreen .jh-skill-page-hero h2{margin:7px 0 5px;font-size:28px;font-weight:950}
+#jhSkillMatrixScreen .jh-skill-page-hero p{margin:0;max-width:760px;color:#68798a;font-size:13px;line-height:1.8}
+#jhSkillMatrixScreen .jh-skill-page-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+#jhSkillMatrixScreen .jh-skill-page-card{padding:20px;border:1px solid rgba(112,145,210,.16);border-radius:24px;background:rgba(255,255,255,.86);box-shadow:0 18px 45px rgba(31,70,120,.08)}
+#jhSkillMatrixScreen .skill-matrix-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+#jhSkillMatrixScreen .skill-kpi{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid rgba(112,145,210,.15);border-radius:18px;background:rgba(255,255,255,.9);box-shadow:0 10px 25px rgba(31,70,120,.07)}
+#jhSkillMatrixScreen .skill-kpi>i{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:rgba(30,136,229,.10);color:#1e88e5;font-size:20px}
+#jhSkillMatrixScreen .skill-kpi strong{display:block;font-size:20px;color:#172b3a}
+#jhSkillMatrixScreen .skill-kpi span{display:block;margin-top:2px;color:#718394;font-size:11px}
+#jhSkillMatrixScreen .skill-matrix-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;padding-bottom:15px;border-bottom:1px solid rgba(112,145,210,.12)}
+#jhSkillMatrixScreen .skill-domain-tabs{display:flex;gap:8px;flex-wrap:wrap}
+#jhSkillMatrixScreen .skill-domain-tabs button{padding:10px 14px;border:1px solid rgba(112,145,210,.18)!important;border-radius:13px!important;background:#f7fbff!important;color:#52687a!important;font-size:12px}
+#jhSkillMatrixScreen .skill-domain-tabs button.active{background:#163a5c!important;color:#fff!important;border-color:#163a5c!important}
+#jhSkillMatrixScreen .skill-matrix-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#jhSkillMatrixScreen .skill-search{display:flex;align-items:center;gap:7px;padding:0 11px;border:1px solid rgba(112,145,210,.18);border-radius:13px;background:#fff}
+#jhSkillMatrixScreen .skill-search input{border:0!important;box-shadow:none!important;outline:0!important;padding:9px 4px!important;min-width:190px}
+#jhSkillMatrixScreen .skill-scale{font-size:10px;color:#788a99}
+#jhSkillMatrixScreen .skill-matrix-context{display:flex;justify-content:space-between;align-items:center;gap:15px;margin:15px 0}
+#jhSkillMatrixScreen .skill-matrix-context h3{margin:3px 0 0;font-size:17px}
+#jhSkillMatrixScreen .skill-target-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:999px;background:rgba(16,185,129,.10);color:#087a55;font-size:11px;font-weight:800}
+#jhSkillMatrixScreen .skill-matrix-scroll{overflow:auto;border:1px solid rgba(112,145,210,.13);border-radius:16px}
+#jhSkillMatrixScreen .skill-matrix-scroll table{width:100%;min-width:1050px;border-collapse:separate;border-spacing:0}
+#jhSkillMatrixScreen .skill-matrix-scroll th,#jhSkillMatrixScreen .skill-matrix-scroll td{padding:9px 8px;border-bottom:1px solid rgba(112,145,210,.09);text-align:center;font-size:11px;white-space:nowrap}
+#jhSkillMatrixScreen .skill-matrix-scroll thead th{position:sticky;top:0;z-index:2;background:#edf6ff;color:#35536b;font-weight:900}
+#jhSkillMatrixScreen .skill-matrix-scroll .skill-person-col,#jhSkillMatrixScreen .skill-matrix-scroll .skill-person{position:sticky;right:0;z-index:3;background:#fff;text-align:right}
+#jhSkillMatrixScreen .skill-person strong{display:block;color:#22394a}
+#jhSkillMatrixScreen .skill-person small{display:block;margin-top:2px;color:#8393a0;font-weight:600}
+#jhSkillMatrixScreen .skill-matrix-scroll select{min-width:108px;padding:7px 6px!important;font-size:10px;border-radius:10px!important}
+#jhSkillMatrixScreen .skill-avg{display:inline-flex;min-width:42px;justify-content:center;padding:5px 7px;border-radius:999px;font-weight:900}
+#jhSkillMatrixScreen .skill-avg.good{background:#e9f9f2;color:#087a55}.skill-avg.watch{background:#fff7df;color:#9b6a00}.skill-avg.critical{background:#fff0f0;color:#b42318}
+#jhSkillMatrixScreen .skill-gap-count{color:#b42318}
+#jhSkillMatrixScreen .skill-training-panel{margin-top:16px}
+#jhSkillMatrixScreen .skill-plan-head{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:12px;padding:18px;border-radius:18px;background:linear-gradient(135deg,#f1f8ff,#f7fffb)}
+#jhSkillMatrixScreen .skill-plan-head h3{margin:3px 0}.skill-plan-head p{margin:0;color:#718394;font-size:11px}
+#jhSkillMatrixScreen .skill-plan-row{display:grid;grid-template-columns:38px 1fr 1.4fr 55px 1.4fr;gap:12px;align-items:center;padding:12px;border-bottom:1px solid rgba(112,145,210,.10)}
+#jhSkillMatrixScreen .skill-plan-rank{width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:#edf6ff;color:#1e88e5;font-weight:900}
+#jhSkillMatrixScreen .skill-plan-person strong,#jhSkillMatrixScreen .skill-plan-skill b,#jhSkillMatrixScreen .skill-plan-action b{display:block;font-size:11px}
+#jhSkillMatrixScreen .skill-plan-person small,#jhSkillMatrixScreen .skill-plan-skill small,#jhSkillMatrixScreen .skill-plan-action small{display:block;color:#8393a0;font-size:10px;margin-top:2px}
+#jhSkillMatrixScreen .skill-plan-gap{color:#b42318;font-weight:950;text-align:center}
+#jhSkillMatrixScreen .skill-empty,#jhSkillMatrixScreen .skill-plan-empty{padding:42px;text-align:center;color:#718394}
+.jh-action-card-skill{border-color:rgba(30,136,229,.25)!important}
+@media(max-width:900px){#jhSkillMatrixScreen .skill-matrix-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#jhSkillMatrixScreen .jh-skill-page-hero{align-items:flex-start;flex-direction:column}}
+@media(max-width:600px){#jhSkillMatrixScreen .skill-matrix-kpis{grid-template-columns:1fr}#jhSkillMatrixScreen .skill-plan-row{grid-template-columns:30px 1fr}.skill-plan-skill,.skill-plan-gap,.skill-plan-action{grid-column:2}#jhSkillMatrixScreen .skill-matrix-context{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){#jhSkillMatrixScreen *{scroll-behavior:auto!important}}

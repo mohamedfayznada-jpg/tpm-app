@@ -129,27 +129,27 @@
   }
 
   function buildAIImportPrompt(type,digest,fileName){
-    return 'You are the Factory OS TPM spreadsheet ingestion engine.\\n'+
-      'Inspect a messy real-world Excel/CSV workbook and identify the actual operational records for the target TPM map. The workbook may contain titles, blank rows, merged headers, multi-row headers, repeated headers, notes, totals, multiple tables, multiple sheets, Arabic/English/mixed language, inconsistent column names, and unrelated sections.\\n\\n'+
-      'TARGET DOCUMENT: '+type+' ('+(SCHEMAS[type]?.label||type)+')\\nFILE: '+fileName+'\\n\\n'+
-      'TARGET FIELDS:\\n'+schemaPrompt(type)+'\\n\\n'+
-      'CRITICAL RULES:\\n'+
-      '1. Never ask the user to map columns, choose rows, or confirm anything.\\n'+
-      '2. Inspect ALL sheets and all evidence in the digest.\\n'+
-      '3. A field may come from a normal column OR from section/table context. Context is mandatory for messy TPM sheets where region or operation is written in a title/section row rather than repeated in each data row.\\n'+
-      '4. For context fields, return the EXACT source cell address (for example A8) and do not invent the value. The server will verify that cell exists before importing.\\n'+
-      '5. Map fields by meaning, not by position. Arabic, English, abbreviations, synonyms and TPM/JH terminology are valid clues.\\n'+
-      '6. Never invent cell values. Every imported value must come directly from a verified workbook cell.\\n'+
-      '7. Required fields MUST have either a defensible source column OR a verified context source cell. If neither exists, reject that block.\\n'+
-      '8. Identify the true header row(s), data start/end rows, repeated headers, and rows to skip.\\n'+
-      '9. Ignore titles, decorative rows, instructions, signatures, totals/subtotals, page numbers, and repeated headers as DATA rows, but use meaningful section titles as context evidence when appropriate.\\n'+
-      '10. Merged cells may carry machine/area/operation context; source the value from the actual top-left cell of the merge.\\n'+
-      '11. Do not rewrite factual text. The application may only normalize controlled values after extraction.\\n'+
-      '12. Confidence must reflect evidence quality.\\n'+
-      '13. Return ONLY valid JSON. No markdown or prose outside JSON.\\n\\n'+
-      'JSON SHAPE:\\n'+
-      '{"decision":"import|reject","confidence":0-100,"reason":"short explanation","sheets":[{"sheet":"exact sheet name","blocks":[{"headerRows":[1,2],"dataStartRow":3,"dataEndRow":120,"repeatHeaderRows":[55],"skipRows":[121],"mapping":{"fieldName":{"column":"A","confidence":95}},"context":{"fieldName":{"sourceCell":"A8","confidence":95}},"confidence":0-100}]}]}\\n'+
-      'Use ONLY target field names listed above. Every context entry MUST contain sourceCell. Row numbers are 1-based and inclusive.\\n\\nWORKBOOK DIGEST:\\n'+digest;
+    return 'You are the Factory OS TPM spreadsheet ingestion engine.\n'+
+      'Inspect a messy real-world Excel/CSV workbook and identify the actual operational records for the target TPM map. The workbook may contain titles, blank rows, merged headers, multi-row headers, repeated headers, notes, totals, multiple tables, multiple sheets, Arabic/English/mixed language, inconsistent column names, and unrelated sections.\n\n'+
+      'TARGET DOCUMENT: '+type+' ('+(SCHEMAS[type]?.label||type)+')\nFILE: '+fileName+'\n\n'+
+      'TARGET FIELDS:\n'+schemaPrompt(type)+'\n\n'+
+      'CRITICAL RULES:\n'+
+      '1. Never ask the user to map columns, choose rows, or confirm anything.\n'+
+      '2. Inspect ALL sheets and all evidence in the digest.\n'+
+      '3. A field may come from a normal column OR from section/table context. Context is mandatory for messy TPM sheets where region or operation is written in a title/section row rather than repeated in each data row.\n'+
+      '4. For context fields, return the EXACT source cell address (for example A8) and do not invent the value. The server will verify that cell exists before importing.\n'+
+      '5. Map fields by meaning, not by position. Arabic, English, abbreviations, synonyms and TPM/JH terminology are valid clues.\n'+
+      '6. Never invent cell values. Every imported value must come directly from a verified workbook cell.\n'+
+      '7. Required fields MUST have either a defensible source column OR a verified context source cell. If neither exists, reject that block.\n'+
+      '8. Identify the true header row(s), data start/end rows, repeated headers, and rows to skip.\n'+
+      '9. Ignore titles, decorative rows, instructions, signatures, totals/subtotals, page numbers, and repeated headers as DATA rows, but use meaningful section titles as context evidence when appropriate.\n'+
+      '10. Merged cells may carry machine/area/operation context; source the value from the actual top-left cell of the merge.\n'+
+      '11. Do not rewrite factual text. The application may only normalize controlled values after extraction.\n'+
+      '12. Confidence must reflect evidence quality.\n'+
+      '13. Return ONLY valid JSON. No markdown or prose outside JSON.\n\n'+
+      'JSON SHAPE:\n'+
+      '{"decision":"import|reject","confidence":0-100,"reason":"short explanation","sheets":[{"sheet":"exact sheet name","blocks":[{"headerRows":[1,2],"dataStartRow":3,"dataEndRow":120,"repeatHeaderRows":[55],"skipRows":[121],"mapping":{"fieldName":{"column":"A","confidence":95}},"context":{"fieldName":{"sourceCell":"A8","confidence":95}},"confidence":0-100}]}]}\n'+
+      'Use ONLY target field names listed above. Every context entry MUST contain sourceCell. Row numbers are 1-based and inclusive.\n\nWORKBOOK DIGEST:\n'+digest;
   }
 
   function extractJson(text){

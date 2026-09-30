@@ -212,9 +212,19 @@ function evidencePath(dept,activity){return 'tpm_system/external_audit_evidence/
 function scoreKey(dept,activity,criterionId){return evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity)+'/'+String(criterionId);}
 function pendingScore(dept,activity,criterionId){const v=S.pendingScoreCache[scoreKey(dept,activity,criterionId)];return v==null?null:normalizeNumber(v);}
 async function syncPendingLocalEvidence(dept,activity){
+  if(!canWriteEvidence())return;
   const key=localEvidenceKey(dept,activity), bucket=S.localEvidence[key];
   if(!bucket||typeof bucket!=='object')return;
   let changed=false;
+  if(bucket._meta?.syncPending){
+    try{
+      const meta={...bucket._meta};
+      delete meta.syncPending;
+      await firebase.database().ref(evidencePath(dept,activity)+'/_meta').update({...meta,syncedAt:Date.now()});
+      delete bucket._meta;
+      changed=true;
+    }catch(_){ return; }
+  }
   for(const [criterionId,record] of Object.entries(bucket)){
     if(!record||typeof record!=='object')continue;
     for(const [kind,payload] of Object.entries(record)){
@@ -241,7 +251,7 @@ async function loadEvidence(dept,activity){
   }catch(error){
     const message=String(error?.code||error?.message||'').toLowerCase();
     S.evidenceReadDenied=message.includes('permission_denied')||message.includes('permission');
-    console.warn('[External Audit] evidence read failed',error);
+    if(!S.evidenceReadDenied) console.error('[External Audit] evidence read failed',error);
     return mergeEvidence({},dept,activity);
   }
 }
@@ -261,7 +271,10 @@ async function saveEvidence(dept,activity,criterionId,kind,url){
   }
 }
 function canWriteEvidence(){
-  return ['admin','engineer','auditor'].includes(window.currentUser?.role);
+  const user=firebase?.auth?.().currentUser;
+  const role=String(window.currentUser?.role||'').toLowerCase();
+  const email=String(user?.email||'').toLowerCase();
+  return email==='mfayez@tpm.app' || ['admin','administrator','engineer','technician','operator','tech','auditor','reviewer','audit'].includes(role);
 }
 function renderEvidenceSlot({dept,activity,criterionId,kind,label,evidence}){
   const ev=evidence?.[criterionId]?.[kind];
@@ -287,8 +300,20 @@ async function saveExternalAuditActivityMeta(dept,activity,field,value){
     S.evidenceCache[key]._meta[field]=clean;
     showToast?.('✅ تم حفظ '+(field==='notes'?'ملاحظات المراجع':'فرص التحسين')+'.');
   }catch(error){
-    console.error('[External Audit] activity meta save failed',error);
-    showToast?.('⚠️ تعذر حفظ بيانات المتابعة.');
+    const key=localEvidenceKey(dept,activity);
+    S.localEvidence[key]=S.localEvidence[key]||{};
+    S.localEvidence[key]._meta=S.localEvidence[key]._meta||{};
+    S.localEvidence[key]._meta[field]=clean;
+    S.localEvidence[key]._meta.syncPending=true;
+    persistLocalEvidence();
+    S.evidenceCache[key]=S.evidenceCache[key]||{};
+    S.evidenceCache[key]._meta={...(S.evidenceCache[key]._meta||{}),[field]:clean};
+    const denied=String(error?.code||error?.message||'').toLowerCase().includes('permission');
+    if(denied) showToast?.('⚠️ تم حفظ المتابعة محليًا — ستتم المزامنة تلقائيًا بعد نشر صلاحيات Firebase.');
+    else {
+      console.error('[External Audit] activity meta save failed',error);
+      showToast?.('⚠️ تعذر حفظ بيانات المتابعة.');
+    }
   }
 }
 window.saveExternalAuditActivityMeta=saveExternalAuditActivityMeta;
@@ -308,7 +333,7 @@ async function seed(){
   const raw=String(window.EXTERNAL_AUDIT_SEED_B64||'').replace(/\s+/g,'');
   if(!raw) return F;
   try{
-    if(!/^[A-Za-z0-9+/_-]+={0,2}$/.test(raw)) return F;
+    if(raw.length<32 || !/^[A-Za-z0-9+/_-]+={0,2}$/.test(raw)) return F;
     const normalized=raw.replace(/-/g,'+').replace(/_/g,'/');
     const padded=normalized+'='.repeat((4-normalized.length%4)%4);
     const binary=atob(padded);

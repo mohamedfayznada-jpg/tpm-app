@@ -195,7 +195,7 @@ async function saveEvidence(dept,activity,criterionId,kind,url){
   await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/'+kind).set(payload);
 }
 function canWriteEvidence(){
-  return ['admin','auditor'].includes(window.currentUser?.role);
+  return ['admin','engineer','auditor'].includes(window.currentUser?.role);
 }
 function renderEvidenceSlot({dept,activity,criterionId,kind,label,evidence}){
   const ev=evidence?.[criterionId]?.[kind];

@@ -94,10 +94,19 @@ function renderCriterionCards(dept,activity,criteria,evidence){
   return '<div class="ea-criteria-list">'+criteria.map(c=>'<article class="ea-criterion-card"><div class="ea-criterion-head"><span class="ea-criterion-number">'+fmt(c.i)+'</span><div><b>'+esc(c.t)+'</b><small>الدرجة المخططة: '+fmt(c.p)+'</small></div></div><div class="ea-criterion-evidence-grid">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المعياري',evidence})+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div></article>').join('')+'</div>';
 }
 async function seed(){
-  const r=String(window.EXTERNAL_AUDIT_SEED_B64||'').replace(/\s+/g,'');
-  if(!r) throw Error('بيانات التقرير غير متاحة');
-  const b=atob(r),u=Uint8Array.from(b,c=>c.charCodeAt(0));
-  return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
+  const raw=String(window.EXTERNAL_AUDIT_SEED_B64||'').replace(/\s+/g,'');
+  if(!raw) return F;
+  try{
+    const normalized=raw.replace(/-/g,'+').replace(/_/g,'/');
+    const padded=normalized+'='.repeat((4-normalized.length%4)%4);
+    const binary=atob(padded);
+    const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
+    if(typeof DecompressionStream==='undefined') throw Error('gzip_decompression_unavailable');
+    return await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
+  }catch(error){
+    console.warn('[External Audit] compressed seed unavailable; using embedded fallback.',error);
+    return F;
+  }
 }
 function norm(d){
   const src=d||F;

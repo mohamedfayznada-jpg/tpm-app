@@ -207,6 +207,33 @@ function renderEvidenceSlot({dept,activity,criterionId,kind,label,evidence}){
   }
   return '<label class="ea-evidence-slot empty-slot"><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="uploadExternalAuditEvidence(event,'+jsArg(dept)+','+jsArg(activity)+','+criterionId+','+jsArg(kind)+')"><span><i class="bx bx-image-add"></i><b>'+label+'</b><small>أضف صورة</small></span></label>';
 }
+async function saveExternalAuditActivityMeta(dept,activity,field,value){
+  if(!canWriteEvidence()) return showToast?.('⚠️ ليس لديك صلاحية تعديل بيانات المراجعة.');
+  if(!['notes','opportunities'].includes(field)) return;
+  try{
+    const clean=String(value||'').slice(0,4000);
+    await firebase.database().ref(evidencePath(dept,activity)+'/_meta').update({
+      [field]:clean,updatedAt:Date.now(),updatedByUid:firebase.auth().currentUser?.uid||'',updatedByName:window.currentUser?.name||''
+    });
+    const key=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
+    S.evidenceCache[key]=S.evidenceCache[key]||{};
+    S.evidenceCache[key]._meta=S.evidenceCache[key]._meta||{};
+    S.evidenceCache[key]._meta[field]=clean;
+    showToast?.('✅ تم حفظ '+(field==='notes'?'ملاحظات المراجع':'فرص التحسين')+'.');
+  }catch(error){
+    console.error('[External Audit] activity meta save failed',error);
+    showToast?.('⚠️ تعذر حفظ بيانات المتابعة.');
+  }
+}
+window.saveExternalAuditActivityMeta=saveExternalAuditActivityMeta;
+function renderActivityMetaEditor(dept,activity,meta){
+  const editable=canWriteEvidence();
+  const notes=String(meta?.notes||''),opportunities=String(meta?.opportunities||'');
+  const field=(name,label,icon,value,placeholder)=>editable
+    ? '<label class="ea-activity-meta-field"><span><i class="bx '+icon+'"></i>'+label+'</span><textarea rows="3" placeholder="'+placeholder+'" onchange="saveExternalAuditActivityMeta('+jsArg(dept)+','+jsArg(activity)+','+jsArg(name)+',this.value)">'+esc(value)+'</textarea></label>'
+    : '<div class="ea-activity-meta-field readonly"><span><i class="bx '+icon+'"></i>'+label+'</span><p>'+esc(value||'لا توجد بيانات مسجلة.')+'</p></div>';
+  return '<div class="ea-activity-meta-grid"><div class="ea-activity-meta-head"><span>FOLLOW-UP</span><h4>الملاحظات وفرص التحسين</h4><small>هذه المتابعة مرتبطة بنفس النشاط والقسم.</small></div>'+field('opportunities','فرص التحسين وخطط الاستجابة','bx-bulb',opportunities,'اكتب فرصة التحسين أو خطة الاستجابة أو المسؤول.')+field('notes','ملاحظات المراجع','bx-note',notes,'اكتب الملاحظة أو الدليل أو نقطة المتابعة.')+'</div>';
+}
 function renderCriterionCards(dept,activity,criteria,evidence){
   if(!criteria.length) return '<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات الحالية تحتوي على الدرجة الإجمالية فقط. أضف مصدر المعايير التفصيلية لهذه الخطوة قبل استخدامها في التقييم.</span></div>';
   return '<div class="ea-criteria-list">'+criteria.map(c=>'<article class="ea-criterion-card"><div class="ea-criterion-head"><span class="ea-criterion-number">'+fmt(c.i)+'</span><div><b>'+esc(c.t)+'</b><small>الدرجة المخططة: '+fmt(c.p)+'</small></div></div><div class="ea-criterion-evidence-grid">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المعياري',evidence})+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div></article>').join('')+'</div>';
@@ -421,7 +448,8 @@ window.renderExternalAuditDepartment=async n=>{
       const scoreText=s==null?'غير مسجل':fmt(s)+'%';
       const criteriaCount=criteria.length;
       const criteriaHtml=renderCriterionCards(n,it.activity,criteria,evidence);
-      return '<details class="ea-v2-activity-panel" '+(focus===it.activity||focus==='all'&&idx===0?'open':'')+'><summary><span><b>'+esc(m[0])+'</b><small>'+esc(m[1])+'</small></span><em>'+fmt(a)+' / '+fmt(p)+'</em><strong>'+scoreText+'</strong><i class="bx bx-chevron-down"></i></summary><div class="ea-v2-score-line"><div><span>الدرجة الفعلية</span><b>'+fmt(a)+'</b></div><div><span>الدرجة المخططة</span><b>'+fmt(p)+'</b></div><div><span>النسبة</span><b>'+scoreText+'</b></div></div><div class="ea-criteria-section"><div class="ea-criteria-section-head"><div><span>CRITERIA & FIELD EVIDENCE</span><h3>معايير التقييم وأدلة الميدان</h3><small>'+criteriaCount+' معيار · لكل معيار صورتان: الوضع المعياري والوضع الحالي</small></div><i class="bx bx-images"></i></div>'+criteriaHtml+'</div></details>';
+      const metaHtml=renderActivityMetaEditor(n,it.activity,evidence?._meta||{});
+      return '<details class="ea-v2-activity-panel" '+(focus===it.activity||focus==='all'&&idx===0?'open':'')+'><summary><span><b>'+esc(m[0])+'</b><small>'+esc(m[1])+'</small></span><em>'+fmt(a)+' / '+fmt(p)+'</em><strong>'+scoreText+'</strong><i class="bx bx-chevron-down"></i></summary><div class="ea-v2-score-line"><div><span>الدرجة الفعلية</span><b>'+fmt(a)+'</b></div><div><span>الدرجة المخططة</span><b>'+fmt(p)+'</b></div><div><span>النسبة</span><b>'+scoreText+'</b></div></div><div class="ea-criteria-section"><div class="ea-criteria-section-head"><div><span>CRITERIA & FIELD EVIDENCE</span><h3>معايير التقييم وأدلة الميدان</h3><small>'+criteriaCount+' معيار · لكل معيار صورتان: الوضع المعياري والوضع الحالي</small></div><i class="bx bx-images"></i></div>'+criteriaHtml+metaHtml+'</div></details>';
     }).join('');
     root.innerHTML='<section class="ea-v2-detail-hero"><button class="ea-v2-back" onclick="goBack()"><i class="bx bx-arrow-back"></i> رجوع خطوة</button><span>DEPARTMENT</span><h1>'+esc(n)+'</h1><p>صفحة مستقلة لدرجات القسم ومعايير كل خطوة وأدلة الوضع المعياري والوضع الحالي.</p><div class="ea-v2-summary-grid"><article><span>الدرجة الفعلية</span><b>'+fmt(o.a)+'</b></article><article><span>الدرجة المخططة</span><b>'+fmt(o.p)+'</b></article><article><span>النسبة</span><b>'+fmt(o.r)+'%</b></article><article><span>الأنشطة المسجلة</span><b>'+fmt(o.c)+'</b></article></div></section><section class="ea-v2-detail-body"><div class="ea-v2-head"><div><span>TPM ACTIVITY</span><h2>تفاصيل الدرجات والمعايير</h2></div><select class="ea-v2-filter" onchange="setExternalAuditDepartmentActivity(this.value)"><option value="all" '+(focus==='all'?'selected':'')+'>كل الأنشطة</option>'+activityOptions+'</select></div><div class="ea-v2-activity-detail-list">'+panels+'</div></section>';
   }catch(e){console.error(e);root.innerHTML='<div class="ea-v2-error"><b>تعذر فتح صفحة القسم</b><span>'+esc(e.message)+'</span><button class="btn btn-outline" onclick="goBack()">رجوع</button></div>'}

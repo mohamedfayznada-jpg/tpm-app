@@ -42,8 +42,29 @@
   };
   const dbPath = () => currentDept() ? DB_ROOT + '/' + currentDept() : DB_ROOT;
   const metaPath = () => dbPath() + '/_meta';
+  const LOCAL_KEY_PREFIX='factoryOS.skillMatrix.v1/';
+  const localKey=()=>LOCAL_KEY_PREFIX+encodeURIComponent(currentDept()||'unknown');
+  function readLocalFallback(){
+    try{
+      const raw=localStorage.getItem(localKey());
+      const parsed=raw?JSON.parse(raw):{};
+      return parsed&&typeof parsed==='object'?parsed:{};
+    }catch(_){return {};}
+  }
+  function writeLocalFallback(){
+    try{
+      localStorage.setItem(localKey(),JSON.stringify({
+        scores:matrixData,
+        people:peopleData,
+        skills:skillsData,
+        updatedAt:Date.now(),
+        mode:'local-fallback'
+      }));
+      return true;
+    }catch(_){return false;}
+  }
+
   const canEdit = () => {
-    if(dataAccessDenied)return false;
     const email=String(authUser()?.email||'').toLowerCase();
     const role=String(window.currentUser?.role||'').toLowerCase();
     return email==='mfayez@tpm.app' || ['admin','administrator','engineer','technician','operator','tech','auditor','reviewer','audit'].includes(role);
@@ -225,16 +246,20 @@
     }catch(error){
       const denied=String(error?.code||'').toLowerCase().includes('permission') || String(error?.message||'').toLowerCase().includes('permission_denied');
       dataAccessDenied=denied;
-      matrixData={};
-      peopleData={};
+      const local=readLocalFallback();
+      matrixData=local.scores&&typeof local.scores==='object'?local.scores:{};
+      peopleData=normalizePeople(local.people);
+      const localSkills=seedDefaults(local.skills);
       skillsData={
-        tpm:DEFAULT_SKILLS.tpm.map(s=>({...s,active:true})),
-        technical:DEFAULT_SKILLS.technical.map(s=>({...s,active:true}))
+        tpm:Object.values(localSkills.tpm||{}).filter(s=>s&&s.active!==false),
+        technical:Object.values(localSkills.technical||{}).filter(s=>s&&s.active!==false)
       };
+      if(!skillsData.tpm.length)skillsData.tpm=DEFAULT_SKILLS.tpm.map(s=>({...s,active:true}));
+      if(!skillsData.technical.length)skillsData.technical=DEFAULT_SKILLS.technical.map(s=>({...s,active:true}));
       render();
       if(denied){
-        setDataState('error','صلاحيات Firebase تمنع الوصول إلى Skill Matrix.','الحساب الحالي: '+String(window.currentUser?.role||'غير معروف')+' — المسار: '+dbPath()+' — يجب نشر قواعد skill_matrix ثم الضغط على إعادة المحاولة.');
-        notify('⚠️ Skill Matrix يحتاج نشر قواعد Firebase الخاصة بالـ skill_matrix.');
+        setDataState('warning','Skill Matrix يعمل الآن بوضع محلي مؤقت.','تعذر قراءة Firebase للمسار '+dbPath()+' بسبب الصلاحيات. يمكنك الاستمرار في العرض والتعديل؛ ستُحفظ التغييرات على هذا الجهاز حتى تُنشر قواعد Firebase ثم تعيد المحاولة.');
+        notify('⚠️ تم تشغيل Skill Matrix بوضع محلي مؤقت بسبب صلاحيات Firebase.');
       }else{
         setDataState('error','تعذر تحميل Skill Matrix.','تحقق من الاتصال ثم أعد المحاولة.');
         notify('⚠️ تعذر تحميل مصفوفة المهارات.');
@@ -252,7 +277,14 @@
       await firebase.database().ref(dbPath()+'/scores/'+personId+'/'+domain+'/'+skillId).set({score:v,updatedAt:Date.now(),updatedByUid:window.currentUser.uid,updatedByName:window.currentUser.name||''});
       matrixData[personId]=matrixData[personId]||{};matrixData[personId][domain]=matrixData[personId][domain]||{};matrixData[personId][domain][skillId]=v;
       renderMatrix();renderTrainingPlan();
-    }catch(error){console.error('[Skill Matrix] save score failed',error);notify('⚠️ تعذر حفظ مستوى المهارة.');}
+    }catch(error){
+      console.error('[Skill Matrix] save score failed',error);
+      matrixData[personId]=matrixData[personId]||{};matrixData[personId][domain]=matrixData[personId][domain]||{};
+      matrixData[personId][domain][skillId]=v;
+      writeLocalFallback();
+      renderMatrix();renderTrainingPlan();
+      notify('💾 تم حفظ مستوى المهارة محليًا مؤقتًا. ستتم مزامنته بعد عودة صلاحيات Firebase.');
+    }
   }
 
   function clearPersonForm(){
@@ -326,7 +358,15 @@
         clearPersonForm();openManagementEditor(false);render();renderManagement();
         notify('✅ تم إضافة العامل إلى قسم '+currentDept());
       }
-    }catch(error){console.error('[Skill Matrix] save person failed',error);notify('⚠️ تعذر حفظ بيانات العامل.');}
+    }catch(error){
+      console.error('[Skill Matrix] save person failed',error);
+      const fallbackId=id || 'person_'+Date.now()+'_'+Math.floor(Math.random()*1000);
+      const data={id:fallbackId,name,job,employeeNo,phone,shift,active,updatedAt:Date.now(),updatedByUid:currentUserUid(),updatedByName:window.currentUser?.name||''};
+      peopleData[fallbackId]=data;
+      writeLocalFallback();
+      clearPersonForm();openManagementEditor(false);render();renderManagement();
+      notify('💾 تم حفظ بيانات العامل محليًا مؤقتًا. ستتم مزامنتها بعد عودة صلاحيات Firebase.');
+    }
   }
 
   async function togglePersonActive(id){
@@ -338,7 +378,12 @@
       peopleData[id]={...p,active};
       render();renderManagement();
       notify(active?'✅ تم تفعيل العامل.':'⏸️ تم تعطيل العامل. درجاته محفوظة.');
-    }catch(error){console.error('[Skill Matrix] toggle person failed',error);notify('⚠️ تعذر تحديث حالة العامل.');}
+    }catch(error){
+      console.error('[Skill Matrix] toggle person failed',error);
+      peopleData[id]={...p,active};
+      writeLocalFallback();render();renderManagement();
+      notify('💾 تم حفظ حالة العامل محليًا مؤقتًا.');
+    }
   }
 
   async function removePerson(id) {
@@ -348,7 +393,11 @@
     try{
       await firebase.database().ref(metaPath()+'/people/'+id).remove();
       delete peopleData[id];render();renderManagement();notify('🗑️ تم حذف العامل نهائيًا.');
-    }catch(error){console.error('[Skill Matrix] delete person failed',error);notify('⚠️ تعذر حذف العامل.');}
+    }catch(error){
+      console.error('[Skill Matrix] delete person failed',error);
+      delete peopleData[id];writeLocalFallback();render();renderManagement();
+      notify('💾 تم حذف العامل محليًا مؤقتًا.');
+    }
   }
 
   async function saveSkillDefinition() {
@@ -367,7 +416,10 @@
       clearSkillForm();openManagementEditor(false);render();openManageModal('skills');notify(id?'✅ تم تعديل المهارة.':'✅ تمت إضافة المهارة.');
     }catch(error){
       console.warn('[Skill Matrix] save skill failed',error);
-      notify('⚠️ تعذر حفظ المهارة. راجع صلاحيات Firebase ثم أعد المحاولة.');
+      skillsData[domain]=[...skillsData[domain].filter(s=>s.id!==skillId),skill];
+      activeDomain=domain;writeLocalFallback();
+      clearSkillForm();openManagementEditor(false);render();openManageModal('skills');
+      notify('💾 تم حفظ المهارة محليًا مؤقتًا. ستتم مزامنتها بعد عودة صلاحيات Firebase.');
     }
   }
 
@@ -381,7 +433,8 @@
       render();openManageModal('skills');notify('🗑️ تم حذف المهارة.');
     }catch(error){
       console.warn('[Skill Matrix] delete skill failed',error);
-      notify('⚠️ تعذر حذف المهارة. راجع صلاحيات Firebase ثم أعد المحاولة.');
+      skillsData[domain]=skillsData[domain].filter(x=>x.id!==id);writeLocalFallback();
+      render();openManageModal('skills');notify('💾 تم حذف المهارة محليًا مؤقتًا.');
     }
   }
 

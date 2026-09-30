@@ -1,4 +1,4 @@
-const CACHE_NAME = 'factory-os-cache-v15';
+const CACHE_NAME = 'factory-os-cache-v16';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -46,7 +46,7 @@ self.addEventListener('fetch', (event) => {
     requestUrl.pathname === '/css/enterprise-v26.css' ||
     requestUrl.pathname === '/app.js' ||
     requestUrl.pathname === '/tpm_teams.js' ||
-    requestUrl.pathname.startsWith('/js/')
+    requestUrl.pathname.startsWith('/js/') && !requestUrl.pathname.includes('/external-audit-')
   );
 
   if (isApplicationPage || isUiAsset) {

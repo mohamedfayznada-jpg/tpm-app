@@ -158,7 +158,7 @@ const M={
 };
 
 const S=window.__externalAuditRebuild||{data:null,activity:'all',department:null};
-S.metricCache=S.metricCache||{};S.evidenceCache=S.evidenceCache||{};
+S.metricCache=S.metricCache||{};S.evidenceCache=S.evidenceCache||{};S.pendingScoreCache=S.pendingScoreCache||{};
 window.__externalAuditRebuild=S;
 const esc=v=>window.escapeTPM?window.escapeTPM(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const jsArg=v=>esc(JSON.stringify(String(v??'')));
@@ -183,6 +183,8 @@ function auditCriteriaFor(activity,item){
   return normalizeTemplateCriteria(activity);
 }
 function evidencePath(dept,activity){return 'tpm_system/external_audit_evidence/'+evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);}
+function scoreKey(dept,activity,criterionId){return evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity)+'/'+String(criterionId);}
+function pendingScore(dept,activity,criterionId){const v=S.pendingScoreCache[scoreKey(dept,activity,criterionId)];return v==null?null:normalizeNumber(v);}
 async function loadEvidence(dept,activity){
   try{
     const snap=await firebase.database().ref(evidencePath(dept,activity)).once('value');
@@ -286,7 +288,7 @@ const acts=d=>{
 const getDept=n=>S.data.departments.find(x=>x.department===n);
 function metricFromEvidence(item,evidence){
   const criteria=auditCriteriaFor(item.activity,item);
-  const entered=criteria.map(c=>({c,a:criterionActual(evidence,c.i)})).filter(x=>x.a!=null);
+  const entered=criteria.map(c=>({c,a:criterionActual(evidence,c.i,dept,activity)})).filter(x=>x.a!=null);
   const planned=criteria.reduce((s,c)=>s+Number(c.p||0),0);
   if(entered.length){
     const actual=entered.reduce((s,x)=>s+Number(x.a||0),0);
@@ -332,14 +334,22 @@ window.uploadExternalAuditEvidence=async(event,dept,activity,criterionId,kind)=>
     showToast?.('جاري رفع صورة '+(kind==='standard'?'الوضع المعياري':'الوضع الحالي')+'…');
     let url='';
     if(typeof window.processAndEnhanceImage==='function'&&typeof window.uploadImageToStorage==='function'){
-      url=await new Promise((resolve,reject)=>window.processAndEnhanceImage(file,async dataUrl=>{try{resolve(await window.uploadImageToStorage(dataUrl));}catch(e){reject(e);}}));
+      url=await new Promise((resolve,reject)=>window.processAndEnhanceImage(file,async dataUrl=>{
+        try{resolve(await window.uploadImageToStorage(dataUrl,{folder:'external-audit'}));}
+        catch(e){reject(e);}
+      }));
     }else{
       const dataUrl=await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(file)});
       if(typeof window.uploadImageToStorage!=='function')throw Error('image_upload_helper_unavailable');
-      url=await window.uploadImageToStorage(dataUrl);
+      url=await window.uploadImageToStorage(dataUrl,{folder:'external-audit'});
     }
     if(!url)throw Error('upload_failed');
-    await saveEvidence(dept,activity,criterionId,kind,url);
+    try{
+      await saveEvidence(dept,activity,criterionId,kind,url);
+    }catch(dbError){
+      try{await firebase.storage?.().refFromURL(url).delete();}catch(cleanupError){console.warn('[External Audit] orphan cleanup failed',cleanupError);}
+      throw dbError;
+    }
     showToast?.('✅ تم حفظ الدليل.');
     await window.renderExternalAuditDepartment(dept);
   }catch(error){
@@ -357,10 +367,59 @@ window.removeExternalAuditEvidence=async(dept,activity,criterionId,kind)=>{
   }catch(error){console.error('[External Audit] evidence delete failed',error);showToast?.('⚠️ تعذر حذف الدليل.');}
 };
 
-function criterionActual(evidence,criterionId){
+function criterionActual(evidence,criterionId,dept,activity){
+  const pending=pendingScore(dept,activity,criterionId);
+  if(pending!=null)return pending;
   const raw=evidence?.[criterionId]?.score;
   const n=normalizeNumber(raw?.value ?? raw);
   return n==null?null:n;
+}
+function previewExternalAuditCriterionScore(dept,activity,criterionId,value){
+  if(!canWriteEvidence()) return;
+  const n=normalizeNumber(value);
+  const criteria=auditCriteriaFor(activity,{});
+  const c=criteria.find(x=>Number(x.i)===Number(criterionId));
+  if(!c)return;
+  if(n==null){
+    delete S.pendingScoreCache[scoreKey(dept,activity,criterionId)];
+    updateLiveAuditScoreUI(dept,activity);
+    return;
+  }
+  if(n<0||n>Number(c.p||0))return;
+  S.pendingScoreCache[scoreKey(dept,activity,criterionId)]=n;
+  updateLiveAuditScoreUI(dept,activity);
+}
+function updateLiveAuditScoreUI(dept,activity){
+  const panel=document.querySelector('.ea-v2-activity-panel[data-ea-activity="'+CSS.escape(String(activity))+'"]');
+  if(!panel)return;
+  const criteria=auditCriteriaFor(activity,{});
+  const entered=criteria.map(c=>({c,a:criterionActual({},c.i,dept,activity)})).filter(x=>x.a!=null);
+  const planned=criteria.reduce((s,c)=>s+Number(c.p||0),0);
+  if(!entered.length)return;
+  const actual=entered.reduce((s,x)=>s+Number(x.a||0),0);
+  const pctValue=planned?Math.round(actual/planned*1000)/10:null;
+  const live=panel.querySelector('[data-ea-live-actual]');
+  const ratio=panel.querySelector('[data-ea-live-ratio]');
+  const status=panel.querySelector('[data-ea-live-status]');
+  if(live)live.textContent=fmt(actual);
+  if(ratio)ratio.textContent=pctValue==null?'—':fmt(pctValue)+'%';
+  if(status)status.textContent='غير محفوظ';
+  panel.querySelectorAll('[data-ea-live-entered]').forEach(el=>el.textContent=entered.length+' / '+criteria.length);
+  const base=S.metricCache[dept];
+  if(base?.items?.length){
+    const nextItems=base.items.map(item=>{
+      if(item.activity!==activity)return item;
+      const ev=S.evidenceCache[evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity)]||{};
+      return {...item,...metricFromEvidence(item,ev)};
+    });
+    const scored=nextItems.filter(item=>item.a!=null&&Number(item.p)>0);
+    const deptPlanned=scored.reduce((s,item)=>s+Number(item.p||0),0);
+    const deptActual=scored.reduce((s,item)=>s+Number(item.a||0),0);
+    const deptPct=deptPlanned?Math.round(deptActual/deptPlanned*1000)/10:null;
+    document.querySelector('[data-ea-dept-actual]')?.replaceChildren(document.createTextNode(fmt(deptActual)));
+    document.querySelector('[data-ea-dept-pct]')?.replaceChildren(document.createTextNode(deptPct==null?'—':fmt(deptPct)+'%'));
+    document.querySelector('[data-ea-dept-count]')?.replaceChildren(document.createTextNode(String(scored.length)));
+  }
 }
 async function saveCriterionScore(dept,activity,criterionId,value){
   if(!canWriteEvidence()) return showToast?.('⚠️ ليس لديك صلاحية تعديل درجات المراجعة.');
@@ -370,31 +429,42 @@ async function saveCriterionScore(dept,activity,criterionId,value){
   const c=criteria.find(x=>Number(x.i)===Number(criterionId));
   if(!c) return;
   if(n==null||n<0||n>Number(c.p||0)) return showToast?.('⚠️ الدرجة يجب أن تكون بين 0 والدرجة المخططة للبند.');
+  S.pendingScoreCache[scoreKey(dept,activity,criterionId)]=n;
   try{
     await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/score').set({
       value:n,updatedAt:Date.now(),updatedByUid:firebase.auth().currentUser?.uid||'',updatedByName:window.currentUser?.name||''
     });
+    const cacheKey=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
+    S.evidenceCache[cacheKey]=S.evidenceCache[cacheKey]||{};
+    S.evidenceCache[cacheKey][criterionId]=S.evidenceCache[cacheKey][criterionId]||{};
+    S.evidenceCache[cacheKey][criterionId].score={value:n,updatedAt:Date.now(),updatedByUid:firebase.auth().currentUser?.uid||'',updatedByName:window.currentUser?.name||''};
+    delete S.pendingScoreCache[scoreKey(dept,activity,criterionId)];
     showToast?.('✅ تم حفظ الدرجة الفعلية للبند.');
     await window.renderExternalAuditDepartment(dept);
-  }catch(error){console.error('[External Audit] criterion score save failed',error);showToast?.('⚠️ تعذر حفظ درجة البند.');}
+  }catch(error){
+    console.error('[External Audit] criterion score save failed',error);
+    showToast?.('⚠️ تعذر حفظ الدرجة. إذا كنت مديرًا/مهندسًا/مراجعًا، انشر Firebase Rules الحالية ثم أعد المحاولة.');
+    updateLiveAuditScoreUI(dept,activity);
+  }
 }
+window.previewExternalAuditCriterionScore=previewExternalAuditCriterionScore;
 window.saveExternalAuditCriterionScore=saveCriterionScore;
 
 function renderCriterionCards(dept,activity,criteria,evidence){
   if(!criteria.length) return '<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات الحالية تحتوي على الدرجة الإجمالية فقط. أضف مصدر المعايير التفصيلية لهذه الخطوة قبل استخدامها في التقييم.</span></div>';
   const editable=canWriteEvidence();
   return '<div class="ea-criteria-list">'+criteria.map(c=>{
-    const actual=criterionActual(evidence,c.i) ?? normalizeNumber(c.a);
+    const actual=criterionActual(evidence,c.i,dept,activity) ?? normalizeNumber(c.a);
     const actualText=actual==null?'غير مسجل':fmt(actual);
     const input=editable
-      ? '<label class="ea-criterion-score-editor"><span>الفعلي</span><input type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(actual==null?'':actual)+'" placeholder="—" onchange="saveExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)"></label>'
+      ? '<label class="ea-criterion-score-editor"><span>الفعلي للبند</span><input type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(actual==null?'':actual)+'" placeholder="—" oninput="previewExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)" onchange="saveExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)"></label>'
       : '<div class="ea-criterion-score-value"><span>الفعلي</span><b>'+actualText+'</b></div>';
     return '<article class="ea-criterion-card"><div class="ea-criterion-head"><span class="ea-criterion-number">'+fmt(c.i)+'</span><div><b>'+esc(c.t)+'</b><small>الدرجة المخططة للبند: '+fmt(c.p)+'</small></div><div class="ea-criterion-score-pair"><div><span>المخطط</span><b>'+fmt(c.p)+'</b></div>'+input+'</div></div><div class="ea-criterion-evidence-grid">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المعياري',evidence})+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div></article>';
   }).join('')+'</div>';
 }
 
 function teamCriteriaWithScores(team,evidence){
-  return (team.criteria||[]).map(c=>({...c,a:criterionActual(evidence,c.i)}));
+  return (team.criteria||[]).map(c=>({...c,a:criterionActual(evidence,c.i,'__TEAM__',team.activity)}));
 }
 async function loadTeamCreateEvidence(team){
   return loadEvidence('__TEAM__',team.activity);
@@ -448,9 +518,9 @@ window.renderExternalAuditDepartment=async n=>{
       const criteriaCount=criteria.length;
       const criteriaHtml=renderCriterionCards(n,it.activity,criteria,evidence);
       const metaHtml=renderActivityMetaEditor(n,it.activity,evidence?._meta||{});
-      return '<details class="ea-v2-activity-panel" '+(focus===it.activity||focus==='all'&&idx===0?'open':'')+'><summary><span><b>'+esc(m[0])+'</b><small>'+esc(m[1])+'</small></span><em>'+fmt(a)+' / '+fmt(p)+'</em><strong>'+scoreText+'</strong><i class="bx bx-chevron-down"></i></summary><div class="ea-v2-score-line"><div><span>الدرجة الفعلية</span><b>'+fmt(a)+'</b></div><div><span>الدرجة المخططة</span><b>'+fmt(p)+'</b></div><div><span>النسبة</span><b>'+scoreText+'</b></div></div><div class="ea-criteria-section"><div class="ea-criteria-section-head"><div><span>CRITERIA & FIELD EVIDENCE</span><h3>معايير التقييم وأدلة الميدان</h3><small>'+criteriaCount+' معيار · لكل معيار صورتان: الوضع المعياري والوضع الحالي</small></div><i class="bx bx-images"></i></div>'+criteriaHtml+metaHtml+'</div></details>';
+      return '<details class="ea-v2-activity-panel" data-ea-activity="'+esc(it.activity)+'" '+(focus===it.activity||focus==='all'&&idx===0?'open':'')+'><summary><span><b>'+esc(m[0])+'</b><small>'+esc(m[1])+'</small></span><em>'+fmt(a)+' / '+fmt(p)+'</em><strong>'+scoreText+'</strong><i class="bx bx-chevron-down"></i></summary><div class="ea-v2-score-line"><div><span>الدرجة الفعلية</span><b data-ea-live-actual>'+fmt(a)+'</b></div><div><span>الدرجة المخططة</span><b>'+fmt(p)+'</b></div><div><span>النسبة</span><b data-ea-live-ratio>'+scoreText+'</b></div><div><span>بنود مقيمة</span><b data-ea-live-entered>'+fmt(metric.c)+' / '+fmt(metric.total||criteria.length)+'</b><small data-ea-live-status></small></div></div><div class="ea-criteria-section"><div class="ea-criteria-section-head"><div><span>CRITERIA & FIELD EVIDENCE</span><h3>معايير التقييم وأدلة الميدان</h3><small>'+criteriaCount+' معيار · لكل معيار صورتان: الوضع المعياري والوضع الحالي</small></div><i class="bx bx-images"></i></div>'+criteriaHtml+metaHtml+'</div></details>';
     }).join('');
-    root.innerHTML='<section class="ea-v2-detail-hero"><button class="ea-v2-back" onclick="goBack()"><i class="bx bx-arrow-back"></i> رجوع خطوة</button><span>DEPARTMENT</span><h1>'+esc(n)+'</h1><p>صفحة مستقلة لدرجات القسم ومعايير كل خطوة وأدلة الوضع المعياري والوضع الحالي.</p><div class="ea-v2-summary-grid"><article><span>الدرجة الفعلية</span><b>'+fmt(o.a)+'</b></article><article><span>الدرجة المخططة</span><b>'+fmt(o.p)+'</b></article><article><span>النسبة</span><b>'+fmt(o.r)+'%</b></article><article><span>الأنشطة المسجلة</span><b>'+fmt(o.c)+'</b></article></div></section><section class="ea-v2-detail-body"><div class="ea-v2-head"><div><span>TPM ACTIVITY</span><h2>تفاصيل الدرجات والمعايير</h2></div><select class="ea-v2-filter" onchange="setExternalAuditDepartmentActivity(this.value)"><option value="all" '+(focus==='all'?'selected':'')+'>كل الأنشطة</option>'+activityOptions+'</select></div><div class="ea-v2-activity-detail-list">'+panels+'</div></section>';
+    root.innerHTML='<section class="ea-v2-detail-hero"><button class="ea-v2-back" onclick="goBack()"><i class="bx bx-arrow-back"></i> رجوع خطوة</button><span>DEPARTMENT</span><h1>'+esc(n)+'</h1><p>صفحة مستقلة لدرجات القسم ومعايير كل خطوة وأدلة الوضع المعياري والوضع الحالي.</p><div class="ea-v2-summary-grid"><article><span>الدرجة الفعلية</span><b data-ea-dept-actual>'+fmt(o.a)+'</b></article><article><span>الدرجة المخططة</span><b>'+fmt(o.p)+'</b></article><article><span>النسبة</span><b data-ea-dept-pct>'+fmt(o.r)+'%</b></article><article><span>الأنشطة المسجلة</span><b data-ea-dept-count>'+fmt(o.c)+'</b></article></div></section><section class="ea-v2-detail-body"><div class="ea-v2-head"><div><span>TPM ACTIVITY</span><h2>تفاصيل الدرجات والمعايير</h2></div><select class="ea-v2-filter" onchange="setExternalAuditDepartmentActivity(this.value)"><option value="all" '+(focus==='all'?'selected':'')+'>كل الأنشطة</option>'+activityOptions+'</select></div><div class="ea-v2-activity-detail-list">'+panels+'</div></section>';
   }catch(e){console.error(e);root.innerHTML='<div class="ea-v2-error"><b>تعذر فتح صفحة القسم</b><span>'+esc(e.message)+'</span><button class="btn btn-outline" onclick="goBack()">رجوع</button></div>'}
 };
 })();

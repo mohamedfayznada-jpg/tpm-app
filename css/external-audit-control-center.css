@@ -236,3 +236,18 @@
 @media(prefers-reduced-motion:reduce){
   .ea-activity-meta-field textarea{transition:none}
 }
+
+
+/* External Audit V6 — live score editing + evidence state */
+.ea-v2-score-line{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ea-v2-score-line [data-ea-live-status]{display:block;margin-top:3px;color:#b45309;font-size:8px;font-weight:800}
+.ea-v2-score-line [data-ea-live-status]:empty{display:none}
+.ea-criterion-score-editor{min-width:92px}
+.ea-criterion-score-editor input{min-width:56px;text-align:center}
+.ea-criterion-score-editor input:focus{outline:2px solid rgba(15,118,110,.16);outline-offset:2px;border-radius:7px}
+@media(max-width:900px){
+  .ea-v2-score-line{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .ea-v2-score-line{grid-template-columns:1fr}
+}

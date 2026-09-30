@@ -83,7 +83,7 @@ window.renderTPMTeams = function() {
             '<div><span>إغلاق المهام</span><b>' + progress + '%</b></div>' +
           '</div>' +
           '<div class="tpm-team-progress"><span style="width:' + progress + '%"></span></div>' +
-          '<div class="tpm-team-card-footer"><span class="tpm-team-health ' + (ts.overdue ? 'alert' : 'good') + '"><i class="bx ' + (ts.overdue ? 'bx-alarm-exclamation' : 'bx-check-circle') + '"></i>' + (ts.overdue ? ts.overdue + ' متأخرة' : 'المسار تحت المتابعة') + '</span><button type="button" class="tpm-team-open-btn" onclick="event.stopPropagation();openTPMTeamWorkspace(\'' + team.id + '\')">فتح الفريق <i class="bx bx-left-arrow-alt"></i></button></div>' +
+          '<div class="tpm-team-card-footer"><span class="tpm-team-health ' + (ts.overdue ? 'alert' : 'good') + '"><i class="bx ' + (ts.overdue ? 'bx-alarm-exclamation' : 'bx-check-circle') + '"></i>' + (ts.overdue ? ts.overdue + ' متأخرة' : 'المسار تحت المتابعة') + '</span><button type="button" class="tpm-team-open-btn" onclick="event.stopPropagation();openTPMTeamWorkspace(\'' + team.id + '\')">CREATE TEAM <i class="bx bx-plus-circle"></i></button></div>' +
         '</article>';
     }).join('') || '<div class="teams-empty-state"><i class="bx bx-group"></i><h3>لا توجد فرق TPM</h3><p>لم يتم تحميل هيكل الفرق بعد.</p></div>';
 };

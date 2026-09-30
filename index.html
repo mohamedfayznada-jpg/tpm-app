@@ -35,7 +35,7 @@
     <link rel="stylesheet" href="css/tpm-teams-premium.css?v=2">
     <link rel="stylesheet" href="css/skill-matrix.css?v=20260929-skill-v2">
     <link rel="stylesheet" href="css/skill-matrix-v3.css?v=20260929-skill-v7">
-<link rel="stylesheet" href="css/external-audit-control-center.css?v=3">\n</head>
+<link rel="stylesheet" href="css/external-audit-control-center.css?v=4">\n</head>
 <body>
     
     <!-- ==========================================
@@ -846,9 +846,9 @@
     <div class="container screen" id="tpmTeamsScreen">
         <div class="screen-command-header teams-command-header">
             <div>
-                <span class="eyebrow"><i class='bx bx-group'></i> هيكل فرق المصنع</span>
-                <h2>فرق TPM</h2>
-                <p>اختر الفريق للانتقال مباشرةً إلى مساحة عمله. تظل صفحات JH وE&amp;T و5S وKK وPM بمحتواها الأصلي كما أنشأته.</p>
+                <span class="eyebrow"><i class='bx bx-group'></i> TPM ACTIVITY</span>
+                <h2>TPM ACTIVITY / CREATE</h2>
+                <p>أنشئ أو افتح فريق TPM من بوابة واحدة. كل نشاط مرتبط بمساحة العمل الأصلية وسجلاته التشغيلية.</p>
             </div>
             <div class="screen-command-actions">
                 <button class="btn btn-outline btn-sm" onclick="showScreen('homeScreen')">⬅️ عودة</button>
@@ -857,9 +857,9 @@
         <div id="tpmTeamKpis" class="tpm-kpi-ribbon"></div>
         <section class="tpm-teams-directory-head">
             <div>
-                <span class="eyebrow"><i class='bx bx-network-chart'></i> TPM OPERATING NETWORK</span>
-                <h3>شبكة فرق المصنع</h3>
-                <p>كل فريق له دور محدد ومساحة تشغيل مرتبطة به. افتح الفريق للانتقال مباشرة إلى أدواته وسجلاته.</p>
+                <span class="eyebrow"><i class='bx bx-network-chart'></i> TPM ACTIVITY</span>
+                <h3>CREATE TPM TEAM</h3>
+                <p>كل بطاقة تمثل TPM Activity مستقلاً. استخدم CREATE TEAM لفتح مساحة النشاط وإدارة سجلاته.</p>
             </div>
             <div class="tpm-teams-directory-meta">
                 <span><i class='bx bx-layer'></i> 6 فرق تخصصية</span>
@@ -1585,13 +1585,14 @@
     </div>
 
     <section id="externalAuditScreen" class="screen" style="display:none;"><div id="externalAuditRoot"></div></section>
+    <section id="externalAuditDepartmentScreen" class="screen" style="display:none;"><div id="externalAuditDepartmentRoot"></div></section>
 
     <!-- Scripts Integration -->
     <script type="module" src="js/main.js?v=20260927-tpm-route-fix1"></script>
     <script src="tpm_data.js" defer></script>
     <script src="tpm_teams.js?v=20260927-teams-stable" defer></script>
     <script src="js/modules/external-audit-seed.js?v=20260929-audit-seed2" defer></script>
-    <script src="js/modules/external-audit-report.js?v=20260929-audit-ui6" defer></script>
+    <script src="js/modules/external-audit-report.js?v=20260930-audit-v2" defer></script>
     <script src="js/modules/tpm-operating-model.js?v=3" defer></script>
 <script src="js/modules/audit-engine.js?v=1" defer></script>
 <script src="js/modules/tasks-core.js?v=1" defer></script>

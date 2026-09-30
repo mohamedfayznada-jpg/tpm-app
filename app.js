@@ -578,12 +578,12 @@ window.openDeptDashboard = function(dept) {
     if(document.getElementById('deptTasksCount')) document.getElementById('deptTasksCount').innerText = deptTasks.length;
 
     try {
-        const steps = ['JH-0', 'JH-1', 'JH-2', 'JH-3', 'JH-4', 'JH-5', 'JH-6'];
+        const steps = Array.isArray(lastAudit?.stepsOrder) ? lastAudit.stepsOrder.filter(k => k !== 'ManualKaizen') : ['JH-TEAM','JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'];
         const stepScores = steps.map(s => { if (!lastAudit || !lastAudit.results[s] || lastAudit.results[s].skipped) return 0; return Math.round((lastAudit.results[s].score / lastAudit.results[s].max) * 100); });
         const radarCtx = document.getElementById('deptRadarChart');
         if (radarCtx && typeof Chart !== 'undefined') {
             if (window.deptRadarInstance) window.deptRadarInstance.destroy();
-            window.deptRadarInstance = new Chart(radarCtx, { type: 'radar', data: { labels: ['التحضيرية', 'الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة'], datasets: [{ label: 'مستوى التنفيذ %', data: stepScores, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: '#3b82f6', pointBackgroundColor: '#3b82f6', borderWidth: 2 }] }, options: { scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: {color:'rgba(255,255,255,0.1)'}, angleLines: {color:'rgba(255,255,255,0.1)'} } }, plugins: { legend: { display: false } } } });
+            window.deptRadarInstance = new Chart(radarCtx, { type: 'radar', data: { labels: steps.map(s => window.auditStepLabel(s)), datasets: [{ label: 'مستوى التنفيذ %', data: stepScores, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: '#3b82f6', pointBackgroundColor: '#3b82f6', borderWidth: 2 }] }, options: { scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: {color:'rgba(255,255,255,0.1)'}, angleLines: {color:'rgba(255,255,255,0.1)'} } }, plugins: { legend: { display: false } } } });
         }
     } catch(e) {}
 
@@ -833,7 +833,7 @@ window.auditStepLabel = function(key) {
         'AM': 'الصيانة الذاتية', 'PM': 'الصيانة المخططة', 'QM': 'الصيانة الجودة',
         'ET': 'التعليم والتدريب', 'HSE': 'السلامة والبيئة', 'KK': 'تحسين الخسائر',
         '5S': '5S / التنظيم', 'Safety': 'السلامة', 'Quality': 'الجودة',
-        'Production': 'الإنتاج', 'ManualKaizen': 'كايزن'
+        'Production': 'الإنتاج', 'JH-TEAM': 'Create JH Team / تشكيل فريق JH', 'ManualKaizen': 'كايزن'
     };
     return map[key] || String(key || 'محور غير محدد').replace(/_/g,' ');
 };
@@ -981,7 +981,14 @@ window.viewDetailedReport = function(id) {
         const status=p>=80?'مستقر':p>=50?'يحتاج تحسين':'حرج';
         const statusIcon=p>=80?'bx-check-circle':p>=50?'bx-wrench':'bx-error-circle';
         const imps=Array.isArray(r.improvements)&&r.improvements.length?r.improvements.map(i=>`<li>${window.escapeTPM(i)}</li>`).join(''):'<li>لم يتم تسجيل فرصة تحسين مباشرة في هذا المحور.</li>';
-        let imgsHtml='';if(r.images)Object.values(r.images).forEach(img=>{if(img?.data)imgsHtml+=`<button type="button" class="evidence-thumb" onclick="openAuditEvidence(this)"><img src="${img.data}" alt="دليل المراجعة"></button>`;});
+        let imgsHtml='';if(r.images)Object.entries(r.images).forEach(([key,img])=>{
+            const renderEvidence=(ev,label)=>ev?.data?`<button type="button" class="evidence-thumb evidence-${key}" onclick="openAuditEvidence(this)" title="${label}"><img src="${ev.data}" alt="${label}"><span>${label}</span></button>`:'';
+            if(img?.standard||img?.current){
+                imgsHtml+=renderEvidence(img.standard,'الوضع المعياري')+renderEvidence(img.current,'الوضع الحالي');
+            }else if(img?.data){
+                imgsHtml+=renderEvidence(img,'دليل المراجعة');
+            }
+        });
         tableHtml+=`<tr onclick="focusAuditStep(${idx})"><td><span class="matrix-step"><i class='bx bx-right-top-arrow-circle'></i>${window.escapeTPM(window.auditStepLabel(k))}</span></td><td><b>${r.skipped?'تخطي':(r.score||0)+' / '+(r.max||0)}</b></td><td><strong style="color:${pColor}">${p}%</strong></td><td><span class="matrix-status" style="color:${pColor}"><i class='bx ${statusIcon}'></i>${status}</span></td></tr>`;
         detailsHtml+=`<article class="audit-evidence-card detail-step-card" id="auditStepCard-${idx}">
           <button class="audit-evidence-head" type="button" onclick="toggleAuditEvidence(${idx})">

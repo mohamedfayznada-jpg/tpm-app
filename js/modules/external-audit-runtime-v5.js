@@ -158,10 +158,11 @@ const M={
 };
 
 const S=window.__externalAuditRebuild||{data:null,activity:'all',department:null};
-S.metricCache=S.metricCache||{};S.evidenceCache=S.evidenceCache||{};S.pendingScoreCache=S.pendingScoreCache||{};
+S.metricCache=S.metricCache||{};S.evidenceCache=S.evidenceCache||{};S.pendingScoreCache=S.pendingScoreCache||{};S.localScores=S.localScores||{};
 S.evidenceReadDenied=!!S.evidenceReadDenied;
 S.localEvidence=S.localEvidence||{};
-const LOCAL_EVIDENCE_KEY='factoryOS.externalAuditEvidence.v2';
+const LOCAL_EVIDENCE_KEY='factoryOS.externalAuditEvidence.v3';
+const LOCAL_SCORE_KEY='factoryOS.externalAuditScores.v1';
 function loadLocalEvidence(){
   try{
     const raw=localStorage.getItem(LOCAL_EVIDENCE_KEY);
@@ -173,6 +174,9 @@ function persistLocalEvidence(){
   try{localStorage.setItem(LOCAL_EVIDENCE_KEY,JSON.stringify(S.localEvidence));}catch(_){}
 }
 S.localEvidence={...loadLocalEvidence(),...S.localEvidence};
+function loadLocalScores(){try{const raw=localStorage.getItem(LOCAL_SCORE_KEY);const parsed=raw?JSON.parse(raw):{};return parsed&&typeof parsed==='object'?parsed:{};}catch(_){return {};}}
+function persistLocalScores(){try{localStorage.setItem(LOCAL_SCORE_KEY,JSON.stringify(S.localScores));}catch(_){}}
+S.localScores={...loadLocalScores(),...S.localScores};
 function localEvidenceKey(dept,activity){return evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);}
 function cacheLocalEvidence(dept,activity,criterionId,kind,payload){
   const key=localEvidenceKey(dept,activity);
@@ -326,9 +330,18 @@ function renderActivityMetaEditor(dept,activity,meta){
   return '<div class="ea-activity-meta-grid"><div class="ea-activity-meta-head"><span>FOLLOW-UP</span><h4>الملاحظات وفرص التحسين</h4><small>هذه المتابعة مرتبطة بنفس النشاط والقسم.</small></div>'+field('opportunities','فرص التحسين وخطط الاستجابة','bx-bulb',opportunities,'اكتب فرصة التحسين أو خطة الاستجابة أو المسؤول.')+field('notes','ملاحظات المراجع','bx-note',notes,'اكتب الملاحظة أو الدليل أو نقطة المتابعة.')+'</div>';
 }
 function renderCriterionCards(dept,activity,criteria,evidence){
-  if(!criteria.length) return '<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات الحالية تحتوي على الدرجة الإجمالية فقط. أضف مصدر المعايير التفصيلية لهذه الخطوة قبل استخدامها في التقييم.</span></div>';
-  return '<div class="ea-criteria-list">'+criteria.map(c=>'<article class="ea-criterion-card"><div class="ea-criterion-head"><span class="ea-criterion-number">'+fmt(c.i)+'</span><div><b>'+esc(c.t)+'</b><small>الدرجة المخططة: '+fmt(c.p)+'</small></div></div><div class="ea-criterion-evidence-grid">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المعياري',evidence})+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div></article>').join('')+'</div>';
+  if(!criteria.length) return '<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات المتاحة تحتوي على الدرجة الإجمالية فقط. لا يتم اختراع درجات تفصيلية غير موجودة في المصدر؛ يمكن تسجيل الدرجة الفعلية لكل بند من هنا.</span></div>';
+  const editable=canWriteEvidence();
+  return '<div class="ea-criteria-list">'+criteria.map(c=>{
+    const actual=criterionActual(evidence,c.i,dept,activity);
+    const actualText=actual==null?'غير مسجل':fmt(actual);
+    const scoreHtml=editable
+      ? '<label class="ea-criterion-score-editor"><span>الدرجة الفعلية</span><input type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(actual==null?'':actual)+'" placeholder="—" oninput="previewExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)" onchange="saveExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)"></label>'
+      : '<div class="ea-criterion-score-value"><span>الدرجة الفعلية</span><b>'+actualText+'</b></div>';
+    return '<article class="ea-criterion-card"><div class="ea-criterion-head"><span class="ea-criterion-number">'+fmt(c.i)+'</span><div class="ea-criterion-title"><b>'+esc(c.t)+'</b><small>الدرجة المخططة: '+fmt(c.p)+'</small></div><div class="ea-criterion-score-pair"><div><span>المخطط</span><b>'+fmt(c.p)+'</b></div>'+scoreHtml+'</div></div><div class="ea-criterion-evidence-grid">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المعياري',evidence})+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div></article>';
+  }).join('')+'</div>';
 }
+
 async function seed(){
   const raw=String(window.EXTERNAL_AUDIT_SEED_B64||'').replace(/\s+/g,'');
   if(!raw) return F;
@@ -469,6 +482,8 @@ window.removeExternalAuditEvidence=async(dept,activity,criterionId,kind)=>{
 };
 
 function criterionActual(evidence,criterionId,dept,activity){
+  const localKey=scoreKey(dept,activity,criterionId);
+  if(S.localScores[localKey]!=null)return normalizeNumber(S.localScores[localKey]);
   const pending=pendingScore(dept,activity,criterionId);
   if(pending!=null)return pending;
   const raw=evidence?.[criterionId]?.score;
@@ -527,10 +542,13 @@ async function saveCriterionScore(dept,activity,criterionId,value){
   const n=normalizeNumber(value);
   const team=teamCreateByActivity(activity);
   const criteria=team?.criteria?.length?team.criteria:auditCriteriaFor(activity,{});
-  const c=criteria.find(x=>Number(x.i)===Number(criterionId));
-  if(!c) return;
-  if(n==null||n<0||n>Number(c.p||0)) return showToast?.('⚠️ الدرجة يجب أن تكون بين 0 والدرجة المخططة للبند.');
-  S.pendingScoreCache[scoreKey(dept,activity,criterionId)]=n;
+  const criterion=criteria.find(x=>Number(x.i)===Number(criterionId));
+  if(!criterion) return;
+  if(n==null||n<0||n>Number(criterion.p||0)) return showToast?.('⚠️ الدرجة يجب أن تكون بين 0 والدرجة المخططة للبند.');
+  const key=scoreKey(dept,activity,criterionId);
+  S.pendingScoreCache[key]=n;
+  S.localScores[key]=n;
+  persistLocalScores();
   try{
     await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/score').set({
       value:n,updatedAt:Date.now(),updatedByUid:firebase.auth().currentUser?.uid||'',updatedByName:window.currentUser?.name||''
@@ -539,16 +557,21 @@ async function saveCriterionScore(dept,activity,criterionId,value){
     S.evidenceCache[cacheKey]=S.evidenceCache[cacheKey]||{};
     S.evidenceCache[cacheKey][criterionId]=S.evidenceCache[cacheKey][criterionId]||{};
     S.evidenceCache[cacheKey][criterionId].score={value:n,updatedAt:Date.now(),updatedByUid:firebase.auth().currentUser?.uid||'',updatedByName:window.currentUser?.name||''};
-    delete S.pendingScoreCache[scoreKey(dept,activity,criterionId)];
+    delete S.localScores[key];
+    delete S.pendingScoreCache[key];
+    persistLocalScores();
     showToast?.('✅ تم حفظ الدرجة الفعلية للبند.');
-    await window.renderExternalAuditDepartment(dept);
   }catch(error){
-    console.error('[External Audit] criterion score save failed',error);
-    showToast?.('⚠️ تعذر حفظ الدرجة. إذا كنت مديرًا/مهندسًا/مراجعًا، انشر Firebase Rules الحالية ثم أعد المحاولة.');
-    updateLiveAuditScoreUI(dept,activity);
+    const msg=String(error?.code||error?.message||'').toLowerCase();
+    if(msg.includes('permission_denied')||msg.includes('permission')){
+      showToast?.('💾 تم حفظ الدرجة على هذا الجهاز. بعد نشر Firebase Rules الحالية ستتم المزامنة السحابية.');
+    }else{
+      showToast?.('💾 تم حفظ الدرجة محليًا مؤقتًا.');
+    }
   }
+  updateLiveAuditScoreUI(dept,activity);
+  await window.renderExternalAuditDepartment(dept);
 }
-window.previewExternalAuditCriterionScore=previewExternalAuditCriterionScore;
 window.saveExternalAuditCriterionScore=saveCriterionScore;
 
 function renderCriterionCards(dept,activity,criteria,evidence){

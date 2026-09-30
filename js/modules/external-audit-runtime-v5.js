@@ -187,7 +187,22 @@ function cacheLocalEvidence(dept,activity,criterionId,kind,payload){
 }
 function mergeEvidence(remote,dept,activity){
   const local=S.localEvidence[localEvidenceKey(dept,activity)]||{};
-  return {...(remote||{}),...(local||{})};
+  const merged={...(remote||{}),...(local||{})};
+  // Local evidence is authoritative for this browser until the Firebase write
+  // is accepted. This prevents a stale in-memory read from hiding a just-uploaded image.
+  Object.keys(local||{}).forEach(key=>{
+    if(key==='_meta'){
+      merged._meta={...(remote?._meta||{}),...(local._meta||{})};
+      return;
+    }
+    merged[key]={...(remote?.[key]||{}),...(local[key]||{})};
+    Object.keys(local[key]||{}).forEach(kind=>{
+      if(kind==='score' || typeof local[key][kind]==='object'){
+        merged[key][kind]={...(remote?.[key]?.[kind]||{}),...(local[key]?.[kind]||{})};
+      }
+    });
+  });
+  return merged;
 }
 window.__externalAuditRebuild=S;
 const esc=v=>window.escapeTPM?window.escapeTPM(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -262,15 +277,22 @@ async function loadEvidence(dept,activity){
 async function saveEvidence(dept,activity,criterionId,kind,url){
   const user=firebase.auth().currentUser;
   const payload={url,kind,uploadedAt:Date.now(),uploadedByUid:user?.uid||'',uploadedByName:window.currentUser?.name||'',syncPending:false};
+  const cacheKey=localEvidenceKey(dept,activity);
+  const evidenceKey=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
+  const applyLocal=()=>{
+    cacheLocalEvidence(dept,activity,criterionId,kind,payload);
+    S.evidenceCache[evidenceKey]=mergeEvidence(S.evidenceCache[evidenceKey]||{},dept,activity);
+  };
   try{
     await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/'+kind).set(payload);
     cacheLocalEvidence(dept,activity,criterionId,kind,payload);
-    delete S.localEvidence[localEvidenceKey(dept,activity)]?.[criterionId]?.[kind];
+    S.evidenceCache[evidenceKey]=mergeEvidence(S.evidenceCache[evidenceKey]||{},dept,activity);
+    delete S.localEvidence[cacheKey]?.[criterionId]?.[kind];
     persistLocalEvidence();
     return {persisted:true,payload};
   }catch(error){
     payload.syncPending=true;
-    cacheLocalEvidence(dept,activity,criterionId,kind,payload);
+    applyLocal();
     throw error;
   }
 }
@@ -321,18 +343,25 @@ async function saveExternalAuditActivityMeta(dept,activity,field,value){
   }
 }
 window.saveExternalAuditActivityMeta=saveExternalAuditActivityMeta;
-function renderActivityMetaEditor(dept,activity,meta){
+function renderActivityMetaEditor(dept,activity,meta,metric){
   const editable=canWriteEvidence();
   const notes=String(meta?.notes||''),opportunities=String(meta?.opportunities||'');
+  const gap=(metric?.p!=null&&metric?.a!=null)?Math.max(0,Number(metric.p)-Number(metric.a)):null;
+  const derived=gap!=null
+    ? '<div class="ea-derived-followup"><span><i class="bx bx-analyse"></i> تحليل رقمي للنشاط</span><b>فجوة الأداء حتى الدرجة المخططة: '+fmt(gap)+' نقطة</b><small>التحليل مشتق مباشرة من الدرجة المخططة والدرجة الفعلية في التقرير، وليس ملاحظة مدقق مُخترعة.</small></div>'
+    : '';
   const field=(name,label,icon,value,placeholder)=>editable
     ? '<label class="ea-activity-meta-field"><span><i class="bx '+icon+'"></i>'+label+'</span><textarea rows="3" placeholder="'+placeholder+'" onchange="saveExternalAuditActivityMeta('+jsArg(dept)+','+jsArg(activity)+','+jsArg(name)+',this.value)">'+esc(value)+'</textarea></label>'
     : '<div class="ea-activity-meta-field readonly"><span><i class="bx '+icon+'"></i>'+label+'</span><p>'+esc(value||'لا توجد بيانات مسجلة.')+'</p></div>';
-  return '<div class="ea-activity-meta-grid"><div class="ea-activity-meta-head"><span>FOLLOW-UP</span><h4>الملاحظات وفرص التحسين</h4><small>هذه المتابعة مرتبطة بنفس النشاط والقسم.</small></div>'+field('opportunities','فرص التحسين وخطط الاستجابة','bx-bulb',opportunities,'اكتب فرصة التحسين أو خطة الاستجابة أو المسؤول.')+field('notes','ملاحظات المراجع','bx-note',notes,'اكتب الملاحظة أو الدليل أو نقطة المتابعة.')+'</div>';
+  return '<div class="ea-activity-meta-grid"><div class="ea-activity-meta-head"><span>FOLLOW-UP</span><h4>الملاحظات وفرص التحسين</h4><small>هذه المتابعة مرتبطة بنفس النشاط والقسم.</small></div>'+derived+field('opportunities','فرص التحسين وخطط الاستجابة','bx-bulb',opportunities,'اكتب فرصة التحسين أو خطة الاستجابة أو المسؤول.')+field('notes','ملاحظات المراجع','bx-note',notes,'اكتب الملاحظة أو الدليل أو نقطة المتابعة.')+'</div>';
 }
-function renderCriterionCards(dept,activity,criteria,evidence){
-  if(!criteria.length) return '<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات المتاحة تحتوي على الدرجة الإجمالية فقط. لا يتم اختراع درجات تفصيلية غير موجودة في المصدر؛ يمكن تسجيل الدرجة الفعلية لكل بند من هنا.</span></div>';
+function renderCriterionCards(dept,activity,criteria,evidence,metric){
+  const sourceBanner=metric?.a!=null
+    ? '<div class="ea-source-score-banner"><div><span>الدرجة الفعلية من تقرير المراجعة</span><b>'+fmt(metric.a)+' / '+fmt(metric.p)+'</b></div><strong>'+fmt(metric.r)+'%</strong><small>هذه هي الدرجة المصدرية للنشاط. درجات البنود لا يتم توزيعها افتراضيًا بدون بيانات بندية فعلية.</small></div>'
+    : '';
+  if(!criteria.length) return sourceBanner+'<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات المتاحة تحتوي على الدرجة الإجمالية فقط. لا يتم اختراع درجات تفصيلية غير موجودة في المصدر؛ يمكن تسجيل الدرجة الفعلية لكل بند من هنا.</span></div>';
   const editable=canWriteEvidence();
-  return '<div class="ea-criteria-list">'+criteria.map(c=>{
+  return sourceBanner+'<div class="ea-criteria-list">'+criteria.map(c=>{
     const actual=criterionActual(evidence,c.i,dept,activity);
     const actualText=actual==null?'غير مسجل':fmt(actual);
     const scoreHtml=editable
@@ -354,24 +383,41 @@ async function seed(){
     if(typeof DecompressionStream==='undefined') return F;
     return await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
   }catch(_error){
+    // The embedded fallback is the deterministic source of truth for the
+    // published H2 2026 report. Do not leak a noisy atob/seed warning to users.
     window.__externalAuditSeedStatus='embedded-fallback';
     return F;
   }
 }
 function norm(d){
   const src=d||F;
+  const fallbackByDept=Object.fromEntries((F.departments||[]).map(dep=>[
+    dep.department,
+    Object.fromEntries((dep.items||[]).map(x=>[
+      Array.isArray(x)?x[0]:x.activity,
+      Array.isArray(x)?{planned:normalizeNumber(x[1]),actual:normalizeNumber(x[2])}:{planned:normalizeNumber(x.planned),actual:normalizeNumber(x.actual)}
+    ]))
+  ]));
   return {
     report:src.report||F.report,
-    departments:(src.departments||[]).map(dep=>({
-      department:dep.department,
-      items:(dep.items||[]).map(x=>{
-        const q=Array.isArray(x)
-          ? {activity:x[0],planned:normalizeNumber(x[1]),actual:normalizeNumber(x[2])}
-          : {...x,planned:normalizeNumber(x.planned),actual:normalizeNumber(x.actual)};
-        q.criteria=crit(q.criteria||q.rows||q.evaluations||q.evaluationCriteria||q.checklist);
-        return q;
-      })
-    }))
+    departments:(src.departments||[]).map(dep=>{
+      const fallback=fallbackByDept[dep.department]||{};
+      return {
+        department:dep.department,
+        items:(dep.items||[]).map(x=>{
+          const activity=Array.isArray(x)?x[0]:x.activity;
+          const fb=fallback[activity]||{};
+          const q=Array.isArray(x)
+            ? {activity,planned:normalizeNumber(x[1]),actual:normalizeNumber(x[2])}
+            : {...x,planned:normalizeNumber(x.planned),actual:normalizeNumber(x.actual)};
+          // Never let a malformed compressed seed erase the published report score.
+          if(q.planned==null && fb.planned!=null) q.planned=fb.planned;
+          if(q.actual==null && fb.actual!=null) q.actual=fb.actual;
+          q.criteria=crit(q.criteria||q.rows||q.evaluations||q.evaluationCriteria||q.checklist);
+          return q;
+        })
+      };
+    })
   };
 }
 function ensureTeamCreateCatalog(data){
@@ -406,10 +452,13 @@ function metricFromEvidence(item,evidence,dept,activity){
 }
 async function loadEvidenceCached(dept,activity){
   const key=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
-  if(Object.prototype.hasOwnProperty.call(S.evidenceCache,key)) return S.evidenceCache[key];
+  if(Object.prototype.hasOwnProperty.call(S.evidenceCache,key)){
+    // Always merge local pending changes over a stale remote cache.
+    return mergeEvidence(S.evidenceCache[key]||{},dept,activity);
+  }
   const value=await loadEvidence(dept,activity);
   S.evidenceCache[key]=value||{};
-  return S.evidenceCache[key];
+  return mergeEvidence(S.evidenceCache[key],dept,activity);
 }
 async function departmentMetrics(dept){
   const x=getDept(dept);
@@ -455,9 +504,12 @@ window.uploadExternalAuditEvidence=async(event,dept,activity,criterionId,kind)=>
       const result=await saveEvidence(dept,activity,criterionId,kind,url);
       showToast?.(result?.persisted?'✅ تم حفظ الدليل.':'⚠️ تم حفظ الصورة محليًا — سيتم مزامنتها بعد إصلاح صلاحيات Firebase.');
     }catch(dbError){
-      const msg=String(dbError?.code||dbError?.message||'').toLowerCase();
+        const msg=String(dbError?.code||dbError?.message||'').toLowerCase();
       if(msg.includes('permission_denied')||msg.includes('permission')){
-        showToast?.('⚠️ الصورة تم رفعها وظهرت الآن، لكن قاعدة البيانات رفضت حفظ الرابط. ستتم المزامنة تلقائيًا بعد نشر قواعد Firebase.');
+        // saveEvidence() already placed the URL in the local evidence cache.
+        // The UI can therefore show the image immediately even before the
+        // Firebase rule release is published.
+        showToast?.('⚠️ تم رفع الصورة وحفظها محليًا فورًا. سيتم مزامنة الرابط بعد قبول صلاحيات Firebase.');
       }else{
         try{await firebase.storage?.().refFromURL(url).delete();}catch(cleanupError){console.warn('[External Audit] orphan cleanup failed',cleanupError);}
         throw dbError;
@@ -475,7 +527,17 @@ window.removeExternalAuditEvidence=async(dept,activity,criterionId,kind)=>{
   try{
     await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/'+kind).remove();
     const key=localEvidenceKey(dept,activity);
-    if(S.localEvidence[key]?.[criterionId]){delete S.localEvidence[key][criterionId][kind];persistLocalEvidence();}
+    const evidenceKey=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
+    if(S.localEvidence[key]?.[criterionId]){
+      delete S.localEvidence[key][criterionId][kind];
+      if(!Object.keys(S.localEvidence[key][criterionId]).length) delete S.localEvidence[key][criterionId];
+      if(!Object.keys(S.localEvidence[key]).length) delete S.localEvidence[key];
+      persistLocalEvidence();
+    }
+    if(S.evidenceCache[evidenceKey]?.[criterionId]){
+      delete S.evidenceCache[evidenceKey][criterionId][kind];
+      if(!Object.keys(S.evidenceCache[evidenceKey][criterionId]).length) delete S.evidenceCache[evidenceKey][criterionId];
+    }
     await window.renderExternalAuditDepartment(dept);
     showToast?.('🗑️ تم حذف الدليل من السجل.');
   }catch(error){console.error('[External Audit] evidence delete failed',error);showToast?.('⚠️ تعذر حذف الدليل.');}
@@ -640,8 +702,8 @@ window.renderExternalAuditDepartment=async n=>{
       const p=metric.p,a=metric.a,s=metric.r,criteria=auditCriteriaFor(it.activity,it),evidence=evidenceCache[it.activity]||{};
       const scoreText=s==null?'غير مسجل':fmt(s)+'%';
       const criteriaCount=criteria.length;
-      const criteriaHtml=renderCriterionCards(n,it.activity,criteria,evidence);
-      const metaHtml=renderActivityMetaEditor(n,it.activity,evidence?._meta||{});
+      const criteriaHtml=renderCriterionCards(n,it.activity,criteria,evidence,metric);
+      const metaHtml=renderActivityMetaEditor(n,it.activity,evidence?._meta||{},metric);
       return '<details class="ea-v2-activity-panel" data-ea-activity="'+esc(it.activity)+'" '+(focus===it.activity||focus==='all'&&idx===0?'open':'')+'><summary><span><b>'+esc(m[0])+'</b><small>'+esc(m[1])+'</small></span><em>'+fmt(a)+' / '+fmt(p)+'</em><strong>'+scoreText+'</strong><i class="bx bx-chevron-down"></i></summary><div class="ea-v2-score-line"><div><span>الدرجة الفعلية</span><b data-ea-live-actual>'+fmt(a)+'</b></div><div><span>الدرجة المخططة</span><b>'+fmt(p)+'</b></div><div><span>النسبة</span><b data-ea-live-ratio>'+scoreText+'</b></div><div><span>بنود مقيمة</span><b data-ea-live-entered>'+fmt(metric.c)+' / '+fmt(metric.total||criteria.length)+'</b><small data-ea-live-status></small></div></div><div class="ea-criteria-section"><div class="ea-criteria-section-head"><div><span>CRITERIA & FIELD EVIDENCE</span><h3>معايير التقييم وأدلة الميدان</h3><small>'+criteriaCount+' معيار · لكل معيار صورتان: الوضع المعياري والوضع الحالي</small></div><i class="bx bx-images"></i></div>'+criteriaHtml+metaHtml+'</div></details>';
     }).join('');
     const evidenceNotice=S.evidenceReadDenied?'<div class="ea-data-permission-notice"><i class="bx bx-lock-alt"></i><div><b>درجات التقرير الأساسية تعمل بشكل طبيعي.</b><br>قراءة أدلة الصور والدرجات المحفوظة في Firebase مرفوضة حاليًا بسبب قواعد قاعدة البيانات المنشورة. أي صورة جديدة سيتم رفعها والاحتفاظ بها محليًا حتى تعود المزامنة.</div></div>':'';

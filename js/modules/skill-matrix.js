@@ -283,7 +283,7 @@
       matrixData[personId][domain][skillId]=v;
       writeLocalFallback();
       renderMatrix();renderTrainingPlan();
-      notify('💾 تم حفظ مستوى المهارة محليًا مؤقتًا. ستتم مزامنته بعد عودة صلاحيات Firebase.');
+      notify('💾 تم حفظ مستوى المهارة محليًا مؤقتًا. تبقى على هذا الجهاز حتى تُنشر قواعد Firebase وتعيد المحاولة.');
     }
   }
 
@@ -365,7 +365,7 @@
       peopleData[fallbackId]=data;
       writeLocalFallback();
       clearPersonForm();openManagementEditor(false);render();renderManagement();
-      notify('💾 تم حفظ بيانات العامل محليًا مؤقتًا. ستتم مزامنتها بعد عودة صلاحيات Firebase.');
+      notify('💾 تم حفظ بيانات العامل محليًا مؤقتًا. تبقى على هذا الجهاز حتى تُنشر قواعد Firebase وتعيد المحاولة.');
     }
   }
 
@@ -419,7 +419,7 @@
       skillsData[domain]=[...skillsData[domain].filter(s=>s.id!==skillId),skill];
       activeDomain=domain;writeLocalFallback();
       clearSkillForm();openManagementEditor(false);render();openManageModal('skills');
-      notify('💾 تم حفظ المهارة محليًا مؤقتًا. ستتم مزامنتها بعد عودة صلاحيات Firebase.');
+      notify('💾 تم حفظ المهارة محليًا مؤقتًا. تبقى على هذا الجهاز حتى تُنشر قواعد Firebase وتعيد المحاولة.');
     }
   }
 

@@ -129,7 +129,7 @@ async function load(){
   catch(e){console.warn('[External Audit]',e);S.data=ensureCreateJHTeam(norm(F));}
   return S.data;
 }
-const acts=d=>[...new Set(d.departments.flatMap(x=>x.items.map(i=>i.activity)))];
+const acts=d=>{const all=[...new Set(d.departments.flatMap(x=>x.items.map(i=>i.activity)))];const preferred=['5S','Create JH Team','JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6','JH-7','PM-1','PM-2','PM-3','PM-4','PM-5','PM-6','PM-7','E&T','KK','SHE'];return all.sort((a,b)=>(preferred.indexOf(a)<0?999:preferred.indexOf(a))-(preferred.indexOf(b)<0?999:preferred.indexOf(b)));};
 const getDept=n=>S.data.departments.find(x=>x.department===n);
 const overall=n=>{
   const scored=(getDept(n)?.items||[]).filter(x=>x.actual!=null&&x.planned!=null&&Number(x.planned)>0);

@@ -234,12 +234,16 @@ window.biometricLogin = async function() {
 // 🔄 محرك المزامنة وإدارة الحالة (State Manager)
 // ==========================================
 let dbListeners = {};
+let dbListenersOwner = null;
 
 firebase.auth().onAuthStateChanged(async user => {
+    // Keep the existing realtime subscriptions, but make auth re-entry idempotent.
+    if (user && dbListenersOwner === user.uid) return;
     document.body.classList.toggle('auth-locked', !user);
     const mainHeader = document.getElementById('mainHeader');
     
     if (user) {
+        dbListenersOwner = user.uid;
         isDataLoaded = true;        if (mainHeader) mainHeader.style.display = 'flex';
 
         const dSnap = await db.ref('tpm_system/departments').once('value');
@@ -298,8 +302,6 @@ firebase.auth().onAuthStateChanged(async user => {
             let uData = usersData[user.uid];
             if (typeof uData === 'string') { role = uData; } 
             else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
-            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
-            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
             role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
             currentUser = { uid: user.uid, name: savedName, username: finalUsername, role: role, status: status };
             window.currentUser = currentUser;
@@ -365,6 +367,7 @@ firebase.auth().onAuthStateChanged(async user => {
         }
         
     } else {
+        dbListenersOwner = null;
         isInitialLoad = true; isDataLoaded = false; 
         if (mainHeader) mainHeader.style.display = 'none'; // חجر صحي
         showScreen('loginScreen');

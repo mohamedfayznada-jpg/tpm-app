@@ -409,13 +409,10 @@ function norm(d){
     })
   };
 }
-function ensureTeamCreateCatalog(data){
-  return data;
-}
 async function load(){
   if(S.data)return S.data;
-  try{S.data=ensureTeamCreateCatalog(norm(await seed()));}
-  catch(e){console.warn('[External Audit]',e);S.data=ensureTeamCreateCatalog(norm(F));}
+  try{S.data=norm(await seed());}
+  catch(e){console.warn('[External Audit]',e);S.data=norm(F);}
   return S.data;
 }
 const acts=d=>{
@@ -624,19 +621,6 @@ async function saveCriterionScore(dept,activity,criterionId,value){
   await window.renderExternalAuditDepartment(dept);
 }
 window.saveExternalAuditCriterionScore=saveCriterionScore;
-
-function renderCriterionCards(dept,activity,criteria,evidence){
-  if(!criteria.length) return '<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات الحالية تحتوي على الدرجة الإجمالية فقط. أضف مصدر المعايير التفصيلية لهذه الخطوة قبل استخدامها في التقييم.</span></div>';
-  const editable=canWriteEvidence();
-  return '<div class="ea-criteria-list">'+criteria.map(c=>{
-    const actual=criterionActual(evidence,c.i,dept,activity) ?? normalizeNumber(c.a);
-    const actualText=actual==null?'غير مسجل':fmt(actual);
-    const input=editable
-      ? '<label class="ea-criterion-score-editor"><span>الفعلي للبند</span><input type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(actual==null?'':actual)+'" placeholder="—" oninput="previewExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)" onchange="saveExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)"></label>'
-      : '<div class="ea-criterion-score-value"><span>الفعلي</span><b>'+actualText+'</b></div>';
-    return '<article class="ea-criterion-card"><div class="ea-criterion-head"><span class="ea-criterion-number">'+fmt(c.i)+'</span><div><b>'+esc(c.t)+'</b><small>الدرجة المخططة للبند: '+fmt(c.p)+'</small></div><div class="ea-criterion-score-pair"><div><span>المخطط</span><b>'+fmt(c.p)+'</b></div>'+input+'</div></div><div class="ea-criterion-evidence-grid">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المعياري',evidence})+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div></article>';
-  }).join('')+'</div>';
-}
 
 function teamCriteriaWithScores(team,evidence){
   return (team.criteria||[]).map(c=>({...c,a:criterionActual(evidence,c.i,'__TEAM__',team.activity)}));

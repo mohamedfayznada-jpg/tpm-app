@@ -49,6 +49,68 @@ window.clearAuditDraft = function(dept) {
     localStorage.removeItem('tpm_audit_draft');
 };
 
+// ==========================================
+// 🔒 Audit State Integrity Guard
+// ==========================================
+window.validateAuditState = function(audit = currentAudit, options = {}) {
+    const errors = [];
+    if(!audit) return { valid:false, errors:['لا توجد مراجعة مفتوحة'] };
+    if(!Array.isArray(audit.stepsOrder) || audit.stepsOrder.length !== 7) {
+        errors.push('ترتيب خطوات المراجعة غير صالح');
+        return { valid:false, errors };
+    }
+    if(!audit.results || typeof audit.results !== 'object') errors.push('نتائج المراجعة غير موجودة');
+    const results = audit.results || {};
+
+    audit.stepsOrder.forEach(stepKey => {
+        const definition = typeof AUDIT_DATA !== 'undefined' ? AUDIT_DATA[stepKey] : null;
+        const result = results[stepKey];
+        if(!definition) { errors.push('بيانات الخطوة غير موجودة: '+stepKey); return; }
+        if(!result) {
+            if(options.allowIncomplete && audit.currentStepIndex === audit.stepsOrder.indexOf(stepKey)) return;
+            errors.push('لا توجد نتيجة محفوظة للخطوة: '+stepKey);
+            return;
+        }
+        if(result.skipped) {
+            if(String(result.skipReason || '').trim().length < 5) errors.push(stepKey+': سبب التخطي غير موثق');
+            return;
+        }
+        const selections = result.selections && typeof result.selections === 'object' ? result.selections : {};
+        const expectedIds = new Set(definition.items.map(item => String(item.id)));
+        const selectedIds = Object.keys(selections).filter(key => key.startsWith('item_')).map(key => key.slice(5));
+        definition.items.forEach(item => {
+            const key='item_'+item.id;
+            const value=selections[key];
+            if(!value) {
+                errors.push(stepKey+' / بند '+item.id+': لم يتم تقييم البند');
+                return;
+            }
+            const score=Number(value.score), max=Number(value.max);
+            const allowed=(item.levels||[]).some(level=>Number(level.score)===score);
+            if(!Number.isFinite(score) || !allowed) errors.push(stepKey+' / بند '+item.id+': درجة غير صالحة');
+            if(!Number.isFinite(max) || max!==Number(item.maxScore)) errors.push(stepKey+' / بند '+item.id+': الحد الأقصى غير مطابق للقالب');
+        });
+        selectedIds.filter(id=>!expectedIds.has(id)).forEach(id=>errors.push(stepKey+' / بند غير معروف: '+id));
+        const score=definition.items.reduce((sum,item)=>sum+(Number(selections['item_'+item.id]?.score)||0),0);
+        const max=definition.items.reduce((sum,item)=>sum+Number(item.maxScore||0),0);
+        if(Number(result.score)!==score) errors.push(stepKey+': الدرجة المحفوظة لا تطابق البنود');
+        if(Number(result.max)!==max) errors.push(stepKey+': الحد الأقصى المحفوظ لا يطابق القالب');
+    });
+    return { valid:errors.length===0, errors };
+};
+
+window.calculateAuditTotals = function(audit = currentAudit) {
+    let score=0, max=0;
+    if(!audit?.stepsOrder) return {score,max,pct:0};
+    audit.stepsOrder.forEach(stepKey => {
+        const result=audit.results?.[stepKey];
+        if(!result || result.skipped) return;
+        score += Number(result.score)||0;
+        max += Number(result.max)||0;
+    });
+    return {score,max,pct:max ? Math.round(score/max*100) : 0};
+};
+
 window.startNewAuditFlow = function() {
     if(currentViewedDept) {
         const sd = document.getElementById('selectDept');
@@ -163,8 +225,18 @@ window.updateCumulativeScoreUI = function() {
     if (pointsEl) pointsEl.innerText = `${totalScoreSoFar} / ${totalMaxSoFar}`;
 };
 
-window.selectLevel = function(id, score, max, el) { 
-    currentStepSelections['item_'+id] = {score, max}; 
+window.selectLevel = function(id, score, max, el) {
+    const stepKey=currentAudit?.stepsOrder?.[currentAudit.currentStepIndex];
+    const item=(typeof AUDIT_DATA !== 'undefined' ? AUDIT_DATA?.[stepKey]?.items : [])?.find(x=>Number(x.id)===Number(id));
+    const validScore=Number(score);
+    const validMax=Number(max);
+    if(!item || !Number.isFinite(validScore) || !Number.isFinite(validMax) ||
+       validMax!==Number(item.maxScore) ||
+       !(item.levels||[]).some(level=>Number(level.score)===validScore)) {
+        console.warn('[JH Audit] rejected invalid score selection', {stepKey,id,score,max});
+        return showToast('⚠️ درجة التقييم غير صالحة لهذا البند.');
+    }
+    currentStepSelections['item_'+id] = {score:validScore, max:validMax}; 
     el.parentElement.querySelectorAll('div[onclick]').forEach(o=>{ o.style.background='var(--surface-inset)'; o.style.borderColor='transparent'; o.style.color='var(--text-main)'; o.style.boxShadow='none'; }); 
     el.style.background='rgba(16,185,129,0.1)'; el.style.borderColor='var(--success)'; el.style.color='var(--success)'; el.style.boxShadow='0 0 15px rgba(16,185,129,0.2)';
     window.saveAuditDraft(); window.updateCumulativeScoreUI();
@@ -172,14 +244,22 @@ window.selectLevel = function(id, score, max, el) {
 
 window.finishCurrentStep = function() {
     const k = currentAudit.stepsOrder[currentAudit.currentStepIndex]; const sd = AUDIT_DATA[k];
-    
-    // حماية صارمة: منع تجاوز الخطوة بدون إكمال التقييم
-    if(Object.keys(currentStepSelections).length < sd.items.length) { 
-        showToast('⚠️ يرجى تقييم جميع البنود بدون استثناء قبل حفظ المرحلة'); 
-        return; 
+
+    // Rebuild the step result from the template, never from caller-controlled max/score values.
+    if(Object.keys(currentStepSelections).length < sd.items.length) {
+        showToast('⚠️ يرجى تقييم جميع البنود بدون استثناء قبل حفظ المرحلة');
+        return;
     }
-    
     let totalScore = 0, totalMax = 0; currentStepImprovements = [];
+    for(const item of sd.items) {
+        const value=currentStepSelections['item_'+item.id];
+        if(!value || !Number.isFinite(Number(value.score)) ||
+           Number(value.max)!==Number(item.maxScore) ||
+           !(item.levels||[]).some(level=>Number(level.score)===Number(value.score))) {
+            showToast('⚠️ توجد درجة غير صالحة في البند '+item.id+'، راجع التقييم قبل الحفظ.');
+            return;
+        }
+    }
     for(let key in currentStepSelections) { 
         let itemData = currentStepSelections[key]; 
         totalScore += itemData.score; 
@@ -233,15 +313,17 @@ window.goToNextStep = function() {
 };
 
 window.generateFinalReport = function() {
-    let s=0, m=0; 
-    currentAudit.stepsOrder.forEach(k=>{
-        if(!currentAudit.results[k].skipped){
-            s+=currentAudit.results[k].score; 
-            m+=currentAudit.results[k].max;
-        }
-    });
-    let p=m===0?0:Math.round((s/m)*100); 
-    currentAudit.totalPct = p;
+    const integrity=window.validateAuditState(currentAudit,{allowIncomplete:false});
+    if(!integrity.valid) {
+        console.error('[JH Audit] integrity validation failed before final report',integrity.errors);
+        showToast('⚠️ لا يمكن إنشاء التقرير النهائي قبل استكمال/تصحيح التقييم.');
+        return;
+    }
+    const totals=window.calculateAuditTotals(currentAudit);
+    const s=totals.score, m=totals.max, p=totals.pct;
+    currentAudit.totalScore=s;
+    currentAudit.totalMax=m;
+    currentAudit.totalPct=p;
     
     const finalPctEl = document.getElementById('finalTotalPct'); 
     if(finalPctEl) finalPctEl.innerText = p+'%'; 
@@ -270,6 +352,16 @@ window.saveFinalAudit = async function() {
         currentAudit.updatedByName=currentUser?.name || '';
         currentAudit.status='approved';
         currentAudit.schemaVersion=2;
+
+        const integrity=window.validateAuditState(currentAudit,{allowIncomplete:false});
+        if(!integrity.valid) {
+            console.error('[JH Audit] integrity validation failed before save',integrity.errors);
+            return showToast('⚠️ لا يمكن اعتماد المراجعة: توجد بيانات تقييم غير متطابقة.');
+        }
+        const totals=window.calculateAuditTotals(currentAudit);
+        currentAudit.totalScore=totals.score;
+        currentAudit.totalMax=totals.max;
+        currentAudit.totalPct=totals.pct;
 
         const updates={};
         let allImprovements=[];

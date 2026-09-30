@@ -316,7 +316,6 @@ async function departmentMetrics(dept){
   return {p,a,r:pct(a,p),c:scored.filter(x=>x.source==='criteria').length,items};
 }
 const overall=n=>S.metricCache[n]||(()=>{const scored=(getDept(n)?.items||[]).filter(x=>x.actual!=null&&x.planned!=null&&Number(x.planned)>0);const p=scored.reduce((s,x)=>s+Number(x.planned||0),0),v=scored.reduce((s,x)=>s+Number(x.actual||0),0);return{p,a:v,r:pct(v,p),c:scored.length,items:scored};})();
-};
 window.setExternalAuditActivity=a=>{S.activity=a||'all';S.metricCache={};window.renderExternalAudit()};
 window.openExternalAuditDepartment=async(d,a)=>{S.activity=a||'all';S.department=d;showScreen('externalAuditDepartmentScreen');await window.renderExternalAuditDepartment(d)};
 window.setExternalAuditDepartmentActivity=a=>{S.activity=a||'all';if(S.department)window.renderExternalAuditDepartment(S.department)};

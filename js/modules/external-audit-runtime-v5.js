@@ -211,10 +211,32 @@ function auditCriteriaFor(activity,item){
 function evidencePath(dept,activity){return 'tpm_system/external_audit_evidence/'+evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);}
 function scoreKey(dept,activity,criterionId){return evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity)+'/'+String(criterionId);}
 function pendingScore(dept,activity,criterionId){const v=S.pendingScoreCache[scoreKey(dept,activity,criterionId)];return v==null?null:normalizeNumber(v);}
+async function syncPendingLocalEvidence(dept,activity){
+  const key=localEvidenceKey(dept,activity), bucket=S.localEvidence[key];
+  if(!bucket||typeof bucket!=='object')return;
+  let changed=false;
+  for(const [criterionId,record] of Object.entries(bucket)){
+    if(!record||typeof record!=='object')continue;
+    for(const [kind,payload] of Object.entries(record)){
+      if(!payload?.syncPending||!payload.url)continue;
+      try{
+        await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/'+kind).set({...payload,syncPending:false,syncedAt:Date.now()});
+        delete bucket[criterionId][kind];
+        changed=true;
+      }catch(_){ return; }
+    }
+    if(!Object.keys(bucket[criterionId]||{}).length)delete bucket[criterionId];
+  }
+  if(changed){
+    if(!Object.keys(bucket).length)delete S.localEvidence[key];
+    persistLocalEvidence();
+  }
+}
 async function loadEvidence(dept,activity){
   try{
     const snap=await firebase.database().ref(evidencePath(dept,activity)).once('value');
     S.evidenceReadDenied=false;
+    await syncPendingLocalEvidence(dept,activity);
     return mergeEvidence(snap.val()||{},dept,activity);
   }catch(error){
     const message=String(error?.code||error?.message||'').toLowerCase();

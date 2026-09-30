@@ -209,7 +209,7 @@ window.handleAuditCriterionImage = async function(event, itemId, kind) {
                 window.saveAuditDraft();
                 resolve();
             } catch(error) { reject(error); }
-        });
+        }));
         window.renderCurrentAuditStep();
         showToast('✅ تم حفظ صورة الدليل.');
     } catch(error) {

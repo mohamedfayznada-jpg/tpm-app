@@ -1069,9 +1069,14 @@ window.openAuditEvidence = function(btn){
 window.downloadProfessionalPDF = async function(){
     const area=document.getElementById('printableReportArea');
     if(!area) return showToast('⚠️ تعذر العثور على التقرير');
-    if(!window.html2canvas || !window.jspdf?.jsPDF){
-        return showToast('⚠️ مكونات PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
+    try{
+        await window.TPMVendorLoader.ensure('html2canvas','https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        await window.TPMVendorLoader.ensure('jspdf','https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    }catch(error){
+        console.error('[TPM] PDF vendor load failed:',error);
+        return showToast('⚠️ تعذر تحميل مكونات PDF. تحقق من الاتصال وحاول مرة أخرى.');
     }
+    if(!window.html2canvas || !window.jspdf?.jsPDF) return showToast('⚠️ مكونات PDF غير متاحة حاليًا.');
 
     const actionRow=document.querySelector('#detailedReportScreen>.row-flex');
     const oldDisplay=actionRow?.style.display;

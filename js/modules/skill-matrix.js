@@ -559,13 +559,20 @@
   window.clearSkillDefinitionForm=clearSkillForm;
   window.retrySkillMatrixLoad=()=>load(true);
 
-  window.exportSkillTrainingPlan=function(){
+  window.exportSkillTrainingPlan=async function(){
     const rows=[['العامل','القسم','المجال','المهارة','المستوى الحالي','المستوى المستهدف','الفجوة','الأولوية']];
     getPeople().forEach(p=>['tpm','technical'].forEach(domain=>(skillsData[domain]||[]).forEach(s=>{
       const cur=score(p.id,domain,s.id);if(cur<TARGET)rows.push([p.name,currentDept(),domain==='tpm'?'TPM':'فني',s.name,cur,TARGET,TARGET-cur,Math.round((TARGET-cur)*Number(s.weight||1)*10)/10]);
-    })));
-    if(window.XLSX){const ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Training Plan');XLSX.writeFile(wb,'TPM-Training-Plan-'+(currentDept()||'Dept')+'.xlsx');}
-  };
+    })));     try{
+       await window.TPMVendorLoader.ensure('XLSX','https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js');
+       const ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
+       XLSX.utils.book_append_sheet(wb,ws,'Training Plan');
+       XLSX.writeFile(wb,'TPM-Training-Plan-'+(currentDept()||'Dept')+'.xlsx');
+     }catch(error){
+       console.error('[Skill Matrix] Excel export failed:',error);
+       window.showToast?.('⚠️ تعذر تحميل/تشغيل تصدير Excel.');
+     }
+   };
 
   document.addEventListener('input',e=>{if(e.target?.id==='skillMatrixSearch'){search=e.target.value||'';renderMatrix();} if(e.target?.id==='skillPeopleSearch'){managementSearch=e.target.value||'';renderManagement();}});
   document.addEventListener('click',e=>{

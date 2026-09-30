@@ -309,7 +309,8 @@ function criterionActual(evidence,criterionId){
 async function saveCriterionScore(dept,activity,criterionId,value){
   if(!canWriteEvidence()) return showToast?.('⚠️ ليس لديك صلاحية تعديل درجات المراجعة.');
   const n=normalizeNumber(value);
-  const criteria=auditCriteriaFor(activity,{});
+  const team=teamCreateByActivity(activity);
+  const criteria=team?.criteria?.length?team.criteria:auditCriteriaFor(activity,{});
   const c=criteria.find(x=>Number(x.i)===Number(criterionId));
   if(!c) return;
   if(n==null||n<0||n>Number(c.p||0)) return showToast?.('⚠️ الدرجة يجب أن تكون بين 0 والدرجة المخططة للبند.');

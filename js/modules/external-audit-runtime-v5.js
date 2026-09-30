@@ -328,7 +328,7 @@ function renderCriterionCards(dept,activity,criteria,evidence){
   if(!criteria.length) return '<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات الحالية تحتوي على الدرجة الإجمالية فقط. أضف مصدر المعايير التفصيلية لهذه الخطوة قبل استخدامها في التقييم.</span></div>';
   const editable=canWriteEvidence();
   return '<div class="ea-criteria-list">'+criteria.map(c=>{
-    const actual=criterionActual(evidence,c.i);
+    const actual=criterionActual(evidence,c.i) ?? normalizeNumber(c.a);
     const actualText=actual==null?'غير مسجل':fmt(actual);
     const input=editable
       ? '<label class="ea-criterion-score-editor"><span>الفعلي</span><input type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(actual==null?'':actual)+'" placeholder="—" onchange="saveExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)"></label>'

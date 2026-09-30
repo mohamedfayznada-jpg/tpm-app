@@ -220,11 +220,12 @@ window.handleAuditCriterionImage = async function(event, itemId, kind) {
     }
 };
 
-window.selectLevel = function(id, score, max, el) { 
-    currentStepSelections['item_'+id] = {score, max}; 
-    el.parentElement.querySelectorAll('div[onclick]').forEach(o=>{ o.style.background='var(--surface-inset)'; o.style.borderColor='transparent'; o.style.color='var(--text-main)'; o.style.boxShadow='none'; }); 
-    el.style.background='rgba(16,185,129,0.1)'; el.style.borderColor='var(--success)'; el.style.color='var(--success)'; el.style.boxShadow='0 0 15px rgba(16,185,129,0.2)';
-    window.saveAuditDraft(); window.updateCumulativeScoreUI();
+window.selectLevel = function(id, score, max, el) {
+    currentStepSelections['item_'+id] = {score, max};
+    el.parentElement.querySelectorAll('.audit-level-option').forEach(o => o.classList.remove('is-selected'));
+    el.classList.add('is-selected');
+    window.saveAuditDraft();
+    window.updateCumulativeScoreUI();
 };
 
 window.finishCurrentStep = function() {

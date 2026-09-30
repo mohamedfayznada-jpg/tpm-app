@@ -316,8 +316,8 @@ function renderEvidenceSlot({dept,activity,criterionId,kind,label,evidence}){
 async function saveExternalAuditActivityMeta(dept,activity,field,value){
   if(!canWriteEvidence()) return showToast?.('⚠️ ليس لديك صلاحية تعديل بيانات المراجعة.');
   if(!['notes','opportunities'].includes(field)) return;
+  const clean=String(value||'').slice(0,4000);
   try{
-    const clean=String(value||'').slice(0,4000);
     await firebase.database().ref(evidencePath(dept,activity)+'/_meta').update({
       [field]:clean,updatedAt:Date.now(),updatedByUid:firebase.auth().currentUser?.uid||'',updatedByName:window.currentUser?.name||''
     });
@@ -336,7 +336,7 @@ async function saveExternalAuditActivityMeta(dept,activity,field,value){
     S.evidenceCache[key]=S.evidenceCache[key]||{};
     S.evidenceCache[key]._meta={...(S.evidenceCache[key]._meta||{}),[field]:clean};
     const denied=String(error?.code||error?.message||'').toLowerCase().includes('permission');
-    if(denied) showToast?.('⚠️ تم حفظ المتابعة محليًا — ستتم المزامنة تلقائيًا بعد نشر صلاحيات Firebase.');
+    if(denied) showToast?.('💾 تم حفظ المتابعة محليًا مؤقتًا — ستبقى محفوظة حتى تعود صلاحيات Firebase.');
     else {
       console.error('[External Audit] activity meta save failed',error);
       showToast?.('⚠️ تعذر حفظ بيانات المتابعة.');

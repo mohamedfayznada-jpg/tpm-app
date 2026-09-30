@@ -236,7 +236,7 @@
           "$activity": {
             "$criterion": {
               ".read": "auth != null",
-              ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
+              ".write": "auth != null && (auth.token.email === 'mfayez@tpm.app' || root.child('tpm_system/users/' + auth.uid + '/role').val().matches(/^(admin|administrator|engineer|technician|operator|tech|auditor|reviewer|audit)$/i))"
             }
           }
         }
@@ -249,7 +249,7 @@
         ],
         "$dept": {
           ".read": "auth != null",
-          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
+          ".write": "auth != null && (auth.token.email === 'mfayez@tpm.app' || root.child('tpm_system/users/' + auth.uid + '/role').val().matches(/^(admin|administrator|engineer|technician|operator|tech|auditor|reviewer|audit)$/i))"
         }
       },
       "hse_observations": {

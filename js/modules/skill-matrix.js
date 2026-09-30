@@ -42,7 +42,12 @@
   };
   const dbPath = () => currentDept() ? DB_ROOT + '/' + currentDept() : DB_ROOT;
   const metaPath = () => dbPath() + '/_meta';
-  const canEdit = () => !dataAccessDenied && ['admin','engineer','auditor'].includes(window.currentUser?.role);
+  const canEdit = () => {
+    if(dataAccessDenied)return false;
+    const email=String(authUser()?.email||'').toLowerCase();
+    const role=String(window.currentUser?.role||'').toLowerCase();
+    return email==='mfayez@tpm.app' || ['admin','administrator','engineer','technician','operator','tech','auditor','reviewer','audit'].includes(role);
+  };
   const skillList = () => skillsData[activeDomain] || [];
 
   function notify(msg){ window.showToast?.(msg); }
@@ -228,7 +233,7 @@
       };
       render();
       if(denied){
-        setDataState('error','قاعدة البيانات رفضت قراءة Skill Matrix.','ملف الواجهة سليم، لكن قواعد Firebase المنشورة لا تمنح الوصول لهذا المسار بعد. بعد نشر firebase.rules.json أعد المحاولة.');
+        setDataState('error','صلاحيات Firebase تمنع الوصول إلى Skill Matrix.','الحساب الحالي: '+String(window.currentUser?.role||'غير معروف')+' — المسار: '+dbPath()+' — يجب نشر قواعد skill_matrix ثم الضغط على إعادة المحاولة.');
         notify('⚠️ Skill Matrix يحتاج نشر قواعد Firebase الخاصة بالـ skill_matrix.');
       }else{
         setDataState('error','تعذر تحميل Skill Matrix.','تحقق من الاتصال ثم أعد المحاولة.');
@@ -441,8 +446,24 @@
     renderManagement();
   }
 
-  function closeManageModal(){const modal=document.getElementById('skillManagementModal');if(modal)modal.style.display='none';managementEditorOpen=false;document.body.classList.remove('skill-management-open');}
-  function render(){renderKPIs();renderMatrix();renderTrainingPlan();}
+  function closeManageModal(){
+    const modal=document.getElementById('skillManagementModal');
+    if(modal)modal.style.display='none';
+    managementEditorOpen=false;
+    document.body.classList.remove('skill-management-open');
+  }
+  function bindManagementModalUX(){
+    const modal=document.getElementById('skillManagementModal');
+    if(!modal || modal.dataset.skillUxBound==='1')return;
+    modal.dataset.skillUxBound='1';
+    modal.addEventListener('click',event=>{
+      if(event.target===modal)closeManageModal();
+    });
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape' && modal.style.display!=='none')closeManageModal();
+    });
+  }
+  function render(){renderKPIs();renderMatrix();renderTrainingPlan();bindManagementModalUX();}
 
   window.renderSkillMatrix=render;
   window.openJHDepartmentSkillMatrix=function(){

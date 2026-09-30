@@ -82,9 +82,9 @@ window.initAuditSequential = function() {
         createdAt: now,
         updatedAt: now,
         date: new Date().toLocaleDateString('ar-EG'),
-        templateVersion: 'JH-0..6-v1',
+        templateVersion: 'JH-TEAM..6-v2',
         schemaVersion: 2,
-        stepsOrder: ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'],
+        stepsOrder: ['JH-TEAM','JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'],
         currentStepIndex: 0,
         results: {}
     };
@@ -105,38 +105,51 @@ window.renderCurrentAuditStep = function() {
 
     const titleEl = document.getElementById('auditStepTitle'); 
     if(titleEl) titleEl.innerText = `${k}: ${sd.name}`;
+    const totalSteps = currentAudit.stepsOrder.length;
     
     const countEl = document.getElementById('stepCounter'); 
-    if(countEl) countEl.innerText = `خطوة ${currentAudit.currentStepIndex + 1} من 7`;
+    if(countEl) countEl.innerText = `خطوة ${currentAudit.currentStepIndex + 1} من ${totalSteps}`;
     
     const barEl = document.getElementById('auditProgressBar'); 
-    if(barEl) barEl.style.width = `${((currentAudit.currentStepIndex + 1) / 7) * 100}%`;
+    if(barEl) barEl.style.width = `${((currentAudit.currentStepIndex + 1) / totalSteps) * 100}%`;
 
     const container = document.getElementById('auditItemsContainer');
     if(container) {
         // رسم البنود بالكامل وبدون أي اختصار
         container.innerHTML = sd.items.map(item => {
-            let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:15px; display:flex; align-items:center; gap:10px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:60px; width:60px; object-fit:cover; border-radius:10px; border:2px solid var(--primary); cursor:pointer;" onclick="window.open('${currentStepImages['img_' + item.id].data}')"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-bot'></i> تحليل الذكاء الاصطناعي</button></div>` : '';
-            
+            const evidence = currentStepImages['item_' + item.id] || {};
+            const currentEvidence = evidence.current || currentStepImages['img_' + item.id] || null;
+            const standardEvidence = evidence.standard || null;
+            const imageSlot = (kind, label, data) => data?.data
+                ? `<div class="audit-evidence-slot has-image">
+                    <div class="audit-evidence-slot-head"><span><i class="bx ${kind==='standard'?'bx-check-shield':'bx-current-location'}"></i>${label}</span><button type="button" onclick="removeAuditCriterionImage(${item.id}, '${kind}')"><i class="bx bx-trash"></i></button></div>
+                    <img src="${data.data}" alt="${label}" onclick="window.open(this.src,'_blank','noopener')">
+                    <small>تم الإرفاق</small>
+                </div>`
+                : `<label class="audit-evidence-slot empty-slot">
+                    <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="handleAuditCriterionImage(event, ${item.id}, '${kind}')">
+                    <span><i class="bx bx-image-add"></i><b>${label}</b><small>أضف صورة مرجعية</small></span>
+                </label>`;
+            const currentAi = currentEvidence?.data ? `<button class="btn btn-outline btn-sm audit-ai-btn" onclick="runAIVision(${item.id}, ${JSON.stringify(item.title)})"><i class='bx bx-bot'></i> تحليل الوضع الحالي</button>` : '';
             return `
-            <div class="card glass-card" style="padding:20px; border-right:4px solid var(--primary);">
-                <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px; border-bottom:1px solid var(--border-glass); padding-bottom:15px;">
-                    <div style="display:flex; align-items:flex-start; gap:12px; width:100%;">
-                        <div style="background:var(--primary); color:white; width:35px; height:35px; display:flex; align-items:center; justify-content:center; border-radius:10px; font-weight:900; flex-shrink:0; font-size:16px;">${item.id}</div>
-                        <div style="flex:1; font-weight:bold; font-size:15px; color:var(--text-main); line-height:1.4;">${item.title}</div>
-                        <span style="font-size:11px; background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:20px; white-space:nowrap; font-weight:bold; color:var(--gold);">الدرجة القصوى: ${item.maxScore}</span>
-                    </div>
-                    <div class="row-flex" style="justify-content:flex-end;">
-                        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:11px;" onclick="explainItem('${item.title}')"><i class='bx bx-info-circle'></i> شرح البند للفني</button>
-                        <button class="btn btn-sm btn-outline" style="border-radius:20px; font-size:11px; color:var(--primary); border-color:var(--primary);" onclick="openImageSourcePicker(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-camera'></i> إرفاق دليل مرئي</button>
-                    </div>
+            <div class="card glass-card audit-criterion-card" style="padding:20px; border-right:4px solid var(--primary);">
+                <div class="audit-criterion-head">
+                    <div class="audit-criterion-number">${item.id}</div>
+                    <div class="audit-criterion-title"><strong>${item.title}</strong><span>الدرجة القصوى: ${item.maxScore}</span></div>
                 </div>
-                <div id="preview_img_${item.id}">${hasImage}</div>
-                <div style="margin-top:15px;">
+                <div class="audit-evidence-grid">
+                    ${imageSlot('standard','الوضع المعياري',standardEvidence)}
+                    ${imageSlot('current','الوضع الحالي',currentEvidence)}
+                </div>
+                <div class="audit-criterion-actions">
+                    <button class="btn btn-sm btn-outline" onclick="explainItem(${JSON.stringify(item.title)})"><i class='bx bx-info-circle'></i> شرح البند</button>
+                    ${currentAi}
+                </div>
+                <div class="audit-level-list">
                     ${item.levels.map(lvl => {
-                        let isSel = (currentStepSelections['item_'+item.id] && currentStepSelections['item_'+item.id].score === lvl.score) ? 'selected' : '';
-                        let selStyle = isSel ? 'background:rgba(16,185,129,0.1); border-color:var(--success); color:var(--success); box-shadow:0 0 15px rgba(16,185,129,0.2);' : 'background:var(--surface-inset); border-color:transparent; color:var(--text-main);';
-                        return `<div style="padding:15px; border-radius:12px; margin-bottom:10px; cursor:pointer; display:flex; align-items:center; gap:12px; transition:0.3s; border:1px solid var(--border-glass); ${selStyle}" onclick="selectLevel(${item.id}, ${lvl.score}, ${item.maxScore}, this)"><div style="background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:8px; font-weight:bold; font-size:12px; white-space:nowrap;">${lvl.score} ن</div><div style="flex:1; font-size:13px; line-height:1.5;">${lvl.desc}</div></div>`;
+                        const isSel = currentStepSelections['item_'+item.id] && currentStepSelections['item_'+item.id].score === lvl.score;
+                        const selStyle = isSel ? 'is-selected' : '';
+                        return `<button type="button" class="audit-level-option ${selStyle}" onclick="selectLevel(${item.id}, ${lvl.score}, ${item.maxScore}, this)"><span>${lvl.score} ن</span><b>${lvl.desc}</b></button>`;
                     }).join('')}
                 </div>
             </div>`;
@@ -161,6 +174,50 @@ window.updateCumulativeScoreUI = function() {
     const pointsEl = document.getElementById('cumulativePointsText');
     if (pctEl) { pctEl.innerText = pct + '%'; pctEl.style.color = pct >= 80 ? 'var(--success)' : (pct >= 50 ? 'var(--warning)' : 'var(--danger)'); }
     if (pointsEl) pointsEl.innerText = `${totalScoreSoFar} / ${totalMaxSoFar}`;
+};
+
+window.removeAuditCriterionImage = function(itemId, kind) {
+    const key = 'item_' + itemId;
+    if(!currentStepImages[key]) return;
+    delete currentStepImages[key][kind];
+    if(kind === 'current') delete currentStepImages['img_' + itemId];
+    window.saveAuditDraft();
+    window.renderCurrentAuditStep();
+};
+
+window.handleAuditCriterionImage = async function(event, itemId, kind) {
+    const file = event?.target?.files?.[0];
+    if(!file) return;
+    if(!/^image\\/(jpeg|png|webp)$/i.test(file.type)) {
+        event.target.value = '';
+        return showToast('⚠️ استخدم JPG أو PNG أو WEBP فقط.');
+    }
+    if(file.size > 6 * 1024 * 1024) {
+        event.target.value = '';
+        return showToast('⚠️ الحد الأقصى لصورة دليل المراجعة 6 ميجابايت.');
+    }
+    try {
+        showToast('جاري تجهيز صورة الدليل ورفعها…');
+        await new Promise((resolve, reject) => processAndEnhanceImage(file, async (dataUrl) => {
+            try {
+                const url = await uploadImageToStorage(dataUrl);
+                if(!url) return reject(new Error('upload_failed'));
+                const key = 'item_' + itemId;
+                currentStepImages[key] = currentStepImages[key] || {};
+                currentStepImages[key][kind] = { title: kind === 'standard' ? 'الوضع المعياري' : 'الوضع الحالي', data: url, uploadedAt: Date.now() };
+                if(kind === 'current') currentStepImages['img_' + itemId] = currentStepImages[key][kind];
+                window.saveAuditDraft();
+                resolve();
+            } catch(error) { reject(error); }
+        });
+        window.renderCurrentAuditStep();
+        showToast('✅ تم حفظ صورة الدليل.');
+    } catch(error) {
+        console.error('[JH Audit] evidence upload failed', error);
+        showToast('⚠️ تعذر رفع صورة الدليل. راجع صلاحيات Storage وحاول مرة أخرى.');
+    } finally {
+        if(event?.target) event.target.value = '';
+    }
 };
 
 window.selectLevel = function(id, score, max, el) { 
@@ -225,7 +282,7 @@ window.skipCurrentStep = function() {
 
 window.goToNextStep = function() { 
     currentAudit.currentStepIndex++; 
-    if(currentAudit.currentStepIndex < 7) {
+    if(currentAudit.currentStepIndex < currentAudit.stepsOrder.length) {
         window.renderCurrentAuditStep(); 
     } else {
         window.generateFinalReport(); 

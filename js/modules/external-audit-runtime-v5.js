@@ -408,13 +408,16 @@ window.renderExternalAuditDepartment=async n=>{
   root.innerHTML='<div class="ea-v2-loading"><i class="bx bx-loader-alt bx-spin"></i><b>جاري فتح صفحة القسم...</b></div>';
   try{
     const d=await load(),x=getDept(n);if(!x)throw Error('القسم غير موجود');
-    const o=overall(n),focus=S.activity==='all'?'all':S.activity,items=focus==='all'?x.items:x.items.filter(i=>i.activity===focus);
+    const o=await departmentMetrics(n);S.metricCache[n]=o;
+    const focus=S.activity==='all'?'all':S.activity,items=focus==='all'?x.items:x.items.filter(i=>i.activity===focus);
     const evidenceCache={};
-    for(const it of items) evidenceCache[it.activity]=await loadEvidence(n,it.activity);
+    const metricByActivity={};
+    for(const it of items){evidenceCache[it.activity]=await loadEvidenceCached(n,it.activity);metricByActivity[it.activity]=metricFromEvidence(it,evidenceCache[it.activity]);}
     const activityOptions=acts(d).map(a=>'<option value="'+esc(a)+'" '+(focus===a?'selected':'')+'>'+esc(M[a]?.[1]||a)+'</option>').join('');
     const panels=items.map((it,idx)=>{
       const m=M[it.activity]||[it.activity,it.activity,''];
-      const p=it.planned,a=it.actual,s=pct(a,p),criteria=auditCriteriaFor(it.activity,it),evidence=evidenceCache[it.activity]||{};
+      const metric=metricByActivity[it.activity]||metricFromEvidence(it,evidenceCache[it.activity]||{});
+      const p=metric.p,a=metric.a,s=metric.r,criteria=auditCriteriaFor(it.activity,it),evidence=evidenceCache[it.activity]||{};
       const scoreText=s==null?'غير مسجل':fmt(s)+'%';
       const criteriaCount=criteria.length;
       const criteriaHtml=renderCriterionCards(n,it.activity,criteria,evidence);

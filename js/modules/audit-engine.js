@@ -188,7 +188,7 @@ window.removeAuditCriterionImage = function(itemId, kind) {
 window.handleAuditCriterionImage = async function(event, itemId, kind) {
     const file = event?.target?.files?.[0];
     if(!file) return;
-    if(!/^image\\/(jpeg|png|webp)$/i.test(file.type)) {
+    if(!/^image\/(jpeg|png|webp)$/i.test(file.type)) {
         event.target.value = '';
         return showToast('⚠️ استخدم JPG أو PNG أو WEBP فقط.');
     }

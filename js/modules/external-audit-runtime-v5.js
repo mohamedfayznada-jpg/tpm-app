@@ -373,22 +373,10 @@ function renderCriterionCards(dept,activity,criteria,evidence,metric){
 }
 
 async function seed(){
-  const raw=String(window.EXTERNAL_AUDIT_SEED_B64||'').replace(/\s+/g,'');
-  if(!raw) return F;
-  try{
-    if(raw.length<32 || !/^[A-Za-z0-9+/_-]+={0,2}$/.test(raw)) return F;
-    const normalized=raw.replace(/-/g,'+').replace(/_/g,'/');
-    const padded=normalized+'='.repeat((4-normalized.length%4)%4);
-    const binary=atob(padded);
-    const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
-    if(typeof DecompressionStream==='undefined') return F;
-    return await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
-  }catch(_error){
-    // The embedded fallback is the deterministic source of truth for the
-    // published H2 2026 report. Do not leak a noisy atob/seed warning to users.
-    window.__externalAuditSeedStatus='embedded-fallback';
-    return F;
-  }
+  // The report is already embedded in this runtime as deterministic fallback data.
+  // Do not decode a second compressed payload during normal page load: a malformed
+  // or stale base64 asset must never prevent the audit screen from rendering.
+  return F;
 }
 function norm(d){
   const src=d||F;

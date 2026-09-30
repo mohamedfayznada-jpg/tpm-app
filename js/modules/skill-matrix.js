@@ -32,6 +32,7 @@
   let managementSearch = '';
   let managementEditorOpen = false;
   let dataAccessDenied = false;
+  let dataWriteDenied = false;
   let loadInFlight = false;
   let lastLoadDept = '';
 
@@ -233,14 +234,10 @@
       const seeded=seedDefaults(raw._meta?.skills);
       ['tpm','technical'].forEach(domain=>skillsData[domain]=Object.values(seeded[domain]||{}).filter(s=>s&&s.active!==false));
 
-      if(canEdit() && (!raw._meta?.skills || !raw._meta.skills.tpm || !raw._meta.skills.technical)){
-        try{
-          await firebase.database().ref(metaPath()+'/skills').set(seeded);
-        }catch(seedError){
-          console.warn('[Skill Matrix] default catalog write skipped:',seedError);
-        }
-      }
-
+      // Default skills are an in-memory baseline. Do not auto-write them on load.
+      // This prevents a missing catalog from generating permission errors on deployments
+      // where Firebase rules have not yet been released. Explicit catalog edits still
+      // use the normal write path below.
       setDataState('ready');
       render();
     }catch(error){
@@ -273,17 +270,25 @@
   async function saveSkillScore(personId,domain,skillId,value) {
     if(!canEdit())return notify('⚠️ لا تملك صلاحية تعديل مصفوفة المهارات.');
     const v=Math.max(0,Math.min(TARGET,Number(value)||0));
+    if(dataWriteDenied){
+      matrixData[personId]=matrixData[personId]||{};matrixData[personId][domain]=matrixData[personId][domain]||{};
+      matrixData[personId][domain][skillId]=v;
+      writeLocalFallback();renderMatrix();renderTrainingPlan();
+      notify('💾 الحفظ السحابي متوقف مؤقتًا بسبب صلاحيات Firebase؛ تم حفظ التعديل محليًا.');
+      return;
+    }
     try{
       await firebase.database().ref(dbPath()+'/scores/'+personId+'/'+domain+'/'+skillId).set({score:v,updatedAt:Date.now(),updatedByUid:window.currentUser.uid,updatedByName:window.currentUser.name||''});
       matrixData[personId]=matrixData[personId]||{};matrixData[personId][domain]=matrixData[personId][domain]||{};matrixData[personId][domain][skillId]=v;
       renderMatrix();renderTrainingPlan();
     }catch(error){
-      console.error('[Skill Matrix] save score failed',error);
+      const denied=String(error?.code||error?.message||'').toLowerCase().includes('permission');
+      if(denied) dataWriteDenied=true;
       matrixData[personId]=matrixData[personId]||{};matrixData[personId][domain]=matrixData[personId][domain]||{};
       matrixData[personId][domain][skillId]=v;
       writeLocalFallback();
       renderMatrix();renderTrainingPlan();
-      notify('💾 تم حفظ مستوى المهارة محليًا مؤقتًا. تبقى على هذا الجهاز حتى تُنشر قواعد Firebase وتعيد المحاولة.');
+      notify(denied?'💾 تم حفظ مستوى المهارة محليًا مؤقتًا. أصلح صلاحيات Firebase ثم أعد المحاولة.':'💾 تعذر الحفظ السحابي؛ تم حفظ مستوى المهارة محليًا مؤقتًا.');
     }
   }
 
@@ -342,6 +347,13 @@
     const shift=(document.getElementById('skillPersonShift')?.value||'').trim();
     const active=(document.getElementById('skillPersonStatus')?.value||'active')==='active';
     if(name.length<2)return notify('⚠️ اكتب اسم العامل بالكامل.');
+    if(dataWriteDenied){
+      const fallbackId=id || 'person_'+Date.now()+'_'+Math.floor(Math.random()*1000);
+      const data={id:fallbackId,name,job,employeeNo,phone,shift,active,updatedAt:Date.now(),updatedByUid:currentUserUid(),updatedByName:window.currentUser?.name||''};
+      peopleData[fallbackId]=data;writeLocalFallback();clearPersonForm();openManagementEditor(false);render();renderManagement();
+      notify('💾 الحفظ السحابي متوقف مؤقتًا؛ تم حفظ بيانات العامل محليًا.');
+      return;
+    }
     try{
       if(id){
         const existing=peopleData[id]; if(!existing)return notify('⚠️ العامل المطلوب غير موجود.');
@@ -359,13 +371,14 @@
         notify('✅ تم إضافة العامل إلى قسم '+currentDept());
       }
     }catch(error){
-      console.error('[Skill Matrix] save person failed',error);
+      const denied=String(error?.code||error?.message||'').toLowerCase().includes('permission');
+      if(denied) dataWriteDenied=true;
       const fallbackId=id || 'person_'+Date.now()+'_'+Math.floor(Math.random()*1000);
       const data={id:fallbackId,name,job,employeeNo,phone,shift,active,updatedAt:Date.now(),updatedByUid:currentUserUid(),updatedByName:window.currentUser?.name||''};
       peopleData[fallbackId]=data;
       writeLocalFallback();
       clearPersonForm();openManagementEditor(false);render();renderManagement();
-      notify('💾 تم حفظ بيانات العامل محليًا مؤقتًا. تبقى على هذا الجهاز حتى تُنشر قواعد Firebase وتعيد المحاولة.');
+      notify(denied?'💾 تم حفظ بيانات العامل محليًا مؤقتًا. أصلح صلاحيات Firebase ثم أعد المحاولة.':'💾 تعذر الحفظ السحابي؛ تم حفظ بيانات العامل محليًا مؤقتًا.');
     }
   }
 

@@ -159,6 +159,32 @@ const M={
 
 const S=window.__externalAuditRebuild||{data:null,activity:'all',department:null};
 S.metricCache=S.metricCache||{};S.evidenceCache=S.evidenceCache||{};S.pendingScoreCache=S.pendingScoreCache||{};
+S.evidenceReadDenied=!!S.evidenceReadDenied;
+S.localEvidence=S.localEvidence||{};
+const LOCAL_EVIDENCE_KEY='factoryOS.externalAuditEvidence.v2';
+function loadLocalEvidence(){
+  try{
+    const raw=localStorage.getItem(LOCAL_EVIDENCE_KEY);
+    const parsed=raw?JSON.parse(raw):{};
+    return parsed&&typeof parsed==='object'?parsed:{};
+  }catch(_){return {};}
+}
+function persistLocalEvidence(){
+  try{localStorage.setItem(LOCAL_EVIDENCE_KEY,JSON.stringify(S.localEvidence));}catch(_){}
+}
+S.localEvidence={...loadLocalEvidence(),...S.localEvidence};
+function localEvidenceKey(dept,activity){return evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);}
+function cacheLocalEvidence(dept,activity,criterionId,kind,payload){
+  const key=localEvidenceKey(dept,activity);
+  S.localEvidence[key]=S.localEvidence[key]||{};
+  S.localEvidence[key][criterionId]=S.localEvidence[key][criterionId]||{};
+  S.localEvidence[key][criterionId][kind]=payload;
+  persistLocalEvidence();
+}
+function mergeEvidence(remote,dept,activity){
+  const local=S.localEvidence[localEvidenceKey(dept,activity)]||{};
+  return {...(local||{}),...(remote||{})};
+}
 window.__externalAuditRebuild=S;
 const esc=v=>window.escapeTPM?window.escapeTPM(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const jsArg=v=>esc(JSON.stringify(String(v??'')));
@@ -188,13 +214,29 @@ function pendingScore(dept,activity,criterionId){const v=S.pendingScoreCache[sco
 async function loadEvidence(dept,activity){
   try{
     const snap=await firebase.database().ref(evidencePath(dept,activity)).once('value');
-    return snap.val()||{};
-  }catch(error){console.warn('[External Audit] evidence read failed',error);return {};}
+    S.evidenceReadDenied=false;
+    return mergeEvidence(snap.val()||{},dept,activity);
+  }catch(error){
+    const message=String(error?.code||error?.message||'').toLowerCase();
+    S.evidenceReadDenied=message.includes('permission_denied')||message.includes('permission');
+    console.warn('[External Audit] evidence read failed',error);
+    return mergeEvidence({},dept,activity);
+  }
 }
 async function saveEvidence(dept,activity,criterionId,kind,url){
   const user=firebase.auth().currentUser;
-  const payload={url,kind,uploadedAt:Date.now(),uploadedByUid:user?.uid||'',uploadedByName:window.currentUser?.name||''};
-  await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/'+kind).set(payload);
+  const payload={url,kind,uploadedAt:Date.now(),uploadedByUid:user?.uid||'',uploadedByName:window.currentUser?.name||'',syncPending:false};
+  try{
+    await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/'+kind).set(payload);
+    cacheLocalEvidence(dept,activity,criterionId,kind,payload);
+    delete S.localEvidence[localEvidenceKey(dept,activity)]?.[criterionId]?.[kind];
+    persistLocalEvidence();
+    return {persisted:true,payload};
+  }catch(error){
+    payload.syncPending=true;
+    cacheLocalEvidence(dept,activity,criterionId,kind,payload);
+    throw error;
+  }
 }
 function canWriteEvidence(){
   return ['admin','engineer','auditor'].includes(window.currentUser?.role);
@@ -202,7 +244,7 @@ function canWriteEvidence(){
 function renderEvidenceSlot({dept,activity,criterionId,kind,label,evidence}){
   const ev=evidence?.[criterionId]?.[kind];
   if(ev?.url){
-    return '<div class="ea-evidence-slot has-image"><div class="ea-evidence-slot-head"><span><i class="bx '+(kind==='standard'?'bx-check-shield':'bx-current-location')+'"></i>'+label+'</span><button type="button" title="حذف الدليل" onclick="removeExternalAuditEvidence('+jsArg(dept)+','+jsArg(activity)+','+criterionId+','+jsArg(kind)+')"><i class="bx bx-trash"></i></button></div><img src="'+esc(ev.url)+'" alt="'+label+'" onclick="openExternalAuditEvidenceImage(this.src)"><small>تم الإرفاق</small></div>';
+    return '<div class="ea-evidence-slot has-image '+(ev.syncPending?'is-pending':'')+'"><div class="ea-evidence-slot-head"><span><i class="bx '+(kind==='standard'?'bx-check-shield':'bx-current-location')+'"></i>'+label+'</span><button type="button" title="حذف الدليل" onclick="removeExternalAuditEvidence('+jsArg(dept)+','+jsArg(activity)+','+criterionId+','+jsArg(kind)+')"><i class="bx bx-trash"></i></button></div><img loading="lazy" decoding="async" src="'+esc(ev.url)+'" alt="'+label+'" onclick="openExternalAuditEvidenceImage(this.src)" onerror="this.closest(\'.ea-evidence-slot\')?.classList.add(\'image-load-failed\')"><small>'+(ev.syncPending?'محفوظ محليًا — في انتظار مزامنة قاعدة البيانات':'تم الإرفاق')+'</small></div>';
   }
   if(!canWriteEvidence()){
     return '<div class="ea-evidence-slot empty-slot is-readonly"><i class="bx bx-lock-alt"></i><b>'+label+'</b><small>لا توجد صورة مرفقة</small></div>';
@@ -289,14 +331,18 @@ const acts=d=>{
 const getDept=n=>S.data.departments.find(x=>x.department===n);
 function metricFromEvidence(item,evidence,dept,activity){
   const criteria=auditCriteriaFor(item.activity,item);
-  const entered=criteria.map(c=>({c,a:criterionActual(evidence,c.i,dept,activity)})).filter(x=>x.a!=null);
-  const planned=criteria.reduce((s,c)=>s+Number(c.p||0),0);
-  if(entered.length){
+  const plannedFromCriteria=criteria.reduce((s,c)=>s+Number(c.p||0),0);
+  const resolved=criteria.map(c=>({c,a:criterionActual(evidence,c.i,dept,activity) ?? normalizeNumber(c.a)}));
+  const entered=resolved.filter(x=>x.a!=null);
+  const totalPlanned=plannedFromCriteria||Number(item.planned||0);
+  // Partial criterion entry must never masquerade as a complete audit score.
+  // The source report remains authoritative until every criterion has a real actual value.
+  if(criteria.length && entered.length===criteria.length){
     const actual=entered.reduce((s,x)=>s+Number(x.a||0),0);
-    const totalPlanned=planned||Number(item.planned||0);
     return {p:totalPlanned,a:actual,r:pct(actual,totalPlanned),c:entered.length,total:criteria.length,source:'criteria'};
   }
-  return {p:Number(item.planned||0),a:item.actual==null?null:Number(item.actual),r:pct(item.actual,item.planned),c:0,total:criteria.length,source:'report'};
+  const reportActual=item.actual==null?null:Number(item.actual);
+  return {p:totalPlanned||Number(item.planned||0),a:reportActual,r:pct(reportActual,totalPlanned||Number(item.planned||0)),c:entered.length,total:criteria.length,source:entered.length?'report+partial':'report'};
 }
 async function loadEvidenceCached(dept,activity){
   const key=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
@@ -346,12 +392,17 @@ window.uploadExternalAuditEvidence=async(event,dept,activity,criterionId,kind)=>
     }
     if(!url)throw Error('upload_failed');
     try{
-      await saveEvidence(dept,activity,criterionId,kind,url);
+      const result=await saveEvidence(dept,activity,criterionId,kind,url);
+      showToast?.(result?.persisted?'✅ تم حفظ الدليل.':'⚠️ تم حفظ الصورة محليًا — سيتم مزامنتها بعد إصلاح صلاحيات Firebase.');
     }catch(dbError){
-      try{await firebase.storage?.().refFromURL(url).delete();}catch(cleanupError){console.warn('[External Audit] orphan cleanup failed',cleanupError);}
-      throw dbError;
+      const msg=String(dbError?.code||dbError?.message||'').toLowerCase();
+      if(msg.includes('permission_denied')||msg.includes('permission')){
+        showToast?.('⚠️ الصورة تم رفعها وظهرت الآن، لكن قاعدة البيانات رفضت حفظ الرابط. ستتم المزامنة تلقائيًا بعد نشر قواعد Firebase.');
+      }else{
+        try{await firebase.storage?.().refFromURL(url).delete();}catch(cleanupError){console.warn('[External Audit] orphan cleanup failed',cleanupError);}
+        throw dbError;
+      }
     }
-    showToast?.('✅ تم حفظ الدليل.');
     await window.renderExternalAuditDepartment(dept);
   }catch(error){
     console.error('[External Audit] evidence upload failed',error);
@@ -363,6 +414,8 @@ window.removeExternalAuditEvidence=async(dept,activity,criterionId,kind)=>{
   if(!confirm('حذف صورة '+(kind==='standard'?'الوضع المعياري':'الوضع الحالي')+'؟'))return;
   try{
     await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/'+kind).remove();
+    const key=localEvidenceKey(dept,activity);
+    if(S.localEvidence[key]?.[criterionId]){delete S.localEvidence[key][criterionId][kind];persistLocalEvidence();}
     await window.renderExternalAuditDepartment(dept);
     showToast?.('🗑️ تم حذف الدليل من السجل.');
   }catch(error){console.error('[External Audit] evidence delete failed',error);showToast?.('⚠️ تعذر حذف الدليل.');}

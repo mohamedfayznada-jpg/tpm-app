@@ -244,14 +244,15 @@ async function seed(){
   const raw=String(window.EXTERNAL_AUDIT_SEED_B64||'').replace(/\s+/g,'');
   if(!raw) return F;
   try{
+    if(!/^[A-Za-z0-9+/_-]+={0,2}$/.test(raw)) return F;
     const normalized=raw.replace(/-/g,'+').replace(/_/g,'/');
     const padded=normalized+'='.repeat((4-normalized.length%4)%4);
     const binary=atob(padded);
     const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
-    if(typeof DecompressionStream==='undefined') throw Error('gzip_decompression_unavailable');
+    if(typeof DecompressionStream==='undefined') return F;
     return await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
-  }catch(error){
-    console.warn('[External Audit] compressed seed unavailable; using embedded fallback.',error);
+  }catch(_error){
+    window.__externalAuditSeedStatus='embedded-fallback';
     return F;
   }
 }
@@ -286,7 +287,7 @@ const acts=d=>{
   return all.sort((a,b)=>(preferred.indexOf(a)<0?999:preferred.indexOf(a))-(preferred.indexOf(b)<0?999:preferred.indexOf(b)));
 };
 const getDept=n=>S.data.departments.find(x=>x.department===n);
-function metricFromEvidence(item,evidence){
+function metricFromEvidence(item,evidence,dept,activity){
   const criteria=auditCriteriaFor(item.activity,item);
   const entered=criteria.map(c=>({c,a:criterionActual(evidence,c.i,dept,activity)})).filter(x=>x.a!=null);
   const planned=criteria.reduce((s,c)=>s+Number(c.p||0),0);
@@ -310,7 +311,7 @@ async function departmentMetrics(dept){
   const items=[];
   for(const item of (x.items||[])){
     const evidence=await loadEvidenceCached(dept,item.activity);
-    items.push({...item,...metricFromEvidence(item,evidence),evidence});
+    items.push({...item,...metricFromEvidence(item,evidence,dept,item.activity),evidence});
   }
   const scored=items.filter(x=>x.a!=null&&Number(x.p)>0);
   const p=scored.reduce((s,x)=>s+Number(x.p||0),0);
@@ -410,7 +411,7 @@ function updateLiveAuditScoreUI(dept,activity){
     const nextItems=base.items.map(item=>{
       if(item.activity!==activity)return item;
       const ev=S.evidenceCache[evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity)]||{};
-      return {...item,...metricFromEvidence(item,ev)};
+      return {...item,...metricFromEvidence(item,ev,dept,activity)};
     });
     const scored=nextItems.filter(item=>item.a!=null&&Number(item.p)>0);
     const deptPlanned=scored.reduce((s,item)=>s+Number(item.p||0),0);
@@ -508,11 +509,11 @@ window.renderExternalAuditDepartment=async n=>{
     const focus=S.activity==='all'?'all':S.activity,items=focus==='all'?x.items:x.items.filter(i=>i.activity===focus);
     const evidenceCache={};
     const metricByActivity={};
-    for(const it of items){evidenceCache[it.activity]=await loadEvidenceCached(n,it.activity);metricByActivity[it.activity]=metricFromEvidence(it,evidenceCache[it.activity]);}
+    for(const it of items){evidenceCache[it.activity]=await loadEvidenceCached(n,it.activity);metricByActivity[it.activity]=metricFromEvidence(it,evidenceCache[it.activity],n,it.activity);}
     const activityOptions=acts(d).map(a=>'<option value="'+esc(a)+'" '+(focus===a?'selected':'')+'>'+esc(M[a]?.[1]||a)+'</option>').join('');
     const panels=items.map((it,idx)=>{
       const m=M[it.activity]||[it.activity,it.activity,''];
-      const metric=metricByActivity[it.activity]||metricFromEvidence(it,evidenceCache[it.activity]||{});
+      const metric=metricByActivity[it.activity]||metricFromEvidence(it,evidenceCache[it.activity]||{},n,it.activity);
       const p=metric.p,a=metric.a,s=metric.r,criteria=auditCriteriaFor(it.activity,it),evidence=evidenceCache[it.activity]||{};
       const scoreText=s==null?'غير مسجل':fmt(s)+'%';
       const criteriaCount=criteria.length;

@@ -45,6 +45,38 @@ window.showToast = function(msg) {
 
 window.__tpmNavigation = window.__tpmNavigation || { stack: [], current: null, suppressPush: false };
 
+function isActiveScreen(screenId) {
+    const el = document.getElementById(screenId);
+    return !!el && el.classList.contains('active');
+}
+
+function refreshVisibleDataScreen(screenId) {
+    switch (screenId) {
+        case 'homeScreen':
+            if (currentUser?.role && typeof window.updateHomeDashboard === 'function') window.updateHomeDashboard();
+            break;
+        case 'tagsScreen':
+            if (typeof window.renderTags === 'function') window.renderTags();
+            if (typeof window.renderTagCommandCenter === 'function') window.renderTagCommandCenter();
+            break;
+        case 'tasksScreen':
+            if (typeof window.renderTasks === 'function') window.renderTasks();
+            break;
+        case 'historyScreen':
+            if (typeof window.renderHistory === 'function') window.renderHistory();
+            break;
+        case 'kkScreen':
+            if (typeof window.renderKKDashboard === 'function') window.renderKKDashboard();
+            break;
+        case 'knowledgeScreen':
+            if (typeof window.renderKnowledgeBase === 'function') window.renderKnowledgeBase();
+            break;
+        case 'tpmTeamsScreen':
+            if (typeof window.renderTPMTeams === 'function') window.renderTPMTeams();
+            break;
+    }
+}
+
 window.showScreen = function(screenId, options = {}) {
     const nav = window.__tpmNavigation;
     const previous = nav.current;
@@ -79,6 +111,7 @@ window.showScreen = function(screenId, options = {}) {
     if(screenId === 'tpmTeamsScreen' && typeof window.renderTPMTeams === 'function') window.renderTPMTeams();
     if(screenId === 'settingsScreen' && typeof window.renderSettingsControlLists === 'function') window.renderSettingsControlLists();
     if(screenId === 'jhSkillMatrixScreen') { window.dispatchEvent(new Event('tpm:jh-skill-matrix-open')); window.renderSkillMatrix?.(); const title=document.getElementById('jhSkillDeptName'); if(title) title.textContent=window.currentJHDept||'القسم'; }
+    refreshVisibleDataScreen(screenId);
     document.querySelectorAll('#mainSidebar .side-item').forEach(item => item.classList.remove('active')); const activeItem = [...document.querySelectorAll('#mainSidebar .side-item')].find(item => (item.getAttribute('onclick') || '').includes("'" + screenId + "'")); if(activeItem) activeItem.classList.add('active');
     window.scrollTo({top: 0, behavior: 'smooth'});
 };
@@ -283,7 +316,7 @@ firebase.auth().onAuthStateChanged(async user => {
             let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
             let notifyIcon = document.getElementById('adminNotification');
             if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
-            if(window.renderUserManagement) window.renderUserManagement(); 
+            if(isActiveScreen('settingsScreen') && window.renderUserManagement) window.renderUserManagement(); 
             
             dbListeners.users = db.ref('tpm_system/users').on('value', snap => {
                 usersData = snap.val() || {};
@@ -321,21 +354,30 @@ firebase.auth().onAuthStateChanged(async user => {
 
         dbListeners.tags = db.ref('tpm_system/tags').orderByChild('id').limitToLast(100).on('value', snap => {
             let data = snap.val() || {}; tagsData = Object.values(data).filter(x => x && x.id).sort((a,b)=>b.id-a.id); window.tagsData = tagsData; 
-            if(window.renderTags) window.renderTags(); if(window.renderTagCommandCenter) window.renderTagCommandCenter(); if(currentUser.role && window.updateHomeDashboard) window.updateHomeDashboard();
+            if(isActiveScreen('tagsScreen')) { if(window.renderTags) window.renderTags(); if(window.renderTagCommandCenter) window.renderTagCommandCenter(); }
+                 if(isActiveScreen('tpmTeamsScreen')) window.renderTPMTeams?.();
+                 if(isActiveScreen('homeScreen')) scheduleHomeDashboardRefresh();
         });
 
         dbListeners.tasks = db.ref('tpm_system/tasks').orderByChild('id').limitToLast(100).on('value', snap => {
-            let data = snap.val() || {}; tasksData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id); window.tasksData = tasksData; if(window.renderTasks) window.renderTasks();
+            let data = snap.val() || {}; tasksData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id); window.tasksData = tasksData;
+             if(isActiveScreen('tasksScreen')) window.renderTasks?.();
+             if(isActiveScreen('tpmTeamsScreen')) window.renderTPMTeams?.();
         });
 
         dbListeners.history = db.ref('tpm_system/history').orderByChild('id').limitToLast(100).on('value', snap => {
             let data = snap.val() || {}; historyData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id); window.historyData = historyData; 
-            if(window.renderHistory) window.renderHistory(); if(window.renderKaizenFeed) window.renderKaizenFeed(); if(window.renderKaizenA3CommandStats) window.renderKaizenA3CommandStats(); if(currentUser.role && window.updateHomeDashboard) window.updateHomeDashboard();
+            if(isActiveScreen('historyScreen')) {
+                 if(window.renderHistory) window.renderHistory();
+                 if(window.renderKaizenFeed) window.renderKaizenFeed();
+                 if(window.renderKaizenA3CommandStats) window.renderKaizenA3CommandStats();
+             }
+             if(isActiveScreen('homeScreen')) scheduleHomeDashboardRefresh();
         });
     
         dbListeners.goals = db.ref('tpm_system/dept_goals').on('value', snap => { 
             deptGoalsData = snap.val() || {}; 
-            if(currentJHDept && document.getElementById('jhPortalScreen').classList.contains('active') && window.selectJHDept) window.selectJHDept(currentJHDept); 
+            if(currentJHDept && isActiveScreen('jhPortalScreen') && window.selectJHDept) window.selectJHDept(currentJHDept); 
         });
       
         dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {

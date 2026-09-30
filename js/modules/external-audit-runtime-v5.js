@@ -183,7 +183,7 @@ function cacheLocalEvidence(dept,activity,criterionId,kind,payload){
 }
 function mergeEvidence(remote,dept,activity){
   const local=S.localEvidence[localEvidenceKey(dept,activity)]||{};
-  return {...(local||{}),...(remote||{})};
+  return {...(remote||{}),...(local||{})};
 }
 window.__externalAuditRebuild=S;
 const esc=v=>window.escapeTPM?window.escapeTPM(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

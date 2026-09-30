@@ -303,7 +303,7 @@ window.removeExternalAuditEvidence=async(dept,activity,criterionId,kind)=>{
 
 function criterionActual(evidence,criterionId){
   const raw=evidence?.[criterionId]?.score;
-  const n=normalizeNumber(raw);
+  const n=normalizeNumber(raw?.value ?? raw);
   return n==null?null:n;
 }
 async function saveCriterionScore(dept,activity,criterionId,value){

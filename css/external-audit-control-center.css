@@ -201,3 +201,38 @@
 @media(prefers-reduced-motion:reduce){
   .ea-team-create-card{transition:none}
 }
+
+
+/* V4 — live score, follow-up notes, and evidence on team creation criteria */
+.ea-activity-meta-grid{margin-top:14px;padding:15px;border:1px solid #e2e8f0;border-radius:16px;background:linear-gradient(180deg,#fbfdff,#f8fafc);display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ea-activity-meta-head{grid-column:1/-1;display:grid;gap:3px;padding-bottom:4px}
+.ea-activity-meta-head span{font-size:9px;letter-spacing:.12em;color:#0f766e;font-weight:900}
+.ea-activity-meta-head h4{margin:0;font-size:15px;color:#0f172a}
+.ea-activity-meta-head small{font-size:9px;color:#64748b}
+.ea-activity-meta-field{display:grid;gap:7px}
+.ea-activity-meta-field>span{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:900;color:#334155}
+.ea-activity-meta-field>span i{color:#0f766e}
+.ea-activity-meta-field textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:84px;border:1px solid #dbe4ec;border-radius:12px;background:#fff;padding:10px 11px;font:inherit;font-size:11px;line-height:1.8;color:#0f172a;outline:0}
+.ea-activity-meta-field textarea:focus{border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,.10)}
+.ea-activity-meta-field.readonly{padding:10px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+.ea-activity-meta-field.readonly p{margin:0;color:#64748b;font-size:10px;line-height:1.8;white-space:pre-wrap}
+.ea-team-create-row{grid-template-columns:36px minmax(0,1fr) 150px}
+.ea-team-create-evidence{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:9px;padding-top:4px;border-top:1px solid #edf2f7}
+.ea-team-create-evidence .ea-evidence-slot{min-height:116px}
+.ea-team-create-evidence .ea-evidence-slot.has-image img{height:96px}
+.ea-team-create-row{align-items:start}
+.ea-team-create-row>label{align-self:center}
+.ea-team-create-row .ea-evidence-slot.empty-slot input{position:absolute}
+@media(max-width:900px){
+  .ea-activity-meta-grid{grid-template-columns:1fr}
+  .ea-activity-meta-head{grid-column:auto}
+}
+@media(max-width:800px){
+  .ea-team-create-row{grid-template-columns:32px minmax(0,1fr)}
+  .ea-team-create-row>label{grid-column:2}
+  .ea-team-create-evidence{grid-column:1/-1;grid-template-columns:1fr}
+  .ea-team-create-evidence .ea-evidence-slot{min-height:118px}
+}
+@media(prefers-reduced-motion:reduce){
+  .ea-activity-meta-field textarea{transition:none}
+}

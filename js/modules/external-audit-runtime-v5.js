@@ -158,6 +158,7 @@ const M={
 };
 
 const S=window.__externalAuditRebuild||{data:null,activity:'all',department:null};
+S.metricCache=S.metricCache||{};S.evidenceCache=S.evidenceCache||{};
 window.__externalAuditRebuild=S;
 const esc=v=>window.escapeTPM?window.escapeTPM(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const jsArg=v=>esc(JSON.stringify(String(v??'')));
@@ -194,7 +195,7 @@ async function saveEvidence(dept,activity,criterionId,kind,url){
   await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/'+kind).set(payload);
 }
 function canWriteEvidence(){
-  return ['admin','auditor'].includes(window.currentUser?.role);
+  return ['admin','engineer','auditor'].includes(window.currentUser?.role);
 }
 function renderEvidenceSlot({dept,activity,criterionId,kind,label,evidence}){
   const ev=evidence?.[criterionId]?.[kind];
@@ -205,6 +206,33 @@ function renderEvidenceSlot({dept,activity,criterionId,kind,label,evidence}){
     return '<div class="ea-evidence-slot empty-slot is-readonly"><i class="bx bx-lock-alt"></i><b>'+label+'</b><small>لا توجد صورة مرفقة</small></div>';
   }
   return '<label class="ea-evidence-slot empty-slot"><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="uploadExternalAuditEvidence(event,'+jsArg(dept)+','+jsArg(activity)+','+criterionId+','+jsArg(kind)+')"><span><i class="bx bx-image-add"></i><b>'+label+'</b><small>أضف صورة</small></span></label>';
+}
+async function saveExternalAuditActivityMeta(dept,activity,field,value){
+  if(!canWriteEvidence()) return showToast?.('⚠️ ليس لديك صلاحية تعديل بيانات المراجعة.');
+  if(!['notes','opportunities'].includes(field)) return;
+  try{
+    const clean=String(value||'').slice(0,4000);
+    await firebase.database().ref(evidencePath(dept,activity)+'/_meta').update({
+      [field]:clean,updatedAt:Date.now(),updatedByUid:firebase.auth().currentUser?.uid||'',updatedByName:window.currentUser?.name||''
+    });
+    const key=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
+    S.evidenceCache[key]=S.evidenceCache[key]||{};
+    S.evidenceCache[key]._meta=S.evidenceCache[key]._meta||{};
+    S.evidenceCache[key]._meta[field]=clean;
+    showToast?.('✅ تم حفظ '+(field==='notes'?'ملاحظات المراجع':'فرص التحسين')+'.');
+  }catch(error){
+    console.error('[External Audit] activity meta save failed',error);
+    showToast?.('⚠️ تعذر حفظ بيانات المتابعة.');
+  }
+}
+window.saveExternalAuditActivityMeta=saveExternalAuditActivityMeta;
+function renderActivityMetaEditor(dept,activity,meta){
+  const editable=canWriteEvidence();
+  const notes=String(meta?.notes||''),opportunities=String(meta?.opportunities||'');
+  const field=(name,label,icon,value,placeholder)=>editable
+    ? '<label class="ea-activity-meta-field"><span><i class="bx '+icon+'"></i>'+label+'</span><textarea rows="3" placeholder="'+placeholder+'" onchange="saveExternalAuditActivityMeta('+jsArg(dept)+','+jsArg(activity)+','+jsArg(name)+',this.value)">'+esc(value)+'</textarea></label>'
+    : '<div class="ea-activity-meta-field readonly"><span><i class="bx '+icon+'"></i>'+label+'</span><p>'+esc(value||'لا توجد بيانات مسجلة.')+'</p></div>';
+  return '<div class="ea-activity-meta-grid"><div class="ea-activity-meta-head"><span>FOLLOW-UP</span><h4>الملاحظات وفرص التحسين</h4><small>هذه المتابعة مرتبطة بنفس النشاط والقسم.</small></div>'+field('opportunities','فرص التحسين وخطط الاستجابة','bx-bulb',opportunities,'اكتب فرصة التحسين أو خطة الاستجابة أو المسؤول.')+field('notes','ملاحظات المراجع','bx-note',notes,'اكتب الملاحظة أو الدليل أو نقطة المتابعة.')+'</div>';
 }
 function renderCriterionCards(dept,activity,criteria,evidence){
   if(!criteria.length) return '<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات الحالية تحتوي على الدرجة الإجمالية فقط. أضف مصدر المعايير التفصيلية لهذه الخطوة قبل استخدامها في التقييم.</span></div>';
@@ -256,12 +284,39 @@ const acts=d=>{
   return all.sort((a,b)=>(preferred.indexOf(a)<0?999:preferred.indexOf(a))-(preferred.indexOf(b)<0?999:preferred.indexOf(b)));
 };
 const getDept=n=>S.data.departments.find(x=>x.department===n);
-const overall=n=>{
-  const scored=(getDept(n)?.items||[]).filter(x=>x.actual!=null&&x.planned!=null&&Number(x.planned)>0);
-  const p=scored.reduce((s,x)=>s+Number(x.planned||0),0),v=scored.reduce((s,x)=>s+Number(x.actual||0),0);
-  return{p,a:v,r:pct(v,p),c:scored.length};
-};
-window.setExternalAuditActivity=a=>{S.activity=a||'all';window.renderExternalAudit()};
+function metricFromEvidence(item,evidence){
+  const criteria=auditCriteriaFor(item.activity,item);
+  const entered=criteria.map(c=>({c,a:criterionActual(evidence,c.i)})).filter(x=>x.a!=null);
+  const planned=criteria.reduce((s,c)=>s+Number(c.p||0),0);
+  if(entered.length){
+    const actual=entered.reduce((s,x)=>s+Number(x.a||0),0);
+    const totalPlanned=planned||Number(item.planned||0);
+    return {p:totalPlanned,a:actual,r:pct(actual,totalPlanned),c:entered.length,total:criteria.length,source:'criteria'};
+  }
+  return {p:Number(item.planned||0),a:item.actual==null?null:Number(item.actual),r:pct(item.actual,item.planned),c:0,total:criteria.length,source:'report'};
+}
+async function loadEvidenceCached(dept,activity){
+  const key=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
+  if(Object.prototype.hasOwnProperty.call(S.evidenceCache,key)) return S.evidenceCache[key];
+  const value=await loadEvidence(dept,activity);
+  S.evidenceCache[key]=value||{};
+  return S.evidenceCache[key];
+}
+async function departmentMetrics(dept){
+  const x=getDept(dept);
+  if(!x)return {p:0,a:null,r:null,c:0,items:[]};
+  const items=[];
+  for(const item of (x.items||[])){
+    const evidence=await loadEvidenceCached(dept,item.activity);
+    items.push({...item,...metricFromEvidence(item,evidence),evidence});
+  }
+  const scored=items.filter(x=>x.a!=null&&Number(x.p)>0);
+  const p=scored.reduce((s,x)=>s+Number(x.p||0),0);
+  const a=scored.reduce((s,x)=>s+Number(x.a||0),0);
+  return {p,a,r:pct(a,p),c:scored.filter(x=>x.source==='criteria').length,items};
+}
+const overall=n=>S.metricCache[n]||(()=>{const scored=(getDept(n)?.items||[]).filter(x=>x.actual!=null&&x.planned!=null&&Number(x.planned)>0);const p=scored.reduce((s,x)=>s+Number(x.planned||0),0),v=scored.reduce((s,x)=>s+Number(x.actual||0),0);return{p,a:v,r:pct(v,p),c:scored.length,items:scored};})();
+window.setExternalAuditActivity=a=>{S.activity=a||'all';S.metricCache={};window.renderExternalAudit()};
 window.openExternalAuditDepartment=async(d,a)=>{S.activity=a||'all';S.department=d;showScreen('externalAuditDepartmentScreen');await window.renderExternalAuditDepartment(d)};
 window.setExternalAuditDepartmentActivity=a=>{S.activity=a||'all';if(S.department)window.renderExternalAuditDepartment(S.department)};
 window.openExternalAuditEvidenceImage=url=>{const root=document.getElementById('externalAuditDepartmentRoot');if(!root)return;const modal=document.createElement('div');modal.className='ea-image-modal';modal.innerHTML='<div class="ea-image-modal-backdrop" onclick="this.parentElement.remove()"></div><div class="ea-image-modal-card"><button type="button" onclick="this.parentElement.parentElement.remove()"><i class="bx bx-x"></i></button><img src="'+esc(url)+'" alt="دليل المراجعة"></div>';root.appendChild(modal)};
@@ -359,7 +414,7 @@ window.openExternalAuditTeamCreate=async key=>{
   const entered=criteria.filter(c=>c.a!=null).length;
   root.innerHTML='<section class="ea-team-create-hero"><button class="ea-v2-back" onclick="goBack()"><i class="bx bx-arrow-back"></i> رجوع خطوة</button><span>TEAM CREATION / '+esc(team.code)+'</span><h1>إنشاء وتقييم '+esc(team.name)+'</h1><p>'+esc(team.description)+' هذا الملف مستقل عن الأقسام التشغيلية.</p><div class="ea-team-create-summary"><article><span>الفعلي المسجل</span><b>'+fmt(entered?actual:'—')+'</b></article><article><span>المخطط</span><b>'+fmt(planned)+'</b></article><article><span>نسبة التقييم</span><b>'+(entered?fmt(Math.round(actual/planned*1000)/10)+'%':'غير مسجل')+'</b></article><article><span>بنود مقيمة</span><b>'+entered+' / '+criteria.length+'</b></article></div></section><section class="ea-team-create-body"><div class="ea-team-create-head"><div><span>TEAM CREATION CRITERIA</span><h2>معايير إنشاء الفريق</h2><small>الدرجة الفعلية لا تُستنتج من درجات الأقسام؛ تُسجل هنا مباشرة على مستوى الفريق.</small></div></div><div class="ea-team-create-list">'+criteria.map(c=>{
     const input=canWriteEvidence()?'<input type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(c.a==null?'':c.a)+'" placeholder="غير مسجل" onchange="saveExternalAuditCriterionScore(\'__TEAM__\',\''+esc(team.activity)+'\','+Number(c.i)+',this.value)">':'<b class="ea-team-create-actual">'+(c.a==null?'غير مسجل':fmt(c.a))+'</b>';
-    return '<article class="ea-team-create-row"><span class="ea-team-create-no">'+fmt(c.i)+'</span><div><b>'+esc(c.t)+'</b><small>المخطط: '+fmt(c.p)+'</small></div><label><span>الفعلي</span>'+input+'</label></article>';
+    return '<article class="ea-team-create-row"><span class="ea-team-create-no">'+fmt(c.i)+'</span><div><b>'+esc(c.t)+'</b><small>المخطط: '+fmt(c.p)+'</small></div><label><span>الفعلي</span>'+input+'</label><div class="ea-team-create-evidence">'+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'standard',label:'الوضع المعياري',evidence})+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div></article>';
   }).join('')+'</div></section>';
 };
 
@@ -368,7 +423,10 @@ window.renderExternalAudit=async()=>{
   root.innerHTML='<div class="ea-v2-loading"><i class="bx bx-loader-alt bx-spin"></i><b>جاري تحميل المراجعة الخارجية...</b></div>';
   try{
     const d=await load(),as=acts(d),sel=S.activity,ds=d.departments.filter(x=>sel==='all'||x.items.some(i=>i.activity===sel));
-    root.innerHTML='<section class="ea-v2-hero"><div><span>EXTERNAL AUDIT • H2 2026</span><h1>المراجعة الخارجية</h1><p>TPM ACTIVITY ← التصنيف الأول • DEPARTMENT ← التصنيف الثاني. ملفات إنشاء الفرق مستقلة عن الأقسام، بينما خطوات التنفيذ تُعرض بدرجات كل قسم ومعاييرها التفصيلية.</p></div><div class="ea-v2-source"><b>Ref.A</b><span>H2 2026</span><small>159 صفحة</small></div></section><section class="ea-v2-block"><div class="ea-v2-head"><div><span>TEAM CREATION</span><h2>إنشاء وتقييم فرق TPM</h2></div><small>ملفات مستقلة عن الأقسام</small></div><div class="ea-team-create-grid">'+Object.entries(TEAM_CREATE_CATALOG).map(([key,t])=>'<button type="button" class="ea-team-create-card" onclick="openExternalAuditTeamCreate('+jsArg(key)+')"><span>'+esc(t.code)+'</span><b>'+esc(t.name)+'</b><small>'+esc(t.description)+'</small><em>فتح ملف الإنشاء <i class="bx bx-left-arrow-alt"></i></em></button>').join('')+'</div></section><section class="ea-v2-block"><div class="ea-v2-head"><div><span>TPM ACTIVITY</span><h2>نشاط المراجعة</h2></div><button class="ea-v2-reset" onclick="setExternalAuditActivity(&quot;all&quot;)">كل الأنشطة</button></div><div class="ea-v2-activity-grid">'+as.map(a=>{const m=M[a]||[a,a,''];return '<button class="ea-v2-activity-card '+(sel===a?'active':'')+'" onclick="setExternalAuditActivity('+jsArg(a)+')"><span>'+esc(m[0])+'</span><b>'+esc(m[1])+'</b><small>'+esc(m[2])+'</small></button>'}).join('')+'</div></section><section class="ea-v2-block"><div class="ea-v2-head"><div><span>DEPARTMENT</span><h2>الأقسام</h2></div><small>'+esc(sel==='all'?'كل الأنشطة':M[sel]?.[1]||sel)+'</small></div><div class="ea-v2-dept-grid">'+ds.map(x=>{const o=overall(x.department),it=x.items.find(i=>i.activity===sel),score=sel==='all'?o.r:pct(it?.actual,it?.planned);const scoreText=score==null?'—':fmt(score)+'%';return '<button class="ea-v2-dept-card" onclick="openExternalAuditDepartment('+jsArg(x.department)+','+jsArg(sel==='all'?'':sel)+')"><div class="ea-v2-dept-top"><span>DEPARTMENT</span><b>'+esc(x.department)+'</b><strong>'+scoreText+'</strong></div><div class="ea-v2-bar"><i style="width:'+Math.min(100,Math.max(0,Number(score||0)))+'%"></i></div><div class="ea-v2-open">فتح صفحة القسم <i class="bx bx-left-arrow-alt"></i></div></button>'}).join('')+'</div></section>';
+    const metricPairs=await Promise.all(ds.map(async x=>[x.department,await departmentMetrics(x.department)]));
+    metricPairs.forEach(([dept,m])=>{S.metricCache[dept]=m;});
+    const metricMap=Object.fromEntries(metricPairs);
+    root.innerHTML='<section class="ea-v2-hero"><div><span>EXTERNAL AUDIT • H2 2026</span><h1>المراجعة الخارجية</h1><p>TPM ACTIVITY ← التصنيف الأول • DEPARTMENT ← التصنيف الثاني. ملفات إنشاء الفرق مستقلة عن الأقسام، بينما خطوات التنفيذ تُعرض بدرجات كل قسم ومعاييرها التفصيلية.</p></div><div class="ea-v2-source"><b>Ref.A</b><span>H2 2026</span><small>159 صفحة</small></div></section><section class="ea-v2-block"><div class="ea-v2-head"><div><span>TEAM CREATION</span><h2>إنشاء وتقييم فرق TPM</h2></div><small>ملفات مستقلة عن الأقسام</small></div><div class="ea-team-create-grid">'+Object.entries(TEAM_CREATE_CATALOG).map(([key,t])=>'<button type="button" class="ea-team-create-card" onclick="openExternalAuditTeamCreate('+jsArg(key)+')"><span>'+esc(t.code)+'</span><b>'+esc(t.name)+'</b><small>'+esc(t.description)+'</small><em>فتح ملف الإنشاء <i class="bx bx-left-arrow-alt"></i></em></button>').join('')+'</div></section><section class="ea-v2-block"><div class="ea-v2-head"><div><span>TPM ACTIVITY</span><h2>نشاط المراجعة</h2></div><button class="ea-v2-reset" onclick="setExternalAuditActivity(&quot;all&quot;)">كل الأنشطة</button></div><div class="ea-v2-activity-grid">'+as.map(a=>{const m=M[a]||[a,a,''];return '<button class="ea-v2-activity-card '+(sel===a?'active':'')+'" onclick="setExternalAuditActivity('+jsArg(a)+')"><span>'+esc(m[0])+'</span><b>'+esc(m[1])+'</b><small>'+esc(m[2])+'</small></button>'}).join('')+'</div></section><section class="ea-v2-block"><div class="ea-v2-head"><div><span>DEPARTMENT</span><h2>الأقسام</h2></div><small>'+esc(sel==='all'?'كل الأنشطة':M[sel]?.[1]||sel)+'</small></div><div class="ea-v2-dept-grid">'+ds.map(x=>{const o=metricMap[x.department]||overall(x.department),it=(o.items||[]).find(i=>i.activity===sel),score=sel==='all'?o.r:it?.r;const scoreText=score==null?'—':fmt(score)+'%';return '<button class="ea-v2-dept-card" onclick="openExternalAuditDepartment('+jsArg(x.department)+','+jsArg(sel==='all'?'':sel)+')"><div class="ea-v2-dept-top"><span>DEPARTMENT</span><b>'+esc(x.department)+'</b><strong>'+scoreText+'</strong></div><div class="ea-v2-bar"><i style="width:'+Math.min(100,Math.max(0,Number(score||0)))+'%"></i></div><div class="ea-v2-open">فتح صفحة القسم <i class="bx bx-left-arrow-alt"></i></div></button>'}).join('')+'</div></section>';
   }catch(e){console.error(e);root.innerHTML='<div class="ea-v2-error"><b>تعذر تحميل المراجعة الخارجية</b><span>'+esc(e.message)+'</span><button class="btn btn-outline" onclick="renderExternalAudit()">إعادة المحاولة</button></div>'}
 };
 window.renderExternalAuditDepartment=async n=>{
@@ -376,17 +434,21 @@ window.renderExternalAuditDepartment=async n=>{
   root.innerHTML='<div class="ea-v2-loading"><i class="bx bx-loader-alt bx-spin"></i><b>جاري فتح صفحة القسم...</b></div>';
   try{
     const d=await load(),x=getDept(n);if(!x)throw Error('القسم غير موجود');
-    const o=overall(n),focus=S.activity==='all'?'all':S.activity,items=focus==='all'?x.items:x.items.filter(i=>i.activity===focus);
+    const o=await departmentMetrics(n);S.metricCache[n]=o;
+    const focus=S.activity==='all'?'all':S.activity,items=focus==='all'?x.items:x.items.filter(i=>i.activity===focus);
     const evidenceCache={};
-    for(const it of items) evidenceCache[it.activity]=await loadEvidence(n,it.activity);
+    const metricByActivity={};
+    for(const it of items){evidenceCache[it.activity]=await loadEvidenceCached(n,it.activity);metricByActivity[it.activity]=metricFromEvidence(it,evidenceCache[it.activity]);}
     const activityOptions=acts(d).map(a=>'<option value="'+esc(a)+'" '+(focus===a?'selected':'')+'>'+esc(M[a]?.[1]||a)+'</option>').join('');
     const panels=items.map((it,idx)=>{
       const m=M[it.activity]||[it.activity,it.activity,''];
-      const p=it.planned,a=it.actual,s=pct(a,p),criteria=auditCriteriaFor(it.activity,it),evidence=evidenceCache[it.activity]||{};
+      const metric=metricByActivity[it.activity]||metricFromEvidence(it,evidenceCache[it.activity]||{});
+      const p=metric.p,a=metric.a,s=metric.r,criteria=auditCriteriaFor(it.activity,it),evidence=evidenceCache[it.activity]||{};
       const scoreText=s==null?'غير مسجل':fmt(s)+'%';
       const criteriaCount=criteria.length;
       const criteriaHtml=renderCriterionCards(n,it.activity,criteria,evidence);
-      return '<details class="ea-v2-activity-panel" '+(focus===it.activity||focus==='all'&&idx===0?'open':'')+'><summary><span><b>'+esc(m[0])+'</b><small>'+esc(m[1])+'</small></span><em>'+fmt(a)+' / '+fmt(p)+'</em><strong>'+scoreText+'</strong><i class="bx bx-chevron-down"></i></summary><div class="ea-v2-score-line"><div><span>الدرجة الفعلية</span><b>'+fmt(a)+'</b></div><div><span>الدرجة المخططة</span><b>'+fmt(p)+'</b></div><div><span>النسبة</span><b>'+scoreText+'</b></div></div><div class="ea-criteria-section"><div class="ea-criteria-section-head"><div><span>CRITERIA & FIELD EVIDENCE</span><h3>معايير التقييم وأدلة الميدان</h3><small>'+criteriaCount+' معيار · لكل معيار صورتان: الوضع المعياري والوضع الحالي</small></div><i class="bx bx-images"></i></div>'+criteriaHtml+'</div></details>';
+      const metaHtml=renderActivityMetaEditor(n,it.activity,evidence?._meta||{});
+      return '<details class="ea-v2-activity-panel" '+(focus===it.activity||focus==='all'&&idx===0?'open':'')+'><summary><span><b>'+esc(m[0])+'</b><small>'+esc(m[1])+'</small></span><em>'+fmt(a)+' / '+fmt(p)+'</em><strong>'+scoreText+'</strong><i class="bx bx-chevron-down"></i></summary><div class="ea-v2-score-line"><div><span>الدرجة الفعلية</span><b>'+fmt(a)+'</b></div><div><span>الدرجة المخططة</span><b>'+fmt(p)+'</b></div><div><span>النسبة</span><b>'+scoreText+'</b></div></div><div class="ea-criteria-section"><div class="ea-criteria-section-head"><div><span>CRITERIA & FIELD EVIDENCE</span><h3>معايير التقييم وأدلة الميدان</h3><small>'+criteriaCount+' معيار · لكل معيار صورتان: الوضع المعياري والوضع الحالي</small></div><i class="bx bx-images"></i></div>'+criteriaHtml+metaHtml+'</div></details>';
     }).join('');
     root.innerHTML='<section class="ea-v2-detail-hero"><button class="ea-v2-back" onclick="goBack()"><i class="bx bx-arrow-back"></i> رجوع خطوة</button><span>DEPARTMENT</span><h1>'+esc(n)+'</h1><p>صفحة مستقلة لدرجات القسم ومعايير كل خطوة وأدلة الوضع المعياري والوضع الحالي.</p><div class="ea-v2-summary-grid"><article><span>الدرجة الفعلية</span><b>'+fmt(o.a)+'</b></article><article><span>الدرجة المخططة</span><b>'+fmt(o.p)+'</b></article><article><span>النسبة</span><b>'+fmt(o.r)+'%</b></article><article><span>الأنشطة المسجلة</span><b>'+fmt(o.c)+'</b></article></div></section><section class="ea-v2-detail-body"><div class="ea-v2-head"><div><span>TPM ACTIVITY</span><h2>تفاصيل الدرجات والمعايير</h2></div><select class="ea-v2-filter" onchange="setExternalAuditDepartmentActivity(this.value)"><option value="all" '+(focus==='all'?'selected':'')+'>كل الأنشطة</option>'+activityOptions+'</select></div><div class="ea-v2-activity-detail-list">'+panels+'</div></section>';
   }catch(e){console.error(e);root.innerHTML='<div class="ea-v2-error"><b>تعذر فتح صفحة القسم</b><span>'+esc(e.message)+'</span><button class="btn btn-outline" onclick="goBack()">رجوع</button></div>'}

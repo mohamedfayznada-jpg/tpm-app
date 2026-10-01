@@ -366,6 +366,8 @@ window.goToNextStep = function() {
 };
 
 window.generateFinalReport = function() {
+    const integrity=window.validateAuditState(currentAudit,{allowIncomplete:false});
+    if(!integrity.valid){console.error('[JH Audit] integrity validation failed before final report',integrity.errors);showToast('⚠️ لا يمكن إنشاء التقرير النهائي قبل استكمال/تصحيح التقييم.');return;}
     const total = window.AuditState.calculateTotal();
     const s = total.score, m = total.max, p = total.pct;
     currentAudit.totalScore = s;
@@ -412,7 +414,8 @@ window.saveFinalAudit = async function() {
         let allImprovements = total.improvements.map(item => typeof item === 'string' ? item : item.text).filter(Boolean);
 
         if(allImprovements.length>0){
-            const fId=window.uniqueNumericId().toString();
+            const fId=currentAudit.improvementTaskId||('audit_improvements_'+String(currentAudit.id));
+            currentAudit.improvementTaskId=fId;
             updates['tpm_system/tasks/'+fId]={
                 id:fId,isFolder:true,dept:currentAudit.dept,date:currentAudit.date,machine:currentAudit.machine||'عام',
                 task:`تحسينات تدقيق (${currentAudit.date})`,
@@ -425,7 +428,7 @@ window.saveFinalAudit = async function() {
         updates['tpm_system/history/'+currentAudit.id]=currentAudit;
         await db.ref().update(updates);
 
-        if(typeof window.awardPoints==='function') window.awardPoints(50,'إتمام مراجعة رسمية (Audit)');
+        if(typeof window.awardPoints==='function'&&!currentAudit.pointsAwarded){try{window.awardPoints(50,'إتمام مراجعة رسمية (Audit)');currentAudit.pointsAwarded=true;await db.ref('tpm_system/history/'+currentAudit.id).update({pointsAwarded:true});}catch(pointsError){console.warn('[JH Audit] points award failed after audit save',pointsError);}}
         window.clearAuditDraft(currentAudit.dept);
         showToast('✅ تم اعتماد المراجعة وحفظها وتوليد الإجراءات بنجاح');
         setTimeout(()=>showScreen('historyScreen'),1000);

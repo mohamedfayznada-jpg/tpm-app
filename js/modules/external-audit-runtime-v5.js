@@ -463,8 +463,66 @@ const overall=n=>S.metricCache[n]||(()=>{const scored=(getDept(n)?.items||[]).fi
 window.setExternalAuditActivity=a=>{S.activity=a||'all';S.metricCache={};window.renderExternalAudit()};
 window.openExternalAuditDepartment=async(d,a)=>{S.activity=a||'all';S.department=d;showScreen('externalAuditDepartmentScreen');await window.renderExternalAuditDepartment(d)};
 window.setExternalAuditDepartmentActivity=a=>{S.activity=a||'all';if(S.department)window.renderExternalAuditDepartment(S.department)};
-window.openExternalAuditEvidenceImage=url=>{if(!url)return;const modal=document.createElement('div');modal.className='ea-image-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.innerHTML='<div class="ea-image-modal-backdrop" data-ea-close-image="1"></div><div class="ea-image-modal-card"><button type="button" aria-label="إغلاق الصورة" title="إغلاق" data-ea-close-image="1"><i class="bx bx-x"></i></button><img src="'+esc(url)+'" alt="دليل المراجعة — عرض مكبر"></div>';const close=()=>{modal.remove();document.removeEventListener('keydown',onKey)};const onKey=e=>{if(e.key==='Escape')close()};modal.addEventListener('click',e=>{if(e.target?.dataset?.eaCloseImage==='1')close()});document.addEventListener('keydown',onKey);document.body.appendChild(modal);};
-window.uploadExternalAuditEvidence=async(event,dept,activity,criterionId,kind)=>{
+window.openExternalAuditEvidenceImage=url=>{
+  if(!url)return;
+  const modal=document.createElement('div');
+  modal.className='ea-image-modal';
+  modal.setAttribute('role','dialog');
+  modal.setAttribute('aria-modal','true');
+  modal.innerHTML='<div class="ea-image-modal-backdrop" data-ea-close-image="1"></div><div class="ea-image-modal-card"><div class="ea-image-modal-toolbar"><button type="button" data-ea-zoom-out title="تصغير"><i class="bx bx-minus"></i></button><button type="button" data-ea-zoom-reset title="الحجم الطبيعي">100%</button><button type="button" data-ea-zoom-in title="تكبير"><i class="bx bx-plus"></i></button><button type="button" data-ea-close-image="1" aria-label="إغلاق الصورة" title="إغلاق"><i class="bx bx-x"></i></button></div><div class="ea-image-modal-stage"><img src="'+esc(url)+'" alt="دليل المراجعة — عرض مكبر" draggable="false"></div></div>';
+  const img=modal.querySelector('img');
+  let scale=1,panX=0,panY=0,dragging=false,startX=0,startY=0;
+  const render=()=>{
+    img.style.transform='translate3d('+panX+'px,'+panY+'px,0) scale('+scale+')';
+    const reset=modal.querySelector('[data-ea-zoom-reset]');
+    if(reset)reset.textContent=Math.round(scale*100)+'%';
+  };
+  const clampPan=()=>{
+    if(scale<=1){panX=0;panY=0;return;}
+    const maxX=Math.max(0,(img.clientWidth*(scale-1))/2);
+    const maxY=Math.max(0,(img.clientHeight*(scale-1))/2);
+    panX=Math.max(-maxX,Math.min(maxX,panX));
+    panY=Math.max(-maxY,Math.min(maxY,panY));
+  };
+  const setScale=(next)=>{
+    scale=Math.max(0.5,Math.min(4,next));
+    if(scale<=1){panX=0;panY=0;}
+    clampPan();
+    render();
+  };
+  const close=()=>{modal.remove();document.removeEventListener('keydown',onKey);};
+  const onKey=e=>{
+    if(e.key==='Escape')close();
+    else if(e.key==='+'||e.key==='=')setScale(scale+0.25);
+    else if(e.key==='-')setScale(scale-0.25);
+    else if(e.key==='0')setScale(1);
+  };
+  modal.addEventListener('click',e=>{
+    if(e.target?.dataset?.eaCloseImage==='1')close();
+  });
+  modal.querySelector('[data-ea-zoom-in]').addEventListener('click',()=>setScale(scale+0.25));
+  modal.querySelector('[data-ea-zoom-out]').addEventListener('click',()=>setScale(scale-0.25));
+  modal.querySelector('[data-ea-zoom-reset]').addEventListener('click',()=>setScale(1));
+  const stage=modal.querySelector('.ea-image-modal-stage');
+  stage.addEventListener('wheel',e=>{e.preventDefault();setScale(scale+(e.deltaY<0?0.15:-0.15));},{passive:false});
+  img.addEventListener('pointerdown',e=>{
+    if(scale<=1)return;
+    dragging=true;startX=e.clientX-panX;startY=e.clientY-panY;
+    img.setPointerCapture?.(e.pointerId);
+  });
+  img.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    panX=e.clientX-startX;panY=e.clientY-startY;clampPan();render();
+  });
+  const stopDrag=()=>{dragging=false;};
+  img.addEventListener('pointerup',stopDrag);
+  img.addEventListener('pointercancel',stopDrag);
+  document.addEventListener('keydown',onKey);
+  document.body.appendChild(modal);
+  img.addEventListener('load',render,{once:true});
+  render();
+};
+window.uploadExternalAuditEvidence=async=async(event,dept,activity,criterionId,kind)=>{
   const file=event?.target?.files?.[0];
   if(!file)return;
   if(!canWriteEvidence())return showToast?.('⚠️ ليس لديك صلاحية إضافة أدلة المراجعة.');

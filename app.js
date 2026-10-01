@@ -844,6 +844,33 @@ window.handleImageSelection = async function(event) {
     });
 };
 
+window.deleteAuditEvidence = async function(itemId) {
+    const key = 'img_' + itemId;
+    const imgObj = currentStepImages?.[key];
+    if(!imgObj) return;
+
+    if(!confirm('حذف صورة الدليل لهذا البند؟')) return;
+
+    try {
+        if(imgObj.data) {
+            try { await window.deleteStorageImage(imgObj.data); }
+            catch(storageError) { console.warn('[JH Audit] Storage image delete failed:', storageError); }
+        }
+        delete currentStepImages[key];
+        if(currentAudit?.stepsOrder) {
+            const stepKey = currentAudit.stepsOrder[currentAudit.currentStepIndex];
+            const step = window.AuditState?.ensureStep(stepKey);
+            if(step) step.images = currentStepImages;
+        }
+        window.saveAuditDraft();
+        window.renderCurrentAuditStep();
+        showToast('🗑️ تم حذف صورة الدليل');
+    } catch(error) {
+        console.error('[JH Audit] Evidence delete failed:', error);
+        showToast('❌ تعذر حذف صورة الدليل');
+    }
+};
+
 window.initSignaturePad = function() {
     setTimeout(() => {
         sigCanvas = document.getElementById('signatureCanvas'); if(!sigCanvas) return;
@@ -1265,16 +1292,33 @@ window.predictMachineFailures = async function() {
 };
 
 window.explainItem = async function(t) {
-    document.getElementById('aiModal').style.display='flex'; document.getElementById('aiModalText').innerHTML = '<div style="text-align:center; padding:30px;"><i class="bx bx-brain" style="font-size:50px; color:var(--primary); animation:pulse 1s infinite;"></i><br>جاري تحضير خطوات العمل...</div>';
+    const modal = document.getElementById('aiModal');
+    const output = document.getElementById('aiModalText');
+    if(!modal || !output) return;
+    modal.style.display='flex';
+    output.innerHTML = '<div style="text-align:center; padding:24px;"><i class="bx bx-brain" style="font-size:42px; color:var(--primary); animation:pulse 1s infinite;"></i><br>جاري إعداد شرح مختصر للبند...</div>';
     try {
-        let prompt = `أنت مهندس صيانة خبير ومراجع TPM. اشرح البند التالي للفنيين: "${t}". رد بخطوات عمل محددة ومرقمة. أجب بنص عادي.`;
-        let plainTextResponse = await window.fetchGeminiAPI(prompt);
-        document.getElementById('aiModalText').innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right;">${plainTextResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--primary);">$1</b>')}</div>`;
+        const question = String(t || '').trim().slice(0, 1500);
+        const prompt = `أنت مساعد فني للصيانة الذاتية TPM.
+السؤال/بند المراجعة هو:
+"${question}"
+
+أجب عن هذا السؤال فقط، ولا تشرح نظام TPM بشكل عام.
+قواعد الإجابة:
+- إجابة مختصرة ومباشرة ومركزة على السؤال.
+- 3 إلى 5 نقاط عملية كحد أقصى.
+- اذكر ما الذي يجب على الفني فحصه أو تنفيذه تحديدًا.
+- لا تضف مقدمة أو خاتمة أو معلومات جانبية.
+- لا تتجاوز 100 كلمة.
+- أجب بالعربية بنص عادي فقط.`;
+        const plainTextResponse = await window.fetchGeminiAPI(prompt);
+        const safeText = window.escapeTPM ? window.escapeTPM(plainTextResponse || '') : String(plainTextResponse || '');
+        output.innerHTML = `<div style="font-size:14px; line-height:1.8; text-align:right; white-space:normal;">${safeText.replace(/\n/g, '<br>')}</div>`;
     } catch(e) {
         const setupHint = e.code === 'AI_NOT_CONFIGURED'
             ? '<div style="margin-top:12px; color:var(--text-muted); font-size:12px;">هذه الميزة تحتاج ضبطًا من مسؤول النظام، ثم ستكون جاهزة للاستخدام تلقائيًا.</div>'
             : '';
-        document.getElementById('aiModalText').innerHTML = `<div style="color:var(--danger); text-align:center; line-height:1.8;"><i class='bx bx-error-circle' style="font-size:28px;"></i><br>⚠️ ${e.message}${setupHint}</div>`;
+        output.innerHTML = `<div style="color:var(--danger); text-align:center; line-height:1.8;"><i class='bx bx-error-circle' style="font-size:28px;"></i><br>⚠️ ${window.escapeTPM ? window.escapeTPM(e.message || 'تعذر الحصول على الشرح') : (e.message || 'تعذر الحصول على الشرح')}${setupHint}</div>`;
     }
 };
 

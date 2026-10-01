@@ -261,7 +261,13 @@ window.renderCurrentAuditStep = function() {
     if(container) {
         // رسم البنود بالكامل وبدون أي اختصار
         container.innerHTML = sd.items.map(item => {
-            let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:15px; display:flex; align-items:center; gap:10px;"><img src="${currentStepImages['img_' + item.id].data}" style="height:60px; width:60px; object-fit:cover; border-radius:10px; border:2px solid var(--primary); cursor:pointer;" onclick="window.open('${currentStepImages['img_' + item.id].data}')"><button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-bot'></i> تحليل الذكاء الاصطناعي</button></div>` : '';
+            let hasImage = currentStepImages['img_' + item.id] ? `<div style="margin-top:15px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <div style="position:relative; display:inline-flex;">
+        <img src="${currentStepImages['img_' + item.id].data}" style="height:60px; width:60px; object-fit:cover; border-radius:10px; border:2px solid var(--primary); cursor:pointer;" onclick="window.open('${currentStepImages['img_' + item.id].data}')">
+        <button type="button" title="حذف صورة الدليل" aria-label="حذف صورة الدليل" onclick="deleteAuditEvidence(${item.id})" style="position:absolute; top:-8px; right:-8px; width:24px; height:24px; border:0; border-radius:50%; background:var(--danger); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.25); padding:0;"><i class='bx bx-x' style="font-size:16px;"></i></button>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="runAIVision(${item.id}, '${item.title.replace(/'/g, "\\'")}')"><i class='bx bx-bot'></i> تحليل الذكاء الاصطناعي</button>
+</div>` : '';
             
             return `
             <div class="card glass-card" style="padding:20px; border-right:4px solid var(--primary);">

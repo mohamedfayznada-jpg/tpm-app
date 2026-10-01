@@ -1187,23 +1187,71 @@ window.editTag = function(id) { let t=tagsData.find(x=>x.id==id); if(!t) return;
 // ==========================================
 // 🤖 المستشار الذكي وعقل المصنع (AI)
 // ==========================================
-window.getBase64FromUrl = async function(url) {
-    try { const res = await fetch(url); const blob = await res.blob(); return new Promise(resolve => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result.split(',')[1]); reader.readAsDataURL(blob); }); } 
-    catch(e) { return new Promise((resolve, reject) => { let img = new Image(); img.crossOrigin = 'Anonymous'; img.onload = () => { let canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]); }; img.onerror = reject; img.src = url; }); }
+window.sanitizeAIHtml = function(value) {
+    const template = document.createElement('template');
+    template.innerHTML = String(value || '');
+    const allowed = new Set(['DIV','B','UL','LI','BR','STRONG','EM','P']);
+    template.content.querySelectorAll('*').forEach(node => {
+        if (!allowed.has(node.tagName)) {
+            node.replaceWith(document.createTextNode(node.textContent || ''));
+            return;
+        }
+        [...node.attributes].forEach(attr => node.removeAttribute(attr.name));
+    });
+    return template.innerHTML.trim();
 };
 
 window.runAIVision = async function(itemId, itemTitle) {
-    let imgObj = currentStepImages['img_' + itemId]; if(!imgObj) return showToast('لا توجد صورة لفحصها');
-    document.getElementById('aiModalText').innerHTML = "<div style='text-align:center;'><i class='bx bx-loader-alt bx-spin' style='font-size:30px; color:var(--primary);'></i><br>جاري فحص الصورة...</div>"; document.getElementById('aiModal').style.display = 'flex';
+    const imgObj = currentStepImages['img_' + itemId];
+    if (!imgObj?.data) return showToast('لا توجد صورة دليل مرتبطة بهذا البند.');
+
+    const modal = document.getElementById('aiModal');
+    const output = document.getElementById('aiModalText');
+    if (!modal || !output) return;
+
+    output.innerHTML = "<div style='text-align:center;'><i class='bx bx-loader-alt bx-spin' style='font-size:30px; color:var(--primary);'></i><br>جاري فحص دليل البند…</div>";
+    modal.style.display = 'flex';
+
     try {
-        const base64Img = await window.getBase64FromUrl(imgObj.data);
-        let fullPrompt = `أنت مهندس صيانة. حلل هذه الصورة بناءً على بند: "${itemTitle}". رد بـ HTML منسق (استخدم <div> و <b> و <ul> فقط). ممنوع كتابة علامات \`\`\`html نهائياً.\n`;
-        if(knowledgeBaseData && knowledgeBaseData.length > 0) fullPrompt += "\nكتالوجات المصنع المعتمدة:\n" + knowledgeBaseData.map(kb => `[${kb.title}]: ${kb.content}`).join('\n');
-        const response = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: fullPrompt, imageBase64: base64Img }) });
-        const result = await response.json(); if(result.error) throw new Error(result.error);
-        let text = result.candidates[0].content.parts[0].text; text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
-        document.getElementById('aiModalText').innerHTML = text; window.awardPoints(5, 'تحليل AI');
-    } catch(e) { document.getElementById('aiModalText').innerHTML = `<div style="color:red; text-align:center;">خطأ في الاتصال: ${e.message}</div>`; }
+        const prompt = [
+            'أنت مراجع TPM ومهندس صيانة خبير.',
+            'حلل صورة الدليل المرفقة مقابل بند المراجعة التالي:',
+            '«' + String(itemTitle || '').slice(0, 1000) + '»',
+            '',
+            'قدّم نتيجة عملية ومنظمة بالعربية في HTML آمن باستخدام div و b و ul و li فقط:',
+            '1) ما الذي يظهر في الدليل.',
+            '2) هل الدليل يدعم تنفيذ البند بوضوح أم لا، مع ذكر حدود ما يمكن إثباته من الصورة فقط.',
+            '3) ملاحظات المراجع أو النواقص الظاهرة.',
+            '4) إجراء تحسين مقترح إذا وُجدت فجوة.',
+            'لا تمنح درجة رقمية من عندك ولا تدّعِ معلومات غير ظاهرة في الصورة.',
+            'ممنوع استخدام markdown أو علامات code fence أو أي JavaScript/HTML غير مطلوب.'
+        ].join('\n');
+
+        const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, imageUrl: imgObj.data })
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result?.error) {
+            const err = new Error(result?.error || 'تعذر تحليل صورة الدليل.');
+            err.code = result?.code || 'AI_VISION_FAILED';
+            throw err;
+        }
+
+        const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error('لم تصل نتيجة تحليل صالحة من المساعد الذكي.');
+
+        output.innerHTML = window.sanitizeAIHtml(rawText) || '<div>لم ينتج المساعد الذكي نتيجة قابلة للعرض.</div>';
+        window.awardPoints(5, 'تحليل AI');
+    } catch (error) {
+        console.error('[JH Audit AI] vision analysis failed:', error);
+        output.innerHTML = `<div style="color:var(--danger); text-align:center; line-height:1.8;">
+            <i class='bx bx-error-circle' style="font-size:28px;"></i><br>
+            ⚠️ ${window.escapeTPM ? window.escapeTPM(error?.message || 'تعذر تحليل الصورة') : (error?.message || 'تعذر تحليل الصورة')}
+        </div>`;
+    }
 };
 
 window.predictMachineFailures = async function() {

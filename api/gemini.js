@@ -33,20 +33,55 @@ export default async function handler(req) {
     const body = await req.json();
     const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : '';
     if (prompt.length > 30000) return json({ code: 'AI_PROMPT_TOO_LARGE', error: 'ملف التحليل أكبر من الحد المسموح للتحليل الذكي.' }, 413);
-    const imageBase64 = typeof body?.imageBase64 === 'string' ? body.imageBase64 : '';
+    const imageBase64 = typeof body?.imageBase64 === 'string' ? body.imageBase64.trim() : '';
+    const imageUrl = typeof body?.imageUrl === 'string' ? body.imageUrl.trim() : '';
     const jsonMode = body?.jsonMode === true;
 
-    if (!prompt && imageBase64.length <= 20) {
+    if (!prompt && imageBase64.length <= 20 && imageUrl.length <= 20) {
       return json({
         code: 'AI_INVALID_REQUEST',
         error: 'أدخل سؤالك أو أرفق صورة صالحة للتحليل.',
       }, 400);
     }
 
+    if (imageUrl.length > 5000) {
+      return json({
+        code: 'AI_IMAGE_URL_TOO_LARGE',
+        error: 'رابط صورة الدليل غير صالح أو أطول من الحد المسموح.',
+      }, 413);
+    }
+
     const userContent = [];
     if (prompt) userContent.push({ type: 'text', text: prompt });
 
-    if (imageBase64.length > 20) {
+    if (imageUrl.length > 20) {
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(imageUrl);
+      } catch {
+        return json({
+          code: 'AI_INVALID_IMAGE_URL',
+          error: 'رابط صورة الدليل غير صالح.',
+        }, 400);
+      }
+
+      const allowedHosts = new Set([
+        'firebasestorage.googleapis.com',
+        'storage.googleapis.com',
+      ]);
+
+      if (parsedUrl.protocol !== 'https:' || !allowedHosts.has(parsedUrl.hostname.toLowerCase())) {
+        return json({
+          code: 'AI_IMAGE_HOST_NOT_ALLOWED',
+          error: 'مصدر صورة الدليل غير مسموح به.',
+        }, 400);
+      }
+
+      userContent.push({
+        type: 'image_url',
+        image_url: { url: imageUrl },
+      });
+    } else if (imageBase64.length > 20) {
       const cleanBase64 = imageBase64.includes(',')
         ? imageBase64.split(',')[1]
         : imageBase64;

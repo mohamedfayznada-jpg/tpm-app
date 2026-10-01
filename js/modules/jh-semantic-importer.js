@@ -265,12 +265,17 @@
     if(!stats){el.innerHTML='<div class="jh-ai-state idle"><i class="bx bx-brain"></i><div><b>جاهز للتحليل الذكي</b><span>ارفع الملف وسيتم فهمه تلقائيًا ثم استيراد البيانات الصحيحة.</span></div></div>';return;}
     if(stats.error){el.innerHTML='<div class="jh-ai-state error"><i class="bx bx-error-circle"></i><div><b>لم يتم الاستيراد</b><span>'+esc(stats.error)+'</span></div></div>';return;}
     el.innerHTML='<div class="jh-ai-state success"><i class="bx bx-check-shield"></i><div><b>تم الفهم والاستيراد تلقائيًا</b><span>'+stats.records+' سجل · '+stats.sheets+' ورقة · '+stats.blocks+' نطاق بيانات · ثقة '+stats.confidence+'%</span></div></div>';
-  }
-
-  async function analyzeFile(file){
-    if(!file)return;
-    if(!window.XLSX){setStatus('<span class="bad">مكتبة قراءة Excel غير متاحة. أعد تحميل الصفحة.</span>');return;}
-    if(!currentJHDept){setStatus('<span class="bad">اختر قسم JH أولًا.</span>');return;}
+  }  async function analyzeFile(file){
+     if(!file)return;
+     if(!currentJHDept){setStatus('<span class="bad">اختر قسم JH أولًا.</span>');return;}
+     try{
+       await window.TPMVendorLoader.ensure('XLSX','https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js');
+     }catch(error){
+       console.error('[TPM] Excel vendor load failed:',error);
+       setStatus('<span class="bad">تعذر تحميل مكتبة Excel. تحقق من الاتصال وحاول مرة أخرى.</span>');
+       return;
+     }
+     if(!window.XLSX){setStatus('<span class="bad">مكتبة قراءة Excel غير متاحة حاليًا.</span>');return;}
     const modal=getModal();if(modal)modal.style.display='flex';
     state={type:state.type||window.__jhActiveDocType||'CLIT',fileName:file.name,workbook:null,analysis:null,normalized:[],stats:null};
     setImportSummary('<div class="jh-ai-state loading"><i class="bx bx-loader-alt bx-spin"></i><div><b>AI بيفحص الملف...</b><span>بيقرأ الشيتات، يحدد الجداول الحقيقية، ويفهم الأعمدة من المعنى — مش من ترتيبها.</span></div></div>');

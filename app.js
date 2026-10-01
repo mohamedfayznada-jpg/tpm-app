@@ -44,6 +44,9 @@ window.showToast = function(msg) {
 };
 
 window.__tpmNavigation = window.__tpmNavigation || { stack: [], current: null, suppressPush: false };
+function isActiveScreen(screenId){const el=document.getElementById(screenId);return !!el&&el.classList.contains('active');}
+function refreshVisibleDataScreen(screenId){switch(screenId){case 'homeScreen':if(currentUser?.role&&typeof window.updateHomeDashboard==='function')window.updateHomeDashboard();break;case 'tagsScreen':if(typeof window.renderTags==='function')window.renderTags();if(typeof window.renderTagCommandCenter==='function')window.renderTagCommandCenter();break;case 'tasksScreen':if(typeof window.renderTasks==='function')window.renderTasks();break;case 'historyScreen':if(typeof window.renderHistory==='function')window.renderHistory();break;case 'kkScreen':if(typeof window.renderKKDashboard==='function')window.renderKKDashboard();break;case 'knowledgeScreen':if(typeof window.renderKnowledgeBase==='function')window.renderKnowledgeBase();break;case 'tpmTeamsScreen':if(typeof window.renderTPMTeams==='function')window.renderTPMTeams();break;}}
+
 
 window.showScreen = function(screenId, options = {}) {
     const nav = window.__tpmNavigation;
@@ -80,6 +83,7 @@ window.showScreen = function(screenId, options = {}) {
     if(screenId === 'settingsScreen' && typeof window.renderSettingsControlLists === 'function') window.renderSettingsControlLists();
     if(screenId === 'jhSkillMatrixScreen') { window.dispatchEvent(new Event('tpm:jh-skill-matrix-open')); window.renderSkillMatrix?.(); const title=document.getElementById('jhSkillDeptName'); if(title) title.textContent=window.currentJHDept||'القسم'; }
     document.querySelectorAll('#mainSidebar .side-item').forEach(item => item.classList.remove('active')); const activeItem = [...document.querySelectorAll('#mainSidebar .side-item')].find(item => (item.getAttribute('onclick') || '').includes("'" + screenId + "'")); if(activeItem) activeItem.classList.add('active');
+    refreshVisibleDataScreen(screenId);
     window.scrollTo({top: 0, behavior: 'smooth'});
 };
 
@@ -235,17 +239,48 @@ window.biometricLogin = async function() {
 // ==========================================
 let dbListeners = {};
 
+function bindDbListener(name, query, handler, event = 'value') {
+    const previous = dbListeners[name];
+    if (previous?.query && previous?.handler) previous.query.off(previous.event || event, previous.handler);
+    query.on(event, handler);
+    dbListeners[name] = { query, handler, event };
+}
+
+function clearDbListeners() {
+    Object.values(dbListeners).forEach(entry => {
+        try { entry?.query?.off(entry.event || 'value', entry.handler); }
+        catch (error) { console.warn('[TPM] Failed to detach Firebase listener:', error); }
+    });
+    dbListeners = {};
+}
+
+let homeDashboardRefreshQueued = false;
+function scheduleHomeDashboardRefresh() {
+    if (homeDashboardRefreshQueued || !currentUser?.role || typeof window.updateHomeDashboard !== 'function') return;
+    homeDashboardRefreshQueued = true;
+    const flush = () => {
+        homeDashboardRefreshQueued = false;
+        if (currentUser?.role && typeof window.updateHomeDashboard === 'function') window.updateHomeDashboard();
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(flush);
+    else setTimeout(flush, 0);
+}
+
 firebase.auth().onAuthStateChanged(async user => {
+    clearDbListeners();
+    homeDashboardRefreshQueued = false;
     document.body.classList.toggle('auth-locked', !user);
     const mainHeader = document.getElementById('mainHeader');
     
     if (user) {
         isDataLoaded = true;        if (mainHeader) mainHeader.style.display = 'flex';
 
-        const dSnap = await db.ref('tpm_system/departments').once('value');
+        const [dSnap, uSnap] = await Promise.all([
+            db.ref('tpm_system/departments').once('value'),
+            db.ref('tpm_system/users').once('value')
+        ]);
         departments = window.getOperationalDepartments(dSnap.val() || []); window.departments = departments;
 
-        const uSnap = await db.ref('tpm_system/users').once('value');
         usersData = uSnap.val() || {};
         window.usersData = usersData;
         // Secrets are server-managed; the browser never reads tpm_system/api_keys.
@@ -283,23 +318,21 @@ firebase.auth().onAuthStateChanged(async user => {
             let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
             let notifyIcon = document.getElementById('adminNotification');
             if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
-            if(window.renderUserManagement) window.renderUserManagement(); 
+            if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement(); 
             
-            dbListeners.users = db.ref('tpm_system/users').on('value', snap => {
+            bindDbListener('users', db.ref('tpm_system/users'), snap => {
                 usersData = snap.val() || {};
                 window.usersData = usersData;
                 window.dispatchEvent(new Event('tpm:skill-matrix-data')); 
                 let pendingLive = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
                 let notifLive = document.getElementById('adminNotification');
                 if(notifLive) notifLive.style.display = pendingLive ? 'block' : 'none';
-                if(window.renderUserManagement) window.renderUserManagement(); 
+                if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement(); 
             });
         } else {
             let uData = usersData[user.uid];
             if (typeof uData === 'string') { role = uData; } 
             else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
-            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
-            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
             role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
             currentUser = { uid: user.uid, name: savedName, username: finalUsername, role: role, status: status };
             window.currentUser = currentUser;
@@ -319,52 +352,53 @@ firebase.auth().onAuthStateChanged(async user => {
 
         if(window.updateDeptDropdown) window.updateDeptDropdown();
 
-        dbListeners.tags = db.ref('tpm_system/tags').orderByChild('id').limitToLast(100).on('value', snap => {
+        bindDbListener('tags', db.ref('tpm_system/tags').orderByChild('id').limitToLast(100), snap => {
             let data = snap.val() || {}; tagsData = Object.values(data).filter(x => x && x.id).sort((a,b)=>b.id-a.id); window.tagsData = tagsData; 
-            if(window.renderTags) window.renderTags(); if(window.renderTagCommandCenter) window.renderTagCommandCenter(); if(currentUser.role && window.updateHomeDashboard) window.updateHomeDashboard();
+            if(isActiveScreen('tagsScreen')){if(window.renderTags)window.renderTags();if(window.renderTagCommandCenter)window.renderTagCommandCenter();}if(isActiveScreen('tpmTeamsScreen'))window.renderTPMTeams?.();if(isActiveScreen('homeScreen'))scheduleHomeDashboardRefresh();
         });
 
-        dbListeners.tasks = db.ref('tpm_system/tasks').orderByChild('id').limitToLast(100).on('value', snap => {
-            let data = snap.val() || {}; tasksData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id); window.tasksData = tasksData; if(window.renderTasks) window.renderTasks();
+        bindDbListener('tasks', db.ref('tpm_system/tasks').orderByChild('id').limitToLast(100), snap => {
+            let data=snap.val()||{};tasksData=Object.values(data).filter(x=>x&&x.id).sort((a,b)=>a.id-b.id);window.tasksData=tasksData;if(isActiveScreen('tasksScreen'))window.renderTasks?.();if(isActiveScreen('tpmTeamsScreen'))window.renderTPMTeams?.();
         });
 
-        dbListeners.history = db.ref('tpm_system/history').orderByChild('id').limitToLast(100).on('value', snap => {
+        bindDbListener('history', db.ref('tpm_system/history').orderByChild('id').limitToLast(100), snap => {
             let data = snap.val() || {}; historyData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id); window.historyData = historyData; 
-            if(window.renderHistory) window.renderHistory(); if(window.renderKaizenFeed) window.renderKaizenFeed(); if(window.renderKaizenA3CommandStats) window.renderKaizenA3CommandStats(); if(currentUser.role && window.updateHomeDashboard) window.updateHomeDashboard();
+            if(isActiveScreen('historyScreen')){if(window.renderHistory)window.renderHistory();if(window.renderKaizenFeed)window.renderKaizenFeed();if(window.renderKaizenA3CommandStats)window.renderKaizenA3CommandStats();}if(isActiveScreen('homeScreen'))scheduleHomeDashboardRefresh();
         });
     
-        dbListeners.goals = db.ref('tpm_system/dept_goals').on('value', snap => { 
+        bindDbListener('goals', db.ref('tpm_system/dept_goals'), snap => { 
             deptGoalsData = snap.val() || {}; 
-            if(currentJHDept && document.getElementById('jhPortalScreen').classList.contains('active') && window.selectJHDept) window.selectJHDept(currentJHDept); 
+            if(currentJHDept&&isActiveScreen('jhPortalScreen')&&window.selectJHDept)window.selectJHDept(currentJHDept); 
         });
       
-        dbListeners.losses = db.ref('tpm_system/losses').on('value', snap => {
+        bindDbListener('losses', db.ref('tpm_system/losses'), snap => {
             registeredLosses = snap.val() ? Object.values(snap.val()) : [];
             if(document.getElementById('kkScreen').classList.contains('active') && window.renderKKDashboard) window.renderKKDashboard();
         });
         
-        dbListeners.points = db.ref('tpm_system/points').on('value', snap => { 
+        bindDbListener('points', db.ref('tpm_system/points'), snap => { 
             userPoints = snap.val() || {}; if(window.updateUsersLeaderboard) window.updateUsersLeaderboard(); 
         });
         
-        dbListeners.knowledgeBase = db.ref('tpm_system/knowledgeBase').on('value', snap => { 
+        bindDbListener('knowledgeBase', db.ref('tpm_system/knowledgeBase'), snap => { 
             knowledgeBaseData = snap.val() ? Object.values(snap.val()) : []; 
             if(document.getElementById('knowledgeScreen').classList.contains('active') && window.renderKnowledgeBase) window.renderKnowledgeBase(); 
         });
 
-        dbListeners.engineers = db.ref('tpm_system/maintenanceEngineers').on('value', snap => {
+        bindDbListener('engineers', db.ref('tpm_system/maintenanceEngineers'), snap => {
             maintenanceEngineers = snap.val() ? Object.values(snap.val()) : [];
             if(window.updateOperationalSelects) window.updateOperationalSelects();
         });
 
         if (currentUser.role === 'admin') {
-            dbListeners.notificationSettings = db.ref('tpm_system/notification_settings').on('value', snap => {
+            bindDbListener('notificationSettings', db.ref('tpm_system/notification_settings'), snap => {
                 notificationSettings = { ...notificationSettings, ...(snap.val() || {}) };
                 if(window.populateNotificationSettings) window.populateNotificationSettings();
             });
         }
         
     } else {
+        clearDbListeners();
         isInitialLoad = true; isDataLoaded = false; 
         if (mainHeader) mainHeader.style.display = 'none'; // חجر صحي
         showScreen('loginScreen');
@@ -1069,9 +1103,7 @@ window.openAuditEvidence = function(btn){
 window.downloadProfessionalPDF = async function(){
     const area=document.getElementById('printableReportArea');
     if(!area) return showToast('⚠️ تعذر العثور على التقرير');
-    if(!window.html2canvas || !window.jspdf?.jsPDF){
-        return showToast('⚠️ مكونات PDF غير محملة — حدّث الصفحة وحاول مرة أخرى');
-    }
+    try{await window.TPMVendorLoader.ensure('html2canvas','https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');await window.TPMVendorLoader.ensure('jspdf','https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');}catch(error){console.error('[TPM] PDF vendor load failed:',error);return showToast('⚠️ تعذر تحميل مكونات PDF. تحقق من الاتصال وحاول مرة أخرى.');}if(!window.html2canvas||!window.jspdf?.jsPDF)return showToast('⚠️ مكونات PDF غير متاحة حاليًا.');
 
     const actionRow=document.querySelector('#detailedReportScreen>.row-flex');
     const oldDisplay=actionRow?.style.display;

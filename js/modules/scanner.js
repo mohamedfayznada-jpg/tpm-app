@@ -8,6 +8,15 @@ export const Scanner = {
         const file = event.target.files[0];
         if (!file) return;
 
+        try {
+            await window.TPMVendorLoader.ensure('Html5Qrcode','https://unpkg.com/html5-qrcode');
+        } catch (error) {
+            console.error('[TPM] Barcode vendor load failed:', error);
+            UI.showToast('⚠️ تعذر تحميل قارئ الباركود. تحقق من الاتصال وحاول مرة أخرى.');
+            return;
+        }
+        if (typeof Html5Qrcode !== 'function') return UI.showToast('⚠️ قارئ الباركود غير متاح حاليًا.');
+
         UI.showToast('جاري قراءة الباركود... 🔍');
         const html5QrCode = new Html5Qrcode("searchResults"); 
         

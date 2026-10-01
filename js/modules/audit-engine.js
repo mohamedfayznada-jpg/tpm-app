@@ -2,6 +2,65 @@
 // 📝 محرك التقييم والمراجعات الصارم (Full Audit Engine)
 // ==========================================
 
+// Canonical audit-state layer: currentAudit.results is the persisted source of truth.
+// Legacy step globals remain as a UI editing buffer for backward compatibility.
+window.AuditState = window.AuditState || {
+    ensureStep(stepKey) {
+        if (!currentAudit) return null;
+        currentAudit.results = currentAudit.results || {};
+        currentAudit.results[stepKey] = currentAudit.results[stepKey] || { skipped:false, score:0, max:0, improvements:[], selections:{}, images:{} };
+        const step = currentAudit.results[stepKey];
+        step.selections = step.selections && typeof step.selections === 'object' ? step.selections : {};
+        step.images = step.images && typeof step.images === 'object' ? step.images : {};
+        step.improvements = Array.isArray(step.improvements) ? step.improvements : [];
+        return step;
+    },
+    calculateStep(stepKey, selections = null) {
+        const definition = typeof AUDIT_DATA !== 'undefined' ? AUDIT_DATA?.[stepKey] : null;
+        const step = this.ensureStep(stepKey);
+        const selected = selections || step?.selections || {};
+        let score = 0, max = 0; const improvements = [];
+        if (!definition) return { score, max, pct:0, improvements };
+        definition.items.forEach(item => {
+            const value = selected['item_' + item.id];
+            if (!value) return;
+            const itemScore = Number(value.score) || 0;
+            const itemMax = Number(value.max ?? item.maxScore) || 0;
+            score += itemScore; max += itemMax;
+            if (itemScore < itemMax) {
+                const maxLevel = item.levels?.find(level => Number(level.score) === Number(item.maxScore));
+                improvements.push({
+                    itemId:item.id, title:item.title,
+                    action:maxLevel?.desc || 'الوصول للمعايير القياسية',
+                    text:'[' + item.title + '] 🎯 الإجراء التصحيحي: ' + (maxLevel?.desc || 'الوصول للمعايير القياسية')
+                });
+            }
+        });
+        return { score, max, pct:max ? Math.round((score/max)*100) : 0, improvements };
+    },
+    calculateTotal() {
+        if (!currentAudit?.stepsOrder) return { score:0, max:0, pct:0, improvements:[] };
+        let score=0, max=0; const improvements=[];
+        currentAudit.stepsOrder.forEach(stepKey => {
+            const result=this.ensureStep(stepKey);
+            if (!result || result.skipped) return;
+            const calc=this.calculateStep(stepKey,result.selections);
+            result.score=calc.score; result.max=calc.max; result.improvements=calc.improvements.map(item=>item.text);
+            score+=calc.score; max+=calc.max; improvements.push(...result.improvements);
+        });
+        return {score,max,pct:max ? Math.round((score/max)*100) : 0,improvements};
+    },
+    syncCurrentStepBuffer() {
+        if (!currentAudit?.stepsOrder) return null;
+        const key=currentAudit.stepsOrder[currentAudit.currentStepIndex];
+        const step=this.ensureStep(key);
+        if (!step) return null;
+        step.selections=currentStepSelections || {};
+        step.images=currentStepImages || {};
+        return step;
+    }
+};
+
 // 1. الدالة المفقودة التي تسببت في الانهيار (تم إضافتها وتأمينها)
 window.startNewAuditFlowFromPortal = function() {
     if(!currentJHDept) return showToast('⚠️ يرجى اختيار القسم أولاً');
@@ -15,33 +74,55 @@ window.getAuditDraftKey = function(dept) {
     return `tpm_audit_draft:${uid}:${safeDept}`;
 };
 
+const AUDIT_SCHEMA_VERSION = 2;
+const AUDIT_STEP_ORDER = ['JH-0','JH-1','JH-2','JH-3','JH-4','JH-5','JH-6'];
+let auditFinalSaveInFlight = false;
+function sanitizeAuditDraftForStorage(audit){
+  if(!audit||typeof audit!=='object')return null;
+  const copy=JSON.parse(JSON.stringify(audit));
+  copy.schemaVersion=AUDIT_SCHEMA_VERSION;
+  copy.stepsOrder=[...AUDIT_STEP_ORDER];
+  copy.currentStepIndex=Math.max(0,Math.min(AUDIT_STEP_ORDER.length-1,Number.isInteger(copy.currentStepIndex)?copy.currentStepIndex:0));
+  copy.results=copy.results&&typeof copy.results==='object'?copy.results:{};
+  return copy;
+}
+function normalizeAuditDraft(raw,expectedDept){
+  if(!raw||typeof raw!=='object')throw new Error('invalid draft');
+  if(String(raw.dept||'')!==String(expectedDept||''))throw new Error('draft department mismatch');
+  const uid=firebase.auth().currentUser?.uid||'';
+  if(raw.auditorUid&&uid&&String(raw.auditorUid)!==String(uid))throw new Error('draft owner mismatch');
+  if(raw.schemaVersion!=null&&Number(raw.schemaVersion)>AUDIT_SCHEMA_VERSION)throw new Error('unsupported draft schema');
+  if(!Array.isArray(raw.stepsOrder)||raw.stepsOrder.join('|')!==AUDIT_STEP_ORDER.join('|'))throw new Error('draft step order mismatch');
+  const draft=sanitizeAuditDraftForStorage(raw); draft.auditorUid=draft.auditorUid||uid; draft.results={};
+  for(const stepKey of AUDIT_STEP_ORDER){
+    const source=raw.results?.[stepKey]; if(!source)continue;
+    if(source.skipped){const reason=String(source.skipReason||'').trim(); if(reason.length>=5)draft.results[stepKey]={...source,skipped:true,score:0,max:0,selections:{},images:{},improvements:Array.isArray(source.improvements)?source.improvements:[]};continue;}
+    const definition=typeof AUDIT_DATA!=='undefined'?AUDIT_DATA?.[stepKey]:null;if(!definition)continue;
+    const selections={},src=source.selections&&typeof source.selections==='object'?source.selections:{};
+    for(const item of definition.items){const v=src['item_'+item.id];if(!v)continue;const score=Number(v.score),max=Number(v.max);if(Number.isFinite(score)&&Number.isFinite(max)&&max===Number(item.maxScore)&&(item.levels||[]).some(level=>Number(level.score)===score))selections['item_'+item.id]={score,max};}
+    const srcImg=source.images&&typeof source.images==='object'?source.images:{},images={};
+    Object.keys(srcImg).forEach(k=>{if(/^img_[^/]+$/.test(k)&&srcImg[k]&&typeof srcImg[k].data==='string')images[k]={data:srcImg[k].data};});
+    const calc=window.AuditState.calculateStep(stepKey,selections);
+    draft.results[stepKey]={skipped:false,score:calc.score,max:calc.max,improvements:calc.improvements.map(x=>x.text),selections,images};
+  }
+  return draft;
+}
+
 window.saveAuditDraft = function() {
-    if(!currentAudit) return;
-    try {
-        currentAudit.updatedAt = Date.now();
-        const key = window.getAuditDraftKey(currentAudit.dept);
-        localStorage.setItem(key, JSON.stringify(currentAudit));
-    } catch(error) {
-        console.warn('[JH Audit] draft save failed', error);
-    }
+    if(!currentAudit||currentAudit.status==='approved')return;
+    try{
+        window.AuditState.syncCurrentStepBuffer();
+        currentAudit.updatedAt=Date.now();
+        currentAudit.schemaVersion=AUDIT_SCHEMA_VERSION;
+        localStorage.setItem(window.getAuditDraftKey(currentAudit.dept),JSON.stringify(sanitizeAuditDraftForStorage(currentAudit)));
+    }catch(error){console.warn('[JH Audit] draft save failed',error);}
 };
 
-window.loadAuditDraft = function(dept) {
-    const key = window.getAuditDraftKey(dept);
-    let draft = localStorage.getItem(key);
-    if(!draft) draft = localStorage.getItem('tpm_audit_draft'); // one-time backward compatibility
-    if(!draft) return false;
-    try {
-        currentAudit = JSON.parse(draft);
-        if(!currentAudit || !currentAudit.dept) throw new Error('invalid draft');
-        window.saveAuditDraft();
-        window.renderCurrentAuditStep();
-        return true;
-    } catch(error) {
-        console.warn('[JH Audit] invalid draft discarded', error);
-        localStorage.removeItem(key);
-        return false;
-    }
+window.loadAuditDraft = function(dept){
+  const key=window.getAuditDraftKey(dept),raw=localStorage.getItem(key)||localStorage.getItem('tpm_audit_draft');
+  if(!raw)return false;
+  try{currentAudit=normalizeAuditDraft(JSON.parse(raw),dept);window.saveAuditDraft();localStorage.removeItem('tpm_audit_draft');window.renderCurrentAuditStep();return true;}
+  catch(error){console.warn('[JH Audit] invalid draft discarded',error);localStorage.removeItem(key);localStorage.removeItem('tpm_audit_draft');return false;}
 };
 
 window.clearAuditDraft = function(dept) {
@@ -100,8 +181,9 @@ window.renderCurrentAuditStep = function() {
     }
     
     const sd = AUDIT_DATA[k];
-    currentStepSelections = (currentAudit.results[k] && currentAudit.results[k].selections) ? currentAudit.results[k].selections : {};
-    currentStepImages = (currentAudit.results[k] && currentAudit.results[k].images) ? currentAudit.results[k].images : {};
+    const stepState = window.AuditState.ensureStep(k);
+    currentStepSelections = stepState.selections;
+    currentStepImages = stepState.images;
 
     const titleEl = document.getElementById('auditStepTitle'); 
     if(titleEl) titleEl.innerText = `${k}: ${sd.name}`;
@@ -179,25 +261,13 @@ window.finishCurrentStep = function() {
         return; 
     }
     
-    let totalScore = 0, totalMax = 0; currentStepImprovements = [];
-    for(let key in currentStepSelections) { 
-        let itemData = currentStepSelections[key]; 
-        totalScore += itemData.score; 
-        totalMax += itemData.max; 
-        
-        // محرك استخراج فرص التحسين التلقائي
-        if(itemData.score < itemData.max) { 
-            let id = key.split('_')[1]; 
-            let itm = sd.items.find(i=>i.id == id); 
-            if(itm) {
-                let maxLvl = itm.levels.find(l => l.score === itm.maxScore); 
-                let targetAction = maxLvl ? maxLvl.desc : "الوصول للمعايير القياسية";
-                currentStepImprovements.push(`[${itm.title}] 🎯 الإجراء التصحيحي: ${targetAction}`); 
-            }
-        }
-    }
-    
-    currentAudit.results[k] = { skipped: false, score: totalScore, max: totalMax, improvements: currentStepImprovements, selections: currentStepSelections, images: currentStepImages };
+    window.AuditState.syncCurrentStepBuffer();
+    const calculated = window.AuditState.calculateStep(k, currentStepSelections);
+    const totalScore = calculated.score;
+    const totalMax = calculated.max;
+    currentStepImprovements = calculated.improvements.map(item => item.text);
+    const stepState = window.AuditState.ensureStep(k);
+    currentAudit.results[k] = { ...stepState, skipped:false, score:totalScore, max:totalMax, improvements:currentStepImprovements, selections:currentStepSelections, images:currentStepImages };
     window.saveAuditDraft();
     
     const pct = Math.round((totalScore/totalMax)*100);
@@ -233,14 +303,10 @@ window.goToNextStep = function() {
 };
 
 window.generateFinalReport = function() {
-    let s=0, m=0; 
-    currentAudit.stepsOrder.forEach(k=>{
-        if(!currentAudit.results[k].skipped){
-            s+=currentAudit.results[k].score; 
-            m+=currentAudit.results[k].max;
-        }
-    });
-    let p=m===0?0:Math.round((s/m)*100); 
+    const total = window.AuditState.calculateTotal();
+    const s = total.score, m = total.max, p = total.pct;
+    currentAudit.totalScore = s;
+    currentAudit.totalMax = m;
     currentAudit.totalPct = p;
     
     const finalPctEl = document.getElementById('finalTotalPct'); 
@@ -272,11 +338,11 @@ window.saveFinalAudit = async function() {
         currentAudit.schemaVersion=2;
 
         const updates={};
-        let allImprovements=[];
-        currentAudit.stepsOrder.forEach(step=>{
-            const result=currentAudit.results?.[step];
-            if(Array.isArray(result?.improvements)) allImprovements.push(...result.improvements);
-        });
+        const total = window.AuditState.calculateTotal();
+        currentAudit.totalScore = total.score;
+        currentAudit.totalMax = total.max;
+        currentAudit.totalPct = total.pct;
+        let allImprovements = total.improvements.map(item => typeof item === 'string' ? item : item.text).filter(Boolean);
 
         if(allImprovements.length>0){
             const fId=window.uniqueNumericId().toString();

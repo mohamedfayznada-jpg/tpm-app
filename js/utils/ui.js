@@ -1,5 +1,18 @@
 // مسار الملف: js/utils/ui.js
 
+const screenCache = new Map();
+let screenList = null;
+
+function getScreens() {
+    if (!screenList) screenList = Array.from(document.querySelectorAll('.screen'));
+    return screenList;
+}
+
+function getScreen(screenId) {
+    if (!screenCache.has(screenId)) screenCache.set(screenId, document.getElementById(screenId));
+    return screenCache.get(screenId) || null;
+}
+
 export const UI = {
     screenHistory: ['homeScreen'],
 
@@ -8,8 +21,9 @@ export const UI = {
             this.screenHistory.push(screenId);
         }
 
-        document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
-        const target = document.getElementById(screenId);
+        const target = getScreen(screenId);
+        const current = getScreens().find(screen => screen.classList.contains('active'));
+        if (current !== target) getScreens().forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
         if (target) {
             target.classList.add('active');
             target.style.display = 'block';
@@ -43,8 +57,12 @@ export const UI = {
         if (this.screenHistory.length > 1) {
             this.screenHistory.pop();
             const lastScreen = this.screenHistory[this.screenHistory.length - 1];
-            document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
-            const target = document.getElementById(lastScreen);
+            const target = getScreen(lastScreen);
+            getScreens().forEach(s => {
+                const isTarget = s === target;
+                s.classList.toggle('active', isTarget);
+                s.style.display = isTarget ? 'block' : 'none';
+            });
             if (target) {
                 target.classList.add('active');
                 target.style.display = 'block';

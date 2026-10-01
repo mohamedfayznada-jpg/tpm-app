@@ -501,7 +501,12 @@ window.uploadExternalAuditEvidence=async(event,dept,activity,criterionId,kind)=>
         throw dbError;
       }
     }
-    await window.renderExternalAuditDepartment(dept);
+    if(dept==='__TEAM__'){
+      const key=window.__externalAuditCreateTeamKey;
+      if(key) await window.openExternalAuditTeamCreate(key);
+    }else{
+      await window.renderExternalAuditDepartment(dept);
+    }
   }catch(error){
     console.error('[External Audit] evidence upload failed',error);
     showToast?.('⚠️ تعذر رفع الدليل. راجع صلاحيات Storage وحاول مرة أخرى.');
@@ -618,7 +623,12 @@ async function saveCriterionScore(dept,activity,criterionId,value){
     }
   }
   updateLiveAuditScoreUI(dept,activity);
-  await window.renderExternalAuditDepartment(dept);
+  if(dept==='__TEAM__'){
+    const key=window.__externalAuditCreateTeamKey;
+    if(key) await window.openExternalAuditTeamCreate(key);
+  }else{
+    await window.renderExternalAuditDepartment(dept);
+  }
 }
 window.saveExternalAuditCriterionScore=saveCriterionScore;
 

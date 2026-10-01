@@ -463,7 +463,7 @@ const overall=n=>S.metricCache[n]||(()=>{const scored=(getDept(n)?.items||[]).fi
 window.setExternalAuditActivity=a=>{S.activity=a||'all';S.metricCache={};window.renderExternalAudit()};
 window.openExternalAuditDepartment=async(d,a)=>{S.activity=a||'all';S.department=d;showScreen('externalAuditDepartmentScreen');await window.renderExternalAuditDepartment(d)};
 window.setExternalAuditDepartmentActivity=a=>{S.activity=a||'all';if(S.department)window.renderExternalAuditDepartment(S.department)};
-window.openExternalAuditEvidenceImage=url=>{const root=document.getElementById('externalAuditDepartmentRoot');if(!root)return;const modal=document.createElement('div');modal.className='ea-image-modal';modal.innerHTML='<div class="ea-image-modal-backdrop" onclick="this.parentElement.remove()"></div><div class="ea-image-modal-card"><button type="button" onclick="this.parentElement.parentElement.remove()"><i class="bx bx-x"></i></button><img src="'+esc(url)+'" alt="دليل المراجعة"></div>';root.appendChild(modal)};
+window.openExternalAuditEvidenceImage=url=>{if(!url)return;const modal=document.createElement('div');modal.className='ea-image-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.innerHTML='<div class="ea-image-modal-backdrop" data-ea-close-image="1"></div><div class="ea-image-modal-card"><button type="button" aria-label="إغلاق الصورة" title="إغلاق" data-ea-close-image="1"><i class="bx bx-x"></i></button><img src="'+esc(url)+'" alt="دليل المراجعة — عرض مكبر"></div>';const close=()=>{modal.remove();document.removeEventListener('keydown',onKey)};const onKey=e=>{if(e.key==='Escape')close()};modal.addEventListener('click',e=>{if(e.target?.dataset?.eaCloseImage==='1')close()});document.addEventListener('keydown',onKey);document.body.appendChild(modal);};
 window.uploadExternalAuditEvidence=async(event,dept,activity,criterionId,kind)=>{
   const file=event?.target?.files?.[0];
   if(!file)return;
@@ -515,21 +515,33 @@ window.uploadExternalAuditEvidence=async(event,dept,activity,criterionId,kind)=>
 window.removeExternalAuditEvidence=async(dept,activity,criterionId,kind)=>{
   if(!canWriteEvidence())return showToast?.('⚠️ ليس لديك صلاحية حذف الأدلة.');
   if(!confirm('حذف صورة '+(kind==='standard'?'الوضع المعياري':'الوضع الحالي')+'؟'))return;
+  const evidenceKey=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
+  const cached=S.evidenceCache[evidenceKey]?.[criterionId]?.[kind];
+  const localKey=localEvidenceKey(dept,activity);
+  const local=S.localEvidence[localKey]?.[criterionId]?.[kind];
+  const imageUrl=cached?.url||local?.url||'';
   try{
     await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/'+kind).remove();
-    const key=localEvidenceKey(dept,activity);
-    const evidenceKey=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
-    if(S.localEvidence[key]?.[criterionId]){
-      delete S.localEvidence[key][criterionId][kind];
-      if(!Object.keys(S.localEvidence[key][criterionId]).length) delete S.localEvidence[key][criterionId];
-      if(!Object.keys(S.localEvidence[key]).length) delete S.localEvidence[key];
+    if(imageUrl&&firebase.storage){
+      try{await firebase.storage().refFromURL(imageUrl).delete();}catch(storageError){console.warn('[External Audit] evidence storage cleanup failed',storageError);}
+    }
+    if(S.localEvidence[localKey]?.[criterionId]){
+      delete S.localEvidence[localKey][criterionId][kind];
+      if(!Object.keys(S.localEvidence[localKey][criterionId]).length) delete S.localEvidence[localKey][criterionId];
+      if(!Object.keys(S.localEvidence[localKey]).length) delete S.localEvidence[localKey];
       persistLocalEvidence();
     }
     if(S.evidenceCache[evidenceKey]?.[criterionId]){
       delete S.evidenceCache[evidenceKey][criterionId][kind];
       if(!Object.keys(S.evidenceCache[evidenceKey][criterionId]).length) delete S.evidenceCache[evidenceKey][criterionId];
+      persistLocalEvidence();
     }
-    await window.renderExternalAuditDepartment(dept);
+    if(dept==='__TEAM__'){
+      const teamKey=window.__externalAuditCreateTeamKey;
+      if(teamKey) await window.openExternalAuditTeamCreate(teamKey);
+    }else{
+      await window.renderExternalAuditDepartment(dept);
+    }
     showToast?.('🗑️ تم حذف الدليل من السجل.');
   }catch(error){console.error('[External Audit] evidence delete failed',error);showToast?.('⚠️ تعذر حذف الدليل.');}
 };

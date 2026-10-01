@@ -1,6 +1,6 @@
 /* External Audit Runtime v6 — production hardened, cache-isolated */
 window.__externalAuditRuntimeVersion='v6';
-(()=>{const F={report:{title:'نتائج المراجعة الخارجية — H2 2026',period:'H2 2026',sourceFile:'TPM Detailed Report - Ref A - H2 2026.pdf',generatedFromPages:159},departments:[{department:'الفاكيوم',items:[['5S',100,79],['JH-0',100,75],['JH-1',100,76],['JH-2',100,68],['JH-3',100,61],['JH-4',100,63],['JH-5',100,49],['JH-6',100,47],['JH-7',100,28],['PM-1',100,67],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,60],['PM-6',100,52],['PM-7',100,32],['E&T',100,79],['KK',100,61],['SHE',100,70]]},{department:'حقن الباب',items:[['5S',100,79],['JH-0',100,77],['JH-1',100,78],['JH-2',100,70],['JH-3',100,78],['JH-4',100,69],['JH-5',100,61],['JH-6',100,60],['JH-7',100,28],['PM-1',100,77],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,58],['PM-6',100,52],['PM-7',100,32],['E&T',100,79],['KK',100,61],['SHE',100,70]]},{department:'تشكيل المواسير',items:[['5S',100,90],['JH-0',100,83],['JH-1',100,80],['JH-2',100,73],['JH-3',100,76],['JH-4',175,116],['JH-5',100,50],['PM-1',100,67],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,60],['PM-6',100,52],['E&T',100,79],['KK',100,64],['SHE',100,70]]},{department:'حقن الكابينة',items:[['5S',100,84],['JH-0',100,79],['JH-1',100,75],['JH-2',100,82],['JH-3',100,77],['JH-4',100,62],['JH-5',100,50],['JH-6',100,47],['JH-7',100,28],['PM-1',100,67],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,58],['PM-6',100,52],['PM-7',100,32],['E&T',100,79],['KK',100,62],['SHE',100,70]]}]};
+(()=>{const F={report:{title:'نتائج المراجعة الخارجية — H2 2026',period:'H2 2026',sourceFile:'TPM Detailed Report - Ref A - H2 2026.pdf',generatedFromPages:159},departments:[{department:'الفاكيوم',items:[['5S',100,79],['JH-0',100,75],['JH-1',100,76],['JH-2',100,68],['JH-3',100,61],['JH-4',100,63],['JH-5',100,49],['JH-6',100,47],['JH-7',100,28],['PM-1',100,67],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,60],['PM-6',100,52],['PM-7',100,32],['E&T Activity',100,79],['kk Activity',100,61],['SHE Activity',100,70]]},{department:'حقن الكابينة',items:[['5S',100,84],['JH-0',100,79],['JH-1',100,75],['JH-2',100,82],['JH-3',100,77],['JH-4',100,62],['JH-5',100,50],['JH-6',100,47],['JH-7',100,28],['PM-1',100,67],['PM-2',100,72],['PM-3',100,76],['PM-4',100,70],['PM-5',100,58],['PM-6',100,52],['PM-7',100,32],['E&T Activity',100,79],['kk Activity',100,62],['SHE Activity',100,70]]},{department:'WMA',items:[]}]};
 const CREATE_JH_TEAM_CRITERIA = [
   [1,'يوجد هيكل تنظيمي للفريق تم وضعه طبقاً لمتطلبات التشكيل الصحيح للفريق ومعتمد من مدير عام المصنع',5],
   [2,'تحديد المهام والمسؤوليات',5],
@@ -20,12 +20,12 @@ const CREATE_JH_TEAM_CRITERIA = [
 
 const TEAM_CREATE_CATALOG = {
   jh: {
-    code:'JH', name:'فريق الصيانة الذاتية', activity:'Create JH Team',
+    code:'JH', name:'فريق الصيانة الذاتية', activity:'Create JH Team',sourceActual:65,sourcePlanned:100,
     description:'تأسيس فريق JH وحوكمته وتجهيزه للتشغيل المستدام.',
     criteria: CREATE_JH_TEAM_CRITERIA
   },
   fiveS: {
-    code:'5S', name:'فريق 5S', activity:'Create 5S Team',
+    code:'5S', name:'فريق 5S', activity:'Create 5S Team',sourceActual:86,sourcePlanned:100,
     description:'تأسيس فريق 5S وتحديد نطاق العمل ومسؤوليات التدقيق والتحسين.',
     criteria:[
       [1,'تشكيل فريق 5S واعتماد الهيكل والمسؤوليات',10],[2,'تحديد نطاق المناطق وخريطة المسؤوليات',10],
@@ -36,7 +36,7 @@ const TEAM_CREATE_CATALOG = {
     ].map(([i,t,p])=>({i,t,a:null,p}))
   },
   pm: {
-    code:'PM', name:'فريق الصيانة المخططة', activity:'Create PM Team',
+    code:'PM', name:'فريق الصيانة المخططة', activity:'Create PM Team',sourceActual:65,sourcePlanned:100,
     description:'تأسيس فريق PM لإدارة استراتيجية الصيانة والتخطيط والتنفيذ والتحسين.',
     criteria:[
       [1,'هيكل فريق PM وتحديد الأدوار والمسؤوليات',10],[2,'تصنيف المعدات وتحديد الأولويات الحرجة',10],
@@ -47,7 +47,7 @@ const TEAM_CREATE_CATALOG = {
     ].map(([i,t,p])=>({i,t,a:null,p}))
   },
   et: {
-    code:'E&T', name:'فريق التعليم والتدريب', activity:'Create E&T Team',
+    code:'E&T', name:'فريق التعليم والتدريب', activity:'Create E&T Team',sourceActual:80,sourcePlanned:100,
     description:'تأسيس نظام تعليم وتدريب قائم على فجوات المهارات واحتياجات الوظائف.',
     criteria:[
       [1,'هيكل الفريق وتحديد مسؤوليات التدريب',10],[2,'تحديد مصفوفة المهارات والمستويات المستهدفة',15],
@@ -58,7 +58,7 @@ const TEAM_CREATE_CATALOG = {
     ].map(([i,t,p])=>({i,t,a:null,p}))
   },
   kk: {
-    code:'KK', name:'فريق التحسين المستمر', activity:'Create KK Team',
+    code:'KK', name:'فريق التحسين المستمر', activity:'Create KK Team',sourceActual:69,sourcePlanned:100,
     description:'تأسيس فريق Kaizen / Focused Improvement لإدارة دورة التحسين ونتائجها.',
     criteria:[
       [1,'هيكل الفريق وتحديد قائد ومسؤوليات الأعضاء',10],[2,'منهج واضح لاختيار فرص التحسين وترتيب أولوياتها',10],
@@ -69,7 +69,7 @@ const TEAM_CREATE_CATALOG = {
     ].map(([i,t,p])=>({i,t,a:null,p}))
   },
   hse: {
-    code:'HSE', name:'فريق السلامة والصحة والبيئة', activity:'Create HSE Team',
+    code:'HSE', name:'فريق السلامة والصحة والبيئة', activity:'Create SHE Team',sourceActual:74,sourcePlanned:100,
     description:'تأسيس فريق SHE لإدارة المخاطر والامتثال والتحسين المستدام.',
     criteria:[
       [1,'هيكل الفريق وتحديد المسؤوليات والصلاحيات',10],[2,'حصر المخاطر وتقييمها وتحديد الأولويات',15],
@@ -426,15 +426,16 @@ function metricFromEvidence(item,evidence,dept,activity){
   const plannedFromCriteria=criteria.reduce((s,c)=>s+Number(c.p||0),0);
   const resolved=criteria.map(c=>({c,a:criterionActual(evidence,c.i,dept,activity) ?? normalizeNumber(c.a)}));
   const entered=resolved.filter(x=>x.a!=null);
-  const totalPlanned=plannedFromCriteria||Number(item.planned||0);
-  // Partial criterion entry must never masquerade as a complete audit score.
-  // The source report remains authoritative until every criterion has a real actual value.
+  const sourcePlanned=Number(item.planned||0)||100;
+  // Ref.A activity scores use a 100-point report scale; criterion template sums must not replace it.
   if(criteria.length && entered.length===criteria.length){
-    const actual=entered.reduce((s,x)=>s+Number(x.a||0),0);
-    return {p:totalPlanned,a:actual,r:pct(actual,totalPlanned),c:entered.length,total:criteria.length,source:'criteria'};
+    const rawActual=entered.reduce((s,x)=>s+Number(x.a||0),0);
+    const rawPlanned=plannedFromCriteria||sourcePlanned;
+    const actual=rawPlanned===100?rawActual:(rawActual/rawPlanned)*sourcePlanned;
+    return {p:sourcePlanned,a:actual,r:pct(actual,sourcePlanned),c:entered.length,total:criteria.length,source:'criteria-normalized'};
   }
   const reportActual=item.actual==null?null:Number(item.actual);
-  return {p:totalPlanned||Number(item.planned||0),a:reportActual,r:pct(reportActual,totalPlanned||Number(item.planned||0)),c:entered.length,total:criteria.length,source:entered.length?'report+partial':'report'};
+  return {p:sourcePlanned,a:reportActual,r:pct(reportActual,sourcePlanned),c:entered.length,total:criteria.length,source:entered.length?'report+partial':'report'};
 }
 async function loadEvidenceCached(dept,activity){
   const key=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);
@@ -721,7 +722,7 @@ window.openExternalAuditTeamCreate=async key=>{
   const actual=criteria.reduce((s,c)=>s+(c.a==null?0:Number(c.a)),0);
   const planned=criteria.reduce((s,c)=>s+Number(c.p||0),0);
   const entered=criteria.filter(c=>c.a!=null).length;
-  root.innerHTML='<section class="ea-team-create-hero"><button class="ea-v2-back" onclick="goBack()"><i class="bx bx-arrow-back"></i> رجوع خطوة</button><span>TEAM CREATION / '+esc(team.code)+'</span><h1>إنشاء وتقييم '+esc(team.name)+'</h1><p>'+esc(team.description)+' هذا الملف مستقل عن الأقسام التشغيلية.</p><div class="ea-team-create-summary"><article><span>الفعلي المسجل</span><b>'+fmt(entered?actual:'—')+'</b></article><article><span>المخطط</span><b>'+fmt(planned)+'</b></article><article><span>نسبة التقييم</span><b>'+(entered?fmt(Math.round(actual/planned*1000)/10)+'%':'غير مسجل')+'</b></article><article><span>بنود مقيمة</span><b>'+entered+' / '+criteria.length+'</b></article></div></section><section class="ea-team-create-body"><div class="ea-team-create-head"><div><span>TEAM CREATION CRITERIA</span><h2>معايير إنشاء الفريق</h2><small>الدرجة الفعلية لا تُستنتج من درجات الأقسام؛ تُسجل هنا مباشرة على مستوى الفريق.</small></div></div><div class="ea-team-create-list">'+criteria.map(c=>{
+  root.innerHTML='<section class="ea-team-create-hero"><button class="ea-v2-back" onclick="goBack()"><i class="bx bx-arrow-back"></i> رجوع خطوة</button><span>TEAM CREATION / '+esc(team.code)+'</span><h1>إنشاء وتقييم '+esc(team.name)+'</h1><p>'+esc(team.description)+' هذا الملف مستقل عن الأقسام التشغيلية.</p><div class="ea-team-create-summary"><article><span>الدرجة الفعلية من Ref.A</span><b>'+fmt(team.sourceActual)+' / '+fmt(team.sourcePlanned)+'</b></article><article><span>نسبة التقرير</span><b>'+fmt(Math.round((team.sourceActual/team.sourcePlanned)*1000)/10)+'%</b></article><article><span>الفعلي المسجل في النظام</span><b>'+fmt(entered?actual:'—')+'</b></article><article><span>بنود مقيمة في النظام</span><b>'+entered+' / '+criteria.length+'</b></article></div></section><section class="ea-team-create-body"><div class="ea-team-create-head"><div><span>TEAM CREATION CRITERIA</span><h2>معايير إنشاء الفريق</h2><small>الدرجة الفعلية لا تُستنتج من درجات الأقسام؛ تُسجل هنا مباشرة على مستوى الفريق.</small></div></div><div class="ea-team-create-list">'+criteria.map(c=>{
     const input=canWriteEvidence()?'<input type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(c.a==null?'':c.a)+'" placeholder="غير مسجل" onchange="saveExternalAuditCriterionScore(\'__TEAM__\',\''+esc(team.activity)+'\','+Number(c.i)+',this.value)">':'<b class="ea-team-create-actual">'+(c.a==null?'غير مسجل':fmt(c.a))+'</b>';
     return '<article class="ea-team-create-row"><span class="ea-team-create-no">'+fmt(c.i)+'</span><div><b>'+esc(c.t)+'</b><small>المخطط: '+fmt(c.p)+'</small></div><label><span>الفعلي</span>'+input+'</label><div class="ea-team-create-evidence">'+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'standard',label:'الوضع المعياري',evidence})+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div></article>';
   }).join('')+'</div></section>';

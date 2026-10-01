@@ -61,6 +61,69 @@ window.AuditState = window.AuditState || {
     }
 };
 
+// ==========================================
+// 🔒 Audit State Integrity Guard
+// ==========================================
+window.validateAuditState = function(audit = currentAudit, options = {}) {
+    const errors = [];
+    if(!audit) return { valid:false, errors:['لا توجد مراجعة مفتوحة'] };
+    if(!Array.isArray(audit.stepsOrder) || audit.stepsOrder.length !== 7) {
+        errors.push('ترتيب خطوات المراجعة غير صالح');
+        return { valid:false, errors };
+    }
+    if(!audit.results || typeof audit.results !== 'object') errors.push('نتائج المراجعة غير موجودة');
+    const results = audit.results || {};
+
+    audit.stepsOrder.forEach(stepKey => {
+        const definition = typeof AUDIT_DATA !== 'undefined' ? AUDIT_DATA[stepKey] : null;
+        const result = results[stepKey];
+        if(!definition) { errors.push('بيانات الخطوة غير موجودة: '+stepKey); return; }
+        if(!result) {
+            if(options.allowIncomplete && audit.currentStepIndex === audit.stepsOrder.indexOf(stepKey)) return;
+            errors.push('لا توجد نتيجة محفوظة للخطوة: '+stepKey);
+            return;
+        }
+        if(result.skipped) {
+            if(String(result.skipReason || '').trim().length < 5) errors.push(stepKey+': سبب التخطي غير موثق');
+            return;
+        }
+        const selections = result.selections && typeof result.selections === 'object' ? result.selections : {};
+        const expectedIds = new Set(definition.items.map(item => String(item.id)));
+        const selectedIds = Object.keys(selections).filter(key => key.startsWith('item_')).map(key => key.slice(5));
+        definition.items.forEach(item => {
+            const key='item_'+item.id;
+            const value=selections[key];
+            if(!value) {
+                errors.push(stepKey+' / بند '+item.id+': لم يتم تقييم البند');
+                return;
+            }
+            const score=Number(value.score), max=Number(value.max);
+            const allowed=(item.levels||[]).some(level=>Number(level.score)===score);
+            if(!Number.isFinite(score) || !allowed) errors.push(stepKey+' / بند '+item.id+': درجة غير صالحة');
+            if(!Number.isFinite(max) || max!==Number(item.maxScore)) errors.push(stepKey+' / بند '+item.id+': الحد الأقصى غير مطابق للقالب');
+        });
+        selectedIds.filter(id=>!expectedIds.has(id)).forEach(id=>errors.push(stepKey+' / بند غير معروف: '+id));
+        const score=definition.items.reduce((sum,item)=>sum+(Number(selections['item_'+item.id]?.score)||0),0);
+        const max=definition.items.reduce((sum,item)=>sum+Number(item.maxScore||0),0);
+        if(Number(result.score)!==score) errors.push(stepKey+': الدرجة المحفوظة لا تطابق البنود');
+        if(Number(result.max)!==max) errors.push(stepKey+': الحد الأقصى المحفوظ لا يطابق القالب');
+    });
+    return { valid:errors.length===0, errors };
+};
+
+window.calculateAuditTotals = function(audit = currentAudit) {
+    let score=0, max=0;
+    if(!audit?.stepsOrder) return {score,max,pct:0};
+    audit.stepsOrder.forEach(stepKey => {
+        const result=audit.results?.[stepKey];
+        if(!result || result.skipped) return;
+        score += Number(result.score)||0;
+        max += Number(result.max)||0;
+    });
+    return {score,max,pct:max ? Math.round(score/max*100) : 0};
+};
+
+
 // 1. الدالة المفقودة التي تسببت في الانهيار (تم إضافتها وتأمينها)
 window.startNewAuditFlowFromPortal = function() {
     if(!currentJHDept) return showToast('⚠️ يرجى اختيار القسم أولاً');
@@ -320,10 +383,14 @@ window.generateFinalReport = function() {
 };
 
 window.saveFinalAudit = async function() {
+    if(auditFinalSaveInFlight) return showToast('⏳ الحفظ النهائي قيد التنفيذ بالفعل.');
+    if(currentAudit?.status==='approved'){window.clearAuditDraft(currentAudit.dept);return showToast('ℹ️ هذه المراجعة تم اعتمادها وحفظها بالفعل.');}
     if(!window.hasRole('auditor', 'admin')) return showToast('⚠️ غير مصرح لك باعتماد وحفظ المراجعات النهائية');
     if(!currentAudit) return showToast('⚠️ لا توجد مراجعة مفتوحة');
     if(!confirm("هل أنت متأكد من اعتماد وحفظ هذه المراجعة؟ سيتم إنشاء قائمة مهام تلقائية بالفجوات المكتشفة.")) return;
-
+    const integrity=window.validateAuditState(currentAudit,{allowIncomplete:false});
+    if(!integrity.valid){console.error('[JH Audit] integrity validation failed before final save',integrity.errors);return showToast('⚠️ لا يمكن اعتماد المراجعة: توجد بيانات تقييم غير متطابقة.');}
+    auditFinalSaveInFlight=true;
     try {
         showToast('جاري حفظ تقرير المراجعة وإنشاء الإجراءات… ⏳');
         if(sigCanvas) currentAudit.signature = sigCanvas.toDataURL('image/jpeg', 0.8);
@@ -365,7 +432,7 @@ window.saveFinalAudit = async function() {
     } catch(error) {
         console.error('[JH Audit] final save failed',error);
         showToast('⚠️ فشل حفظ المراجعة. لم يتم حذف المسودة؛ أعد المحاولة.');
-    }
+    } finally { auditFinalSaveInFlight=false; }
 };
 
 // ==========================================

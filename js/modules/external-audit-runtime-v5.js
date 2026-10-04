@@ -731,6 +731,7 @@ window.openExternalAuditTeamCreate=async key=>{
     const input=canWriteEvidence()?'<input aria-label="الدرجة الفعلية" type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(c.a==null?'':c.a)+'" placeholder="—" onchange="saveExternalAuditCriterionScore(\'__TEAM__\',\''+esc(team.activity)+'\','+Number(c.i)+',this.value)">':'<b class="ea-team-create-actual">'+(c.a==null?'غير مسجل':fmt(c.a))+'</b>';
     return '<article class="ea-team-create-row"><div class="ea-team-create-item-cell"><span class="ea-team-create-no">'+fmt(c.i)+'</span><b>'+esc(c.t)+'</b></div><div class="ea-team-create-score-cell"><label><span>الدرجة الفعلية</span>'+input+'</label></div><div class="ea-team-create-planned-cell"><span>المخطط</span><b>'+fmt(c.p)+'</b></div><div class="ea-team-create-evidence-cell">'+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div><div class="ea-team-create-evidence-cell">'+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'standard',label:'الوضع المرجعي',evidence})+'</div></article>';
   }).join('')+'</div></section>';
+};
 
 window.renderExternalAudit=async()=>{
   const root=document.getElementById('externalAuditRoot');if(!root)return;

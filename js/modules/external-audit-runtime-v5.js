@@ -367,13 +367,13 @@ function renderCriterionCards(dept,activity,criteria,evidence,metric){
     : '';
   if(!criteria.length) return sourceBanner+'<div class="ea-v2-no-criteria-panel"><i class="bx bx-info-circle"></i><b>لا توجد معايير تفصيلية محمّلة لهذه الخطوة.</b><span>البيانات المتاحة تحتوي على الدرجة الإجمالية فقط. لا يتم اختراع درجات تفصيلية غير موجودة في المصدر؛ يمكن تسجيل الدرجة الفعلية لكل بند من هنا.</span></div>';
   const editable=canWriteEvidence();
-  return sourceBanner+'<div class="ea-criteria-list">'+criteria.map(c=>{
+  return sourceBanner+'<div class="ea-criteria-list ea-criteria-table"><div class="ea-criteria-table-head"><div>معايير التقييم</div><div>الدرجة الفعلية</div><div>الدرجة المخططة</div><div>صورة الوضع الحالي</div><div>صورة الوضع المرجعي</div></div>'+criteria.map(c=>{
     const actual=criterionActual(evidence,c.i,dept,activity);
     const actualText=actual==null?'غير مسجل':fmt(actual);
-    const scoreHtml=editable
-      ? '<label class="ea-criterion-score-editor"><span>الدرجة الفعلية</span><input type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(actual==null?'':actual)+'" placeholder="—" oninput="previewExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)" onchange="saveExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)"></label>'
-      : '<div class="ea-criterion-score-value"><span>الدرجة الفعلية</span><b>'+actualText+'</b></div>';
-    return '<article class="ea-criterion-card"><div class="ea-criterion-head"><span class="ea-criterion-number">'+fmt(c.i)+'</span><div class="ea-criterion-title"><b>'+esc(c.t)+'</b><small>الدرجة المخططة: '+fmt(c.p)+'</small></div><div class="ea-criterion-score-pair"><div><span>المخطط</span><b>'+fmt(c.p)+'</b></div>'+scoreHtml+'</div></div><div class="ea-criterion-evidence-grid">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المعياري',evidence})+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div></article>';
+    const scoreCell=editable
+      ? '<label class="ea-criterion-score-editor ea-inline-score"><span>الدرجة الفعلية</span><input aria-label="الدرجة الفعلية" type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(actual==null?'':actual)+'" placeholder="—" oninput="previewExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)" onchange="saveExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)"></label>'
+      : '<div class="ea-criterion-score-value ea-inline-score"><span>الدرجة الفعلية</span><b>'+actualText+'</b></div>';
+    return '<article class="ea-criterion-card ea-criterion-row"><div class="ea-criterion-title ea-criterion-item-cell"><span class="ea-criterion-number">'+fmt(c.i)+'</span><b>'+esc(c.t)+'</b></div><div class="ea-criterion-score-cell">'+scoreCell+'</div><div class="ea-criterion-planned-cell"><span>المخطط</span><b>'+fmt(c.p)+'</b></div><div class="ea-criterion-evidence-cell">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div><div class="ea-criterion-evidence-cell">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المرجعي',evidence})+'</div></article>';
   }).join('')+'</div>';
 }
 

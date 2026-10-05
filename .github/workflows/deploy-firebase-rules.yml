@@ -1,0 +1,52 @@
+name: Deploy Firebase Realtime Database Rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firebase.rules.json'
+      - '.firebaserc'
+      - 'firebase.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-database-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate Firebase rules JSON
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('firebase.rules.json','utf8')); console.log('firebase.rules.json: PASS')"
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools@latest
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Verify Google credentials
+        run: |
+          test -n "$GOOGLE_APPLICATION_CREDENTIALS" || {
+            echo "::error::Google Application Default Credentials were not configured"
+            exit 1
+          }
+          test -f "$GOOGLE_APPLICATION_CREDENTIALS" || {
+            echo "::error::Google credentials file was not created"
+            exit 1
+          }
+          echo "Google authentication bootstrap: PASS"
+
+      - name: Deploy Realtime Database rules
+        run: firebase deploy --only database --project tpm-audit-system --non-interactive

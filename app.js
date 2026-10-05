@@ -580,7 +580,8 @@ function renderUserManagement() {
                   </div>
                   <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end;">
                     ${pending ? `<button class="btn btn-sm btn-success" onclick="window.approveUser(decodeURIComponent('${safeUid}'))"><i class='bx bx-check'></i> اعتماد</button>` : ''}
-                    ${canManageTarget ? `<button class="btn btn-sm btn-outline" onclick="window.openPermissionsModal(decodeURIComponent('${safeUid}'))"><i class='bx bx-slider-alt'></i> إدارة</button>` : '<span style="font-size:11px;color:var(--text-muted);padding:8px;">حساب إداري محمي</span>'}
+                    ${canManageTarget ? `<button class="btn btn-sm btn-outline" onclick="window.openUserDetails(decodeURIComponent('${safeUid}'))"><i class='bx bx-id-card'></i> تفاصيل</button>
+                    <button class="btn btn-sm btn-outline" onclick="window.openPermissionsModal(decodeURIComponent('${safeUid}'))"><i class='bx bx-slider-alt'></i> إدارة</button>` : '<span style="font-size:11px;color:var(--text-muted);padding:8px;">حساب إداري محمي</span>'}
                     ${!pending && u.uid !== currentUser.uid ? `<button class="btn btn-sm ${disabled?'btn-success':'btn-danger'}" onclick="window.setUserStatus(decodeURIComponent('${safeUid}'),'${disabled?'active':'disabled'}')"><i class='bx ${disabled?'bx-lock-open-alt':'bx-lock-alt'}'></i> ${disabled?'تفعيل':'إيقاف'}</button>` : ''}
                   </div>
                 </div>
@@ -643,6 +644,51 @@ window.deleteUser = function(uid) {
     return window.setUserStatus(uid,'disabled');
 };
 
+window.openUserDetails = function(uid) {
+    if (!isSystemAdmin()) return;
+    const u = usersData?.[uid];
+    const container = document.getElementById('userDetailsContainer');
+    const modal = document.getElementById('userDetailsModal');
+    if (!u || !container || !modal) return showToast('⚠️ المستخدم غير موجود');
+    const safe = escapeUserAdminText;
+    const role = canonicalUserRole(u.role);
+    const status = u.status || 'pending';
+    const perms = { ...getUserPermissionDefaults(role), ...(u.permissions || {}) };
+    const safeHistory = Array.isArray(historyData) ? historyData : [];
+    const safeTags = Array.isArray(tagsData) ? tagsData : [];
+    const safeTasks = Array.isArray(tasksData) ? tasksData : [];
+    const userMatch = x => x && (x.authorUid === uid || x.uid === uid || x.ownerUid === uid || x.createdByUid === uid || x.assigneeUid === uid || x.auditorUid === uid || x.auditor === u.name || x.owner === u.name || x.assignee === u.name || x.assigneeName === u.name);
+    const userAudits = safeHistory.filter(h => userMatch(h) && Array.isArray(h.stepsOrder) && !h.stepsOrder.includes('ManualKaizen'));
+    const userKaizens = safeHistory.filter(h => userMatch(h) && Array.isArray(h.stepsOrder) && h.stepsOrder.includes('ManualKaizen'));
+    const userTags = safeTags.filter(userMatch);
+    const userTasks = safeTasks.filter(userMatch);
+    const statusLabel = USER_STATUS_LABELS_V2[status] || status;
+    const roleLabel = USER_ROLE_LABELS_V2[role] || role;
+    const lastLogin = u.lastLoginAt ? new Date(Number(u.lastLoginAt)).toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'}) : 'لم يسجل دخولًا بعد';
+    const createdAt = u.createdAt ? new Date(Number(u.createdAt)).toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'}) : 'غير متاح';
+    const permissionRows = Object.entries(USER_PERMISSION_PAGES).map(([key,label]) => {
+        const p = ['none','view','edit'].includes(perms[key]) ? perms[key] : 'none';
+        const icon = p === 'edit' ? 'bx-edit-alt' : (p === 'view' ? 'bx-show' : 'bx-hide');
+        const tone = p === 'edit' ? '--success' : (p === 'view' ? '--primary' : '--text-muted');
+        const text = p === 'edit' ? 'تعديل' : (p === 'view' ? 'مشاهدة' : 'مخفية');
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 4px;border-bottom:1px dashed var(--border-glass);"><span style="font-size:12px;font-weight:700;color:var(--text-main);">' + safe(label) + '</span><span style="font-size:11px;color:var(' + tone + ');font-weight:900;"><i class="bx ' + icon + '"></i> ' + text + '</span></div>';
+    }).join('');
+    const activity = [];
+    userAudits.slice(-4).forEach(a => activity.push({icon:'bx-clipboard-check',tone:'--primary',title:'مراجعة TPM',text:(a.dept || 'قسم غير محدد') + ' · ' + (a.totalPct ?? 0) + '%',date:a.date || ''}));
+    userTags.slice(-4).forEach(t => activity.push({icon:'bx-purchase-tag-alt',tone:'--danger',title:'تاج',text:t.desc || 'بلاغ تشغيل',date:t.date || ''}));
+    userKaizens.slice(-4).forEach(k => activity.push({icon:'bx-bulb',tone:'--success',title:'كايزن',text:k.dept || 'تحسين',date:k.date || ''}));
+    userTasks.slice(-4).forEach(t => activity.push({icon:'bx-task',tone:'--warning',title:'مهمة',text:t.title || t.text || t.description || 'مهمة تشغيلية',date:t.dueDate || ''}));
+    const avatar = u.avatar || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(u.name || u.username || 'User') + '&background=1e293b&color=3b82f6');
+    const activityHtml = activity.slice(-8).reverse().map(a => '<div style="display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--border-glass);"><i class="bx ' + a.icon + '" style="font-size:18px;color:var(' + a.tone + ');"></i><div style="flex:1;"><b style="font-size:11px;color:var(--text-main);">' + safe(a.title) + '</b><div style="font-size:11px;color:var(--text-muted);">' + safe(a.text) + '</div><small style="font-size:10px;color:var(--text-muted);">' + safe(a.date) + '</small></div></div>').join('') || '<div style="padding:22px;text-align:center;color:var(--text-muted);">لا يوجد نشاط مرتبط بهذا الحساب حتى الآن.</div>';
+    container.innerHTML = '<section style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(300px,1.25fr);gap:14px;">' +
+      '<div><div style="display:flex;align-items:center;gap:12px;padding:15px;border:1px solid var(--border-glass);border-radius:14px;background:var(--surface-inset);"><img src="' + safe(avatar) + '" alt="" style="width:58px;height:58px;border-radius:50%;object-fit:cover;border:2px solid var(--primary);"><div style="min-width:0;"><h4 style="margin:0;color:var(--text-main);font-size:16px;">' + safe(u.name || 'بدون اسم') + '</h4><div style="font-size:11px;color:var(--text-muted);margin-top:3px;">@' + safe(u.username || '—') + ' · UID: ' + safe(uid) + '</div><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;"><span class="settings-lock-chip">' + safe(roleLabel) + '</span><span class="settings-lock-chip">' + safe(statusLabel) + '</span></div></div></div>' +
+      '<div class="dashboard-stats" style="margin:12px 0;"><div class="stat-card"><div class="stat-value primary-text">' + userAudits.length + '</div><div class="stat-label">مراجعات</div></div><div class="stat-card"><div class="stat-value danger-text">' + userTags.length + '</div><div class="stat-label">تاجات</div></div><div class="stat-card"><div class="stat-value success-text">' + userKaizens.length + '</div><div class="stat-label">كايزن</div></div></div>' +
+      '<div style="padding:14px;border:1px solid var(--border-glass);border-radius:14px;background:var(--surface-inset);line-height:1.9;"><div><b>القسم:</b> ' + safe(u.dept || 'بدون قسم') + '</div><div><b>الهاتف:</b> ' + safe(u.phone || 'غير مسجل') + '</div><div><b>الدور المطلوب:</b> ' + safe(USER_ROLE_LABELS_V2[canonicalUserRole(u.requestedRole)] || u.requestedRole || '—') + '</div><div><b>تاريخ الإنشاء:</b> ' + safe(createdAt) + '</div><div><b>آخر دخول:</b> ' + safe(lastLogin) + '</div><div><b>النقاط:</b> ' + Number(userPoints?.[uid] || 0).toLocaleString('ar-EG') + '</div></div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary flex-1" onclick="document.getElementById(\'userDetailsModal\').style.display=\'none\';window.openPermissionsModal(decodeURIComponent(\'' + encodeUserAdminArg(uid) + '\'))"><i class="bx bx-slider-alt"></i> إدارة الصلاحيات</button></div></div>' +
+      '<div><div style="padding:14px;border:1px solid var(--border-glass);border-radius:14px;background:var(--surface-inset);margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><b>الصلاحيات الحالية</b><span style="font-size:10px;color:var(--text-muted);">RBAC</span></div>' + permissionRows + '</div>' +
+      '<div style="padding:14px;border:1px solid var(--border-glass);border-radius:14px;background:var(--surface-inset);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><b>آخر نشاط مرصود</b><span style="font-size:10px;color:var(--text-muted);">Live data</span></div>' + activityHtml + '</div></div></section>';
+    modal.style.display = 'flex';
+};
 window.openPermissionsModal = function(uid) {
     if (!isSystemAdmin()) return;
     const u = usersData[uid]; if (!u) return showToast('⚠️ المستخدم غير موجود');

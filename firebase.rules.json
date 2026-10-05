@@ -36,7 +36,7 @@
           "updatedAt"
         ],
         "$id": {
-          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')",
+          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').val() === 'edit' || ((root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').exists()))",
           ".validate": "newData.hasChildren(['id','type','status','description','detectedBy','detectedAt','updatedAt']) && newData.child('id').val() === $id && newData.child('type').val() === 'abnormality'"
         }
       },

@@ -1,145 +1,160 @@
-// مسار الملف: js/auth/auth.js
+// FACTORY OS — Canonical Authentication Engine V2
 import { auth, db } from '../core/firebase-init.js';
 import { UI } from '../utils/ui.js';
 
+const USERNAME_RE = /^[a-zA-Z0-9._-]{3,32}$/;
+const REQUESTED_ROLES = Object.freeze(['operator','auditor','engineer']);
+const DEFAULT_PERMISSIONS = Object.freeze({
+    homeScreen: 'view', tasksScreen: 'none', historyScreen: 'none',
+    kaizenScreen: 'view', tagsScreen: 'none', knowledgeScreen: 'none',
+    skillMatrixScreen: 'none'
+});
+
+function normalizeUsername(value) {
+    return String(value || '').trim().toLowerCase();
+}
+function usernameToEmail(value) {
+    const input = normalizeUsername(value);
+    return input.includes('@') ? input : input + '@tpm.app';
+}
+function getLoginButton() {
+    return document.querySelector('#loginScreen .auth-primary-btn');
+}
+function setButtonBusy(button, busy, busyText, fallbackText) {
+    if (!button) return;
+    if (busy) {
+        if (!button.dataset.originalHtml) button.dataset.originalHtml = button.innerHTML;
+        button.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i><span>' + busyText + '</span>';
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+    } else {
+        button.innerHTML = button.dataset.originalHtml || fallbackText || button.innerHTML;
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+    }
+}
+function mapAuthError(error) {
+    switch (error?.code) {
+        case 'auth/invalid-credential':
+        case 'auth/invalid-login-credentials':
+        case 'auth/user-not-found':
+        case 'auth/wrong-password': return 'بيانات الدخول غير صحيحة. راجع اسم المستخدم وكلمة المرور.';
+        case 'auth/user-disabled': return 'هذا الحساب موقوف. تواصل مع مسؤول النظام.';
+        case 'auth/too-many-requests': return 'تم إيقاف المحاولات مؤقتًا بسبب كثرة المحاولات. حاول بعد قليل.';
+        case 'auth/network-request-failed': return 'تعذر الاتصال بالخدمة. تحقق من الإنترنت وحاول مرة أخرى.';
+        case 'auth/invalid-email': return 'اسم المستخدم غير صالح.';
+        default: return 'تعذر إتمام العملية الآن. حاول مرة أخرى.';
+    }
+}
+
 export const Auth = {
-    // ==========================================
-    // 🔐 محرك تسجيل الدخول (Login Engine)
-    // ==========================================
     async login() {
         const usernameEl = document.getElementById('loginUsername');
         const passwordEl = document.getElementById('loginPassword');
         if (!usernameEl || !passwordEl) return UI.showToast('⚠️ واجهة تسجيل الدخول غير جاهزة. حدّث الصفحة.');
-        const usernameInput = usernameEl.value.trim();
-        const passwordInput = passwordEl.value.trim();
-        
-        // 1. الفحص الوقائي (Validation)
-        if (!usernameInput || !passwordInput) return UI.showToast('⚠️ برجاء كتابة اسم المستخدم وكلمة المرور');
+        const usernameInput = normalizeUsername(usernameEl.value);
+        const passwordInput = passwordEl.value; // Do not trim passwords.
+        if (!usernameInput || !passwordInput) return UI.showToast('⚠️ اكتب اسم المستخدم وكلمة المرور.');
+        if (!usernameInput.includes('@') && !USERNAME_RE.test(usernameInput)) return UI.showToast('⚠️ اسم المستخدم يجب أن يكون من 3 إلى 32 حرفًا/رقمًا.');
+        if (usernameInput.includes('@') && !/^\S+@\S+\.\S+$/.test(usernameInput)) return UI.showToast('⚠️ البريد الإلكتروني غير صالح.');
 
-        // 2. هندسة البريد الإلكتروني الافتراضي
-        const email = usernameInput.includes('@') ? usernameInput : `${usernameInput.toLowerCase().replace(/\s+/g, '')}@tpm.app`;
-
-        // 3. تأمين الواجهة أثناء التحميل (Prevent Double Clicks)
-        const btn = document.querySelector('#loginScreen .auth-primary-btn, #loginScreen .btn-primary');
-        const originalText = btn?.innerHTML || '';
-        if (btn) { btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جاري المصادقة...'; btn.disabled = true; }
-        
+        const button = getLoginButton();
+        setButtonBusy(button, true, 'جاري التحقق من الهوية...', 'دخول آمن');
         try {
-            const persistence = document.getElementById('rememberMe')?.checked
-                ? firebase.auth.Auth.Persistence.LOCAL
-                : firebase.auth.Auth.Persistence.SESSION;
-
-            await auth.setPersistence(persistence);
-            // 4. إرسال الطلب لخوادم جوجل
-            await auth.signInWithEmailAndPassword(email, passwordInput); 
-            
-            // 5. نظام الذاكرة (Remember Me)
-            const rememberMe = document.getElementById('rememberMe')?.checked;
-            if (rememberMe) {
-                localStorage.setItem('tpm_saved_username', usernameInput);
-            } else {
-                localStorage.removeItem('tpm_saved_username');
-            }
-
-            // بمجرد النجاح، سيقوم الـ app.js باكتشاف التغيير وفتح الشاشة تلقائياً
-            
-        } catch (error) { 
-            console.error("Login Error:", error.code);
-            UI.showToast('❌ بيانات الدخول غير صحيحة أو الحساب غير موجود'); 
-            if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
-        }
-    },
-
-    // ==========================================
-    // 📝 محرك إنشاء الحساب (Signup Engine)
-    // ==========================================
-    async signup() {
-        const fullName = document.getElementById('signupFullName').value.trim();
-        const username = document.getElementById('signupUsername').value.trim().toLowerCase().replace(/\s+/g, '');
-        const password = document.getElementById('signupPassword').value.trim();
-        const requestedRole = document.getElementById('signupRole').value;
-
-        // 1. الفحص الصارم للبيانات (يمنع خطأ 400 Bad Request)
-        if (!fullName || !username || !password) return UI.showToast("⚠️ برجاء إكمال كافة البيانات");
-        if (username.length < 3) return UI.showToast("⚠️ اسم المستخدم قصير جداً (3 أحرف على الأقل)");
-        if (password.length < 6) return UI.showToast("⚠️ كلمة المرور ضعيفة! يجب أن تكون 6 أحرف أو أكثر");
-
-        // 2. تأمين الواجهة
-        const btn = document.querySelector('#signupScreen .btn-success');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جاري تشفير الحساب...';
-        btn.disabled = true;
-
-        try {
-            const email = `${username}@tpm.app`;
-            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-            
-            // 3. إنشاء هيكل بيانات المستخدم في الـ Database
-            const newUserObj = {
-                name: UI.sanitizeInput(fullName),
-                username: username,
-                requestedRole: requestedRole,
-                role: 'viewer', // 🛡️ الرتبة الافتراضية حماية للنظام
-                status: 'pending', // 🛡️ معلق حتى يوافق المدير
-                permissions: {
-                    homeScreen: 'view', tasksScreen: 'none', historyScreen: 'none',
-                    kaizenScreen: 'view', tagsScreen: 'none', knowledgeScreen: 'none'
-                },
-                createdAt: new Date().toISOString()
-            };
-
-            await db.ref('tpm_system/users/' + userCredential.user.uid).set(newUserObj);
-            
-            UI.showToast("✅ تم إرسال طلبك للمدير بنجاح! يرجى انتظار الموافقة.");
-            
-            // 4. تسجيل الخروج فوراً لكي لا يدخل النظام بصلاحيات معلقة
-            await auth.signOut();
-            setTimeout(() => {
-                UI.showScreen('loginScreen');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }, 2000);
-
+            const remember = !!document.getElementById('rememberMe')?.checked;
+            await auth.setPersistence(remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION);
+            await auth.signInWithEmailAndPassword(usernameToEmail(usernameInput), passwordInput);
+            if (remember) localStorage.setItem('tpm_saved_username', usernameInput.split('@')[0]);
+            else localStorage.removeItem('tpm_saved_username');
+            localStorage.removeItem('tpm_saved_pass');
+            // app.js owns the authoritative post-login profile/status gate.
         } catch (error) {
-            let errorMsg = "حدث خطأ أثناء الاتصال بالسيرفر";
-            if (error.code === 'auth/email-already-in-use') errorMsg = "اسم المستخدم هذا محجوز وموجود بالفعل!";
-            if (error.code === 'auth/invalid-email') errorMsg = "صيغة اسم المستخدم غير صحيحة";
-            
-            UI.showToast("❌ " + errorMsg);
-            btn.innerHTML = originalText;
-            btn.disabled = false;
+            console.error('[Auth] login failed:', error?.code || error);
+            UI.showToast('❌ ' + mapAuthError(error));
+            setButtonBusy(button, false, '', 'دخول آمن');
         }
     },
 
-    // ==========================================
-    // 🚪 محرك تسجيل الخروج
-    // ==========================================
-    logout() {
-        auth.signOut().then(() => { 
-            // لا نمسح الـ localStorage لكي يعمل الدخول السريع في المرة القادمة
-            sessionStorage.clear();
-            window.location.reload(); 
-        });
+    async signup() {
+        const fullName = document.getElementById('signupFullName')?.value.trim();
+        const username = normalizeUsername(document.getElementById('signupUsername')?.value);
+        const password = document.getElementById('signupPassword')?.value || '';
+        const confirmPassword = document.getElementById('signupConfirmPassword')?.value || '';
+        const requestedRole = document.getElementById('signupRole')?.value;
+        if (!fullName || !username || !password || !confirmPassword) return UI.showToast('⚠️ أكمل جميع البيانات المطلوبة.');
+        if (fullName.length < 2 || fullName.length > 80) return UI.showToast('⚠️ الاسم الكامل غير صالح.');
+        if (!USERNAME_RE.test(username)) return UI.showToast('⚠️ اسم المستخدم: 3–32 حرفًا/رقمًا، بدون مسافات.');
+        if (password.length < 8) return UI.showToast('⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
+        if (password !== confirmPassword) return UI.showToast('⚠️ تأكيد كلمة المرور غير مطابق.');
+        if (!REQUESTED_ROLES.includes(requestedRole)) return UI.showToast('⚠️ اختر دورًا صالحًا.');
+
+        const button = document.querySelector('#signupScreen .signup-submit-btn, #signupScreen .auth-primary-btn');
+        setButtonBusy(button, true, 'جاري إنشاء الحساب...', 'إرسال طلب الانضمام');
+        let credential = null;
+        try {
+            const email = usernameToEmail(username);
+            credential = await auth.createUserWithEmailAndPassword(email, password);
+            const now = firebase.database.ServerValue.TIMESTAMP;
+            const newUser = {
+                schemaVersion: 2,
+                uid: credential.user.uid,
+                name: UI.sanitizeInput(fullName),
+                username,
+                requestedRole,
+                role: 'viewer',
+                status: 'pending',
+                permissions: { ...DEFAULT_PERMISSIONS },
+                createdAt: now,
+                updatedAt: now,
+                lastLoginAt: null
+            };
+            await db.ref('tpm_system/users/' + credential.user.uid).set(newUser);
+            await auth.signOut();
+            document.getElementById('signupFullName').value = '';
+            document.getElementById('signupUsername').value = '';
+            document.getElementById('signupPassword').value = '';
+            document.getElementById('signupConfirmPassword').value = '';
+            UI.showToast('✅ تم إنشاء طلبك بنجاح. سيظهر للمسؤول لاعتماد الدور والصلاحيات.');
+            UI.showScreen('loginScreen');
+        } catch (error) {
+            console.error('[Auth] signup failed:', error?.code || error);
+            // Prevent orphan Auth accounts when profile creation fails.
+            if (credential?.user && auth.currentUser?.uid === credential.user.uid && error?.code !== 'auth/email-already-in-use') {
+                try { await credential.user.delete(); } catch (cleanupError) { console.warn('[Auth] orphan cleanup failed:', cleanupError); }
+            }
+            let message = mapAuthError(error);
+            if (error?.code === 'auth/email-already-in-use') message = 'اسم المستخدم هذا مستخدم بالفعل.';
+            if (error?.code === 'auth/weak-password') message = 'كلمة المرور ضعيفة.';
+            UI.showToast('❌ ' + message);
+        } finally {
+            setButtonBusy(button, false, '', 'إرسال طلب الانضمام');
+        }
     },
 
-    // ==========================================
-    // ⚡ محرك الدخول السريع (Biometric / Quick Login Fallback)
-    // ==========================================
+    async logout() {
+        try { await auth.signOut(); } finally { sessionStorage.clear(); }
+    },
+
     biometricLogin() {
         const savedUser = localStorage.getItem('tpm_saved_username');
-        
-        if (!savedUser) {
-            return UI.showToast('⚠️ لا يوجد حساب محفوظ بالجهاز. سجل دخولك يدوياً وفعل "تذكر بياناتي" أولاً.'); 
-        }
-        
-        // جلب البيانات وتركيز المؤشر على حقل الباسورد
+        if (!savedUser) return UI.showToast('⚠️ لا يوجد حساب محفوظ. سجّل الدخول مرة واحدة مع تفعيل «تذكر بياناتي».');
         const userField = document.getElementById('loginUsername');
         const passField = document.getElementById('loginPassword');
-        
-        userField.value = savedUser;
-        passField.focus();
+        if (userField) userField.value = savedUser;
+        if (passField) { passField.focus(); passField.select?.(); }
+        UI.showToast('⚡ تم تجهيز الحساب المحفوظ. أدخل كلمة المرور لإكمال الدخول.');
+    },
 
-        // مستقبلاً: هنا سيتم ربط الـ Web Authentication API (FaceID/TouchID)
-        UI.showToast('🔐 تم استدعاء هويتك. أدخل كلمة المرور للتأكيد.');
+    init() {
+        const saved = localStorage.getItem('tpm_saved_username');
+        const userField = document.getElementById('loginUsername');
+        if (saved && userField && !userField.value) userField.value = saved;
+        const submitOnEnter = (event) => { if (event.key === 'Enter') { event.preventDefault(); this.login(); } };
+        document.getElementById('loginUsername')?.addEventListener('keydown', submitOnEnter);
+        document.getElementById('loginPassword')?.addEventListener('keydown', submitOnEnter);
+        document.getElementById('signupConfirmPassword')?.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); this.signup(); } });
     }
 };
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => Auth.init(), { once: true });
+else Auth.init();

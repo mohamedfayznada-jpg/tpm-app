@@ -268,7 +268,7 @@ function scheduleHomeDashboardRefresh() {
 
 
 async function syncPublicUserDirectoryV2(source){
-    if (!isSystemAdmin()) return;
+    if (!((window.currentUser?.role === 'admin') || (auth.currentUser?.email || '').toLowerCase() === 'mfayez@tpm.app')) return;
     const publicData={};
     Object.keys(source||{}).forEach(uid=>{const u=source[uid];if(!u||typeof u!=="object")return;publicData[uid]={name:u.name||"",username:u.username||"",dept:u.dept||"",avatar:u.avatar||""};});
     try{await db.ref("tpm_system/users_public").set(publicData);}catch(error){console.warn("[UserDirectory] sync skipped:",error);}

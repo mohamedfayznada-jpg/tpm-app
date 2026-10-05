@@ -1,6 +1,10 @@
 // مسار الملف: js/modules/scanner.js
 import { UI } from '../utils/ui.js';
 
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[ch]));
+
 let sessionScannedBarcodes = new Set(); // ذاكرة مؤقتة لمنع التكرار
 
 export const Scanner = {
@@ -32,11 +36,11 @@ export const Scanner = {
                         <div style="font-size:30px; margin-bottom:10px;">🛑</div>
                         <b class="danger-text" style="font-size:16px;">باركود مكرر (مرفوض)</b><br>
                         <div style="margin-top:10px; font-size:12px; color:var(--text-muted);">
-                            البيانات: ${decodedText}
+                            البيانات: ${escapeHtml(decodedText)}
                         </div>
                         <div class="row-flex" style="margin-top:15px; justify-content:center;">
                             <button class="btn btn-sm btn-danger flex-1" onclick="document.getElementById('searchResults').style.display='none'">إلغاء</button>
-                            <button class="btn btn-sm btn-warning flex-1" onclick="forceAcceptBarcode('${decodedText.replace(/'/g, "\\'")}')">تخطي وتسجيل</button>
+                            <button class="btn btn-sm btn-warning flex-1" onclick="forceAcceptBarcode(decodeURIComponent('${encodeURIComponent(decodedText).replace(/'/g, '%27')}'))">تخطي وتسجيل</button>
                         </div>
                     </div>
                 `;
@@ -60,7 +64,7 @@ export const Scanner = {
                 <div style="font-size:30px; margin-bottom:10px;">✅</div>
                 <b class="success-text" style="font-size:16px;">تم تسجيل البيانات:</b><br>
                 <div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; color:var(--text-main); word-break: break-all; font-family:monospace;">
-                    ${decodedText}
+                    ${escapeHtml(decodedText)}
                 </div>
                 <button class="btn btn-sm btn-outline" style="margin-top:15px; width:auto;" onclick="document.getElementById('searchResults').style.display='none'">إغلاق</button>
             </div>

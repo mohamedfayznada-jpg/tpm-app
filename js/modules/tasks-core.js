@@ -1,34 +1,48 @@
 // 📋 إدارة المهام (Tasks Kanban)
 // ==========================================
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[ch]));
+const encodeArg = value => encodeURIComponent(String(value ?? '')).replace(/'/g, '%27');
+const safeImageUrl = value => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return '';
+    try {
+        const url = new URL(raw, window.location.href);
+        if (url.protocol === 'http:' || url.protocol === 'https:') return url.href;
+        if (url.protocol === 'data:' && /^data:image\/(jpeg|png|webp|gif);/i.test(raw)) return raw;
+    } catch (_) {}
+    return '';
+};
 window.renderTasks = function() {
     let htmlFolders = ''; const cols = { pending: '', progress: '', done: '' }; const counts = { pending: 0, progress: 0, done: 0 };
     let currentDeptTasks = tasksData.filter(t => t.dept === currentTaskDept);
 
     currentDeptTasks.forEach(t => {
-        let deleteBtnHTML = window.hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:4px 8px; margin:0;" onclick="deleteTask('${t.id}')"><i class='bx bx-trash'></i></button>` : '';
+        let deleteBtnHTML = window.hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="padding:4px 8px; margin:0;" onclick="deleteTask(decodeURIComponent('${encodeArg(t.id)}'))"><i class='bx bx-trash'></i></button>` : '';
         if(t.isFolder) {
             let total = t.subTasks ? t.subTasks.length : 0; let done = t.subTasks ? t.subTasks.filter(s=>s.status==='done').length : 0;
             htmlFolders += `
                 <div class="card glass-card task-folder-card">
                     <div class="task-folder-head">
-                        <b class="task-folder-title"><i class='bx bx-folder'></i> ${t.task}</b>
+                        <b class="task-folder-title"><i class='bx bx-folder'></i> ${escapeHtml(t.task)}</b>
                         <div class="task-folder-meta"><span class="task-folder-count">${done}/${total}</span>${deleteBtnHTML}</div>
                     </div>
-                    ${t.subTasks ? t.subTasks.map((s,i)=>`<div class="task-folder-subtask"><label class="task-folder-check ${s.status==='done'?'is-done':''}"><input type="checkbox" class="task-folder-checkbox" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask('${t.id}', ${i})"> <span class="task-folder-text">${s.text}</span></label></div>`).join('') : ''}
+                    ${t.subTasks ? t.subTasks.map((s,i)=>`<div class="task-folder-subtask"><label class="task-folder-check ${s.status==='done'?'is-done':''}"><input type="checkbox" class="task-folder-checkbox" ${s.status==='done'?'checked':''} onclick="toggleFolderSubTask(decodeURIComponent('${encodeArg(t.id)}'), ${i})"> <span class="task-folder-text">${escapeHtml(s.text)}</span></label></div>`).join('') : ''}
                 </div>`;
         } else {
             const status = t.status || 'pending'; counts[status]++;
             let actions = '';
-            if(status === 'pending') actions = `<button class="btn btn-sm btn-warning flex-1" onclick="changeTaskStatus('${t.id}', 'progress')"><i class='bx bx-play'></i> بدء</button>`;
-            else if(status === 'progress') actions = `<button class="btn btn-sm btn-success flex-1" onclick="changeTaskStatus('${t.id}', 'done')"><i class='bx bx-check'></i> إنجاز</button>`;
-            else if(status === 'done') actions = `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus('${t.id}', 'pending')"><i class='bx bx-undo'></i> إعادة</button>`;
+            if(status === 'pending') actions = `<button class="btn btn-sm btn-warning flex-1" onclick="changeTaskStatus(decodeURIComponent('${encodeArg(t.id)}'), 'progress')"><i class='bx bx-play'></i> بدء</button>`;
+            else if(status === 'progress') actions = `<button class="btn btn-sm btn-success flex-1" onclick="changeTaskStatus(decodeURIComponent('${encodeArg(t.id)}'), 'done')"><i class='bx bx-check'></i> إنجاز</button>`;
+            else if(status === 'done') actions = `<button class="btn btn-sm btn-outline flex-1" onclick="changeTaskStatus(decodeURIComponent('${encodeArg(t.id)}'), 'pending')"><i class='bx bx-undo'></i> إعادة</button>`;
 
             cols[status] += `
             <div class="kanban-item task-kanban-card">
-                <div style="font-weight:bold; margin-bottom:10px; font-size:14px;">${t.task}</div>
-                ${t.image ? `<img src="${t.image}" style="width:100%; border-radius:10px; margin-bottom:10px; border:1px solid var(--border-glass); cursor:pointer;" onclick="window.open('${t.image}')">` : ''}
-                <div style="font-size:11px; color:var(--text-muted); margin-bottom:15px;"><i class='bx bx-buildings'></i> ${t.dept}</div>
-                <div class="row-flex" style="gap:8px;">${actions}${window.hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="width:40px; padding:0;" onclick="deleteTask('${t.id}')"><i class='bx bx-trash'></i></button>` : ''}</div>
+                <div style="font-weight:bold; margin-bottom:10px; font-size:14px;">${escapeHtml(t.task)}</div>
+                ${t.image ? `<img src="${t.image}" style="width:100%; border-radius:10px; margin-bottom:10px; border:1px solid var(--border-glass); cursor:pointer;" onclick="window.open('${safeImageUrl(t.image)}', '_blank', 'noopener,noreferrer')">` : ''}
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:15px;"><i class='bx bx-buildings'></i> ${escapeHtml(t.dept)}</div>
+                <div class="row-flex" style="gap:8px;">${actions}${window.hasRole('admin') ? `<button class="btn btn-sm btn-danger" style="width:40px; padding:0;" onclick="deleteTask(decodeURIComponent('${encodeArg(t.id)}'))"><i class='bx bx-trash'></i></button>` : ''}</div>
             </div>`;
         }
     });
@@ -60,7 +74,7 @@ window.updateTasksDeptGrid = function() {
     let daEl = document.getElementById('kpiTasksDoneAll'); if(daEl) daEl.innerText = doneAll;
     
     let dG = document.getElementById('tasksDeptGrid');
-    if(dG) dG.innerHTML = departments.map(d => `<div class="card glass-card" style="padding:20px; text-align:center; cursor:pointer; border-bottom:3px solid ${deptStats[d].p>0?'var(--danger)':'var(--success)'};" onclick="openTasksDept('${d}')"><h4 style="color:var(--text-main); font-size:16px; margin:0 0 10px;"><i class='bx bx-buildings'></i> ${d}</h4><div style="font-size:12px; color:var(--text-muted);">مهام نشطة: <b style="color:var(--danger); font-size:16px;">${deptStats[d].p}</b></div></div>`).join('');
+    if(dG) dG.innerHTML = departments.map(d => `<div class="card glass-card" style="padding:20px; text-align:center; cursor:pointer; border-bottom:3px solid ${deptStats[d].p>0?'var(--danger)':'var(--success)'};" onclick="openTasksDept('${escapeHtml(d)}')"><h4 style="color:var(--text-main); font-size:16px; margin:0 0 10px;"><i class='bx bx-buildings'></i> ${escapeHtml(d)}</h4><div style="font-size:12px; color:var(--text-muted);">مهام نشطة: <b style="color:var(--danger); font-size:16px;">${deptStats[d].p}</b></div></div>`).join('');
 };
 
 window.openTasksDept = function(dept) { currentTaskDept = dept; document.getElementById('tasksDeptTitle').innerText = `مهام ${dept}`; document.getElementById('tasksMainView').style.display='none'; document.getElementById('tasksDeptView').style.display='block'; window.renderTasks(); };

@@ -156,5 +156,23 @@ export const Auth = {
     }
 };
 
+window.toggleLoginPassword = function() {
+    const input = document.getElementById('loginPassword');
+    const button = document.querySelector('#loginScreen .auth-eye');
+    if (!input) return;
+    const visible = input.type === 'text';
+    input.type = visible ? 'password' : 'text';
+    if (button) {
+        button.setAttribute('aria-label', visible ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور');
+        const icon = button.querySelector('i');
+        if (icon) icon.className = visible ? 'bx bx-show' : 'bx bx-hide';
+    }
+};
+window.toggleSignupPassword = function(id = 'signupPassword') {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+};
+
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => Auth.init(), { once: true });
 else Auth.init();

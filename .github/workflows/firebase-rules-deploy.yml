@@ -25,7 +25,8 @@ jobs:
           node-version: 20
 
       - name: Validate Firebase rules JSON
-        run: node -e "JSON.parse(require('fs').readFileSync('firebase.rules.json','utf8')); console.log('firebase.rules.json: PASS')"
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('firebase.rules.json','utf8')); console.log('firebase.rules.json: PASS')"
 
       - name: Install Firebase CLI
         run: npm install --global firebase-tools@latest

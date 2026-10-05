@@ -1,0 +1,38 @@
+name: Deploy Firebase Realtime Database Rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firebase.rules.json'
+      - '.firebaserc'
+      - 'firebase.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-database-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate Firebase rules JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('firebase.rules.json','utf8')); console.log('firebase.rules.json: PASS')"
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools@latest
+
+      - name: Deploy Realtime Database rules
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          test -n "$FIREBASE_TOKEN" || { echo "::error::FIREBASE_TOKEN repository secret is not configured"; exit 1; }
+          firebase deploy --only database --project tpm-audit-system --token "$FIREBASE_TOKEN" --non-interactive

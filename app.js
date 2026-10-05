@@ -266,6 +266,13 @@ function scheduleHomeDashboardRefresh() {
     else setTimeout(flush, 0);
 }
 
+
+async function syncPublicUserDirectoryV2(source){
+    if (!isSystemAdmin()) return;
+    const publicData={};
+    Object.keys(source||{}).forEach(uid=>{const u=source[uid];if(!u||typeof u!=="object")return;publicData[uid]={name:u.name||"",username:u.username||"",dept:u.dept||"",avatar:u.avatar||""};});
+    try{await db.ref("tpm_system/users_public").set(publicData);}catch(error){console.warn("[UserDirectory] sync skipped:",error);}
+}
 firebase.auth().onAuthStateChanged(async user => {
     clearDbListeners();
     homeDashboardRefreshQueued = false;
@@ -282,6 +289,7 @@ firebase.auth().onAuthStateChanged(async user => {
         const isMasterAdmin = userEmail === 'mfayez@tpm.app';
         const profileSnap = await db.ref('tpm_system/users/' + user.uid).once('value');
         const profileData = profileSnap.val();
+        const publicUsersSnap = isMasterAdmin ? null : await db.ref('tpm_system/users_public').once('value');
         const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
         const finalUsername = isMasterAdmin ? 'mfayez' : (profileData?.username || localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
 
@@ -333,7 +341,8 @@ firebase.auth().onAuthStateChanged(async user => {
             role = window.normalizeTPMRole ? window.normalizeTPMRole(uData.role || 'viewer') : (uData.role || 'viewer');
             status = uData.status || 'pending';
             permissions = (uData.permissions && typeof uData.permissions === 'object') ? uData.permissions : {};
-            usersData = { [user.uid]: uData };
+            const publicUsers = publicUsersSnap?.val() || {};
+            usersData = { ...publicUsers, [user.uid]: uData };
             window.usersData = usersData;
             currentUser = {
                 uid: user.uid,

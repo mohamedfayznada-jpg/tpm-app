@@ -21,7 +21,7 @@
           "auditor",
           "authorUid"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/historyScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor') && !root.child('tpm_system/users/' + auth.uid + '/permissions/historyScreen').exists())"
       },
       "abnormalities": {
         ".read": "auth != null",
@@ -36,7 +36,7 @@
           "updatedAt"
         ],
         "$id": {
-          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')",
+          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').val() === 'edit' || ((root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').exists()))",
           ".validate": "newData.hasChildren(['id','type','status','description','detectedBy','detectedAt','updatedAt']) && newData.child('id').val() === $id && newData.child('type').val() === 'abnormality'"
         }
       },
@@ -50,7 +50,7 @@
           "ownerUid",
           "dueDate"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').exists())"
       },
       "tasks": {
         ".read": "auth != null",
@@ -64,7 +64,7 @@
           "dueDate",
           "createdAt"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tasksScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tasksScreen').exists())"
       },
       "losses": {
         ".read": "auth != null",
@@ -77,7 +77,7 @@
           "lossType",
           "recordedAt"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').exists())"
       },
       "rca": {
         ".read": "auth != null",
@@ -88,7 +88,7 @@
           "status",
           "preparedAt"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').exists())"
       },
       "countermeasures": {
         ".read": "auth != null",
@@ -100,7 +100,7 @@
           "dueDate",
           "status"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').exists())"
       },
       "verifications": {
         ".read": "auth != null",
@@ -112,7 +112,7 @@
           "verifiedAt",
           "status"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').exists())"
       },
       "standards": {
         ".read": "auth != null",
@@ -123,7 +123,7 @@
           "standardizedAt",
           "status"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').exists())"
       },
       "pdca": {
         ".read": "auth != null",
@@ -136,19 +136,19 @@
       },
       "jh_kpis": {
         ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/jhKPIsScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer') && !root.child('tpm_system/users/' + auth.uid + '/permissions/jhKPIsScreen').exists())"
       },
       "jh_records": {
         ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/jhPortalScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/jhPortalScreen').exists())"
       },
       "jh_main_team": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tpmTeamsScreen').val() === 'edit' || false)"
       },
       "clit_executions": {
         ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/tagsScreen').exists())"
       },
       "dept_goals": {
         ".read": "auth != null",
@@ -156,15 +156,15 @@
       },
       "knowledgeBase": {
         ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/knowledgeScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer') && !root.child('tpm_system/users/' + auth.uid + '/permissions/knowledgeScreen').exists())"
       },
       "pdf_files": {
         ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/knowledgeScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer') && !root.child('tpm_system/users/' + auth.uid + '/permissions/knowledgeScreen').exists())"
       },
       "global_achievements": {
         ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/homeScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer') && !root.child('tpm_system/users/' + auth.uid + '/permissions/homeScreen').exists())"
       },
       "notification_settings": {
         ".read": "auth != null",
@@ -172,16 +172,23 @@
       },
       "kaizenComments": {
         ".read": "auth != null",
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/kaizenScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/kaizenScreen').exists())"
       },
       "likes": {
         ".read": "auth != null",
         ".write": "auth != null"
       },
       "users": {
-        ".read": "auth != null",
+        ".read": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'",
         "$uid": {
-          ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'viewer' && newData.child('status').val() === 'pending' && (newData.child('requestedRole').val() === 'operator' || newData.child('requestedRole').val() === 'auditor' || newData.child('requestedRole').val() === 'engineer')) || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('status').val() === data.child('status').val() && newData.child('permissions').val() === data.child('permissions').val() && newData.child('requestedRole').val() === data.child('requestedRole').val()))"
+          ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'viewer' && newData.child('status').val() === 'pending' && (newData.child('requestedRole').val() === 'operator' || newData.child('requestedRole').val() === 'auditor' || newData.child('requestedRole').val() === 'engineer')) || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('status').val() === data.child('status').val() && newData.child('permissions').val() === data.child('permissions').val() && newData.child('requestedRole').val() === data.child('requestedRole').val()))",
+          ".validate": "newData.hasChildren(['uid','name','username','role','status']) && newData.child('uid').val() === $uid && (newData.child('role').val() === 'admin' || newData.child('role').val() === 'engineer' || newData.child('role').val() === 'technician' || newData.child('role').val() === 'auditor' || newData.child('role').val() === 'viewer') && (newData.child('status').val() === 'active' || newData.child('status').val() === 'pending' || newData.child('status').val() === 'disabled') && (newData.child('requestedRole').val() === null || newData.child('requestedRole').val() === 'operator' || newData.child('requestedRole').val() === 'auditor' || newData.child('requestedRole').val() === 'engineer')",
+          "permissions": {
+            "$permission": {
+              ".validate": "newData.isString() && (newData.val() === 'none' || newData.val() === 'view' || newData.val() === 'edit')"
+            }
+          },
+          ".read": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
         }
       },
       "points": {
@@ -207,7 +214,7 @@
           "frequency",
           "createdAt"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/pmScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/pmScreen').exists())"
       },
       "pm_work_orders": {
         ".read": "auth != null",
@@ -218,7 +225,7 @@
           "assetName",
           "createdAt"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/pmScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/pmScreen').exists())"
       },
       "training_records": {
         ".read": "auth != null",
@@ -228,11 +235,11 @@
           "status",
           "date"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/skillMatrixScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician') && !root.child('tpm_system/users/' + auth.uid + '/permissions/skillMatrixScreen').exists())"
       },
       "external_audit_evidence": {
         ".read": "auth != null",
-        ".write": "auth != null && (auth.token.email != null && auth.token.email.toLowerCase() === 'mfayez@tpm.app' || (root.child('tpm_system/users/' + auth.uid + '/role').val() != null && (root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'administrator' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'operator' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'tech' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'auditor' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'reviewer' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'audit')))"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/externalAuditScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor') && !root.child('tpm_system/users/' + auth.uid + '/permissions/externalAuditScreen').exists())"
       },
       "external_audit": {
         "evidence": {
@@ -242,7 +249,7 @@
       },
       "skill_matrix": {
         ".read": "auth != null",
-        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'mfayez@tpm.app') || (root.child('tpm_system/users/' + auth.uid + '/role').val() != null && (root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'administrator' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'operator' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'tech' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'auditor' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'reviewer' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'audit')))",
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/skillMatrixScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor') && !root.child('tpm_system/users/' + auth.uid + '/permissions/skillMatrixScreen').exists())",
         ".indexOn": [
           "updatedAt",
           "updatedByUid"
@@ -255,7 +262,7 @@
           "type",
           "createdAt"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/hseScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/hseScreen').exists())"
       },
       "hse_incidents": {
         ".read": "auth != null",
@@ -265,7 +272,7 @@
           "status",
           "createdAt"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/hseScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/hseScreen').exists())"
       },
       "hse_actions": {
         ".read": "auth != null",
@@ -275,7 +282,7 @@
           "dueDate",
           "createdAt"
         ],
-        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator')"
+        ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/hseScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'operator') && !root.child('tpm_system/users/' + auth.uid + '/permissions/hseScreen').exists())"
       },
       "external_audit_action_plans": {
         ".read": "auth != null",
@@ -290,9 +297,13 @@
           ".read": "auth != null",
           "$itemId": {
             ".read": "auth != null",
-            ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician')"
+            ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/permissions/externalAuditScreen').val() === 'edit' || (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'auditor' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'technician') && !root.child('tpm_system/users/' + auth.uid + '/permissions/externalAuditScreen').exists())"
           }
         }
+      },
+      "users_public": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
       }
     }
   }

@@ -266,6 +266,13 @@ function scheduleHomeDashboardRefresh() {
     else setTimeout(flush, 0);
 }
 
+
+async function syncPublicUserDirectoryV2(source){
+    if (!((window.currentUser?.role === 'admin') || (auth.currentUser?.email || '').toLowerCase() === 'mfayez@tpm.app')) return;
+    const publicData={};
+    Object.keys(source||{}).forEach(uid=>{const u=source[uid];if(!u||typeof u!=="object")return;publicData[uid]={name:u.name||"",username:u.username||"",dept:u.dept||"",avatar:u.avatar||""};});
+    try{await db.ref("tpm_system/users_public").set(publicData);}catch(error){console.warn("[UserDirectory] sync skipped:",error);}
+}
 firebase.auth().onAuthStateChanged(async user => {
     clearDbListeners();
     homeDashboardRefreshQueued = false;
@@ -275,31 +282,32 @@ firebase.auth().onAuthStateChanged(async user => {
     if (user) {
         isDataLoaded = true;        if (mainHeader) mainHeader.style.display = 'flex';
 
-        const [dSnap, uSnap] = await Promise.all([
-            db.ref('tpm_system/departments').once('value'),
-            db.ref('tpm_system/users').once('value')
-        ]);
+        const dSnap = await db.ref('tpm_system/departments').once('value');
         departments = window.getOperationalDepartments(dSnap.val() || []); window.departments = departments;
 
-        usersData = uSnap.val() || {};
-        window.usersData = usersData;
-        // Secrets are server-managed; the browser never reads tpm_system/api_keys.
-        globalApiKeys = { imgbb: "", gemini: "" };
-        window.globalApiKeys = globalApiKeys;
-        
         const userEmail = user.email ? user.email.toLowerCase() : '';
         const isMasterAdmin = userEmail === 'mfayez@tpm.app';
+        const profileSnap = await db.ref('tpm_system/users/' + user.uid).once('value');
+        const profileData = profileSnap.val();
+        const publicUsersSnap = isMasterAdmin ? null : await db.ref('tpm_system/users_public').once('value');
         const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
-        const finalUsername = isMasterAdmin ? 'mfayez' : (localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
+        const finalUsername = isMasterAdmin ? 'mfayez' : (profileData?.username || localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
 
-        let role = 'viewer'; let status = 'active';
+        let role = 'viewer';
+        let status = 'pending';
+        let permissions = {};
 
         if (isMasterAdmin) {
+            const uSnap = await db.ref('tpm_system/users').once('value');
+            usersData = uSnap.val() || {};
+            window.usersData = usersData;
+            syncPublicUserDirectoryV2(usersData);
             role = 'admin';
-            currentUser = { uid: user.uid, name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
+            status = 'active';
+            permissions = {};
+            currentUser = { uid: user.uid, name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active", permissions };
             window.currentUser = currentUser; localStorage.setItem('tpm_username', 'mfayez');
 
-            // استعادة سجل المدير القديم الذي كان يفتقد role، حتى تتطابق صلاحية الواجهة مع قواعد Realtime Database.
             const storedMaster = (usersData[user.uid] && typeof usersData[user.uid] === 'object') ? usersData[user.uid] : {};
             if (storedMaster.role !== 'admin' || storedMaster.status !== 'active') {
                 try {
@@ -311,30 +319,43 @@ firebase.auth().onAuthStateChanged(async user => {
                     usersData[user.uid] = { ...storedMaster, role: 'admin', status: 'active' };
                 } catch (error) {
                     console.error('Master administrator role synchronization failed:', error);
-                    showToast('⚠️ تعذر مزامنة صلاحية المدير مع قاعدة البيانات. لن يتم اعتماد سجلات كايزن حتى تُنشر القواعد الجديدة.');
+                    showToast('⚠️ تعذر مزامنة صلاحية المدير مع قاعدة البيانات.');
                 }
             }
-            
+
+            syncPublicUserDirectoryV2(usersData);
             let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
             let notifyIcon = document.getElementById('adminNotification');
             if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
-            if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement(); 
-            
+            if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement();
+
             bindDbListener('users', db.ref('tpm_system/users'), snap => {
                 usersData = snap.val() || {};
                 window.usersData = usersData;
-                window.dispatchEvent(new Event('tpm:skill-matrix-data')); 
+                syncPublicUserDirectoryV2(usersData);
+                window.dispatchEvent(new Event('tpm:skill-matrix-data'));
                 let pendingLive = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
                 let notifLive = document.getElementById('adminNotification');
                 if(notifLive) notifLive.style.display = pendingLive ? 'block' : 'none';
-                if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement(); 
+                if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement();
             });
         } else {
-            let uData = usersData[user.uid];
-            if (typeof uData === 'string') { role = uData; } 
-            else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
-            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
-            currentUser = { uid: user.uid, name: savedName, username: finalUsername, role: role, status: status };
+            const uData = (profileData && typeof profileData === 'object') ? profileData : {};
+            role = window.normalizeTPMRole ? window.normalizeTPMRole(uData.role || 'viewer') : (uData.role || 'viewer');
+            status = uData.status || 'pending';
+            permissions = (uData.permissions && typeof uData.permissions === 'object') ? uData.permissions : {};
+            const publicUsers = publicUsersSnap?.val() || {};
+            usersData = { ...publicUsers, [user.uid]: uData };
+            window.usersData = usersData;
+            currentUser = {
+                uid: user.uid,
+                name: uData.name || savedName,
+                username: finalUsername,
+                role,
+                status,
+                permissions,
+                dept: uData.dept || ''
+            };
             window.currentUser = currentUser;
             window.dispatchEvent(new CustomEvent('tpm:auth-ready'));
         }
@@ -419,21 +440,24 @@ firebase.auth().onAuthStateChanged(async user => {
 // ==========================================
 // 👑 إدارة النظام والأذونات (System Admin)
 // ==========================================
+const isSystemAdmin = () => (window.normalizeTPMRole ? window.normalizeTPMRole(currentUser?.role) : currentUser?.role) === "admin";
+const USER_ROLE_LABELS_V2 = { admin:"مدير المصنع", engineer:"مهندس", technician:"فني / مشغل", auditor:"مراجع TPM", viewer:"مشاهد" };
+const USER_STATUS_LABELS_V2 = { active:"نشط", pending:"بانتظار الاعتماد", disabled:"موقوف" };
 window.renderUserManagement = function() {
-    if (currentUser.username !== 'mfayez') return;
+    if (!isSystemAdmin()) return;
     const container = document.getElementById('usersListContainer'); if (!container) return;
     
     let html = '<h4 style="color:var(--glow-gold); margin:15px 0 10px;"><i class="bx bx-group"></i> إدارة المستخدمين والصلاحيات</h4>';
     Object.keys(usersData).forEach(uid => {
         const u = usersData[uid]; if (typeof u !== 'object') return; 
-        const isPending = u.status === 'pending'; const borderColor = isPending ? 'var(--danger)' : 'var(--success)';
+        const normalizedRole = window.normalizeTPMRole ? window.normalizeTPMRole(u.role || 'viewer') : (u.role || 'viewer'); const isPending = u.status === 'pending'; const borderColor = isPending ? 'var(--danger)' : (u.status === 'disabled' ? 'var(--danger)' : 'var(--success)');
         
         html += `
         <div class="card glass-card" style="margin-bottom:12px; border-right:4px solid ${borderColor}; padding: 15px; background:var(--surface-inset);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div style="text-align:right;">
                     <b style="color:var(--text-main); font-size:15px;">${u.name}</b> <small style="color:var(--text-muted);">(${u.username})</small><br>
-                    <span style="font-size:11px; color:var(--gold); font-weight:bold;">المطلوب: ${u.requestedRole} | الحالي: ${u.role}</span>
+                    <span style="font-size:11px; color:var(--gold); font-weight:bold;">المطلوب: ${USER_ROLE_LABELS_V2[window.normalizeTPMRole ? window.normalizeTPMRole(u.requestedRole) : u.requestedRole] || u.requestedRole || '—'} | الحالي: ${USER_ROLE_LABELS_V2[normalizedRole] || normalizedRole} | الحالة: ${USER_STATUS_LABELS_V2[u.status] || u.status || 'نشط'}</span>
                 </div>
                 <div style="display:flex; gap:8px;">
                     ${isPending ? `<button class="btn btn-sm btn-success" style="padding:6px 12px;" onclick="approveUser('${uid}')"><i class='bx bx-check'></i></button>` : ''}
@@ -461,13 +485,14 @@ window.approveUser = async function(uid) {
     showToast(`✅ تم تفعيل حساب ${u.name} — ${window.getTPMRoleLabel ? window.getTPMRoleLabel(approvedRole) : approvedRole}`);
 };
 
-window.deleteUser = async function(uid) { if(confirm('⚠️ تأكيد حذف المستخدم نهائياً؟')) { await db.ref('tpm_system/users/' + uid).remove(); showToast('🗑️ تم الحذف'); } };
+window.deleteUser = async function(uid) { if (!isSystemAdmin() || uid === currentUser.uid) return showToast('🛡️ لا يمكن حذف حساب المدير الحالي.'); if(confirm('⚠️ تأكيد حذف المستخدم نهائياً؟')) { await db.ref('tpm_system/users/' + uid).remove(); showToast('🗑️ تم الحذف'); } };
 
 window.openPermissionsModal = function(uid) {
-    const u = usersData[uid]; if (!u || !u.permissions) return showToast('⚠️ لا توجد أذونات قابلة للتعديل لهذا المستخدم');
-    window.editingUserUid = uid; const perms = u.permissions; const container = document.getElementById('permissionsContainer');
-    const pages = { homeScreen: 'الرئيسية (Dashboard)', tasksScreen: 'إدارة المهام', historyScreen: 'أرشيف التقارير', kaizenScreen: 'مجتمع كايزن', tagsScreen: 'التاجات والأعطال', knowledgeScreen: 'عقل المصنع', skillMatrixScreen: 'Skill Matrix' };
+    const u = usersData[uid]; if (!u) return showToast('⚠️ المستخدم غير موجود');
+    window.editingUserUid = uid; const perms = u.permissions || {}; const container = document.getElementById('permissionsContainer');
+    const pages = { homeScreen: 'الرئيسية (Dashboard)', settingsScreen: 'الإعدادات', tasksScreen: 'إدارة المهام', historyScreen: 'أرشيف التقارير', kaizenScreen: 'مجتمع كايزن', tagsScreen: 'التاجات والأعطال', tpmTeamsScreen: 'فرق TPM', fiveSScreen: '5S', jhPortalScreen: 'JH Portal', jhDocumentScreen: 'JH Document', jhKPIsScreen: 'JH KPIs', kkScreen: 'KK', pmScreen: 'PM', etScreen: 'ET', hseScreen: 'HSE', knowledgeScreen: 'عقل المصنع', externalAuditScreen: 'المراجعة الخارجية', skillMatrixScreen: 'Skill Matrix' };
     let html = `<div style="margin-bottom:15px; color:var(--glow-gold); font-weight:bold; font-size:15px;"><i class='bx bx-user-circle'></i> المستخدم: ${u.name}</div>`;
+    html += `<div class="row-flex" style="margin-bottom:12px;"><div class="form-group flex-1"><label>الدور</label><select id="adminRole" class="form-control"><option value="admin">مدير المصنع</option><option value="engineer">مهندس</option><option value="technician">فني / مشغل</option><option value="auditor">مراجع TPM</option><option value="viewer">مشاهد</option></select></div><div class="form-group flex-1"><label>الحالة</label><select id="adminStatus" class="form-control"><option value="active">نشط</option><option value="pending">بانتظار الاعتماد</option><option value="disabled">موقوف</option></select></div><div class="form-group flex-1"><label>القسم</label><select id="adminDept" class="form-control"><option value="">بدون قسم محدد</option>${departments.map(d=>`<option value="${d}">${d}</option>`).join("")}</select></div></div>`;
     for (let screen in pages) {
         let currentPerm = perms[screen] || 'none';
         html += `
@@ -477,13 +502,15 @@ window.openPermissionsModal = function(uid) {
                 <option value="none" ${currentPerm==='none'?'selected':''}>مخفية 🚫</option><option value="view" ${currentPerm==='view'?'selected':''}>مشاهدة 👁️</option><option value="edit" ${currentPerm==='edit'?'selected':''}>تعديل ✍️</option>
             </select>
         </div>`;    }
-    container.innerHTML = html; document.getElementById('permissionsModal').style.display = 'flex';
+    container.innerHTML = html; document.getElementById('adminRole').value = window.normalizeTPMRole ? window.normalizeTPMRole(u.role || 'viewer') : (u.role || 'viewer'); document.getElementById('adminStatus').value = u.status || 'pending'; document.getElementById('adminDept').value = u.dept || ''; document.getElementById('permissionsModal').style.display = 'flex';
 };
 
 window.saveUserPermissions = async function() {
-    if (!window.editingUserUid) return; const pages = ['homeScreen', 'tasksScreen', 'historyScreen', 'kaizenScreen', 'tagsScreen', 'knowledgeScreen', 'skillMatrixScreen'];
-    let newPerms = {}; pages.forEach(p => { let sel = document.getElementById('perm_' + p); if (sel) newPerms[p] = sel.value; });
-    await db.ref(`tpm_system/users/${window.editingUserUid}/permissions`).set(newPerms); showToast('✅ تم التحديث'); document.getElementById('permissionsModal').style.display = 'none';
+    if (!isSystemAdmin() || !window.editingUserUid) return; const uid = window.editingUserUid; const target = usersData[uid]; if (!target) return; const pages = ['homeScreen', 'tasksScreen', 'historyScreen', 'kaizenScreen', 'tagsScreen', 'skillMatrixScreen', 'externalAuditScreen', 'tpmTeamsScreen', 'fiveSScreen', 'jhPortalScreen', 'jhDocumentScreen', 'jhKPIsScreen', 'kkScreen', 'pmScreen', 'etScreen', 'hseScreen', 'settingsScreen', 'knowledgeScreen'];
+    const newPerms = {}; pages.forEach(p => { let sel = document.getElementById('perm_' + p); if (sel) newPerms[p] = sel.value; });
+    const newRole = window.normalizeTPMRole ? window.normalizeTPMRole(document.getElementById('adminRole')?.value || target.role) : (document.getElementById('adminRole')?.value || target.role); const newStatus = document.getElementById('adminStatus')?.value || target.status || 'pending'; const newDept = document.getElementById('adminDept')?.value || '';
+    if (uid === currentUser.uid && (newRole !== 'admin' || newStatus !== 'active')) return showToast('🛡️ لا يمكن تخفيض أو تعطيل حساب المدير الحالي.');
+    try { await db.ref('tpm_system/users/' + uid).update({ role: newRole, status: newStatus, dept: newDept, permissions: newPerms, updatedAt: firebase.database.ServerValue.TIMESTAMP, updatedByUid: currentUser.uid, ...(newStatus === 'active' && target.status === 'pending' ? { approvedAt: firebase.database.ServerValue.TIMESTAMP, approvedBy: currentUser.uid } : {}) }); showToast('✅ تم تحديث الدور والحالة والصلاحيات'); document.getElementById('permissionsModal').style.display = 'none'; } catch (error) { console.error('[UserAdmin] update failed:', error); showToast('❌ تعذر حفظ إعدادات المستخدم.'); }
 };
 
 window.saveApiKeys = async function() {

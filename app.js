@@ -275,31 +275,30 @@ firebase.auth().onAuthStateChanged(async user => {
     if (user) {
         isDataLoaded = true;        if (mainHeader) mainHeader.style.display = 'flex';
 
-        const [dSnap, uSnap] = await Promise.all([
-            db.ref('tpm_system/departments').once('value'),
-            db.ref('tpm_system/users').once('value')
-        ]);
+        const dSnap = await db.ref('tpm_system/departments').once('value');
         departments = window.getOperationalDepartments(dSnap.val() || []); window.departments = departments;
 
-        usersData = uSnap.val() || {};
-        window.usersData = usersData;
-        // Secrets are server-managed; the browser never reads tpm_system/api_keys.
-        globalApiKeys = { imgbb: "", gemini: "" };
-        window.globalApiKeys = globalApiKeys;
-        
         const userEmail = user.email ? user.email.toLowerCase() : '';
         const isMasterAdmin = userEmail === 'mfayez@tpm.app';
+        const profileSnap = await db.ref('tpm_system/users/' + user.uid).once('value');
+        const profileData = profileSnap.val();
         const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
-        const finalUsername = isMasterAdmin ? 'mfayez' : (localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
+        const finalUsername = isMasterAdmin ? 'mfayez' : (profileData?.username || localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
 
-        let role = 'viewer'; let status = 'active';
+        let role = 'viewer';
+        let status = 'pending';
+        let permissions = {};
 
         if (isMasterAdmin) {
+            const uSnap = await db.ref('tpm_system/users').once('value');
+            usersData = uSnap.val() || {};
+            window.usersData = usersData;
             role = 'admin';
-            currentUser = { uid: user.uid, name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active" };
+            status = 'active';
+            permissions = {};
+            currentUser = { uid: user.uid, name: "م. محمد فايز", username: "mfayez", role: "admin", status: "active", permissions };
             window.currentUser = currentUser; localStorage.setItem('tpm_username', 'mfayez');
 
-            // استعادة سجل المدير القديم الذي كان يفتقد role، حتى تتطابق صلاحية الواجهة مع قواعد Realtime Database.
             const storedMaster = (usersData[user.uid] && typeof usersData[user.uid] === 'object') ? usersData[user.uid] : {};
             if (storedMaster.role !== 'admin' || storedMaster.status !== 'active') {
                 try {
@@ -311,30 +310,40 @@ firebase.auth().onAuthStateChanged(async user => {
                     usersData[user.uid] = { ...storedMaster, role: 'admin', status: 'active' };
                 } catch (error) {
                     console.error('Master administrator role synchronization failed:', error);
-                    showToast('⚠️ تعذر مزامنة صلاحية المدير مع قاعدة البيانات. لن يتم اعتماد سجلات كايزن حتى تُنشر القواعد الجديدة.');
+                    showToast('⚠️ تعذر مزامنة صلاحية المدير مع قاعدة البيانات.');
                 }
             }
-            
+
             let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
             let notifyIcon = document.getElementById('adminNotification');
             if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';
-            if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement(); 
-            
+            if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement();
+
             bindDbListener('users', db.ref('tpm_system/users'), snap => {
                 usersData = snap.val() || {};
                 window.usersData = usersData;
-                window.dispatchEvent(new Event('tpm:skill-matrix-data')); 
+                window.dispatchEvent(new Event('tpm:skill-matrix-data'));
                 let pendingLive = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
                 let notifLive = document.getElementById('adminNotification');
                 if(notifLive) notifLive.style.display = pendingLive ? 'block' : 'none';
-                if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement(); 
+                if(isActiveScreen('settingsScreen')&&window.renderUserManagement)window.renderUserManagement();
             });
         } else {
-            let uData = usersData[user.uid];
-            if (typeof uData === 'string') { role = uData; } 
-            else if (uData && typeof uData === 'object') { role = uData.role || 'viewer'; status = uData.status || 'active'; }
-            role = window.normalizeTPMRole ? window.normalizeTPMRole(role) : role;
-            currentUser = { uid: user.uid, name: savedName, username: finalUsername, role: role, status: status };
+            const uData = (profileData && typeof profileData === 'object') ? profileData : {};
+            role = window.normalizeTPMRole ? window.normalizeTPMRole(uData.role || 'viewer') : (uData.role || 'viewer');
+            status = uData.status || 'pending';
+            permissions = (uData.permissions && typeof uData.permissions === 'object') ? uData.permissions : {};
+            usersData = { [user.uid]: uData };
+            window.usersData = usersData;
+            currentUser = {
+                uid: user.uid,
+                name: uData.name || savedName,
+                username: finalUsername,
+                role,
+                status,
+                permissions,
+                dept: uData.dept || ''
+            };
             window.currentUser = currentUser;
             window.dispatchEvent(new CustomEvent('tpm:auth-ready'));
         }

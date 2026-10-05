@@ -301,6 +301,7 @@ firebase.auth().onAuthStateChanged(async user => {
             const uSnap = await db.ref('tpm_system/users').once('value');
             usersData = uSnap.val() || {};
             window.usersData = usersData;
+            syncPublicUserDirectoryV2(usersData);
             role = 'admin';
             status = 'active';
             permissions = {};
@@ -330,6 +331,7 @@ firebase.auth().onAuthStateChanged(async user => {
             bindDbListener('users', db.ref('tpm_system/users'), snap => {
                 usersData = snap.val() || {};
                 window.usersData = usersData;
+                syncPublicUserDirectoryV2(usersData);
                 window.dispatchEvent(new Event('tpm:skill-matrix-data'));
                 let pendingLive = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
                 let notifLive = document.getElementById('adminNotification');

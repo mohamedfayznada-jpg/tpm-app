@@ -313,14 +313,15 @@ firebase.auth().onAuthStateChanged(async user => {
             window.currentUser = currentUser; localStorage.setItem('tpm_username', 'mfayez');
 
             const storedMaster = (usersData[user.uid] && typeof usersData[user.uid] === 'object') ? usersData[user.uid] : {};
-            if (storedMaster.role !== 'admin' || storedMaster.status !== 'active') {
+            if (storedMaster.uid !== user.uid || storedMaster.role !== 'admin' || storedMaster.status !== 'active') {
                 try {
                     await db.ref(`tpm_system/users/${user.uid}`).update({
+                        uid: user.uid,
                         role: 'admin',
                         status: 'active',
                         updatedAt: Date.now()
                     });
-                    usersData[user.uid] = { ...storedMaster, role: 'admin', status: 'active' };
+                    usersData[user.uid] = { ...storedMaster, uid: user.uid, role: 'admin', status: 'active' };
                 } catch (error) {
                     console.error('Master administrator role synchronization failed:', error);
                     showToast('⚠️ تعذر مزامنة صلاحية المدير مع قاعدة البيانات.');

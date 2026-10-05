@@ -190,8 +190,7 @@
           },
           ".read": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')",
           "lastLoginAt": {
-            ".write": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')",
-            ".validate": "newData.isNumber()"
+            ".write": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
           }
         }
       },

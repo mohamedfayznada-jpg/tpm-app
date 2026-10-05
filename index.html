@@ -108,6 +108,15 @@
     </div>
     
     <div class="modal-overlay" id="permissionsModal"><div class="modal-content"><h3 class="card-title"><i class='bx bx-lock-alt'></i> تعديل الأذونات</h3><div id="permissionsContainer"></div><div class="row-flex legacy-inline-5"><button class="btn btn-success flex-2" onclick="saveUserPermissions()">حفظ</button><button class="btn btn-danger flex-1" onclick="document.getElementById('permissionsModal').style.display='none'">إلغاء</button></div></div></div>
+    <div class="modal-overlay" id="userDetailsModal">
+        <div class="modal-content" style="max-width:920px;max-height:88vh;overflow:auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+                <div><span class="eyebrow">USER 360 / IAM</span><h3 class="card-title" style="margin:4px 0 0;"><i class='bx bx-id-card'></i> تفاصيل الحساب</h3></div>
+                <button class="btn btn-sm btn-danger" onclick="document.getElementById('userDetailsModal').style.display='none'" aria-label="إغلاق"><i class='bx bx-x'></i></button>
+            </div>
+            <div id="userDetailsContainer"></div>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="pdcaCreateModal"><div class="modal-content"><h3 class="card-title legacy-inline-6"><i class='bx bx-rocket'></i> إطلاق مشروع تحسين (PDCA)</h3><div class="form-group"><input type="text" id="pdcaTitle" class="form-control" placeholder="عنوان المشروع"></div><div class="row-flex"><select id="pdcaDept" class="form-control flex-1"></select><select id="pdcaImpact" class="form-control flex-1"><option value="P">الإنتاجية</option><option value="Q">الجودة</option><option value="C">التكلفة</option><option value="S">السلامة</option></select></div><div class="row-flex"><input type="number" id="pdcaBefore" class="form-control flex-1" placeholder="قبل"><input type="number" id="pdcaAfter" class="form-control flex-1" placeholder="الهدف"><input type="text" id="pdcaUnit" class="form-control flex-1" placeholder="الوحدة"></div><textarea id="pdcaPlan" class="form-control" rows="2" placeholder="P - خطط"></textarea><textarea id="pdcaDo" class="form-control" rows="2" placeholder="D - نفذ"></textarea><textarea id="pdcaCheck" class="form-control" rows="2" placeholder="C - تحقق"></textarea><textarea id="pdcaAct" class="form-control" rows="2" placeholder="A - اعتمد"></textarea><label class="btn btn-outline full-width"><i class='bx bx-camera'></i> إرفاق صورة<input type="file" onchange="handlePDCAImage(event)" class="legacy-inline-3"></label><div id="pdcaImgPreview"></div><div class="row-flex"><button class="btn btn-success flex-2" onclick="saveNewPDCA()">إطلاق المشروع 🚀</button><button class="btn btn-danger flex-1" onclick="document.getElementById('pdcaCreateModal').style.display='none'">إلغاء</button></div></div></div>
 
@@ -1509,7 +1518,10 @@
     <div class="container screen" id="settingsScreen">
         <section class="settings-command-deck">
             <div class="settings-command-copy"><span class="eyebrow"><i class='bx bx-slider-alt'></i> إدارة Factory OS</span><h2>مركز التحكم</h2><p>نظّم تشغيل المصنع من مكان واحد: الأقسام، الإسناد، التاجات، صلاحيات المستخدمين، والبيانات.</p></div>
-            <button class="btn btn-primary settings-profile-launch" onclick="openMyFullProfile()"><i class='bx bx-id-card'></i><span>بياناتي الشخصية</span><small>الاسم · القسم · الهاتف</small></button>
+            <div class="settings-command-actions" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+                <button class="btn btn-primary settings-profile-launch" onclick="openMyFullProfile()"><i class='bx bx-id-card'></i><span>بياناتي الشخصية</span><small>الاسم · القسم · الهاتف</small></button>
+                <button class="btn btn-outline btn-role-admin" onclick="switchSettingsTab('governance', this)"><i class='bx bx-shield-quarter'></i><span>إدارة المستخدمين</span><small>الحسابات · الأدوار · الصلاحيات</small></button>
+            </div>
         </section>
 
         <section class="settings-identity-strip"><img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=ffffff" alt="صورة المستخدم"><div><span>المستخدم الحالي</span><h3 id="profileName">اسم المستخدم</h3><b id="profileRoleBadge">دور المستخدم</b></div><div class="settings-identity-note"><i class='bx bx-lock-alt'></i><span>التحكم الحساس ظاهر للمدير فقط.</span></div></section>

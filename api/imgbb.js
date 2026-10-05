@@ -14,17 +14,28 @@ export default async function handler(req, res) {
     if (typeof image !== 'string' || image.trim().length === 0) {
       return res.status(400).json({ error: 'A Base64 image is required.' });
     }
+    if (image.length > 12 * 1024 * 1024) {
+      return res.status(413).json({ error: 'Image payload is too large.' });
+    }
 
     const formData = new URLSearchParams();
     formData.append('image', image);
 
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(apiKey)}`, {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    let response;
+    try {
+      response = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(apiKey)}`, {
       method: 'POST',
       body: formData,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      signal: controller.signal,
     });
+    } finally {
+      clearTimeout(timer);
+    }
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     const status = response.ok && data?.success ? 200 : (response.status >= 400 ? response.status : 502);
 
     if (status !== 200) {

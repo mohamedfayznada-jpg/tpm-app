@@ -289,7 +289,11 @@ firebase.auth().onAuthStateChanged(async user => {
         const isMasterAdmin = userEmail === 'mfayez@tpm.app';
         const profileSnap = await db.ref('tpm_system/users/' + user.uid).once('value');
         const profileData = profileSnap.val();
-        const publicUsersSnap = isMasterAdmin ? null : await db.ref('tpm_system/users_public').once('value');
+        let publicUsersSnap = null;
+        if (!isMasterAdmin) {
+            try { publicUsersSnap = await db.ref('tpm_system/users_public').once('value'); }
+            catch (error) { console.warn('[Auth] public user directory unavailable; continuing with own profile:', error); }
+        }
         const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
         const finalUsername = isMasterAdmin ? 'mfayez' : (profileData?.username || localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
 

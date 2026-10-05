@@ -793,9 +793,10 @@ window.openMyFullProfile = async function() {
     document.getElementById('myDisplayRank').innerText = `الرصيد المعرفي: ${userPoints[uid] || 0} نقطة`;
     document.getElementById('editDept').innerHTML = departments.map(d=>`<option value="${d}" ${u.dept===d?'selected':''}>${d}</option>`).join('');
 
-    const myAudits = historyData.filter(h => h.auditor === activeName && !h.stepsOrder.includes('ManualKaizen'));
-    const myTags = tagsData.filter(t => t.auditor === activeName);
-    const myKaizens = historyData.filter(h => h.auditor === activeName && h.stepsOrder.includes('ManualKaizen'));
+    const safeHistory = Array.isArray(historyData) ? historyData : [];
+    const myAudits = safeHistory.filter(h => h && h.auditor === activeName && Array.isArray(h.stepsOrder) && !h.stepsOrder.includes('ManualKaizen'));
+    const myTags = (Array.isArray(tagsData) ? tagsData : []).filter(t => t && t.auditor === activeName);
+    const myKaizens = safeHistory.filter(h => h && h.auditor === activeName && Array.isArray(h.stepsOrder) && h.stepsOrder.includes('ManualKaizen'));
 
     let allActivity = [ ...myAudits.map(a => ({ type: 'audit', text: `📝 مراجعة قسم ${a.dept} (${a.totalPct}%)`, date: a.date })), ...myTags.map(t => ({ type: 'tag', text: `🚨 أصدرت تاج ${t.color==='red'?'صيانة':'إنتاج'}: ${t.desc}`, date: t.date })), ...myKaizens.map(k => ({ type: 'kaizen', text: `💡 شاركت بفكرة كايزن في ${k.dept}`, date: k.date })) ].reverse().slice(0, 10); 
 
@@ -826,9 +827,15 @@ window.savePersonalData = async function() {
 window.switchSettingsTab = function(tabId, button) {
     document.querySelectorAll('.settings-tab-content').forEach(content => { content.classList.remove('active'); content.style.display = 'none'; });
     document.querySelectorAll('#settingsScreen .settings-navigation .btn').forEach(item => item.classList.remove('active'));
-    const targetTab = document.getElementById('tab-' + tabId); if(targetTab) { targetTab.classList.add('active'); targetTab.style.display = 'block'; }
+    const targetTab = document.getElementById('tab-' + tabId);
+    if(targetTab) { targetTab.classList.add('active'); targetTab.style.display = 'block'; }
     if(button) button.classList.add('active');
     window.renderSettingsControlLists?.();
+    // User Administration is a live surface. Always render it when the tab is opened,
+    // even if its Firebase listener fired while the settings screen was not visible.
+    if(tabId === 'governance' && typeof window.renderUserManagement === 'function') {
+        window.renderUserManagement();
+    }
 };
 
 // ==========================================
@@ -836,10 +843,12 @@ window.switchSettingsTab = function(tabId, button) {
 // ==========================================
 window.updateHomeDashboard = function() {
     let tScore = 0, aCount = 0; let deptLabels = [], deptScores = [];
+    const safeHistory = Array.isArray(historyData) ? historyData : [];
+    const isAuditRecord = h => !!h && Array.isArray(h.stepsOrder) && !h.stepsOrder.includes('ManualKaizen');
     
     let grid = departments.map(d => {
-        let auds = historyData.filter(h => h.dept === d && !h.stepsOrder.includes('ManualKaizen'));
-        let sc = auds.length > 0 ? auds[auds.length-1].totalPct : 0;
+        let auds = safeHistory.filter(h => h.dept === d && isAuditRecord(h));
+        let sc = auds.length > 0 ? Number(auds[auds.length-1].totalPct) || 0 : 0;
         if(auds.length > 0) { tScore+=sc; aCount++; }
         let rTags = tagsData.filter(t => t.dept === d && t.status === 'open' && t.color === 'red').length;
         deptLabels.push(d); deptScores.push(sc);
@@ -874,7 +883,8 @@ window.openDeptDashboard = function(dept) {
     currentViewedDept = dept; showScreen('deptDashboardScreen');
     const titleEl = document.getElementById('deptViewTitle'); if(titleEl) titleEl.innerText = `لوحة قيادة: ${dept}`;
     
-    const deptAudits = historyData.filter(h => h.dept === dept && !h.stepsOrder.includes('ManualKaizen')).sort((a,b) => new Date(a.date) - new Date(b.date));
+    const safeHistory = Array.isArray(historyData) ? historyData : [];
+    const deptAudits = safeHistory.filter(h => h && h.dept === dept && Array.isArray(h.stepsOrder) && !h.stepsOrder.includes('ManualKaizen')).sort((a,b) => new Date(a.date) - new Date(b.date));
     const deptTags = tagsData.filter(t => t.dept === dept && t.status === 'open');
     const deptTasks = tasksData.filter(t => t.dept === dept && t.status !== 'done');
     const lastAudit = deptAudits[deptAudits.length-1];

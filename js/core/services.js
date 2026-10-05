@@ -128,11 +128,19 @@ export const Services = {
     async fetchGeminiAPI(promptText, pdfBase64 = null, options = {}) {
         let b64 = null;
         if (pdfBase64) b64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
-        const response = await fetch('/api/gemini', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: String(promptText || '').slice(0, 30000), imageBase64: b64, jsonMode: options?.jsonMode === true })
-        });
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+        let response;
+        try {
+            response = await fetch('/api/gemini', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: String(promptText || '').slice(0, 30000), imageBase64: b64, jsonMode: options?.jsonMode === true }),
+                signal: controller.signal
+            });
+        } finally {
+            clearTimeout(timer);
+        }
         const j = await response.json().catch(() => ({}));
         if (!response.ok || j.error) {
             const error = new Error(j.error || 'تعذر الاتصال بخدمة الشرح الذكي. حاول مرة أخرى.');

@@ -328,19 +328,11 @@ firebase.auth().onAuthStateChanged(async user => {
             window.currentUser = currentUser; localStorage.setItem('tpm_username', 'mfayez');
 
             const storedMaster = (usersData[user.uid] && typeof usersData[user.uid] === 'object') ? usersData[user.uid] : {};
-            if (storedMaster.uid !== user.uid || storedMaster.role !== 'admin' || storedMaster.status !== 'active') {
-                try {
-                    await db.ref(`tpm_system/users/${user.uid}`).update({
-                        uid: user.uid,
-                        role: 'admin',
-                        status: 'active',
-                        updatedAt: Date.now()
-                    });
-                    usersData[user.uid] = { ...storedMaster, uid: user.uid, role: 'admin', status: 'active' };
-                } catch (error) {
-                    console.error('Master administrator role synchronization failed:', error);
-                    showToast('⚠️ تعذر مزامنة صلاحية المدير مع قاعدة البيانات.');
-                }
+            // Canonical master authorization is derived from the authenticated email and Firebase rules.
+            // Do not perform a bootstrap write on every login; it only creates avoidable permission noise
+            // when a legacy master profile has not yet been normalized.
+            if (storedMaster.role !== 'admin' || storedMaster.status !== 'active') {
+                console.warn('[Auth] Master profile is legacy/un-normalized; canonical admin access remains active.');
             }
 
             syncPublicUserDirectoryV2(usersData);
@@ -392,10 +384,12 @@ firebase.auth().onAuthStateChanged(async user => {
             await firebase.auth().signOut();
             return;
         } else {
-            try {
-                await db.ref('tpm_system/users/' + user.uid + '/lastLoginAt').set(firebase.database.ServerValue.TIMESTAMP);
-            } catch (error) {
-                console.warn('[Auth] lastLoginAt update skipped:', error);
+            if (!isMasterAdmin) {
+                try {
+                    await db.ref('tpm_system/users/' + user.uid + '/lastLoginAt').set(firebase.database.ServerValue.TIMESTAMP);
+                } catch (error) {
+                    console.warn('[Auth] lastLoginAt update skipped:', error);
+                }
             }
             const loginBtn = document.querySelector('#loginScreen .auth-primary-btn, #loginScreen .btn-primary');
             if(loginBtn) { loginBtn.disabled = false; loginBtn.removeAttribute('aria-busy'); }

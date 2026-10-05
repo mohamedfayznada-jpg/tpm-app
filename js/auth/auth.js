@@ -4,11 +4,34 @@ import { UI } from '../utils/ui.js';
 
 const USERNAME_RE = /^[a-zA-Z0-9._-]{3,32}$/;
 const REQUESTED_ROLES = Object.freeze(['operator','auditor','engineer']);
-const DEFAULT_PERMISSIONS = Object.freeze({
-    homeScreen: 'view', tasksScreen: 'none', historyScreen: 'none',
-    kaizenScreen: 'view', tagsScreen: 'none', knowledgeScreen: 'none',
-    skillMatrixScreen: 'none'
+const ROLE_DEFAULT_PERMISSIONS = Object.freeze({
+    operator: Object.freeze({
+        homeScreen: 'view', settingsScreen: 'view', tasksScreen: 'edit', tagsScreen: 'edit',
+        tpmTeamsScreen: 'view', fiveSScreen: 'edit', jhPortalScreen: 'view', jhDocumentScreen: 'view',
+        kaizenScreen: 'edit', kkScreen: 'view', pmScreen: 'edit', etScreen: 'view', hseScreen: 'edit',
+        historyScreen: 'none', jhKPIsScreen: 'none', knowledgeScreen: 'none',
+        externalAuditScreen: 'none', skillMatrixScreen: 'none'
+    }),
+    auditor: Object.freeze({
+        homeScreen: 'view', settingsScreen: 'view', tasksScreen: 'view', tagsScreen: 'view',
+        tpmTeamsScreen: 'view', fiveSScreen: 'view', jhPortalScreen: 'view', jhDocumentScreen: 'view',
+        kaizenScreen: 'view', kkScreen: 'view', pmScreen: 'view', etScreen: 'view', hseScreen: 'view',
+        historyScreen: 'view', jhKPIsScreen: 'view', knowledgeScreen: 'none',
+        externalAuditScreen: 'view', skillMatrixScreen: 'view'
+    }),
+    engineer: Object.freeze({
+        homeScreen: 'view', settingsScreen: 'view', tasksScreen: 'edit', tagsScreen: 'edit',
+        tpmTeamsScreen: 'edit', fiveSScreen: 'edit', jhPortalScreen: 'edit', jhDocumentScreen: 'edit',
+        kaizenScreen: 'edit', kkScreen: 'edit', pmScreen: 'edit', etScreen: 'edit', hseScreen: 'edit',
+        historyScreen: 'edit', jhKPIsScreen: 'edit', knowledgeScreen: 'edit',
+        externalAuditScreen: 'edit', skillMatrixScreen: 'edit'
+    })
 });
+const PERMISSION_KEYS = Object.freeze(Object.keys(ROLE_DEFAULT_PERMISSIONS.operator));
+function getDefaultPermissions(role) {
+    const canonical = String(role || 'operator').toLowerCase();
+    return { ...(ROLE_DEFAULT_PERMISSIONS[canonical] || ROLE_DEFAULT_PERMISSIONS.operator) };
+}
 
 function normalizeUsername(value) {
     return String(value || '').trim().toLowerCase();
@@ -103,7 +126,7 @@ export const Auth = {
                 requestedRole,
                 role: 'viewer',
                 status: 'pending',
-                permissions: { ...DEFAULT_PERMISSIONS },
+                permissions: getDefaultPermissions(requestedRole),
                 createdAt: now,
                 updatedAt: now,
                 lastLoginAt: null

@@ -1,6 +1,8 @@
 {
   "rules": {
     "tpm_system": {
+      ".read": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')",
+      ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')",
       "api_keys": {
         ".read": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'",
         ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"

@@ -124,6 +124,15 @@ window.escapeTPM = window.escapeTPM || function(value) {
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[ch]));
 };
+window.fetchTPMWithTimeout = window.fetchTPMWithTimeout || async function(input, init = {}, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.max(1000, Number(timeoutMs) || 15000));
+    try {
+        return await fetch(input, { ...init, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+};
 
 window.syncRecord = async function(path, data) {
     if (!auth.currentUser) throw new Error('سجّل الدخول أولاً قبل حفظ البيانات.');
@@ -238,6 +247,7 @@ window.biometricLogin = async function() {
 // 🔄 محرك المزامنة وإدارة الحالة (State Manager)
 // ==========================================
 let dbListeners = {};
+let authStateGeneration = 0;
 
 function bindDbListener(name, query, handler, event = 'value') {
     const previous = dbListeners[name];
@@ -274,6 +284,7 @@ async function syncPublicUserDirectoryV2(source){
     try{await db.ref("tpm_system/users_public").set(publicData);}catch(error){console.warn("[UserDirectory] sync skipped:",error);}
 }
 firebase.auth().onAuthStateChanged(async user => {
+    const authGeneration = ++authStateGeneration;
     clearDbListeners();
     homeDashboardRefreshQueued = false;
     document.body.classList.toggle('auth-locked', !user);
@@ -283,17 +294,20 @@ firebase.auth().onAuthStateChanged(async user => {
         isDataLoaded = true;        if (mainHeader) mainHeader.style.display = 'flex';
 
         const dSnap = await db.ref('tpm_system/departments').once('value');
+        if (authGeneration !== authStateGeneration) return;
         departments = window.getOperationalDepartments(dSnap.val() || []); window.departments = departments;
 
         const userEmail = user.email ? user.email.toLowerCase() : '';
         const isMasterAdmin = userEmail === 'mfayez@tpm.app';
         const profileSnap = await db.ref('tpm_system/users/' + user.uid).once('value');
+        if (authGeneration !== authStateGeneration) return;
         const profileData = profileSnap.val();
         let publicUsersSnap = null;
         if (!isMasterAdmin) {
             try { publicUsersSnap = await db.ref('tpm_system/users_public').once('value'); }
             catch (error) { console.warn('[Auth] public user directory unavailable; continuing with own profile:', error); }
         }
+        if (authGeneration !== authStateGeneration) return;
         const savedName = localStorage.getItem('tpm_user') || userEmail.split('@')[0];
         const finalUsername = isMasterAdmin ? 'mfayez' : (profileData?.username || localStorage.getItem('tpm_username') || userEmail.split('@')[0]);
 
@@ -301,6 +315,7 @@ firebase.auth().onAuthStateChanged(async user => {
         let status = 'pending';
         let permissions = {};
 
+        if (authGeneration !== authStateGeneration) return;
         if (isMasterAdmin) {
             const uSnap = await db.ref('tpm_system/users').once('value');
             usersData = uSnap.val() || {};
@@ -1305,7 +1320,7 @@ window.runAIVision = async function(itemId, itemTitle) {
             'ممنوع استخدام markdown أو علامات code fence أو أي JavaScript/HTML غير مطلوب.'
         ].join('\n');
 
-        const response = await fetch('/api/gemini', {
+        const response = await window.fetchTPMWithTimeout('/api/gemini', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt, imageUrl: imgObj.data })
@@ -1336,10 +1351,10 @@ window.predictMachineFailures = async function() {
     const r = document.getElementById('aiPredictionResult'); r.style.display='block'; r.innerHTML='<i class="bx bx-loader-alt bx-spin"></i> جاري التحليل...';
     try {
         let prompt = "بناءً على التاجات التالية، توقع الماكينات المعرضة للتوقف وقدم نصيحة. أجب بنص عادي أو HTML بسيط بدون علامات \`\`\`html: " + tagsData.map(t=>t.desc).join(',');
-        const response = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt, imageBase64: null }) });
+        const response = await window.fetchTPMWithTimeout('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt, imageBase64: null }) });
         const j = await response.json(); if(j.error) throw new Error(j.error);
-        let text = j.candidates[0].content.parts[0].text; text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim(); r.innerHTML = text;
-    } catch(e) { r.innerHTML = `<span style="color:var(--danger);"><i class='bx bx-error'></i> فشل الاتصال: ${e.message}</span>`; }
+        let text = j.candidates[0].content.parts[0].text; text = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim(); r.innerHTML = window.sanitizeAIHtml(text) || '<div>لم ينتج المساعد الذكي نتيجة قابلة للعرض.</div>';
+    } catch(e) { r.innerHTML = `<span style="color:var(--danger);"><i class='bx bx-error'></i> فشل الاتصال: ${window.escapeTPM ? window.escapeTPM(e?.message || 'تعذر الاتصال') : (e?.message || 'تعذر الاتصال')}</span>`; }
 };
 
 window.explainItem = async function(t) {

@@ -1,8 +1,6 @@
 {
   "rules": {
     "tpm_system": {
-      ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'mfayez@tpm.app') || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')",
-      ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'mfayez@tpm.app') || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')",
       "api_keys": {
         ".read": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'",
         ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"

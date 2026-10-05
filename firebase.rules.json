@@ -303,7 +303,8 @@
       },
       "users_public": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'"
+        ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'",
+        ".validate": "newData.isObject()"
       }
     }
   }

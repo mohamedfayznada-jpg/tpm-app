@@ -179,7 +179,7 @@
         ".write": "auth != null"
       },
       "users": {
-        ".read": "auth != null",
+        ".read": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'",
         "$uid": {
           ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'viewer' && newData.child('status').val() === 'pending' && (newData.child('requestedRole').val() === 'operator' || newData.child('requestedRole').val() === 'auditor' || newData.child('requestedRole').val() === 'engineer')) || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('status').val() === data.child('status').val() && newData.child('permissions').val() === data.child('permissions').val() && newData.child('requestedRole').val() === data.child('requestedRole').val()))",
           ".validate": "newData.hasChildren(['uid','name','username','role','status']) && newData.child('uid').val() === $uid && (newData.child('role').val() === 'admin' || newData.child('role').val() === 'engineer' || newData.child('role').val() === 'technician' || newData.child('role').val() === 'auditor' || newData.child('role').val() === 'viewer') && (newData.child('status').val() === 'active' || newData.child('status').val() === 'pending' || newData.child('status').val() === 'disabled') && (newData.child('requestedRole').val() === null || newData.child('requestedRole').val() === 'operator' || newData.child('requestedRole').val() === 'auditor' || newData.child('requestedRole').val() === 'engineer')",
@@ -187,7 +187,8 @@
             "$permission": {
               ".validate": "newData.isString() && (newData.val() === 'none' || newData.val() === 'view' || newData.val() === 'edit')"
             }
-          }
+          },
+          ".read": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
         }
       },
       "points": {

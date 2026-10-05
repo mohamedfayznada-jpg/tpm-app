@@ -323,6 +323,7 @@ firebase.auth().onAuthStateChanged(async user => {
                 }
             }
 
+            syncPublicUserDirectoryV2(usersData);
             let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');
             let notifyIcon = document.getElementById('adminNotification');
             if(notifyIcon) notifyIcon.style.display = hasPending ? 'block' : 'none';

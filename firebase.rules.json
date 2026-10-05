@@ -188,7 +188,11 @@
               ".validate": "newData.isString() && (newData.val() === 'none' || newData.val() === 'view' || newData.val() === 'edit')"
             }
           },
-          ".read": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')"
+          ".read": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')",
+          "lastLoginAt": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin')",
+            ".validate": "newData.isNumber()"
+          }
         }
       },
       "points": {
@@ -304,7 +308,9 @@
       "users_public": {
         ".read": "auth != null",
         ".write": "auth != null && root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin'",
-        ".indexOn": ["username"]
+        ".indexOn": [
+          "username"
+        ]
       }
     }
   }

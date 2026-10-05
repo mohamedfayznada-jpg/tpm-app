@@ -377,7 +377,7 @@ firebase.auth().onAuthStateChanged(async user => {
             return;
         } else {
             try {
-                await db.ref('tpm_system/users/' + user.uid).update({ lastLoginAt: firebase.database.ServerValue.TIMESTAMP });
+                await db.ref('tpm_system/users/' + user.uid + '/lastLoginAt').set(firebase.database.ServerValue.TIMESTAMP);
             } catch (error) {
                 console.warn('[Auth] lastLoginAt update skipped:', error);
             }

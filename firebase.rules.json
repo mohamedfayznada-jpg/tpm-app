@@ -181,7 +181,7 @@
       "users": {
         ".read": "auth != null",
         "$uid": {
-          ".write": "auth != null && (root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'viewer' && newData.child('status').val() === 'pending') || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('status').val() === data.child('status').val() && newData.child('permissions').val() === data.child('permissions').val()))"
+          ".write": "auth != null && (auth.uid === 'i2uVYjtylTcH0Cc1RkPBocsBF5I2' || root.child('tpm_system/users/' + auth.uid + '/role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'viewer' && newData.child('status').val() === 'pending' && (newData.child('requestedRole').val() === 'operator' || newData.child('requestedRole').val() === 'auditor' || newData.child('requestedRole').val() === 'engineer')) || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('status').val() === data.child('status').val() && newData.child('permissions').val() === data.child('permissions').val() && newData.child('requestedRole').val() === data.child('requestedRole').val()))"
         }
       },
       "points": {
@@ -243,7 +243,10 @@
       "skill_matrix": {
         ".read": "auth != null",
         ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'mfayez@tpm.app') || (root.child('tpm_system/users/' + auth.uid + '/role').val() != null && (root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'admin' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'administrator' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'engineer' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'technician' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'operator' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'tech' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'auditor' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'reviewer' || root.child('tpm_system/users/' + auth.uid + '/role').val().toLowerCase() === 'audit')))",
-        ".indexOn": ["updatedAt","updatedByUid"]
+        ".indexOn": [
+          "updatedAt",
+          "updatedByUid"
+        ]
       },
       "hse_observations": {
         ".read": "auth != null",

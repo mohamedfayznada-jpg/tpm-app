@@ -343,11 +343,22 @@ firebase.auth().onAuthStateChanged(async user => {
         document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? 'block' : 'none');
         
         if (currentUser.status === 'pending') {
-            showToast("حسابك قيد المراجعة. يرجى انتظار موافقة الإدارة."); firebase.auth().signOut(); return;
-        } else { 
-            const loginBtn = document.querySelector('#loginScreen .btn-primary');
-            if(loginBtn) { loginBtn.innerHTML = '<i class="bx bx-log-in"></i> دخول آمن'; loginBtn.disabled = false; }
-            showScreen('homeScreen'); 
+            showToast("⏳ حسابك قيد المراجعة. سيظهر لك النظام بعد اعتماد الإدارة للدور والصلاحيات.");
+            await firebase.auth().signOut();
+            return;
+        } else if (currentUser.status !== 'active') {
+            showToast("🔒 الحساب غير نشط حاليًا. تواصل مع مسؤول النظام.");
+            await firebase.auth().signOut();
+            return;
+        } else {
+            try {
+                await db.ref('tpm_system/users/' + user.uid).update({ lastLoginAt: firebase.database.ServerValue.TIMESTAMP });
+            } catch (error) {
+                console.warn('[Auth] lastLoginAt update skipped:', error);
+            }
+            const loginBtn = document.querySelector('#loginScreen .auth-primary-btn, #loginScreen .btn-primary');
+            if(loginBtn) { loginBtn.disabled = false; loginBtn.removeAttribute('aria-busy'); }
+            showScreen('homeScreen');
         }
 
         if(window.updateDeptDropdown) window.updateDeptDropdown();
@@ -438,8 +449,16 @@ window.renderUserManagement = function() {
 window.approveUser = async function(uid) {
     const u = usersData[uid]; if (!u) return;
     let finalPerms = u.permissions || { homeScreen: 'view', tasksScreen: 'none', historyScreen: 'none', kaizenScreen: 'view', tagsScreen: 'none', knowledgeScreen: 'none' };
-    await db.ref(`tpm_system/users/${uid}`).update({ status: 'active', role: (window.normalizeTPMRole ? window.normalizeTPMRole(u.requestedRole) : u.requestedRole), permissions: finalPerms });
-    showToast(`✅ تم تفعيل حساب ${u.name}`);
+    const approvedRole = window.normalizeTPMRole ? window.normalizeTPMRole(u.requestedRole) : u.requestedRole;
+    await db.ref(`tpm_system/users/${uid}`).update({
+        status: 'active',
+        role: approvedRole,
+        permissions: finalPerms,
+        approvedAt: firebase.database.ServerValue.TIMESTAMP,
+        approvedBy: currentUser.uid,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    showToast(`✅ تم تفعيل حساب ${u.name} — ${window.getTPMRoleLabel ? window.getTPMRoleLabel(approvedRole) : approvedRole}`);
 };
 
 window.deleteUser = async function(uid) { if(confirm('⚠️ تأكيد حذف المستخدم نهائياً؟')) { await db.ref('tpm_system/users/' + uid).remove(); showToast('🗑️ تم الحذف'); } };

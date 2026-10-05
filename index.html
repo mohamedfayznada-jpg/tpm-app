@@ -265,8 +265,9 @@
                 <div class="auth-form">
                     <label class="auth-field"><span>الاسم الكامل</span><div class="auth-input-wrap"><i class='bx bx-id-card'></i><input type="text" id="signupFullName" placeholder="الاسم الكامل"></div></label>
                     <label class="auth-field"><span>اسم المستخدم</span><div class="auth-input-wrap"><i class='bx bx-at'></i><input type="text" id="signupUsername" placeholder="بالإنجليزية فقط"></div></label>
-                    <label class="auth-field"><span>كلمة المرور</span><div class="auth-input-wrap"><i class='bx bx-lock-alt'></i><input type="password" id="signupPassword" placeholder="أنشئ كلمة مرور"></div></label>
-                    <label class="auth-field"><span>الدور</span><div class="auth-input-wrap auth-select-wrap"><i class='bx bx-user-pin'></i><select id="signupRole"><option value="operator">مشغل</option><option value="auditor">مراجع</option><option value="admin">مدير</option></select><i class='bx bx-chevron-down auth-select-arrow'></i></div></label>
+                    <label class="auth-field"><span>كلمة المرور</span><div class="auth-input-wrap"><i class='bx bx-lock-alt'></i><input type="password" id="signupPassword" autocomplete="new-password" minlength="8" placeholder="8 أحرف على الأقل"></div></label>
+                    <label class="auth-field"><span>تأكيد كلمة المرور</span><div class="auth-input-wrap"><i class='bx bx-check-shield'></i><input type="password" id="signupConfirmPassword" autocomplete="new-password" minlength="8" placeholder="أعد كتابة كلمة المرور"></div></label>
+                    <label class="auth-field"><span>الدور المطلوب</span><div class="auth-input-wrap auth-select-wrap"><i class='bx bx-user-pin'></i><select id="signupRole"><option value="operator">فني / مشغل</option><option value="auditor">مراجع TPM</option><option value="engineer">مهندس</option></select><i class='bx bx-chevron-down auth-select-arrow'></i></div></label>
 
                     <button class="auth-primary-btn signup-submit-btn" onclick="signup()"><span>إرسال طلب الانضمام</span><i class='bx bx-send'></i></button>
                     <button class="auth-back-btn" onclick="showScreen('loginScreen')"><i class='bx bx-arrow-right'></i><span>العودة إلى تسجيل الدخول</span></button>

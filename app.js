@@ -329,11 +329,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
             const storedMaster = (usersData[user.uid] && typeof usersData[user.uid] === 'object') ? usersData[user.uid] : {};
             // Canonical master authorization is derived from the authenticated email and Firebase rules.
-            // Do not perform a bootstrap write on every login; it only creates avoidable permission noise
-            // when a legacy master profile has not yet been normalized.
-            if (storedMaster.role !== 'admin' || storedMaster.status !== 'active') {
-                console.warn('[Auth] Master profile is legacy/un-normalized; canonical admin access remains active.');
-            }
+            // Legacy profile normalization is intentionally deferred to an explicit admin operation.
 
             syncPublicUserDirectoryV2(usersData);
             let hasPending = Object.values(usersData).some(u => typeof u === 'object' && u.status === 'pending');

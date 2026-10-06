@@ -57,7 +57,7 @@ function homeMarkup(){
 return `<div class="factory-dashboard">
   <section class="factory-hero">
     <div class="hero-copy">
-      <span class="hero-kicker">ELARABY · REF-A · FACTORY OS</span>
+      <span class="hero-kicker">ELARABY · REF-A · TPM OS</span>
       <h1>لوحة التشغيل الفعلية للمصنع</h1>
       <p>المراجعات · الأعطال · المهام · التحسين — من بيانات النظام الحالية</p>
     </div>
@@ -90,7 +90,7 @@ return `<div class="factory-dashboard">
     <article class="panel alerts-panel"><div class="panel-head"><h2>ما يحتاج متابعة <i class="bx bx-bell"></i></h2></div><div id="xAlertsList"></div></article>
   </section>
 
-  <footer class="factory-footer"><span>FACTORY OS · REF-A</span><span>بيانات مباشرة من سجلات النظام</span><span class="online-dot">● متصل</span></footer>
+  <footer class="factory-footer"><span>TPM OS · REF-A</span><span>بيانات مباشرة من سجلات النظام</span><span class="online-dot">● متصل</span></footer>
 </div>`;
 }
 

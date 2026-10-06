@@ -33,7 +33,15 @@
     <!-- Production deploy: 2026-09-30 audit/skill runtime refresh v7 -->
     <!-- Production trigger: external-audit v6 -->
 </head>
-<body>
+<body class="auth-booting">
+<div id="authBootScreen" class="auth-boot-screen" aria-live="polite">
+  <div class="auth-boot-card">
+    <div class="auth-boot-mark"><i class='bx bx-cog bx-spin'></i></div>
+    <div class="auth-boot-brand">FACTORY OS</div>
+    <div class="auth-boot-status"><span></span> جاري استعادة جلسة الدخول...</div>
+  </div>
+</div>
+
     
     <!-- ==========================================
          🛸 COMMAND HEADER & SIDEBAR

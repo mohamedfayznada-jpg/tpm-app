@@ -159,15 +159,14 @@ function renderReviewChart(){
 let homeDataBound=false;
 function bindHomeData(){
   if(homeDataBound)return;
-  const bind=()=>{
-    if(homeDataBound||!auth.currentUser)return;
-    homeDataBound=true;
-    const refresh=()=>setTimeout(renderHomeData,60);
-    ['departments','tasks','history','tags'].forEach(path=>db.ref('tpm_system/'+path).on('value',refresh));
-    setTimeout(renderHomeData,100);
-  };
-  if(auth.currentUser) bind();
-  auth.onAuthStateChanged(user=>{if(user)bind();});
+  // app.js is the canonical TPM data/state manager. Do not create a second
+  // Firebase listener tree here: duplicate listeners caused the executive
+  // dashboard to render before the canonical state was hydrated.
+  homeDataBound=true;
+  const refresh=()=>setTimeout(renderHomeData,60);
+  window.addEventListener('tpm:home-data-ready', refresh);
+  window.addEventListener('tpm:data-refresh', refresh);
+  setTimeout(renderHomeData,100);
 }
 
 function mountHome(){

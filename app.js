@@ -1,5 +1,5 @@
 // ==========================================
-// 🚀 FACTORY OS - V5.0 (ENTERPRISE MASTER CORE - FULL VERSION)
+// 🚀 TPM OS - V5.0 (ENTERPRISE MASTER CORE - FULL VERSION)
 // Architected By: Architect-Prime
 // ==========================================
 
@@ -461,7 +461,7 @@ firebase.auth().onAuthStateChanged(async user => {
 // ==========================================
 const isSystemAdmin = () => (window.normalizeTPMRole ? window.normalizeTPMRole(currentUser?.role) : currentUser?.role) === "admin";
 const isCanonicalMasterAdmin = () => (auth.currentUser?.email || '').toLowerCase() === 'mfayez@tpm.app';
-const USER_ROLE_LABELS_V2 = { admin:"مدير المصنع", engineer:"مهندس", technician:"فني / مشغل", auditor:"مراجع TPM", viewer:"مشاهد" };
+const USER_ROLE_LABELS_V2 = { admin:"مدير TPM", engineer:"مهندس", technician:"فني / مشغل", auditor:"مراجع TPM", viewer:"مشاهد" };
 const USER_STATUS_LABELS_V2 = { active:"نشط", pending:"بانتظار الاعتماد", disabled:"موقوف" };
 const USER_PERMISSION_PAGES = Object.freeze({
     homeScreen:'الرئيسية (Dashboard)', settingsScreen:'الإعدادات', tasksScreen:'إدارة المهام', historyScreen:'أرشيف التقارير',
@@ -851,7 +851,7 @@ window.saveUserPermissions = async function() {
     const newStatus = ['active','pending','disabled'].includes(document.getElementById('adminStatus')?.value) ? document.getElementById('adminStatus').value : (target.status || 'pending');
     const newDept = String(document.getElementById('adminDept')?.value || '').trim();
     if (uid === currentUser.uid && (newRole !== 'admin' || newStatus !== 'active')) return showToast('🛡️ لا يمكن تخفيض أو تعطيل حساب المدير الحالي.');
-    if (newRole === 'admin' && !isCanonicalMasterAdmin()) return showToast('🛡️ تعيين دور مدير المصنع متاح للمدير الرئيسي فقط.');
+    if (newRole === 'admin' && !isCanonicalMasterAdmin()) return showToast('🛡️ تعيين دور مدير TPM متاح للمدير الرئيسي فقط.');
     if (newStatus === 'pending' && newRole === 'admin') return showToast('⚠️ الحساب الإداري يجب أن يكون نشطًا.');
     if (newRole === 'admin' && newStatus !== 'active') return showToast('⚠️ الحساب الإداري يجب أن يكون نشطًا.');
     const changed = JSON.stringify({role:oldRole,status:target.status||'pending',dept:target.dept||'',permissions:target.permissions||{}}) !== JSON.stringify({role:newRole,status:newStatus,dept:newDept,permissions:newPerms});

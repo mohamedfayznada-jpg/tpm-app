@@ -70,6 +70,18 @@ function mapAuthError(error) {
     }
 }
 
+function restoreSavedLoginHint() {
+    try {
+        const saved = localStorage.getItem('tpm_saved_username');
+        const el = document.getElementById('loginUsername');
+        const remember = document.getElementById('rememberMe');
+        if (saved && el && !el.value) el.value = saved;
+        if (saved && remember) remember.checked = true;
+    } catch (_) {}
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', restoreSavedLoginHint, { once:true });
+else restoreSavedLoginHint();
+
 export const Auth = {
     async login() {
         const usernameEl = document.getElementById('loginUsername');

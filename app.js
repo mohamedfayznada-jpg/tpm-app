@@ -295,7 +295,7 @@ firebase.auth().onAuthStateChanged(async user => {
 
         const dSnap = await db.ref('tpm_system/departments').once('value');
         if (authGeneration !== authStateGeneration) return;
-        departments = window.getOperationalDepartments(dSnap.val() || []); window.departments = departments;
+        departments = window.getOperationalDepartments(dSnap.val() || []); window.departments = departments; window.dispatchEvent(new Event('tpm:data-refresh'));
 
         const userEmail = user.email ? user.email.toLowerCase() : '';
         const isMasterAdmin = userEmail === 'mfayez@tpm.app';
@@ -395,16 +395,16 @@ firebase.auth().onAuthStateChanged(async user => {
         if(window.updateDeptDropdown) window.updateDeptDropdown();
 
         bindDbListener('tags', db.ref('tpm_system/tags').orderByChild('id').limitToLast(100), snap => {
-            let data = snap.val() || {}; tagsData = Object.values(data).filter(x => x && x.id).sort((a,b)=>b.id-a.id); window.tagsData = tagsData; 
+            let data = snap.val() || {}; tagsData = Object.values(data).filter(x => x && x.id).sort((a,b)=>b.id-a.id); window.tagsData = tagsData; window.dispatchEvent(new Event('tpm:data-refresh')); 
             if(isActiveScreen('tagsScreen')){if(window.renderTags)window.renderTags();if(window.renderTagCommandCenter)window.renderTagCommandCenter();}if(isActiveScreen('tpmTeamsScreen'))window.renderTPMTeams?.();if(isActiveScreen('homeScreen'))scheduleHomeDashboardRefresh();
         });
 
         bindDbListener('tasks', db.ref('tpm_system/tasks').orderByChild('id').limitToLast(100), snap => {
-            let data=snap.val()||{};tasksData=Object.values(data).filter(x=>x&&x.id).sort((a,b)=>a.id-b.id);window.tasksData=tasksData;if(isActiveScreen('tasksScreen'))window.renderTasks?.();if(isActiveScreen('tpmTeamsScreen'))window.renderTPMTeams?.();
+            let data=snap.val()||{};tasksData=Object.values(data).filter(x=>x&&x.id).sort((a,b)=>a.id-b.id);window.tasksData=tasksData;window.dispatchEvent(new Event('tpm:data-refresh'));if(isActiveScreen('tasksScreen'))window.renderTasks?.();if(isActiveScreen('tpmTeamsScreen'))window.renderTPMTeams?.();
         });
 
         bindDbListener('history', db.ref('tpm_system/history').orderByChild('id').limitToLast(100), snap => {
-            let data = snap.val() || {}; historyData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id); window.historyData = historyData; 
+            let data = snap.val() || {}; historyData = Object.values(data).filter(x => x && x.id).sort((a,b)=>a.id-b.id); window.historyData = historyData; window.dispatchEvent(new Event('tpm:data-refresh')); 
             if(isActiveScreen('historyScreen')){if(window.renderHistory)window.renderHistory();if(window.renderKaizenFeed)window.renderKaizenFeed();if(window.renderKaizenA3CommandStats)window.renderKaizenA3CommandStats();}if(isActiveScreen('homeScreen'))scheduleHomeDashboardRefresh();
         });
     

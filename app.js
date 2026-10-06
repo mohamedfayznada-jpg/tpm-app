@@ -288,6 +288,11 @@ firebase.auth().onAuthStateChanged(async user => {
     clearDbListeners();
     homeDashboardRefreshQueued = false;
     document.body.classList.toggle('auth-locked', !user);
+    const bootScreen = document.getElementById('authBootScreen');
+    const finishAuthBoot = () => {
+        document.body.classList.remove('auth-booting');
+        if (bootScreen) bootScreen.style.display = 'none';
+    };
     const mainHeader = document.getElementById('mainHeader');
     
     if (user) {
@@ -372,10 +377,12 @@ firebase.auth().onAuthStateChanged(async user => {
         document.querySelectorAll('.btn-role-auditor').forEach(el => el.style.display = (currentUser.role === 'admin' || currentUser.role === 'auditor') ? 'block' : 'none');
         
         if (currentUser.status === 'pending') {
+            finishAuthBoot();
             showToast("⏳ حسابك قيد المراجعة. سيظهر لك النظام بعد اعتماد الإدارة للدور والصلاحيات.");
             await firebase.auth().signOut();
             return;
         } else if (currentUser.status !== 'active') {
+            finishAuthBoot();
             showToast("🔒 الحساب غير نشط حاليًا. تواصل مع مسؤول النظام.");
             await firebase.auth().signOut();
             return;
@@ -389,6 +396,7 @@ firebase.auth().onAuthStateChanged(async user => {
             }
             const loginBtn = document.querySelector('#loginScreen .auth-primary-btn, #loginScreen .btn-primary');
             if(loginBtn) { loginBtn.disabled = false; loginBtn.removeAttribute('aria-busy'); }
+            finishAuthBoot();
             showScreen('homeScreen');
         }
 
@@ -441,8 +449,9 @@ firebase.auth().onAuthStateChanged(async user => {
         
     } else {
         clearDbListeners();
-        isInitialLoad = true; isDataLoaded = false; 
-        if (mainHeader) mainHeader.style.display = 'none'; // חجر صحي
+        isInitialLoad = true; isDataLoaded = false;
+        if (mainHeader) mainHeader.style.display = 'none';
+        finishAuthBoot();
         showScreen('loginScreen');
     }
 });

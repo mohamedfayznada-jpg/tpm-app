@@ -1,5 +1,5 @@
 /*
-  FACTORY OS — PRISMATIC DIMENSIONAL SYSTEM
+  TPM OS — PRISMATIC DIMENSIONAL SYSTEM
   A futuristic 3D visual layer that preserves the existing application logic.
 */
 :root {
@@ -181,7 +181,7 @@ input:focus, select:focus, textarea:focus { border-color: #6e69ff !important; ou
   filter: blur(1px); opacity: .72; transform: rotate(12deg);
 }
 #loginScreen::after, #signupScreen::after {
-  content: 'PRISM / FACTORY OS'; position: fixed; z-index: -1; right: 5vw; bottom: 8vh;
+  content: 'PRISM / TPM OS'; position: fixed; z-index: -1; right: 5vw; bottom: 8vh;
   color: rgba(40,51,125,.11); font-size: clamp(30px, 6vw, 92px); font-weight: 900; letter-spacing: .17em; writing-mode: vertical-rl;
 }
 .login-wrapper, .auth-wrapper, .login-box, .signup-box {

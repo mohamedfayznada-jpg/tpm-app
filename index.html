@@ -108,6 +108,37 @@
     </div>
     
     <div class="modal-overlay" id="permissionsModal"><div class="modal-content"><h3 class="card-title"><i class='bx bx-lock-alt'></i> تعديل الأذونات</h3><div id="permissionsContainer"></div><div class="row-flex legacy-inline-5"><button class="btn btn-success flex-2" onclick="saveUserPermissions()">حفظ</button><button class="btn btn-danger flex-1" onclick="document.getElementById('permissionsModal').style.display='none'">إلغاء</button></div></div></div>
+    <div class="modal-overlay" id="createUserModal">
+        <div class="modal-content" style="max-width:760px;max-height:90vh;overflow:auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+                <div><span class="eyebrow">USER PROVISIONING / IAM</span><h3 class="card-title" style="margin:4px 0 0;"><i class='bx bx-user-plus'></i> إنشاء مستخدم من الإدارة</h3></div>
+                <button class="btn btn-sm btn-danger" onclick="window.closeCreateUserModal()" aria-label="إغلاق"><i class='bx bx-x'></i></button>
+            </div>
+            <p class="field-help">إنشاء الحساب يتم من لوحة الإدارة مباشرة، بدون تسجيل خروج المدير الحالي. الحساب الإداري لا يمكن إنشاؤه إلا بواسطة المدير الرئيسي.</p>
+            <div class="row-flex">
+                <div class="form-group flex-1"><label>الاسم الكامل <b>*</b></label><input id="createUserName" class="form-control" maxlength="80" placeholder="مثال: أحمد محمد"></div>
+                <div class="form-group flex-1"><label>اسم المستخدم <b>*</b></label><input id="createUserUsername" class="form-control" maxlength="32" placeholder="ahmed" autocomplete="off"></div>
+            </div>
+            <div class="row-flex">
+                <div class="form-group flex-1"><label>كلمة المرور المؤقتة <b>*</b></label><input id="createUserPassword" type="password" class="form-control" minlength="8" placeholder="8 أحرف على الأقل"></div>
+                <div class="form-group flex-1"><label>تأكيد كلمة المرور <b>*</b></label><input id="createUserPasswordConfirm" type="password" class="form-control" minlength="8" placeholder="أعد كلمة المرور"></div>
+            </div>
+            <div class="row-flex">
+                <div class="form-group flex-1"><label>الدور</label><select id="createUserRole" class="form-control"></select></div>
+                <div class="form-group flex-1"><label>الحالة</label><select id="createUserStatus" class="form-control"><option value="active">نشط</option><option value="pending">بانتظار الاعتماد</option><option value="disabled">موقوف</option></select></div>
+                <div class="form-group flex-1"><label>القسم</label><select id="createUserDept" class="form-control"><option value="">بدون قسم محدد</option></select></div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px;padding:10px;margin:4px 0 12px;border:1px solid var(--border-glass);border-radius:12px;background:var(--surface-inset);">
+                <span style="font-size:11px;color:var(--text-muted);font-weight:800;align-self:center;">قالب الصلاحيات:</span>
+                <div id="createUserPresetButtons" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
+            </div>
+            <div id="createUserPermissions" style="max-height:330px;overflow:auto;border:1px solid var(--border-glass);border-radius:12px;padding:8px;"></div>
+            <div class="row-flex" style="margin-top:14px;">
+                <button class="btn btn-success flex-2" id="createUserSubmitBtn" onclick="window.provisionUser()"><i class='bx bx-user-plus'></i> إنشاء الحساب وتفعيل الصلاحيات</button>
+                <button class="btn btn-danger flex-1" onclick="window.closeCreateUserModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
     <div class="modal-overlay" id="userDetailsModal">
         <div class="modal-content" style="max-width:920px;max-height:88vh;overflow:auto;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">

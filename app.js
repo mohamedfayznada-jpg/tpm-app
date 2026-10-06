@@ -518,10 +518,12 @@ function renderUserManagement() {
     };
     const departments = [...new Set(users.map(u=>String(u.dept||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
 
+    const provisionButton = isSystemAdmin() ? '<button class="btn btn-primary" onclick="window.openCreateUserModal()"><i class="bx bx-user-plus"></i> إنشاء مستخدم</button>' : '';
     const statCard = (label,value,icon,tone) => `<div style="flex:1;min-width:145px;padding:14px 16px;border:1px solid var(--border-glass);border-radius:14px;background:var(--surface-inset);"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><span style="font-size:11px;color:var(--text-muted);font-weight:800;">${label}</span><i class="bx ${icon}" style="font-size:20px;color:var(${tone});"></i></div><strong style="display:block;margin-top:4px;font-size:25px;color:var(${tone});">${value}</strong></div>`;
 
     let html = `
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin:15px 0 14px;">
+      <div style="display:flex;justify-content:flex-end;margin:15px 0 10px;">${provisionButton}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px;">
         ${statCard('إجمالي الحسابات',counts.total,'bx-group','--primary')}
         ${statCard('نشطة',counts.active,'bx-check-circle','--success')}
         ${statCard('طلبات اعتماد',counts.pending,'bx-time-five','--warning')}
@@ -590,6 +592,84 @@ function renderUserManagement() {
     }
     container.innerHTML = html;
 }
+
+function populateCreateUserModal() {
+    const roleEl = document.getElementById('createUserRole');
+    const deptEl = document.getElementById('createUserDept');
+    const permEl = document.getElementById('createUserPermissions');
+    const presetEl = document.getElementById('createUserPresetButtons');
+    if (!roleEl || !deptEl || !permEl || !presetEl) return;
+    const roles = isCanonicalMasterAdmin() ? Object.entries(USER_ROLE_LABELS_V2) : Object.entries(USER_ROLE_LABELS_V2).filter(([key]) => key !== 'admin');
+    roleEl.innerHTML = roles.map(([key,label]) => '<option value="' + key + '">' + escapeUserAdminText(label) + '</option>').join('');
+    const depts = [...new Set((departments || []).map(d => String(d || '').trim()).filter(Boolean))];
+    deptEl.innerHTML = '<option value="">بدون قسم محدد</option>' + depts.map(d => '<option value="' + escapeUserAdminText(d) + '">' + escapeUserAdminText(d) + '</option>').join('');
+    presetEl.innerHTML = roles.map(([key,label]) => '<button type="button" class="btn btn-sm btn-outline" onclick="window.applyCreateUserPreset(\'' + key + '\')">' + escapeUserAdminText(label) + '</button>').join('');
+    permEl.innerHTML = Object.entries(USER_PERMISSION_PAGES).map(([screen,label]) => '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px dashed var(--border-glass);"><span style="font-size:12px;font-weight:700;">' + escapeUserAdminText(label) + '</span><select id="createPerm_' + screen + '" class="form-control" style="width:125px;padding:6px 10px;margin:0;font-size:12px;"><option value="none">مخفية 🚫</option><option value="view">مشاهدة 👁️</option><option value="edit">تعديل ✍️</option></select></div>').join('');
+    roleEl.value = roles.some(([key]) => key === 'engineer') ? 'engineer' : roles[0]?.[0] || 'viewer';
+    window.applyCreateUserPreset(roleEl.value);
+}
+window.openCreateUserModal = function() {
+    if (!isSystemAdmin()) return;
+    populateCreateUserModal();
+    ['createUserName','createUserUsername','createUserPassword','createUserPasswordConfirm'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    const modal=document.getElementById('createUserModal'); if(modal) modal.style.display='flex';
+};
+window.closeCreateUserModal = function() {
+    const modal=document.getElementById('createUserModal'); if(modal) modal.style.display='none';
+};
+window.applyCreateUserPreset = function(role) {
+    const canonical=canonicalUserRole(role);
+    const preset=getUserPermissionDefaults(canonical);
+    const roleEl=document.getElementById('createUserRole'); if(roleEl) roleEl.value=canonical;
+    Object.keys(USER_PERMISSION_PAGES).forEach(screen=>{ const el=document.getElementById('createPerm_'+screen); if(el) el.value=preset[screen]||'none'; });
+};
+window.provisionUser = async function() {
+    if (!isSystemAdmin()) return;
+    const name=String(document.getElementById('createUserName')?.value||'').trim();
+    const username=String(document.getElementById('createUserUsername')?.value||'').trim().toLowerCase();
+    const password=String(document.getElementById('createUserPassword')?.value||'');
+    const confirmPassword=String(document.getElementById('createUserPasswordConfirm')?.value||'');
+    const role=canonicalUserRole(document.getElementById('createUserRole')?.value||'viewer');
+    const status=document.getElementById('createUserStatus')?.value||'active';
+    const dept=String(document.getElementById('createUserDept')?.value||'').trim();
+    if(!name || name.length<2 || name.length>80) return showToast('⚠️ أدخل اسمًا كاملًا صالحًا.');
+    if(!/^[a-zA-Z0-9._-]{3,32}$/.test(username)) return showToast('⚠️ اسم المستخدم يجب أن يكون 3–32 حرفًا/رقمًا بدون مسافات.');
+    if(password.length<8 || password!==confirmPassword) return showToast('⚠️ تحقق من كلمة المرور وتأكيدها.');
+    if(role==='admin' && !isCanonicalMasterAdmin()) return showToast('🛡️ إنشاء مدير مصنع متاح للمدير الرئيسي فقط.');
+    if(role==='admin' && status!=='active') return showToast('⚠️ الحساب الإداري يجب أن يكون نشطًا.');
+    if(usersData && Object.values(usersData).some(u=>u && String(u.username||'').toLowerCase()===username)) return showToast('⚠️ اسم المستخدم موجود بالفعل في ملفات النظام.');
+    const perms={}; Object.keys(USER_PERMISSION_PAGES).forEach(screen=>{ const v=document.getElementById('createPerm_'+screen)?.value; perms[screen]=['none','view','edit'].includes(v)?v:'none'; });
+    const btn=document.getElementById('createUserSubmitBtn'); if(btn){btn.disabled=true;btn.setAttribute('aria-busy','true');}
+    let secondaryApp=null;
+    try {
+        const config=firebase.app().options;
+        const appName='TPM_PROVISION_'+Date.now();
+        secondaryApp=firebase.initializeApp(config,appName);
+        const secondaryAuth=secondaryApp.auth();
+        const credential=await secondaryAuth.createUserWithEmailAndPassword(username+'@tpm.app',password);
+        const uid=credential.user.uid;
+        const now=firebase.database.ServerValue.TIMESTAMP;
+        const profile={schemaVersion:2,uid,name:UI.sanitizeInput(name),username,role,status,dept,permissions:perms,requestedRole:role,createdAt:now,updatedAt:now,createdByUid:currentUser.uid,createdBy:currentUser.username||currentUser.name};
+        await db.ref('tpm_system/users/'+uid).set(profile);
+        userAdminAudit('user_created',uid,{username,role,status,dept});
+        await secondaryAuth.signOut();
+        await secondaryApp.delete();
+        secondaryApp=null;
+        window.closeCreateUserModal();
+        showToast('✅ تم إنشاء الحساب بنجاح دون تسجيل خروج المدير.');
+        return;
+    } catch(error) {
+        console.error('[UserAdmin] provisioning failed:',error?.code||error);
+        if(error?.code==='auth/email-already-in-use') showToast('⚠️ الحساب موجود بالفعل. لو كان غير ظاهر في القائمة، فده حساب Auth قديم يحتاج استعادة Profile وليس إنشاء حساب جديد.');
+        else if(error?.code==='auth/weak-password') showToast('⚠️ كلمة المرور ضعيفة.');
+        else if(error?.code==='PERMISSION_DENIED' || error?.message?.includes('permission_denied')) showToast('❌ Firebase رفض إنشاء Profile. قواعد users تحتاج نشر الإصدار الأمني الجديد.');
+        else showToast('❌ تعذر إنشاء المستخدم. راجع Console لمزيد من التفاصيل.');
+        try{if(secondaryApp){await secondaryApp.auth().signOut();await secondaryApp.delete();}}catch(_){}
+    } finally {
+        if(btn){btn.disabled=false;btn.removeAttribute('aria-busy');}
+        if(typeof renderUserManagement==='function')renderUserManagement();
+    }
+};
 
 window.userAdminSetFilter = function(key,value) {
     if (!Object.prototype.hasOwnProperty.call(userAdminState,key)) return;

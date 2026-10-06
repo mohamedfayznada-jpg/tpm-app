@@ -10,7 +10,7 @@ import { mountEnterpriseOperations } from './modules/enterprise-operations.js';
 import { mountFactoryOSGlobal } from './modules/factory-os-global-v30.js';
 import { TPM_DOMAIN, getTPMPillar } from './core/tpm-domain.js';
 import { normalizeRole, roleLabel, canAccessRole } from './core/role-policy.js';
-console.log(`🚀 FACTORY OS - V${ENV.APP_VERSION} ENTERPRISE CORE`);
+console.log(`🚀 TPM OS - V${ENV.APP_VERSION} ENTERPRISE CORE`);
 window.auth=auth;window.db=db;window.TPM_DOMAIN=TPM_DOMAIN;window.getTPMPillar=getTPMPillar;window.normalizeTPMRole=normalizeRole;window.getTPMRoleLabel=roleLabel;
 const loadStylesheet=(id,href)=>{if(document.getElementById(id))return;const link=document.createElement('link');link.id=id;link.rel='stylesheet';link.href=href;document.head.appendChild(link)};
 loadStylesheet('enterprise-v26-theme','./css/enterprise-v26.css?v=29');loadStylesheet('mobile-v27-theme','./css/mobile-v27.css?v=29');loadStylesheet('ux-v28-polish','./css/ux-v28-polish.css?v=1');loadStylesheet('factory-os-executive-v32','./css/factory-os-executive-v32.css?v=1');loadStylesheet('factory-os-v32-industrial','./css/factory-os-v32-industrial.css?v=1');loadStylesheet('factory-os-v33-editorial','./css/factory-os-v33-editorial.css?v=2');loadStylesheet('factory-os-v34-reference','./css/factory-os-v34-reference.css?v=18');

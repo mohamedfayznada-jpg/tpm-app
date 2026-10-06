@@ -1,4 +1,4 @@
-// FACTORY OS — Canonical Authentication Engine V2
+// TPM OS — Canonical Authentication Engine V2
 import { auth, db } from '../core/firebase-init.js';
 import { UI } from '../utils/ui.js';
 

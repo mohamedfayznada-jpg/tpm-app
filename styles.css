@@ -1470,3 +1470,21 @@ body:has(#tpmTeamsScreen.active) { background:radial-gradient(760px 560px at 88%
 @media(prefers-reduced-motion:reduce){
   #skillManagementModal *,#jhSkillMatrixScreen *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+
+/* Seamless authentication bootstrap */
+body.auth-booting #loginScreen,
+body.auth-booting #signupScreen,
+body.auth-booting #mainHeader,
+body.auth-booting #mainSidebar,
+body.auth-booting .cloud-status { display:none !important; }
+.auth-boot-screen{
+  position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 35%,rgba(255,122,0,.08),transparent 36%),#0b1520;
+  color:#fff;font-family:'Cairo','Tajawal',sans-serif;
+}
+.auth-boot-card{min-width:280px;text-align:center;padding:34px 30px;border:1px solid rgba(255,255,255,.1);border-radius:24px;background:rgba(255,255,255,.04);box-shadow:0 24px 80px rgba(0,0,0,.35)}
+.auth-boot-mark{font-size:46px;color:#ff7900;margin-bottom:8px}
+.auth-boot-brand{font-size:20px;font-weight:900;letter-spacing:3px}
+.auth-boot-status{margin-top:14px;font-size:12px;color:rgba(255,255,255,.65);display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-boot-status span{width:7px;height:7px;border-radius:50%;background:#2ecc71;box-shadow:0 0 12px rgba(46,204,113,.7)}

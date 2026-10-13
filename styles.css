@@ -1491,7 +1491,7 @@ body.auth-booting .cloud-status { display:none !important; }
 
 
 /* External audit per-criterion notes: keep the existing row geometry intact. */
-.ea-criterion-note-btn{margin-top:8px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;min-height:30px}
+.ea-criterion-note-btn{margin-top:0;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;min-height:30px;flex:0 0 auto}.ea-criterion-title.ea-criterion-item-cell{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ea-criterion-title.ea-criterion-item-cell>b{flex:1 1 160px;min-width:0}
 .ea-criterion-note-btn span{font-size:16px;line-height:1;color:var(--success)}
 #eaCriterionNoteModal .modal-content textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:150px}
 @media(max-width:640px){#eaCriterionNoteModal .modal-content{padding:16px!important}.ea-criterion-note-btn{font-size:11px;padding:6px 9px}}

@@ -23,6 +23,7 @@ function installImageSourcePicker(){
   style.id='tpm-image-source-picker-style';
   style.textContent=`
     .tpm-image-source-overlay{position:fixed;inset:0;z-index:1000000;background:rgba(12,22,34,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+    .tpm-image-source-overlay[hidden]{display:none!important}
     .tpm-image-source-dialog{width:min(100%,390px);background:var(--card-bg,#fff);color:var(--text-main,#1f2937);border:1px solid var(--border-color,rgba(100,116,139,.25));border-radius:18px;padding:22px;box-shadow:0 22px 70px rgba(0,0,0,.28);font-family:Cairo,Tajawal,sans-serif;direction:rtl}
     .tpm-image-source-dialog h3{margin:0 0 7px;font-size:18px;font-weight:800}
     .tpm-image-source-dialog p{margin:0 0 18px;font-size:13px;opacity:.75}

@@ -1633,6 +1633,20 @@
         <div id="myActivityTimeline" class="grid-layout"></div>
     </div>
 
+    <div id="eaCriterionNoteModal" class="modal-overlay" style="display:none;z-index:100000;" role="dialog" aria-modal="true" aria-labelledby="eaCriterionNoteHeading">
+      <div class="modal-content" style="width:min(560px,94vw);max-height:90vh;overflow:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;">
+          <div><span class="eyebrow">EXTERNAL AUDIT / CRITERION NOTE</span><h3 id="eaCriterionNoteHeading" data-ea-note-title style="margin:5px 0 0;">ملاحظات البند</h3></div>
+          <button type="button" class="btn btn-sm btn-outline" onclick="closeExternalAuditCriterionNote()" aria-label="إغلاق"><i class="bx bx-x"></i></button>
+        </div>
+        <textarea data-ea-note-input class="form-control" rows="7" maxlength="4000" placeholder="اكتب ملاحظاتك الخاصة بهذا البند..."></textarea>
+        <small data-ea-note-status style="display:block;margin-top:8px;color:var(--text-muted);"></small>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
+          <button type="button" class="btn btn-outline" onclick="closeExternalAuditCriterionNote()">إغلاق</button>
+          <button type="button" class="btn btn-primary" data-ea-note-save onclick="saveExternalAuditCriterionNote()"><i class="bx bx-save"></i> حفظ الملاحظة</button>
+        </div>
+      </div>
+    </div>
     <section id="externalAuditScreen" class="screen" style="display:none;"><div id="externalAuditRoot"></div></section>
     <section id="externalAuditDepartmentScreen" class="screen" style="display:none;"><div id="externalAuditDepartmentRoot"></div></section>
 

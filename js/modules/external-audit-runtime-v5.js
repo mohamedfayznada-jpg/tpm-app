@@ -318,6 +318,39 @@ function renderEvidenceSlot({dept,activity,criterionId,kind,label,evidence}){
   }
   return '<label class="ea-evidence-slot empty-slot"><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="uploadExternalAuditEvidence(event,'+jsArg(dept)+','+jsArg(activity)+','+criterionId+','+jsArg(kind)+')"><span><i class="bx bx-image-add"></i><b>'+label+'</b><small>أضف صورة</small></span></label>';
 }
+function getCriterionNote(dept,activity,criterionId,evidence){
+  return String(evidence?.[criterionId]?.note?.text ?? S.localEvidence[localEvidenceKey(dept,activity)]?.[criterionId]?.note?.text ?? '');
+}
+window.openExternalAuditCriterionNote=function(dept,activity,criterionId){
+  const key=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity), evidence=S.evidenceCache[key]||{};
+  const text=String(evidence?.[criterionId]?.note?.text ?? S.localEvidence[localEvidenceKey(dept,activity)]?.[criterionId]?.note?.text ?? '');
+  const criterion=auditCriteriaFor(activity,{}).find(x=>Number(x.i)===Number(criterionId));
+  const modal=document.getElementById('eaCriterionNoteModal');if(!modal)return showToast?.('تعذر فتح نافذة الملاحظات.');
+  modal.dataset.dept=String(dept);modal.dataset.activity=String(activity);modal.dataset.criterionId=String(criterionId);
+  const titleEl=modal.querySelector('[data-ea-note-title]');if(titleEl)titleEl.textContent=criterion?.t||('البند '+criterionId);
+  const field=modal.querySelector('[data-ea-note-input]');if(field)field.value=text;
+  const status=modal.querySelector('[data-ea-note-status]');if(status)status.textContent='';
+  const save=modal.querySelector('[data-ea-note-save]');if(save)save.style.display=canWriteEvidence()?'':'none';
+  modal.style.display='flex';
+};
+window.closeExternalAuditCriterionNote=function(){const m=document.getElementById('eaCriterionNoteModal');if(m)m.style.display='none';};
+window.saveExternalAuditCriterionNote=async function(){
+  const modal=document.getElementById('eaCriterionNoteModal');if(!modal||!canWriteEvidence())return showToast?.('ليس لديك صلاحية حفظ الملاحظات.');
+  const dept=modal.dataset.dept,activity=modal.dataset.activity,criterionId=modal.dataset.criterionId;
+  const field=modal.querySelector('[data-ea-note-input]'),status=modal.querySelector('[data-ea-note-status]'),text=String(field?.value||'').slice(0,4000);
+  const payload={text,updatedAt:Date.now(),updatedByUid:firebase.auth().currentUser?.uid||'',updatedByName:window.currentUser?.name||'',syncPending:false};
+  try{
+    await firebase.database().ref(evidencePath(dept,activity)+'/'+criterionId+'/note').set(payload);
+    const key=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);S.evidenceCache[key]=S.evidenceCache[key]||{};S.evidenceCache[key][criterionId]=S.evidenceCache[key][criterionId]||{};S.evidenceCache[key][criterionId].note=payload;
+    const localKey=localEvidenceKey(dept,activity);if(S.localEvidence[localKey]?.[criterionId])delete S.localEvidence[localKey][criterionId].note;persistLocalEvidence();
+    if(status)status.textContent='تم حفظ الملاحظة بنجاح.';showToast?.('✅ تم حفظ ملاحظة البند.');
+    setTimeout(()=>window.closeExternalAuditCriterionNote(),350);if(dept!=='__TEAM__'&&typeof window.renderExternalAuditDepartment==='function')await window.renderExternalAuditDepartment(dept);
+  }catch(error){
+    const localKey=localEvidenceKey(dept,activity);S.localEvidence[localKey]=S.localEvidence[localKey]||{};S.localEvidence[localKey][criterionId]=S.localEvidence[localKey][criterionId]||{};S.localEvidence[localKey][criterionId].note={...payload,syncPending:true};persistLocalEvidence();
+    const key=evidenceSafeKey(dept)+'/'+evidenceSafeKey(activity);S.evidenceCache[key]=S.evidenceCache[key]||{};S.evidenceCache[key][criterionId]=S.evidenceCache[key][criterionId]||{};S.evidenceCache[key][criterionId].note=S.localEvidence[localKey][criterionId].note;
+    if(status)status.textContent='تم الحفظ محليًا مؤقتًا، تعذر المزامنة مع Firebase.';showToast?.('💾 تم حفظ الملاحظة محليًا مؤقتًا. تحقق من صلاحيات Firebase.');
+  }
+};
 async function saveExternalAuditActivityMeta(dept,activity,field,value){
   if(!canWriteEvidence()) return showToast?.('⚠️ ليس لديك صلاحية تعديل بيانات المراجعة.');
   if(!['notes','opportunities'].includes(field)) return;
@@ -373,7 +406,9 @@ function renderCriterionCards(dept,activity,criteria,evidence,metric){
     const scoreCell=editable
       ? '<label class="ea-criterion-score-editor ea-inline-score"><span>الدرجة الفعلية</span><input aria-label="الدرجة الفعلية" type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(actual==null?'':actual)+'" placeholder="—" oninput="previewExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)" onchange="saveExternalAuditCriterionScore('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+',this.value)"></label>'
       : '<div class="ea-criterion-score-value ea-inline-score"><span>الدرجة الفعلية</span><b>'+actualText+'</b></div>';
-    return '<article class="ea-criterion-card ea-criterion-row"><div class="ea-criterion-title ea-criterion-item-cell"><span class="ea-criterion-number">'+fmt(c.i)+'</span><b>'+esc(c.t)+'</b></div><div class="ea-criterion-score-cell">'+scoreCell+'</div><div class="ea-criterion-planned-cell"><span>المخطط</span><b>'+fmt(c.p)+'</b></div><div class="ea-criterion-evidence-cell">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div><div class="ea-criterion-evidence-cell">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المرجعي',evidence})+'</div></article>';
+    const noteText=getCriterionNote(dept,activity,c.i,evidence);
+     const noteButton='<button type="button" class="btn btn-sm btn-outline ea-criterion-note-btn" onclick="openExternalAuditCriterionNote('+jsArg(dept)+','+jsArg(activity)+','+Number(c.i)+')"><i class="bx bx-note"></i> ملاحظات'+(noteText?' <span aria-label="توجد ملاحظة">•</span>':'')+'</button>';
+     return '<article class="ea-criterion-card ea-criterion-row"><div class="ea-criterion-title ea-criterion-item-cell"><span class="ea-criterion-number">'+fmt(c.i)+'</span><b>'+esc(c.t)+'</b>'+noteButton+'</div><div class="ea-criterion-score-cell">'+scoreCell+'</div><div class="ea-criterion-planned-cell"><span>المخطط</span><b>'+fmt(c.p)+'</b></div><div class="ea-criterion-evidence-cell">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div><div class="ea-criterion-evidence-cell">'+renderEvidenceSlot({dept,activity,criterionId:c.i,kind:'standard',label:'الوضع المرجعي',evidence})+'</div></article>';
   }).join('')+'</div>';
 }
 
@@ -729,7 +764,9 @@ window.openExternalAuditTeamCreate=async key=>{
   const entered=criteria.filter(c=>c.a!=null).length;
   root.innerHTML='<section class="ea-team-create-hero"><button class="ea-v2-back" onclick="goBack()"><i class="bx bx-arrow-back"></i> رجوع خطوة</button><span>TEAM CREATION / '+esc(team.code)+'</span><h1>إنشاء وتقييم '+esc(team.name)+'</h1><p>'+esc(team.description)+' هذا الملف مستقل عن الأقسام التشغيلية.</p><div class="ea-team-create-summary"><article><span>الدرجة الفعلية من Ref.A</span><b>'+fmt(team.sourceActual)+' / '+fmt(team.sourcePlanned)+'</b></article><article><span>نسبة التقرير</span><b>'+fmt(Math.round((team.sourceActual/team.sourcePlanned)*1000)/10)+'%</b></article><article><span>الفعلي المسجل في النظام</span><b>'+fmt(entered?actual:'—')+'</b></article><article><span>بنود مقيمة في النظام</span><b>'+entered+' / '+criteria.length+'</b></article></div></section><section class="ea-team-create-body"><div class="ea-team-create-head"><div><span>TEAM CREATION CRITERIA</span><h2>معايير إنشاء الفريق</h2><small>الدرجة الفعلية لا تُستنتج من درجات الأقسام؛ تُسجل هنا مباشرة على مستوى الفريق.</small></div></div><div class="ea-team-create-list ea-criteria-table"><div class="ea-criteria-table-head"><div>معايير التقييم</div><div>الدرجة الفعلية</div><div>الدرجة المخططة</div><div>صورة الوضع الحالي</div><div>صورة الوضع المرجعي</div></div>'+criteria.map(c=>{
     const input=canWriteEvidence()?'<input aria-label="الدرجة الفعلية" type="number" min="0" max="'+Number(c.p||0)+'" step="0.5" value="'+(c.a==null?'':c.a)+'" placeholder="—" onchange="saveExternalAuditCriterionScore(\'__TEAM__\',\''+esc(team.activity)+'\','+Number(c.i)+',this.value)">':'<b class="ea-criterion-score-value ea-inline-score">'+(c.a==null?'غير مسجل':fmt(c.a))+'</b>';
-    return '<article class="ea-criterion-row"><div class="ea-criterion-title ea-criterion-item-cell"><span class="ea-criterion-number">'+fmt(c.i)+'</span><b>'+esc(c.t)+'</b></div><div class="ea-criterion-score-cell"><label class="ea-criterion-score-editor ea-inline-score"><span>الدرجة الفعلية</span>'+input+'</label></div><div class="ea-criterion-planned-cell"><span>المخطط</span><b>'+fmt(c.p)+'</b></div><div class="ea-criterion-evidence-cell">'+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div><div class="ea-team-create-evidence-cell">'+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'standard',label:'الوضع المرجعي',evidence})+'</div></article>';
+    const noteText=getCriterionNote('__TEAM__',team.activity,c.i,evidence);
+     const noteButton='<button type="button" class="btn btn-sm btn-outline ea-criterion-note-btn" onclick="openExternalAuditCriterionNote(\'__TEAM__\','+jsArg(team.activity)+','+Number(c.i)+')"><i class="bx bx-note"></i> ملاحظات'+(noteText?' <span aria-label="توجد ملاحظة">•</span>':'')+'</button>';
+     return '<article class="ea-criterion-row"><div class="ea-criterion-title ea-criterion-item-cell"><span class="ea-criterion-number">'+fmt(c.i)+'</span><b>'+esc(c.t)+'</b>'+noteButton+'</div><div class="ea-criterion-score-cell"><label class="ea-criterion-score-editor ea-inline-score"><span>الدرجة الفعلية</span>'+input+'</label></div><div class="ea-criterion-planned-cell"><span>المخطط</span><b>'+fmt(c.p)+'</b></div><div class="ea-criterion-evidence-cell">'+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'current',label:'الوضع الحالي',evidence})+'</div><div class="ea-team-create-evidence-cell">'+renderEvidenceSlot({dept:'__TEAM__',activity:team.activity,criterionId:c.i,kind:'standard',label:'الوضع المرجعي',evidence})+'</div></article>';
   }).join('')+'</div></section>';
 };
 

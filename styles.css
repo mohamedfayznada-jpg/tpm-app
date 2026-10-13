@@ -1488,3 +1488,10 @@ body.auth-booting .cloud-status { display:none !important; }
 .auth-boot-brand{font-size:20px;font-weight:900;letter-spacing:3px}
 .auth-boot-status{margin-top:14px;font-size:12px;color:rgba(255,255,255,.65);display:flex;align-items:center;justify-content:center;gap:8px}
 .auth-boot-status span{width:7px;height:7px;border-radius:50%;background:#2ecc71;box-shadow:0 0 12px rgba(46,204,113,.7)}
+
+
+/* External audit per-criterion notes: keep the existing row geometry intact. */
+.ea-criterion-note-btn{margin-top:8px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;min-height:30px}
+.ea-criterion-note-btn span{font-size:16px;line-height:1;color:var(--success)}
+#eaCriterionNoteModal .modal-content textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:150px}
+@media(max-width:640px){#eaCriterionNoteModal .modal-content{padding:16px!important}.ea-criterion-note-btn{font-size:11px;padding:6px 9px}}

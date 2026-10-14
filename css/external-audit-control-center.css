@@ -359,3 +359,12 @@
   .ea-source-score-banner{grid-template-columns:1fr;gap:7px}
   .ea-source-score-banner>strong{font-size:20px}
 }
+
+
+/* Current-state photo coverage indicator on department cards */
+.ea-current-photo-progress{position:relative;z-index:1;margin:14px 0 8px;padding:11px 12px;border:1px solid rgba(20,150,139,.18);border-radius:12px;background:rgba(20,150,139,.055);text-align:right}
+.ea-current-photo-progress>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.ea-current-photo-progress span{font-size:11px;font-weight:700;color:var(--text-muted,#6b7280)}
+.ea-current-photo-progress b{font-size:12px;font-weight:900;color:#087f75;white-space:nowrap}
+.ea-current-photo-bar{height:6px;border-radius:99px;overflow:hidden;background:rgba(148,163,184,.24)}
+.ea-current-photo-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#0d9488,#22b8cf);transition:width .25s ease}

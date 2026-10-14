@@ -368,3 +368,19 @@
 .ea-current-photo-progress b{font-size:12px;font-weight:900;color:#087f75;white-space:nowrap}
 .ea-current-photo-bar{height:6px;border-radius:99px;overflow:hidden;background:rgba(148,163,184,.24)}
 .ea-current-photo-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#0d9488,#22b8cf);transition:width .25s ease}
+
+
+/* Compact collapsed activity rows with current-state photo coverage */
+.ea-v2-activity-panel>summary{display:grid!important;grid-template-columns:minmax(130px,1fr) auto auto minmax(110px,150px) 18px;align-items:center;gap:16px}
+.ea-v2-activity-panel>summary .ea-activity-summary-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ea-v2-activity-panel>summary .ea-activity-summary-title b{font-weight:850}
+.ea-v2-activity-panel>summary .ea-activity-summary-title small{font-size:11px;opacity:.72}
+.ea-activity-photo-progress{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ea-activity-photo-progress>span{font-size:10px;font-weight:750;color:var(--text-muted,#64748b);white-space:nowrap}
+.ea-activity-photo-progress>i{display:block;height:6px;overflow:hidden;border-radius:99px;background:rgba(148,163,184,.24)}
+.ea-activity-photo-progress>i>b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#0d9488,#22b8cf);transition:width .25s ease}
+@media(max-width:760px){
+ .ea-v2-activity-panel>summary{grid-template-columns:minmax(80px,1fr) auto auto 16px;gap:8px}
+ .ea-activity-photo-progress{grid-column:1/-2;grid-row:2;max-width:100%;width:100%}
+ .ea-v2-activity-panel>summary .bx-chevron-down{grid-column:4;grid-row:1}
+}

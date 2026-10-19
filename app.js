@@ -728,9 +728,28 @@ window.setUserStatus = async function(uid,newStatus) {
     }
 };
 
-// Backward-compatible action name: destructive deletion is intentionally replaced by lifecycle suspension.
-window.deleteUser = function(uid) {
-    return window.setUserStatus(uid,'disabled');
+// Permanently remove a user's TPM profile. Firebase Auth identity deletion requires a trusted Admin SDK backend.
+window.deleteUser = async function(uid) {
+    if (!isCanonicalMasterAdmin()) {
+        showToast('🛡️ حذف المستخدمين نهائيًا متاح للـ Master Admin فقط.');
+        return;
+    }
+    if (!uid || typeof uid !== 'string') return showToast('⚠️ معرّف المستخدم غير صالح.');
+    if (uid === currentUser.uid || uid === auth.currentUser?.uid) return showToast('🛡️ لا يمكنك حذف حسابك الحالي.');
+    const u = usersData?.[uid];
+    if (!u) return showToast('⚠️ المستخدم غير موجود أو تم حذفه بالفعل.');
+    const label = String(u.name || u.username || u.email || uid);
+    const confirmed = confirm('حذف المستخدم "' + label + '" نهائيًا من TPM؟\n\nسيتم حذف ملفه وصلاحياته من قاعدة بيانات TPM. ستظل سجلاته التشغيلية وسجل التدقيق محفوظة. هذا الإجراء لا يحذف هوية Firebase Authentication نفسها.');
+    if (!confirmed) return;
+    try {
+        userAdminAudit('user_profile_deleted', uid, { name: label, role: canonicalUserRole(u.role), status: u.status || 'pending' });
+        await db.ref('tpm_system/users/' + uid).remove();
+        showToast('✅ تم حذف ملف المستخدم وصلاحياته من TPM. هوية Firebase Auth لم تُحذف.');
+        renderUserManagement();
+    } catch (error) {
+        console.error('[UserAdmin] permanent profile deletion failed:', error);
+        showToast('❌ تعذر حذف المستخدم. تحقق من صلاحيات Firebase وحاول مرة أخرى.');
+    }
 };
 
 window.openUserDetails = function(uid) {

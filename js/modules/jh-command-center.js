@@ -95,6 +95,25 @@
             };
         }
     }
+    window.openJHStepFilesScreen = function(){
+        if(typeof window.showScreen === 'function') window.showScreen('jhStepFilesScreen');
+        else {
+            document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+            document.getElementById('jhStepFilesScreen')?.classList.add('active');
+        }
+        const search=document.getElementById('jhStepFilesSearch');
+        if(search) search.value='';
+        window.filterJHStepFiles?.('');
+        window.scrollTo({top:0,behavior:'smooth'});
+    };
+    window.filterJHStepFiles = function(query){
+        const q=String(query||'').trim().toLocaleLowerCase();
+        document.querySelectorAll('#jhStepFilesGrid [data-step-file]').forEach(card=>{
+            const match=!q||card.textContent.toLocaleLowerCase().includes(q);
+            card.hidden=!match;
+            if(q&&match) card.open=true;
+        });
+    };
     function boot(){ installWrappers(); arrangePortal(); }
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
     window.JH_COMMAND_CENTER=Object.freeze({version:'clean-v2',refresh:arrangePortal,cleanup:cleanupExecutionListener});

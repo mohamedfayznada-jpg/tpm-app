@@ -15,3 +15,92 @@ p,.text-muted,.muted,.subtitle,.description,.helper-text,.task-metadata,.tag-con
 @media(min-width:600px) and (max-width:900px){.container{padding:18px}.dashboard-stats{grid-template-columns:repeat(4,minmax(0,1fr))!important}.pillars-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}.eo-action-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}.eo-grid-2{grid-template-columns:1fr!important}}
 @media(min-width:901px){.mobile-only{display:none!important}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+/* TPM global readable feedback: visible, accessible, and consistent on desktop/mobile */
+#toast-container{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top,0px) + 86px)!important;
+  bottom:auto!important;
+  left:50%!important;
+  right:auto!important;
+  transform:translateX(-50%)!important;
+  z-index:2147483000!important;
+  width:min(620px,calc(100vw - 28px))!important;
+  max-width:calc(100vw - 28px)!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:10px!important;
+  pointer-events:none!important;
+  padding:0!important;
+}
+#toast-container .toast-msg{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:13px!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-height:68px!important;
+  margin:0!important;
+  padding:17px 18px!important;
+  border:1px solid rgba(255,255,255,.24)!important;
+  border-inline-start:6px solid #2563eb!important;
+  border-radius:16px!important;
+  background:#172033!important;
+  color:#fff!important;
+  box-shadow:0 16px 44px rgba(0,0,0,.30)!important;
+  font-family:Cairo,Tajawal,Arial,sans-serif!important;
+  font-size:17px!important;
+  font-weight:750!important;
+  line-height:1.65!important;
+  text-align:right!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  animation:tpmToastIn .22s ease-out both!important;
+}
+#toast-container .tpm-toast-icon{
+  flex:0 0 32px!important;
+  width:32px!important;
+  height:32px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:50%!important;
+  background:#2563eb!important;
+  color:#fff!important;
+  font-size:20px!important;
+  font-weight:900!important;
+}
+#toast-container .tpm-toast-text{flex:1 1 auto!important;min-width:0!important}
+#toast-container .tpm-toast-close{
+  flex:0 0 30px!important;
+  width:30px!important;
+  height:30px!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:rgba(255,255,255,.12)!important;
+  color:#fff!important;
+  font-size:25px!important;
+  line-height:1!important;
+  cursor:pointer!important;
+}
+#toast-container .tpm-toast-error{background:#7f1d1d!important;border-inline-start-color:#fecaca!important}
+#toast-container .tpm-toast-error .tpm-toast-icon{background:#fff!important;color:#b91c1c!important}
+#toast-container .tpm-toast-warning{background:#78350f!important;border-inline-start-color:#fde68a!important}
+#toast-container .tpm-toast-warning .tpm-toast-icon{background:#fef3c7!important;color:#92400e!important}
+#toast-container .tpm-toast-success{background:#065f46!important;border-inline-start-color:#a7f3d0!important}
+#toast-container .tpm-toast-success .tpm-toast-icon{background:#d1fae5!important;color:#065f46!important}
+#toast-container .tpm-toast-info{background:#172033!important;border-inline-start-color:#93c5fd!important}
+#toast-container .tpm-toast-leaving{opacity:0!important;transform:translateY(-8px)!important;transition:opacity .25s ease,transform .25s ease!important}
+@keyframes tpmToastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){
+  #toast-container{top:calc(env(safe-area-inset-top,0px) + 72px)!important;width:calc(100vw - 20px)!important;max-width:calc(100vw - 20px)!important;gap:8px!important}
+  #toast-container .toast-msg{min-height:64px!important;padding:14px 12px!important;gap:10px!important;font-size:16px!important;line-height:1.6!important;border-radius:14px!important}
+  #toast-container .tpm-toast-icon{flex-basis:30px!important;width:30px!important;height:30px!important;font-size:18px!important}
+}

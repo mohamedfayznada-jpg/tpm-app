@@ -583,8 +583,8 @@ async function rerenderExternalAuditDepartmentPreservingView(dept){
     const row=Array.from(panel?.querySelectorAll('.ea-criterion-row')||[]).find(el=>el.querySelector('.ea-criterion-number')?.textContent?.trim()===focusInfo.criterion);
     row?.querySelector(focusInfo.selector)?.focus({preventScroll:true});
   }
-  window.scrollTo({left:scrollX,top:scrollY,behavior:'instant'});
-  requestAnimationFrame(()=>window.scrollTo({left:scrollX,top:scrollY,behavior:'instant'}));
+  window.scrollTo({left:scrollX,top:scrollY,behavior:'auto'});
+  requestAnimationFrame(()=>window.scrollTo({left:scrollX,top:scrollY,behavior:'auto'}));
 }
 window.uploadExternalAuditEvidence=async=async(event,dept,activity,criterionId,kind)=>{
   const file=event?.target?.files?.[0];

@@ -1,7 +1,7 @@
 // مسار الملف: js/main.js
 import { ENV } from './config/env.js';
 import { db, auth } from './core/firebase-init.js';
-import { UI } from './utils/ui.js?v=20260927-tpm-route-fix1';
+import { UI } from './utils/ui.js?v=20261021-readable-alerts-v1';
 import { Auth } from './auth/auth.js';
 import { Services } from './core/services.js';
 import { Scanner } from './modules/scanner.js';
@@ -13,7 +13,7 @@ import { normalizeRole, roleLabel, canAccessRole } from './core/role-policy.js';
 console.log(`🚀 TPM OS - V${ENV.APP_VERSION} ENTERPRISE CORE`);
 window.auth=auth;window.db=db;window.TPM_DOMAIN=TPM_DOMAIN;window.getTPMPillar=getTPMPillar;window.normalizeTPMRole=normalizeRole;window.getTPMRoleLabel=roleLabel;
 const loadStylesheet=(id,href)=>{if(document.getElementById(id))return;const link=document.createElement('link');link.id=id;link.rel='stylesheet';link.href=href;document.head.appendChild(link)};
-loadStylesheet('enterprise-v26-theme','./css/enterprise-v26.css?v=29');loadStylesheet('mobile-v27-theme','./css/mobile-v27.css?v=29');loadStylesheet('ux-v28-polish','./css/ux-v28-polish.css?v=1');loadStylesheet('factory-os-executive-v32','./css/factory-os-executive-v32.css?v=1');loadStylesheet('factory-os-v32-industrial','./css/factory-os-v32-industrial.css?v=1');loadStylesheet('factory-os-v33-editorial','./css/factory-os-v33-editorial.css?v=2');loadStylesheet('factory-os-v34-reference','./css/factory-os-v34-reference.css?v=18');
+loadStylesheet('enterprise-v26-theme','./css/enterprise-v26.css?v=29');loadStylesheet('mobile-v27-theme','./css/mobile-v27.css?v=20261021-readable-alerts-v1');loadStylesheet('ux-v28-polish','./css/ux-v28-polish.css?v=1');loadStylesheet('factory-os-executive-v32','./css/factory-os-executive-v32.css?v=1');loadStylesheet('factory-os-v32-industrial','./css/factory-os-v32-industrial.css?v=1');loadStylesheet('factory-os-v33-editorial','./css/factory-os-v33-editorial.css?v=2');loadStylesheet('factory-os-v34-reference','./css/factory-os-v34-reference.css?v=18');
 function installImageSourcePicker(){
   if(window.__tpmImageSourcePickerInstalled)return;
   window.__tpmImageSourcePickerInstalled=true;

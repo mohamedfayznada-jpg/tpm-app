@@ -563,6 +563,29 @@ window.openExternalAuditEvidenceImage=url=>{
   img.addEventListener('load',render,{once:true});
   render();
 };
+async function rerenderExternalAuditDepartmentPreservingView(dept){
+  const root=document.querySelector('#externalAuditDepartmentScreen');
+  const scrollX=window.scrollX||0, scrollY=window.scrollY||0;
+  const openActivities=new Set(Array.from(root?.querySelectorAll('details.ea-v2-activity-panel[open]')||[]).map(el=>el.getAttribute('data-ea-activity')));
+  const focused=document.activeElement;
+  const focusInfo=focused&&root?.contains(focused)?{
+    activity:focused.closest('[data-ea-activity]')?.getAttribute('data-ea-activity'),
+    criterion:focused.closest('.ea-criterion-row')?.querySelector('.ea-criterion-number')?.textContent?.trim(),
+    selector:focused.matches('input[type="number"]')?'input[type="number"]':null
+  }:null;
+  await window.renderExternalAuditDepartment(dept);
+  const nextRoot=document.querySelector('#externalAuditDepartmentScreen');
+  nextRoot?.querySelectorAll('details.ea-v2-activity-panel').forEach(el=>{
+    if(openActivities.has(el.getAttribute('data-ea-activity')))el.open=true;
+  });
+  if(focusInfo?.selector){
+    const panel=Array.from(nextRoot?.querySelectorAll('[data-ea-activity]')||[]).find(el=>el.getAttribute('data-ea-activity')===focusInfo.activity);
+    const row=Array.from(panel?.querySelectorAll('.ea-criterion-row')||[]).find(el=>el.querySelector('.ea-criterion-number')?.textContent?.trim()===focusInfo.criterion);
+    row?.querySelector(focusInfo.selector)?.focus({preventScroll:true});
+  }
+  window.scrollTo({left:scrollX,top:scrollY,behavior:'instant'});
+  requestAnimationFrame(()=>window.scrollTo({left:scrollX,top:scrollY,behavior:'instant'}));
+}
 window.uploadExternalAuditEvidence=async=async(event,dept,activity,criterionId,kind)=>{
   const file=event?.target?.files?.[0];
   if(!file)return;
@@ -604,7 +627,7 @@ window.uploadExternalAuditEvidence=async=async(event,dept,activity,criterionId,k
       const key=window.__externalAuditCreateTeamKey;
       if(key) await window.openExternalAuditTeamCreate(key);
     }else{
-      await window.renderExternalAuditDepartment(dept);
+      await rerenderExternalAuditDepartmentPreservingView(dept);
     }
   }catch(error){
     console.error('[External Audit] evidence upload failed',error);

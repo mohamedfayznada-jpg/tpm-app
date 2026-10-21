@@ -91,19 +91,44 @@ export const UI = {
         if (!container) {
             container = document.createElement('div');
             container.id = 'toast-container';
+            container.setAttribute('aria-live', 'polite');
+            container.setAttribute('aria-relevant', 'additions');
             document.body.appendChild(container);
         }
 
+        const message = String(msg ?? '').trim();
+        const isError = /خطأ|فشل|تعذر|تعذّر|غير متاح|مرفوض|error|failed|denied|invalid/i.test(message) || /⚠️|❌|🛑/.test(message);
+        const isWarning = !isError && /تحذير|تنبيه|يرجى|انتبه|warning|تنبيه|⚠/.test(message);
+        const isSuccess = !isError && !isWarning && /تم |نجاح|بنجاح|success|✅|✔️/.test(message);
+        const kind = isError ? 'error' : isWarning ? 'warning' : isSuccess ? 'success' : 'info';
+
         const toast = document.createElement('div');
-        toast.className = 'toast-msg';
-        // Toast content can originate from user/database data: never interpret it as HTML.
-        toast.textContent = String(msg ?? '');
+        toast.className = 'toast-msg tpm-toast-' + kind;
+        toast.setAttribute('role', isError || isWarning ? 'alert' : 'status');
+        const icon = document.createElement('span');
+        icon.className = 'tpm-toast-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = isError ? '✕' : isWarning ? '!' : isSuccess ? '✓' : 'i';
+        const text = document.createElement('span');
+        text.className = 'tpm-toast-text';
+        // Never interpret message text as HTML.
+        text.textContent = message;
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'tpm-toast-close';
+        close.setAttribute('aria-label', 'إغلاق التنبيه');
+        close.textContent = '×';
+        close.addEventListener('click', () => toast.remove());
+        toast.append(icon, text, close);
         container.appendChild(toast);
 
+        // Keep important feedback on screen long enough to read; users can dismiss it.
+        const duration = isError || isWarning ? 8000 : 6000;
         setTimeout(() => {
-            toast.style.animation = 'fadeOut 0.3s ease-out forwards';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+            if (!toast.isConnected) return;
+            toast.classList.add('tpm-toast-leaving');
+            setTimeout(() => toast.remove(), 250);
+        }, duration);
     },
 
     toggleSidebar() {

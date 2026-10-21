@@ -400,6 +400,7 @@
                 <div class="jh-portal-actions">
                     <button class="btn jh-primary-action" onclick="openJHKPIsScreen()"><i class='bx bx-radar'></i> لوحة مؤشرات JH</button>
                     <button class="btn jh-secondary-action btn-role-admin" onclick="setDeptGoal()"><i class='bx bx-target-lock'></i> ضبط مستهدف القسم</button>
+                    <button class="btn jh-files-action" onclick="openJHStepFilesScreen()"><i class='bx bx-folder-open'></i> ملفات كل خطوة</button>
                 </div>
             </div>
             <div class="jh-hero-side">
@@ -595,6 +596,51 @@
     </div>
 
 
+    </div>
+
+    <div class="container screen" id="jhStepFilesScreen">
+        <section class="jh-step-files-hero">
+            <button type="button" class="btn btn-outline btn-sm" onclick="showScreen('jhPortalScreen')"><i class='bx bx-arrow-back'></i> عودة لغرفة عمليات JH</button>
+            <div class="jh-step-files-kicker"><i class='bx bx-folder-open'></i> JH / AUTONOMOUS MAINTENANCE</div>
+            <h2>ملفات كل خطوة</h2>
+            <p>مرجع منظم للنماذج والملفات المطلوبة في مراحل الصيانة الذاتية من الخطوة التحضيرية حتى تثبيت النتائج والاستدامة.</p>
+            <label class="jh-step-files-search"><i class='bx bx-search'></i><input id="jhStepFilesSearch" type="search" placeholder="ابحث عن خطوة أو نموذج..." oninput="filterJHStepFiles(this.value)"></label>
+            <div class="jh-step-files-stats"><span><b>8</b> خطوات</span><span><b>59</b> نموذجًا مرجعيًا</span><span><i class='bx bx-check-shield'></i> مرجع JH</span></div>
+        </section>
+        <section class="jh-step-files-grid" id="jhStepFilesGrid">
+            <details class="jh-step-file-card" open data-step-file>
+                <summary><span class="jh-step-file-number">00</span><span class="jh-step-file-heading"><b>Step 0 — الخطوة التحضيرية</b><small>Preparation</small></span><span class="jh-step-file-count">7 نماذج</span><i class='bx bx-chevron-down'></i></summary>
+                <ul><li>نموذج خطة العمل (Action Plan).</li><li>نموذج المواد التدريبية للصيانة الذاتية.</li><li>نموذج تحديد الأماكن الخطرة بالماكينة.</li><li>نموذج شرح الظواهر السبع غير الطبيعية.</li><li>نموذج شرح أجزاء الماكينات.</li><li>نموذج شرح مفهوم OPL ونماذج OPL.</li><li>نموذج المراجعة الداخلية (Internal Audit).</li></ul>
+            </details>
+            <details class="jh-step-file-card" data-step-file>
+                <summary><span class="jh-step-file-number">01</span><span class="jh-step-file-heading"><b>Step 1 — إدارة التاجات</b><small>TPM Tag Management</small></span><span class="jh-step-file-count">9 نماذج</span><i class='bx bx-chevron-down'></i></summary>
+                <ul><li>نموذج خطة العمل (Action Plan).</li><li>نموذج خرائط CLIT.</li><li>نموذج صور التاجات وشرح كل نوع.</li><li>نموذج حصر التاجات.</li><li>نموذج مصفوفة التاجات.</li><li>نموذج قائمة الأماكن الصعب الوصول إليها.</li><li>نموذج خطة عمل لإصلاح مشكلات التاجات.</li><li>نموذج كايزن للتحسينات المغلقة (Kaizen Sheet).</li><li>نموذج المراجعة الداخلية (Internal Audit).</li></ul>
+            </details>
+            <details class="jh-step-file-card" data-step-file>
+                <summary><span class="jh-step-file-number">02</span><span class="jh-step-file-heading"><b>Step 2 — إدارة التسريبات ومصادر التلوث</b><small>Leakage & Contamination Sources</small></span><span class="jh-step-file-count">8 نماذج</span><i class='bx bx-chevron-down'></i></summary>
+                <ul><li>نموذج خطة العمل (Action Plan).</li><li>نموذج شرح أنواع التسريبات ومصادر التلوث.</li><li>نموذج مصفوفة المهارات.</li><li>نموذج حصر مصادر التسريبات والتلوث.</li><li>نموذج الأماكن الصعب الوصول إليها وطرق القضاء عليها.</li><li>نموذج إجراءات القضاء على مصادر التلوث.</li><li>نموذج تطبيق دورة PDCA.</li><li>نموذج المراجعة الداخلية (Internal Audit).</li></ul>
+            </details>
+            <details class="jh-step-file-card" data-step-file>
+                <summary><span class="jh-step-file-number">03</span><span class="jh-step-file-heading"><b>Step 3 — توحيد التزييت والتشحيم والتنظيف</b><small>Lubrication, Greasing & Cleaning</small></span><span class="jh-step-file-count">7 نماذج</span><i class='bx bx-chevron-down'></i></summary>
+                <ul><li>نموذج خطة العمل (Action Plan).</li><li>نموذج خرائط CLIT المفصلة مع الزمن قبل وبعد التحسين.</li><li>نموذج Foot Map واستيكرات الإضاءة المرئية.</li><li>نموذج الفحص اليومي للتزييت والتنظيف (Daily Lubrication & Cleaning Check Sheet).</li><li>نموذج حصر التسريبات واستهلاك الزيوت والشحوم.</li><li>نموذج حصر أدوات التزييت والتشحيم وتطبيق 5S.</li><li>نموذج المراجعة الداخلية (Internal Audit).</li></ul>
+            </details>
+            <details class="jh-step-file-card" data-step-file>
+                <summary><span class="jh-step-file-number">04</span><span class="jh-step-file-heading"><b>Step 4 — تنمية مهارات العاملين</b><small>Operator Skills Development</small></span><span class="jh-step-file-count">4 نماذج</span><i class='bx bx-chevron-down'></i></summary>
+                <ul><li>نموذج خطة العمل (Action Plan).</li><li>نموذج الحقيبة التدريبية للخطوة الرابعة.</li><li>نموذج مصفوفة مهارات العاملين (Skill Matrix).</li><li>نموذج المراجعة الداخلية (Internal Audit).</li></ul>
+            </details>
+            <details class="jh-step-file-card" data-step-file>
+                <summary><span class="jh-step-file-number">05</span><span class="jh-step-file-heading"><b>Step 5 — تعزيز الصيانة الذاتية ومنع العيوب والتآكل</b><small>Autonomous Maintenance & Defect Prevention</small></span><span class="jh-step-file-count">8 نماذج</span><i class='bx bx-chevron-down'></i></summary>
+                <ul><li>نموذج خطة العمل (Action Plan).</li><li>نموذج تحديث خرائط CLIT.</li><li>نموذج نقل مهارات فني الصيانة إلى فني الإنتاج.</li><li>نموذج تحديث Foot Map.</li><li>نموذج حصر العيوب والتآكل وتحليل الأسباب الجذرية (RCA).</li><li>نموذج حصر أدوات القياس وخرائط CLIT الخاصة بها.</li><li>نموذج الخطة السنوية للصيانة الذاتية.</li><li>نموذج المراجعة الداخلية (Internal Audit).</li></ul>
+            </details>
+            <details class="jh-step-file-card" data-step-file>
+                <summary><span class="jh-step-file-number">06</span><span class="jh-step-file-heading"><b>Step 6 — تعزيز بيئة العمل ومعايير 5S وتقليل الهالك</b><small>Work Environment, 5S & Waste Reduction</small></span><span class="jh-step-file-count">8 نماذج</span><i class='bx bx-chevron-down'></i></summary>
+                <ul><li>نموذج خطة العمل (Action Plan).</li><li>نموذج Foot Map وترتيب المعدات.</li><li>نموذج تطبيق 5S.</li><li>نموذج تحليل الهالك الناتج عن ضعف الصيانة الذاتية.</li><li>نموذج تعليمات تشغيل الماكينة (Machine Operating Instructions).</li><li>نموذج تحليل العيوب والإجراءات التصحيحية.</li><li>نموذج رصد الهدر وعدم الانتظام والإجهاد الزائد (Three MU).</li><li>نموذج المراجعة الداخلية (Internal Audit).</li></ul>
+            </details>
+            <details class="jh-step-file-card" data-step-file>
+                <summary><span class="jh-step-file-number">07</span><span class="jh-step-file-heading"><b>Step 7 — تثبيت النتائج وقياس الأداء والاستدامة</b><small>Results, KPI & Sustainability</small></span><span class="jh-step-file-count">5 نماذج</span><i class='bx bx-chevron-down'></i></summary>
+                <ul><li>نموذج عرض المؤشرات الرئيسية (OEE, MTBF, MTTR, Scrap).</li><li>نموذج سجل تآكل المعدات والأدوات.</li><li>نموذج اقتراحات التعديلات في الماكينات الجديدة.</li><li>نموذج حساب الوفر المالي من تقليل التسريبات.</li><li>نموذج المراجعة الداخلية (Internal Audit).</li></ul>
+            </details>
+        </section>
     </div>
 
     <!-- 2. JH Documents & KPIs & Checklists -->
